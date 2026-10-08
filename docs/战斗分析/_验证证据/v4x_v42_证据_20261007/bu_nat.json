@@ -1,0 +1,25 @@
+{
+ "drawer": {
+  "cls": "modal open",
+  "disp": "flex",
+  "left": 0,
+  "pos": "fixed",
+  "vp": 1050,
+  "w": 1050
+ },
+ "chip": {
+  "chip": "属性弱点与特性修正 ",
+  "x": 493,
+  "y": 500
+ },
+ "click": "xy ok",
+ "pos": {
+  "abiDisp": "none",
+  "abiLen": 0,
+  "innLen": 0,
+  "innTxt": "",
+  "parentCls": "sec",
+  "prevCls": "abi abi-inn",
+  "withinNatBlock": false
+ }
+}

@@ -1,0 +1,17 @@
+﻿loadErr=null
+tplCount=18 slotTableKeys=19 slotTableOk=true
+---- 空间打手槽独立重算 ----
+过门 raw=1047 去重=659 | 龙头地鼠 rankRaw=622/1047 分=13 榜首=超级美录梅塔(33)(33)
+龙头地鼠 inAlts(前8)=false inAltLow(末3)=false | altLow=["超能妙喵-雌性(5)","莫鲁贝可-空腹花纹(5)","打击鬼R(5)"]
+---- v4.2 判定（V1..V10） ----
+PASS V1 | 骨架 19 键（18 模板+通用兜底）且全部 Σ槽位=6；tplAll ⊂ SLOT_TABLE | tplAll=18 slotKeys=19 allΣ6=true 仅骨架=["通用"] 越界=[]
+PASS V2 | 晴天速攻骨架 = SET1+SPD2+BOOST1+COVER1+WALL-P1 | [["S-SET",1],["S-SPD",2],["S-BOOST",1],["S-COVER",1],["S-WALL-P",1]]
+PASS V3 | 晴天方案卡：设置手槽 pick 具【自动开晴】能力 + 速攻槽含本体（妙蛙花） | tpl=晴天速攻 SETpick=炎玄武 开晴能力=["干旱"] SPD核心=true
+PASS V4 | 空间打手槽：龙头地鼠#530 过门入池、未被剔除（独立重算） | rank=622/1047（去重 442/659）分=13 榜首=超级美录梅塔(33) gate="低速高攻，空间内先手输出（低速线越高越优）"
+PASS V5 | 空间打手槽 Top 由低速重炮占据（低速线维度生效，非中速手） | picks+alts 速度=["超甲狂犀:40","惧惧舵轮:30","惧惧舵轮:30","超级毒藻龙:44","超级美录梅塔:24","超级卡比兽:30","超级巨炭山:40","超级土王:25","超级人造细胞卵:30","超级黏美龙-洗翠:60"]
+PASS V6 | 渲染面无负向文案（硬排除/已排除/体系互斥/硬否决/被剔除） | sizes=tplList=6922/coreOut=58005 命中=[]
+PASS V7 | wxConflict / wxSetOf / LAST_TM_DROPS 均已移除（undefined） | wxConflict=undefined wxSetOf=undefined LAST_TM_DROPS=undefined
+PASS V8 | 体系合理性：沙暴方案以岩石/钢/地面受益者为主 | 石/钢/地 4/6 :: 班基拉斯,龙头地鼠,阿尔宙斯-幽灵,大钢蛇,故勒顿,蒂安希
+PASS V9 | 体系合理性：雨天速攻方案以高速打手为主（avg ≥ 95） | avg=96 :: 卡璞・鸣鸣(130),帕路奇亚-起源形态(140),蒂安希(50),超级拉帝亚斯(110),雷吉斯奇鲁(50)
+FAIL V10 | [低·UI 展示口径] 空间方案 UI 是否含「龙头地鼠」（前8+末3 切片） | coreOut len=31503 含龙头地鼠=false | 位次=622/1047（去重 442/659）→ 不在前8/末3 切片
+==== SUMMARY ==== total=10 PASS=9 FAIL=1 FAILIDS=["V10"]

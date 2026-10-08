@@ -1,0 +1,49 @@
+﻿================ A. toast 实现与样式 ================
+   toast 定义 → function toast(msg,ms){
+ ⌁   var box=document.getElementById('toastBox');
+ ⌁   if(!box){box=document.createElement('div');box.id='toastBox';document.body.appendChild(box)}
+ ⌁   var el=document.createElement('div');el.className='toastmsg';el.textContent=String(msg==null?'':msg);
+ ⌁   box.appendChild(el);
+ ⌁   setTimeout(function(){try{if(el.parentNode)el.parentNode.removeChild(el)}catch(e){}},ms||2800);
+ ⌁   return el;
+ ⌁ }
+ ⌁ functi
+   --- 含 toast 的 CSS 行 ---
+   L117  #toastBox{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:6px; align-items:center; pointer-event
+   L118  .toastmsg{background:rgba(17,24,39,.94); color:#fff; border-radius:8px; padding:10px 14px; font-size:12.5px; line-height:1.5; max-width:min(92vw,560px); box-shadow:0 6px 
+   L160  #toastBox{left:8px; right:8px; transform:none; bottom:12px}
+   L161  .toastmsg{max-width:100%}
+   --- HTML 里 toast 容器 ---
+   ruleBox 引用块生成器？→ iv>'}
+ ⌁ function gotoRule(){switchTab('core');var e=$('ruleBoxCore');if(!e)return;var d=e.querySelector?e.querySelector('details'):null;if(d)d.open=true;if(e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'})}
+ ⌁ function initRuleBoxes(){
+ ⌁   /* v4.6 收尾：口径表内容只注入一处（#ruleBoxCore = 默认入口页）；队伍页/模板页改为引用跳转，避免同内容三份重复展示 */
+ ⌁   var ec=$('ruleBoxCore');if(ec)ec.innerHTML=wxRuleHtml();
+ ⌁   var hr=wxRuleRefHtml();
+ ⌁   ['ruleBoxTeam','ruleBoxTpl'].forEach(function(id){var e=$(id);if(e)e.innerHTML=hr});
+ ⌁   var tipEl=$('tplRuleTip');
+ ⌁   if(tipEl)tipEl.innerHTML='💡 ER 特化提示（读 WCONF 口径表 · 已按游戏源码核对）：'+
+ ⌁     '天气 '+WCONF.abilityDurTurns+' 回合（岩石 '+WCONF.rockTurnsAbility+' 回合），手动招与特性同档
+
+================ B. 口径表三处渲染态原文 ================
+   ---- #ruleBoxTeam (160 字符) ----
+   <div class="ruleline">📐 机制口径（参数 ↔ 当前值）：完整表在「核心配队」页统一展示（同一份内容不再三处重复）。<button class="btn-mini" style="margin-left:8px" onclick="gotoRule()">查看机制口径</button></div>
+   ---- #ruleBoxCore (5946 字符) ----
+   <details class="rulebox"><summary>📐 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》）</summary><div class="scroll"><table style="margin-top:2px"><thead><tr><th>机制</th><th>参数</th><th>当前值</th></tr></thead><tbody><tr><td>天气·手动招式回合</td><td style="font-size:11px;color:var(--sub)">WCONF.manualDurTurns</td><td style="font-size:12px">8 回合（已按游戏源码核对 8，changelog 记 5）</td></tr><tr><td>天气·特性回合</td><td style="font-size:11px;color:var(--sub)">WCONF.abilityDurTurns</td><td style="font-size:12px">8 回合</td></tr><tr><td>天气·岩石延长(特性)</td><td style="font-size:11px;color:var(--sub)">WCONF.rockTurnsAbility</td><td style="font-size:12px">12 回合</td></tr><tr><td>天气·岩石延长(手动)</td><td style="font-size:11px;color:var(--sub)">WCONF.rockTu …[截断]
+   ---- #ruleBoxTpl (160 字符) ----
+   <div class="ruleline">📐 机制口径（参数 ↔ 当前值）：完整表在「核心配队」页统一展示（同一份内容不再三处重复）。<button class="btn-mini" style="margin-left:8px" onclick="gotoRule()">查看机制口径</button></div>
+   ---- #tplRuleTip (587 字符) ----
+   💡 ER 特化提示（读 WCONF 口径表 · 已按游戏源码核对）：天气 8 回合（岩石 12 回合），手动招与特性同档；晴/雨增伤 ×1.5（已按游戏源码核对：不分手动/特性，无「特性 20%」档）；冻伤替代冰冻（每回合 1/16 最大HP + 特攻 ×0.5，冰雹触发 ×3<span class="badge badge-pend" title="该数值为口径表默认值，尚未经游戏内实测确认">待游戏内实测确认</span> 游戏源码中未见）；个体默认 31、Iron Pill 可把速度 IV 调 0（空间队）；所有招式 PP 全满；训练师全员 4 特性+道具。<br>v4.x：数据来源完整（招式/特性中文说明、机制词条、进化家族、战术模板齐备）；词条解释（天气/场地/钉子/强化/异常/先制/蓄力/属性转换/冻伤/麻痹等）在正文中以虚线下划线标出，悬停看释义、点击开「词条卡片」（居中轻量 modal，带遮罩与关闭）。<br>场地：场地 8 回合（延展器 12 回合）· 场地属性增伤 ×1.3（已按游戏源码核对：B_TERRAIN_TYPE_BOOST=GEN_8）；顺风 4 回合 / 空间 5 回合<span class="badge badge-pend" title="该数值为口径表默认值，尚未经游戏内实测确认">待游戏内实测确认</span>-7
+
+   --- #ruleBoxCore 内 "changelog" 上下文 ---
+   d style="font-size:11px;color:var(--sub)">WCONF.manualDurTurns</td><td style="font-size:12px">8 回合（已按游戏源码核对 8，changelog 记 5）</td></tr><tr><td>天气·特性回合</td><td style="font-size:11px;color:var(--sub)">WC
+   ）。<b>v2.65+ 官方源码核对（2026-10-06，Pin A=7d85acd5@2026-03-28 / Pin B=910945b9@2026-10-06）</b>：天气回合 8/岩石 12（手动与特性同档；changelog 记「手动 5」与源码不符）、天气增伤**不分来源单档 ×1.5**（无「特性 20%」档）、场地倍率 ×1.3 与场地延展器 12 转定稿、顺风常量 3 ⇒ 实
+   --- #ruleBoxCore 内 "参数" 上下文（前 4 处）---
+   <details class="rulebox"><summary>📐 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》）</summary><div class="scroll"><table style=
+   <details class="rulebox"><summary>📐 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》）</summary><div class="scroll"><table style="margin-top
+   <summary>📐 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》）</summary><div class="scroll"><table style="margin-top:2px"><thead><tr><th>机制</th><th>参数</th><th>当前值</th></tr></thead><tbody><tr><td>天气·手动招式回合</td><td style
+   ont-size:11px;color:var(--sub)">WCONF.wxGrantOrder</td><td style="font-size:12px">慢者后发动 ⇒ 慢者主导（现代口径：双方天气手同场时，速度慢者的特性最后发动、覆盖快者）（可配置参数：slow=现代 / fast=旧口径；两代机制相反，ER 属第三代内核但有现代改动 ⇒ 待实测）<span class="badge 
+   --- #ruleBoxCore 内 "WCONF." 上下文（前 3 处）---
+   <th>机制</th><th>参数</th><th>当前值</th></tr></thead><tbody><tr><td>天气·手动招式回合</td><td style="font-size:11px;color:var(--sub)">WCONF.manualDurTurns</td><td style="font-size:12px">8 回合（已按游戏源码核对 8，changelog 记 
+   font-size:12px">8 回合（已按游戏源码核对 8，changelog 记 5）</td></tr><tr><td>天气·特性回合</td><td style="font-size:11px;color:var(--sub)">WCONF.abilityDurTurns</td><td style="font-size:12px">8 回合</td></tr><tr><td>天气·岩石
+   rTurns</td><td style="font-size:12px">8 回合</td></tr><tr><td>天气·岩石延长(特性)</td><td style="font-size:11px;color:var(--sub)">WCONF.rockTurnsAbility</td><td style="font-size:12px">12 回合</td></tr><tr><td>天气·

@@ -1,0 +1,125 @@
+﻿================ A. 清理核查（玩家可见文案 / 死代码 / 调试残留）================
+-- A1 内部编号与开发过程语（全库原始子串计数；历史报告点名项）--
+   "v45-3"                = 3
+   "v4.5.1"               = 0
+   "v4.4"                 = 1
+   "v4.3.2"               = 4
+   "WCONF."               = 163
+   "docs/战斗分析"            = 1
+   "changelog"            = 6
+   "数据契约"                 = 1
+   "源码未找到"                = 3
+   "待游戏内截图校准"             = 3
+   "源码实证"                 = 63
+   "源码考古"                 = 7
+   "ABI_ATE"              = 12
+   "参数</th>"              = 1
+   "genBuilds"            = 1
+-- A2 死函数 coreMoves --
+   coreMoves 出现 = 0  ✔ 已删零调用
+   sysBenefitNames=1 spFields=1 anyAbiId=1 coreNature=1 itemIsWeather=1 evioWhy=1 needRegistryOk=1 fillForNeed=1 isAbilSetAny=1（保留项）
+-- A3 调试残留 --
+   console.         = 1
+   console.warn     = 1
+   console.log      = 0
+   debugger         = 0
+   TODO             = 0
+   FIXME            = 0
+   alert(           = 13
+-- A4 旧规则/提示文案 --
+   ruleBoxTeam      = 2
+   ruleBoxCore      = 5
+   ruleBoxTpl       = 2
+   initRuleBoxes    = 2
+   tplRuleTip       = 2
+   mvDrawerTitle    = 2
+   #tplRuleTip 原文 → id="tplRuleTip">💡 ER 特化提示加载中…</div> <div id="ruleBoxTpl"></div> </section> <!-- ===== 核心配队 ===== --> <section id="tab-core" class="tab"> <div class="bar"> <input type="text" id="coreSearch" placeholder="搜索中文 / 英文 / 编号"> <select id="coreSort"> <option value="id">编号</option><option value="bst">种族总值</
+
+================ C-1. 表格 / 滚动包裹（手机横向溢出）================
+   <table 出现 = 11 处 @ 281,543,1263,1798,1842,1934,2786,5154,5215,5260,5272
+   class="scroll" 出现 = 11 | 内联 overflow-x:auto = 1
+     L281 → ✔ 已包裹/内联  前置: </div>
+     L543 → ✔ 已包裹/内联  前置: var h='<details class="rulebox"><summary>📐 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默
+     L1263 → ✔ 已包裹/内联  前置: '<select id="mvSplitSp"><option value="">全部分类</option><option value="物
+     L1798 → ✘ 未包裹  前置: html+='<div style="margin:4px 0;font-size:12px;color:var(--sub)">【特性修正
+     L1842 → ✔ 已包裹/内联  前置: html+='<div class="sec"><h3>进攻覆盖：6 只招式池能打出的属性覆盖（S=克制，○=中性，△=仅抵抗，×=无法命中
+     L1934 → ✔ 已包裹/内联  前置: if(best.length){
+     L2786 → ✔ 已包裹/内联  前置: /* 评分维度权重表（体系化：维度 / 权重 / 判定口径，可解释） */
+     L5154 → ✔ 已包裹/内联  前置: if(note.note)html+='<div style="margin:4px 0">'+esc(note.note)+'</div>
+     L5215 → ✔ 已包裹/内联  前置: /* 详情 ③：配招（招式名 → 招式反查详情；点评 → 词条标蓝） */
+     L5260 → ✔ 已包裹/内联  前置: if(tms.length){
+     L5272 → ✔ 已包裹/内联  前置: if(recs.length){
+   ⇒ 10/11 已包裹  ✘ 仍有未包裹
+   th,td 声明 → th,td{border-bottom:1px solid var(--line); padding:5px 6px; text-align:left; white-space:nowrap}
+
+================ C-2. 媒体查询 / 响应式骨架 =================
+   L116 @media (max-width:640px){
+   L126 @media (max-width:640px){
+   viewport meta = <meta name="viewport" content="width=device-width, initial-scale=1">
+   <body 字号声明 → body{font-family:"Segoe UI","Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif; background:var(--bg); 
+   body font-size = 14px
+   font-family 行 → body{font-family:"Segoe UI","Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); font-size:14px}
+   PingFang = 1 | Noto = 1 | text-size-adjust = 2
+   布局类新声明：
+     L15 header{background:var(--card); border-bottom:1px solid var(--line); padding:10px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; pos
+     L18 nav{display:flex; gap:4px; margin-left:auto; flex-wrap:wrap}
+     L19 nav button{border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px}
+     L39 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px}
+     L117 .grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+     L119 nav{width:100%; margin-left:0}
+     L120 nav button{flex:1}
+     L129 header{padding:6px 8px; align-items:flex-start; flex-wrap:wrap}
+     L130 nav{width:100%; margin-left:0; flex-wrap:wrap; gap:4px}
+     L131 nav button{flex:1 1 30%; min-height:44px; font-size:13px; padding:0 6px}
+     L132 .btn,.btn-mini,.abi,details>summary,details.big>summary,.poolcard,label,input,select,textarea{min-height:44px}
+     L136 .grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px}
+     L137 .poolgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px}
+     L142 .sec,.tip,.ruleline,.needrow,.slotbody,.slothead,.poolcard{overflow-wrap:anywhere; word-break:break-word}
+     L149 .poolcard,.badge-pick,.badge-pickable,.poolbox .pin,.slot .x,.modal .close,button,label,input,select,textarea{min-height:44px}
+     L177 .poolgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:8px; margin-top:6px}
+     L178 .poolcard{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:6px 4px; text-align:center; cursor:pointer; position:relat
+     L179 .poolcard:hover{border-color:var(--accent); background:#f7faff}
+     L180 .poolcard .pn{font-size:12px; font-weight:600; margin-top:2px; line-height:1.3}
+     L181 .poolcard .pl{font-size:11px; color:var(--sub); line-height:1.35}
+     L182 .poolcard .ptag{display:inline-block; font-size:10px; border:1px solid var(--line); border-radius:8px; padding:0 5px; margin:1px 2px 0 0; color:var(--
+     L183 .poolcard .psrc{position:absolute; top:2px; left:4px; font-size:10px; color:var(--sub)}
+     L184 .spmid{width:64px; height:64px; image-rendering:pixelated}
+
+================ C-3. 触控目标 ≥44px（声明值重算）================
+   FAIL nav button           L19    ≈28px  | border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8p
+   FAIL .chips button        L37    ≈18px  | border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:12
+   FAIL .btn                 L84    ≈28px  | border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8p
+   FAIL .btn-mini            L86    ≈18px  | border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:10
+   FAIL .abi                 L61    ≈20px  | display:inline-block; border:1px solid var(--line); padding:3px 10px; border-radius:14px
+   FAIL .slot .x             L81    ≈19px  | background:none; border:none; color:var(--bad); cursor:pointer; font-size:16px; padding:
+   FAIL .card                L40    ≈37px （含图，实际更高） | border:1px solid var(--line); background:var(--card); border-radius:10px; padding:10px; 
+   FAIL .mxc                 L194   ≈25px （含图，实际更高） | width:76px; border:1px solid var(--line); border-radius:8px; padding:4px 2px; text-align
+   OK   .tplcard             L110   ≈45px （含图，实际更高） | border:1px solid var(--line); background:var(--card); border-radius:10px; padding:14px; 
+   OK   .poolcard            L132   ≈44px （含图，实际更高） | min-height:44px
+   FAIL .needcard>summary    L148   ≈17px  | nav button,.btn,.btn-mini,.chips button,.abi,details>summary,details.big>summary,.needca
+   OK   details.big>summary  L132   ≈44px  | min-height:44px
+   OK   .poolbox .pin        L149   ≈44px  | min-height:44px
+   FAIL .badge-pick          L98    ≈17px  | background:#c8e6c9; border:1px solid #2e7d32; color:#1b5e20; cursor:pointer
+   FAIL .badge-pickable      L99    ≈17px  | background:#fff; border:1px solid #2e7d32; color:#1b5e20; cursor:pointer; opacity:.75
+   OK   .modal .close        L149   ≈44px  | min-height:44px
+   FAIL th,td                L65    ≈27px  | border-bottom:1px solid var(--line); padding:5px 6px; text-align:left; white-space:nowra
+   (未找到) .mnb
+   (未找到) .tabbar button
+
+================ C-4. 字号 ≥12px 核查 =================
+   <12px 声明 = 18 → L30:11px | L43:11px | L83:11px | L102:11px | L103:11px | L106:11px | L115:11px | L160:11px | L172:11px | L175:11px | L181:11px | L182:10px | L183:10px | L198:11px | L199:11px | L201:11px | L225:11px | L227:11px
+
+================ C-5. 关键控件 / 新结构存在性 =================
+   id="myPoolWrap"            = 1
+   id="myTeamOut"             = 1
+   存档联动组队                     = 3
+   onclick="myCoreTeam(       = 1
+   class="poolgrid"           = 1
+   class="poolcard"           = 1
+   class="psrc"               = 1
+   class="ptag"               = 2
+   class="spmid"              = 1
+   class="spinel"             = 0
+   renderMyPool               = 4
+   myPoolFromSav              = 2
+   SOV_ROWS                   = 0

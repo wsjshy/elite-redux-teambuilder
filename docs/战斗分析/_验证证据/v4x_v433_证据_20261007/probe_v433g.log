@@ -1,0 +1,10 @@
+﻿loadErr=（无）
+-- 加载后（零预热）: typeof pickAbiFor=function | needBuildHtml(向日花怪,天气,天气).len=1709
+-- 载入时已渲染的容器: spGrid(36064) tmGrid(22551) abiResult(539628) coreGrid(22836) ruleBoxTeam(5946) ruleBoxCore(5946) ruleBoxTpl(5946) tplRuleTip(618) tplList(6922)
+-- 真实入口 selectCore(3)：
+   #coreOut len=417175 | 队伍构建方案=true | 配招：×11 | ⭐×14 | 特性：×14 | 炽热岩石=false | 进化奇石×1 | undefined×4
+   #teamOut 未注册
+   #tplOut 未注册
+-- 其后 renderNeedPlan(妙蛙花) 复核: 配招：×11
+-- 模板路径 renderTpl() → 检查模板体是否含道具行：
+   注册的 tplBody: 0 个; 抽样 

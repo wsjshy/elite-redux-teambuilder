@@ -1,0 +1,15 @@
+﻿abiTags.conv 条数=9
+  96 → {"conv":"一般"}
+  174 → {"conv":"冰"}
+  182 → {"conv":"妖精"}
+  184 → {"conv":"飞行"}
+  206 → {"conv":"电"}
+  280 → {"conv":"冰"}
+  315 → {"conv":"水"}
+  325 → {"conv":"毒"}
+  659 → {"conv":"电"}
+
+280/659 条目: 280={"conv":"冰"}  659={"conv":"电"}
+样例皮肤系条目 96={"conv":"一般"}  174={"conv":"冰"}
+
+ERDATA 键序=types,matchup,moves,species,items,abilities,abiTags,abiAlias,templates,coreNotes,movesNotes,nonFinal,sprites
