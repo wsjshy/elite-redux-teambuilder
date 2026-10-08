@@ -1,4 +1,4 @@
-# deploy_er.ps1 — Elite Redux 配招助手一键部署（GitHub Pages）
+﻿# deploy_er.ps1 — Elite Redux 配招助手一键部署（GitHub Pages）
 # 分支约定：master 开发 + gh-pages 部署（AGENTS.md 已登记）
 # 用法：& "D:\Git\bin\git.exe" 已就绪；本脚本自动：commit master → push → 建/更 gh-pages（部署三件套）→ 切回 master
 # 部署产物（gh-pages 分支根目录）：配招助手_ER.html + 配招工具_data.js + assets\sprites（相对路径同目录硬前提）+ .nojekyll
@@ -14,7 +14,6 @@ $Message = $args[1]; if (-not $Message) { $Message = "Deploy: $Version" }
 # 步骤0：确保在 master 且干净（坑2：master 有未提交改动时切分支会失败）
 & $Git -C $Repo checkout master
 $dirty = (& $Git -C $Repo status --porcelain) -join "`n"
-if ($dirty -match "^(?![MADRCU])" ) { }
 # 有改动则提交（master 是开发分支，正常流程是提交后部署）
 if ($dirty.Trim().Length -gt 0) {
     & $Git -C $Repo add -A
