@@ -563,3 +563,27 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **环境登记（非代码问题）**：① 数据层 `usagePrior` 被清空（751→0，`usageMeta.srcs=[] coverage=0`）→ `UP1` 断言改为「契约 + 显式空态」双分支，待数据层恢复；② 存档 fixture 项目副本被部署清理删除 → 断言改候选路径（项目副本 → ROM `ER2.65简汉化\ERv2.65-beta2-debug汉化版.sav` → ROM `elite redux 2.5 debug.sav`），ROM 副本 5 锚点全过，仅 `K=3`（原 4，K 为存档自身轮换指纹）→ `K∈[3,4]` 并注明；③ `B④` 流派卡计数改为「`.big` 总数 − `.big.subsec`」。
 - **临时文件**：全部写 Agent workspace（不落项目根）；提取脚本 `_chk_script_1.js` 用后删除；`.gitignore` 已排除顶层 `/_*`。
 - **待办**：主 Agent 重新部署 gh-pages（指纹见上）；剩余登记项（`changelog`×9 与源码宏名参数玩家化）仍待拍板，未擅动。
+
+
+## 10. v4.6.2 精灵图合图（2026-10-08）
+
+- **方案**：`build_sprites_sheet.py`（新建，项目根）把 `assets/sprites/sp<id>.png`（1906 张 64×64，5.17MB）按 **id 数字升序**每 256 只合成 1024×1024 WebP（64px 格 16×16，**lossy q90**）→ `assets/sheets/s{0..7}.webp` + `sheet_map` 坐标 `sheets_map.js`；**8 张共 3.00MB / 请求数 1906 → 8**。
+- **渲染层**（`build_tool_html.py`，405,465 B）：`sprOf(id)` 改返回背景样式声明；新增 `sppct/sprEl`；`sprImg/sprRaw/sprImgMid` 迁移到 `sprEl`（**签名与 cls 语义兼容，13 处调用点零改动**）；`__SPRSHEET__` 占位 + 构建期注入（缺文件告警回退空映射）；CSS 基类 `.spsp,.mcspr,.spmid` + 上下文尺寸照搬原 img 版 + `.spmiss` 空占位（不发请求）。
+- **尺寸无关缩放**：`background-size:1600% 1600%` + `background-position:col/15,row/15` ⇒ 同一标记适配 28/40/64/72/88px 容器（含 ≤640px 的 `.spcard{56px}`），免 per-size 换算。
+- **回归**：`node --check` EXIT 0；`verify_v1.js` 216/0 + `verify_v4.js` **269**/0 = **485 PASS / 0 FAIL**（469 基线不降；新增 v4.6.2 组 9 条 + 8 条既有精灵断言迁移口径）；探针 render errors 0（渲染面 sheet 引用 5,217 / `assets/sprites` **0**）；存档 5 锚点 `431/6/425/15` ✓；移动端 360px 六项不回归。
+- **视觉抽样**：13 只（含 5 锚点 411/469/741/1513/2232）sheet 裁回 vs 原 PNG —— **alpha 差 0/13**，RGB 平均差 2.11~25.17（q90 振铃），对照样图目视一致。
+- **产物指纹**：`配招助手_ER.html` = `index.html` = ROM 副本 = **2,353,192 B**，SHA256 `BCA0DFEAB8360E6A5B23428B11AD8DD216350EDD0568FDC8469BF10913CC921B`（三处逐字节一致）；`assets/sheets/` 3.03 MB。
+- **部署**：gh-pages 需含 `assets/sheets/`（8 webp + sheets_map.js）；`.gitignore` 实测未排除 `assets/`。旧 `assets/sprites/` 保留为源/回退。
+- **环境更正**：`usagePrior=0` 根因是构建期先验源目录 `nn_data/` 缺失（生成器日志三项读失败），**非数据层清空**（v4.6.1 报告 §三.1 表述据此更正）。
+
+
+## 11. v4.6.3 两段式互斥视图（2026-10-08）
+
+- **症状**：点候选卡后方案渲染在长候选列表之下 → 误以为点击无效。**修法**：挑选（pick）/ 详情（detail）**两阶段互斥视图，纯 display 切换，引擎零改动**。
+- **落点**：产出「完整配队方案」的屏在 **`#tab-core`**（`#corePickWrap` ⇄ `#coreDetailWrap`，后者默认隐藏并内含 `#coreOut`）；`#tab-team` 的 `tmGrid` 是「搜索并入队」网格**无方案视图，保持原样**；`#tab-team` 的**存档联动组队卡**同构（`#myPickWrap` ⇄ `#myDetailWrap` = `#myPoolWrap` ⇄ `#myTeamOut`）。
+- **函数**：`corePhase(m)` / `myPhase(m,noscroll)`（只切 display；回挑选时 `drawCoreList()` 重绘；滚动到容器顶部）；`selectCore()` 末步改 `corePhase('detail')`；`myCoreTeam()` 末步 `myPhase('detail')`；`renderMyPool()` 起首 `myPhase('pick',true)`。
+- **状态保留**：`corePhase('pick')` 函数体对输入控件**零赋值** → 搜索/筛选/排序天然保留（断言逐条扫描函数体）。
+- **触控/移动端**：`.coreback{min-height:44px}`（44px 组 5→6）；`.corebackbar` flex-wrap 无固定宽；详情屏**就地展开**（非 modal / 非抽屉 / 无 `position:fixed`）；`prefers-reduced-motion` 下关闭淡入。
+- **口径表位置**：`#ruleBoxCore` 保留**页面级**（不进详情屏），以免 `gotoRule()` 从队伍页/模板页跳转后看不到 —— 已在报告登记。
+- **回归**：`node --check` EXIT 0；`verify_v1.js` 216/0 + `verify_v4.js` **276**/0 = **492 PASS / 0 FAIL**（485 基线不降，新增 v4.6.3 组 7 条）；探针 render errors 0；两段式 transcript 六步全过（含真实 .sav 415 张池 + 煤炭龟方案）；移动端 360px 不回归。
+- **产物**：`配招助手_ER.html` **2,356,562 B**（= `index.html` = ROM 副本）。

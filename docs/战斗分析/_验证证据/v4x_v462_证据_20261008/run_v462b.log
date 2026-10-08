@@ -1,0 +1,19 @@
+﻿==== SUMMARY ====
+total=289 PASS=286 FAIL=3 THREW=0
+CORE total=286 PASS=283 FAIL=3 | DEFECT-PROBE total=3 PASS=3 FAIL=0（探针 FAIL=缺陷证实）
+htmlBytes=2356562 mtime=2026-10-08T09:05:52.866Z / 2356562B
+loadError=null
+WCONF={"manualDurTurns":8,"abilityDurTurns":8,"rockTurnsAbility":12,"rockTurnsManual":12,"boost":0.5,"abilityBoost":0.5,"terrainBoost":1.3,"terrainDurTurns":8,"terrainExtenderTurns":12,"tailwindTurns":4,"autoTailwindTurns":4,"lightClayTurns":null,"trickroomTurns":5,"trickroomPrio":-7,"paraSpeed":0.5,"paraFullChance":0.25,"hazardRules":{"spikes":{"maxLayers":3,"dmg":[0.125,0.16666666666666666,0.25],"groundedOnly":true},"stealthRock":{"layers":1,"dmgByRockEff":[0.5,0.25,0.125,0.0625,0.03125]},"toxicSpikes":{"maxLayers":2,"steelImmune":true,"groundedPoisonAbsorbs":true},"stickyWeb":{"layers":1,"speedStage":-1,"immune":["飞行","飘浮","气球"]}},"defogRapidSpin":{"rapidSpin":"self","defog":"both","defogEvasion":-1,"walls":"foeOnly"},"frostbite":{"dmgFraction":0.0625,"spAtkMult":0.5,"hailChanceMult":3},"toxicTerrain":{"exists":true,"durTurns":8,"dmgFraction":0.0625,"boost":1.3,"spikesToToxicSpikes":false,"seed":"未收录"},"wxGrantOrder":"slow"}
+V4FIELDS={"mvDescZh":true,"abiDescZh":true,"glossary":true,"familyRoot":true,"templates":18}
+counts={"mvDescZh":291,"abiDescZh":118,"glossary":40,"familyRoot":534,"matchupSp":18,"templates":18}
+==== FAILURES ====
+FAIL X6 | 克制格（新口径）网格卡含精灵图 + 中文名（mxc/mcnm） | imgs=0
+FAIL X9 | 克制格（新口径·防守面板）mxPanelDef 列属性归属 + 精灵图（不按倍率分组） | len=6631
+FAIL SV5 | 段轮换 K=4 | exp=4 act=3
+==== FACTS ====
+save={"total":431,"party":6,"pc":425,"special":15,"K":3,"anchorsOk":["护城龙 BOX1第1格 ✓","远古巨蜓 BOX4第1格 ✓","花舞鸟 BOX20第1格 ✓","超级化石翼龙 BOX26第28格 ✓","土王Mega(队伍首条) 队伍首条 ✓"],"anchorsFail":[]}
+venusaur={"id":"3","zh":"妙蛙花","t1":"草","t2":"毒","abis":["叶绿体","粉彩护幕","叶绿素"],"inns":["茂盛","厚脂肪","毒吸收"],"sys":["晴"],"role":"均衡/多功能","side":"特殊"}
+teammates(V)=[["席多蓝恩",46],["莱希拉姆",46],["超级喷火驼",46],["超级喷火龙Y",44],["班基拉斯R",44],["太阳岩",42]]
+builds(V)=[{"name":"晴强化清场","side":"特殊","roleTag":"强化","selfSetter":false,"main":["日光束","污泥炸弹","生长","终极吸取"]},{"name":"晴增伤清场","side":"特殊","roleTag":"增伤","selfSetter":false,"main":["日光束","污泥炸弹","生长","大地之力"]}]
+tplNames=["雨天速攻","晴天速攻","沙暴联防","雪天堡垒","电气场地速攻","精神场地特攻","青草场地回复","薄雾场地龙盾","强化清场轴","顺风游击","戏法空间","钉子受队","毒钉受队","强化接力","天气双核","场地控制","吸血站场","双天气轮换"]
+rainRecs=[["帕路奇亚-起源形态",45],["哥达鸭",42],["盖欧卡",42],["雷公",40],["闪电鸟-Ex",40],["水伊布",39]]

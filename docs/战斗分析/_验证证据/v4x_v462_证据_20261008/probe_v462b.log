@@ -1,0 +1,41 @@
+﻿===== 解析真值 =====
+   total=undefined party=[object Object],[object Object],[object Object],[object Object],[object Object],[object Object] pc=undefined special=undefined K=undefined
+   锚点 → undefined | fail=[]
+   队伍 6 只（编号命中，中文名前缀口径）：
+     #2232  (未找到)
+     #598   (未找到)
+     #2667  (未找到)
+     #1677  (未找到)
+     #249   (未找到)
+     #882   (未找到)
+
+===== 两段式内容实测 =====
+   [池渲染后]
+   「存档」 #myPickWrap      len=      0 | display="" | mcspr=0 | spmiss=0 | bg-img=0 | assets/sheets=0 | assets/sprites=0 | <img=0
+   「存档」 #myPoolWrap      len= 193560 | display="" | mcspr=0 | spmiss=0 | bg-img=415 | assets/sheets=415 | assets/sprites=0 | <img=0
+   「存档」 #myDetailWrap    len=      0 | display="none" | mcspr=0 | spmiss=0 | bg-img=0 | assets/sheets=0 | assets/sprites=0 | <img=0
+   「存档」 #myTeamOut       len=      0 | display="" | mcspr=0 | spmiss=0 | bg-img=0 | assets/sheets=0 | assets/sprites=0 | <img=0
+   [选核心后]
+   「存档」 #myPickWrap      len=      0 | display="none" | mcspr=0 | spmiss=0 | bg-img=0 | assets/sheets=0 | assets/sprites=0 | <img=0
+   「存档」 #myPoolWrap      len= 193560 | display="" | mcspr=0 | spmiss=0 | bg-img=415 | assets/sheets=415 | assets/sprites=0 | <img=0
+   「存档」 #myDetailWrap    len=      0 | display="" | mcspr=0 | spmiss=0 | bg-img=0 | assets/sheets=0 | assets/sprites=0 | <img=0
+   「存档」 #myTeamOut       len= 406603 | display="" | mcspr=0 | spmiss=0 | bg-img=557 | assets/sheets=557 | assets/sprites=0 | <img=0
+     方案卡要点：原则 P=63 | 代价=63 | needcard=12 | slotbody=5 | 返回挑选=0 | 完美含「队伍构建方案」=✘
+     详情屏是否用到 sheet 精灵图 = ✔ (mcspr 0 处)
+   [全图鉴选核心后]
+   「核心」 #corePickWrap    len=      0 | display="none" | mcspr=0 | spmiss=0 | bg-img=0 | assets/sheets=0 | assets/sprites=0 | <img=0
+   「核心」 #coreDetailWrap  len=      0 | display="" | mcspr=0 | spmiss=0 | bg-img=0 | assets/sheets=0 | assets/sprites=0 | <img=0
+   「核心」 #coreOut         len= 466103 | display="" | mcspr=12 | spmiss=0 | bg-img=614 | assets/sheets=614 | assets/sprites=0 | <img=0
+     coreOut 要点：原则 P=93 | needcard=15 | slotbody=6 | mcspr=12
+   --- 状态保留实证：corePhase/myPhase 是否触碰输入控件（script 原文）---
+     function corePhase(m){ corePhaseMode=(m==='detail')?'detail':'pick'; var pw=$('corePickWrap'),dw=$('coreDetailWrap'); if(pw&&pw.style)pw.style.display=(corePhaseMode==='pick')?'':'none'; if(dw&&dw.style)dw.style.display=(corePhaseMode==='detail')?'':'none'; if(corePhaseMode==='pick'&&window.drawCoreList)window.drawCoreList(); var host=$('tab-core'); if(host&&host.scrollIntoView){try{host.scrollIn
+     function myPhase(m,noscroll){ myPhaseMode=(m==='detail')?'detail':'pick'; var pw=$('myPickWrap'),dw=$('myDetailWrap'); if(pw&&pw.style)pw.style.display=(myPhaseMode==='pick')?'':'none'; if(dw&&dw.style)dw.style.display=(myPhaseMode==='detail')?'':'none'; if(noscroll)return; var host=$('mySavCard'); if(host&&host.scrollIntoView){try{host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}
+
+===== 谱写/渲染面回归哨兵 =====
+   合计 1079451 字符 | assets/sheets=1586 | assets/sprites=0 | alert(=0
+   含 "源码实证" = 0
+   含 "数据表实证" = 0
+   含 "待游戏内截图校准" = 0
+   含 "v45-3" = 0
+   含 "v4.6-" = 0
+   含 "alert(" = 0

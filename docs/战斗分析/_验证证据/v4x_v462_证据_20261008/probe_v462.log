@@ -1,0 +1,151 @@
+﻿================ 0. 静态实现原文（合图 + 两段式）================
+   --- sprOf / spTag 区（script L840–856）---
+   sL840  function closeSp(){spDrawer.classList.remove('open')}
+   sL841  /* 精灵图（v4.6.2 合图 Sprite Sheet）：SPR_SHEET[id] = [sheetIdx, col, row]（由 sheets_map.js 构建期内嵌）。
+   sL842  sprOf(id) 返回背景样式声明（sheet 背景图 + 尺寸无关定位：background-size 1600%（16 格）/ position 百分比）
+   sL843  → 同一份标记在任意容器尺寸下正确缩放；id 缺失/无映射 → 返回空串，调用侧渲染 .spmiss 空占位（不发请求、不破版）。 */
+   sL844  function sprOf(id){
+   sL845  var c=(window.SPR_SHEET||{})[String(id)];
+   sL846  if(!c)return '';
+   sL847  return "background-image:url('assets/sheets/s"+c[0]+".webp');background-repeat:no-repeat;background-size:1600% 1600%;background-position:"+sppct(c[1])+" "+sppct(c[2]);
+   sL848  }
+   sL849  function sppct(k){return (Math.round(k*100/15*10000)/10000)+'%'}
+   sL850  function sprEl(tag,id,cls){
+   sL851  var st=sprOf(id);
+   sL852  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'"':'')+'></'+tag+'>';
+   sL853  }
+   sL854  function sprImg(id,cls){
+   sL855  return '<span class="spbox '+(cls||'spcard')+'">'+sprEl('span',id,'spsp')+'</span>';
+   sL856  }
+   --- 两段式区（script L4940–4995）---
+   sL4940  '<details class="inline"><summary>📐 判定口径：天气/场地回合与倍率读 WCONF（'+esc(v4ContractNote())+'）—— 展开看每招倍率构成</summary>'+
+   sL4941  '<div style="margin-top:4px">流派卡「选招依据 / 判定口径」两行给出每招倍率构成（pow×stab×hit×prio×cover×weather×func×abi）。</div></details>'+
+   sL4942  '</div>';
+   sL4943  html+='</div>';
+   sL4944  /* 注：机制口径折叠块由独立容器 #ruleBoxCore（L335）渲染 —— 不在此重复追加，避免出现两遍 */
+   sL4945  $('coreOut').innerHTML=html;
+   sL4946  }
+   sL4947  function coreFinalToggle(){optFinalOnly=$('coreFinal').checked;if(window.drawCoreList)window.drawCoreList();if(coreSel)renderCore(coreSel)}
+   sL4948  /* ===== v4.6.3 两段式互斥视图（核心配队 / 存档联动组队，纯视图切换、引擎零改动）=====
+   sL4949  背景：点候选卡后方案渲染在长候选列表之下 → 用户以为点不动。
+   sL4950  pick（挑选，默认）：工具栏 + 属性筛选 + 候选网格，仅此一屏；
+   sL4951  detail（详情）：隐藏挑选屏，方案在原容器顶部 + 「← 返回挑选」（≥44px 触控）。
+   sL4952  corePhase('pick') 只切 display、不触碰任何输入控件 → 搜索/筛选/排序状态天然保留。 */
+   sL4953  var corePhaseMode='pick';
+   sL4954  function corePhase(m){
+   sL4955  corePhaseMode=(m==='detail')?'detail':'pick';
+   sL4956  var pw=$('corePickWrap'),dw=$('coreDetailWrap');
+   sL4957  if(pw&&pw.style)pw.style.display=(corePhaseMode==='pick')?'':'none';
+   sL4958  if(dw&&dw.style)dw.style.display=(corePhaseMode==='detail')?'':'none';
+   sL4959  if(corePhaseMode==='pick'&&window.drawCoreList)window.drawCoreList();
+   sL4960  var host=$('tab-core');
+   sL4961  if(host&&host.scrollIntoView){try{host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
+   sL4962  else{try{window.scrollTo(0,0)}catch(e){}}
+   sL4963  }
+   sL4964  var myPhaseMode='pick';
+   sL4965  function myPhase(m,noscroll){
+   sL4966  myPhaseMode=(m==='detail')?'detail':'pick';
+   sL4967  var pw=$('myPickWrap'),dw=$('myDetailWrap');
+   sL4968  if(pw&&pw.style)pw.style.display=(myPhaseMode==='pick')?'':'none';
+   sL4969  if(dw&&dw.style)dw.style.display=(myPhaseMode==='detail')?'':'none';
+   sL4970  if(noscroll)return;
+   sL4971  var host=$('mySavCard');
+   sL4972  if(host&&host.scrollIntoView){try{host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
+   sL4973  }
+   sL4974  var coreSel=null;
+   sL4975  function selectCore(id){
+   sL4976  var s=ERDATA.species.filter(function(x){return x.id==id})[0];
+   sL4977  if(!s)return;
+   sL4978  coreSel=s;
+   sL4979  switchTab('core');
+   sL4980  renderCore(s);
+   sL4981  corePhase('detail');
+   sL4982  }
+   sL4983  (function(){
+   sL4984  var coreFilter={types:{}},coreRoleCache={};
+   sL4985  function coreRoleOf(s){var k=''+s.id;if(!coreRoleCache[k])coreRoleCache[k]=coreRole(s).role;return coreRoleCache[k]}
+   sL4986  function renderCoreTypes(){
+   sL4987  var box=$('coreTypes');box.innerHTML='';
+   sL4988  ERDATA.types.forEach(function(t){
+   sL4989  var b=tchip(t,!!coreFilter.types[t],function(){
+   sL4990  coreFilter.types[t]=!coreFilter.types[t];
+   sL4991  if(!coreFilter.types[t])delete coreFilter.types[t];
+   sL4992  /* 交集筛选：宝可梦仅双属性，最多保留 2 个选中 */
+   sL4993  var on=ERDATA.types.filter(function(x){return coreFilter.types[x]});
+   sL4994  if(on.length>2)delete coreFilter.types[on[0]];
+   sL4995  renderCoreTypes();draw();
+   sL4996  });
+   sL4997  box.appendChild(b);
+   --- 含 PickWrap/DetailWrap 的 CSS ---
+   L45  /* 精灵图（v4.6.2 合图）：div 背景定位到 assets/sheets/s<idx>.webp；缺图 → .spmiss 空占位（不请求、不破版） */
+   L202  .spsp,.mcspr,.spmid{background-repeat:no-repeat; image-rendering:pixelated; display:inline-block; vertical-align:middle}
+   L203  .spmid,.mcspr{width:64px; height:64px; margin:0}
+   L204  .mxc .mcspr,.mxc .spmid,.mxc .spsp{width:40px; height:40px; margin:0 auto}
+   L205  .spthumb .mcspr{width:26px; height:26px}
+   L207  .spmiss{background:#eceff3}
+   L219  .mxc img,.mcspr img{width:40px; height:40px; object-fit:contain; image-rendering:pixelated; display:block; margin:0 auto}
+
+================ 1. SPR_SHEET 数据 ================
+   SPR_SHEET 键数 = 1906 | 类型 = array | 样本 [["1",[0,0,0]],["2",[0,1,0]],["3",[0,2,0]]]
+   --- 5 锚点坐标（期望 411→s1[10,9] / 469→s1[4,13] / 741→s2[4,14] / 1513→s4[9,6] / 2232→s6[1,7]）---
+   id 411   → [1,10,9]
+   id 469   → [1,4,13]
+   id 741   → [2,4,14]
+   id 1513  → [4,9,6]
+   id 2232  → [6,1,7]
+   缺失 id 999999 → null
+   sprOf(2232) → background-image:url('assets/sheets/s6.webp');background-repeat:no-repeat;background-size:1600% 1600%;background-position:6.6667% 46.6667%
+   sprOf(999999) → ""
+   sheet 图引用形式（script 内 sheet 字样样本）→ window.SPR_SHEET={
+
+================ 2. 渲染：sheet 引用 / assets 引用 / spmiss ================
+   真档已注入（D:\mGBA-0.10.2-win64\ROM\elite redux\elite redux 2.5 debug.sav）
+   mxPanelAtk(火) len=83913 | mcspr=248 | spmiss=0 | background-image=248 | <img=0 | mcnm=248 | sp\d+.png=0
+     样本 → <div class="mxhd2">🔱 进攻视角：<span class="t t-火">火</span> 属性招式 → <b>打谁有效</b>（按实际承受倍率分组）<span class="mini">倍率 = 属性 × 天性 × ABI_TAGS(im/hf/add)；来源：数据层 matchupSp；有效物种 1905 只</span></div><div class="mxbuckets"><span class="tagline">0×（免疫） 31</span> <span class="tagline">0.25× 72</span> <span class="tagline
+   mxPanelDef(草+毒) len=6631 | mcspr=20 | spmiss=0 | background-image=20 | <img=0 | 拥有该属性=1 | （免疫）=0
+     样本 → <div class="mxhd2">🛡 防守视角：<span class="t t-草">草</span> <span class="t t-毒">毒</span> → <b>拥有该属性的宝可梦</b> 20 只<span class="mini">（点卡片跳详情看「该宝可梦完整承受表 + 天性修正」，本视角只列属性归属、不按倍率分组）</span></div><div class="mxgrid"><div class="mxc" onclick="openSpById('1')" title="妙蛙种子 属性 草/毒 → 查看详情与完整承受表"><div class="mcspr" d
+   容器（按 id）：
+     #pokeOut        (空)
+     #mvOut          (空)
+     #abiOut         (空)
+     #typeOut        (空)
+     #teamOut        (空)
+     #tplOut         (空)
+     #coreOut        len=     39 | mcspr=   0 | spmiss=  0 | bg-img=   0 | assets/sprites=  0 | <img=  0
+     #tplList        len=   6946 | mcspr=   0 | spmiss=  0 | bg-img=   0 | assets/sprites=  0 | <img=  0
+     #ruleBoxCore    len=   5912 | mcspr=   0 | spmiss=  0 | bg-img=   0 | assets/sprites=  0 | <img=  0
+     #myPoolWrap     len=    133 | mcspr=   0 | spmiss=  0 | bg-img=   0 | assets/sprites=  0 | <img=  0
+     #myTeamOut      (空)
+     #mxOut          (空)
+     #mxPanel        (空)
+     #corePickWrap   (空)
+     #coreDetailWrap (空)
+     #myPickWrap     (空)
+     #myDetailWrap   (空)
+   合计 13034 字符 | mcspr=0 | spmiss=0 | background-image=0 | assets/sprites=0 | <img=0 | sp\d+.png=0
+
+================ 3. v4.6.3 两段式：core / 存档两条路径 ================
+   候选函数存在性：showCorePick=undefined , showCoreDetail=undefined , coreStage=undefined , backToPick=undefined , backFromDetail=undefined , selectCore=function , myCoreTeam=function , myPick=undefined , myDetail=undefined , showPick=undefined , showDetail=undefined , pickMy=undefined
+   [初始] 核心页两屏：
+     core #corePickWrap    len=      0 | hidden=false | display=
+     core #coreDetailWrap  len=      0 | hidden=false | display=
+   已调用 selectCore(3)
+   [selectCore 后] 核心页两屏：
+     core #corePickWrap    len=      0 | hidden=false | display=none
+     core #coreDetailWrap  len=      0 | hidden=false | display=
+     详情屏含：mcspr=0 | background-image=0 | 返回=0 | 原则 P=0 | <button=0
+     详情屏按钮样本 → []
+     返回类名（script 内 back 相关）→ []
+   已调用 renderMyPool()
+   [池渲染后] 存档路径两屏：
+     my #myPickWrap      len=      0 | hidden=false | display=
+     my #myDetailWrap    len=      0 | hidden=false | display=none
+   已调用 myCoreTeam(2232)
+   [myCoreTeam 后] 存档路径两屏：
+     my #myPickWrap      len=      0 | hidden=false | display=none
+     my #myDetailWrap    len=      0 | hidden=false | display=
+     详情屏：mcspr=0 | bg-img=0 | 返回=0 | 原则 P=0 | needcard=0 | 队伍成员=0
+
+================ 4. 回归哨兵 ================
+   alert( = 0 | toast( = 14 | assets/sprites（script）= 0 | .spmiss（script）= 2
+   nav → <nav> <button data-tab="core" class="active">核心配队</button> <button data-tab="team">队伍构建</button> <button data-tab="poke">宝可梦</button> <button data-tab="move">招式反查</button> <button data-tab="type">属性克制</button> <button data-tab="abi">特性反查</button> <button data-tab="tpl">战术模板</button> </nav>

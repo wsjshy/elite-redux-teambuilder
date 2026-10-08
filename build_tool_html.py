@@ -3,10 +3,11 @@
 """生成 ER 配招助手单页 HTML（内嵌 ERDATA 数据，离线可用，响应式 PC/手机）
 新增：招式多条件筛选 / 队伍构建器(联防+覆盖) / 特性反查 / 战术模板 / 存档CSV导入分析
 
-精灵图：以相对路径 assets/sprites/sp<id>.png 引用（与 HTML 同目录，file:// 直接可显示），
-        不再内嵌 base64（HTML 体积由 ~6.1MB 降至 ~1.3MB）；缺图时 onerror 隐藏 <img>，
-        保留灰色占位框，不影响卡片布局与文字。
-依赖：配招工具_data.js（数据源，本脚本只读）；assets/sprites/（由 assets/build_sprites.py 生成）"""
+精灵图（v4.6.2 合图）：assets/sheets/s<idx>.webp（1024×1024，64px 格 16×16，每张 256 只）
+        + sheets_map.js 的 SPR_SHEET 坐标（构建期内嵌进 HTML）；渲染为 div + background-position，
+        尺寸无关定位（background-size:1600% / position 百分比）→ 随容器 CSS 缩放。
+        旧 assets/sprites/sp<id>.png（1906 张）保留为源与回退；缺图 → 空占位（不请求网络、不破版）。
+依赖：配招工具_data.js（数据源，本脚本只读）；assets/sheets/（由 build_sprites_sheet.py 生成）"""
 import os
 import re
 
@@ -14,7 +15,7 @@ BASE = r'D:\game\elite-redux'
 data_js = open(BASE + r'\配招工具_data.js', encoding='utf-8').read()
 
 # ---- 剥离 data.js 内嵌的 base64 精灵图（只在本生成器内存中剥离，不改动 data.js 文件本体）----
-# 改由 sprOf() 指向 assets/sprites/sp<id>.png 相对路径。
+# 渲染侧 v4.6.2 改由 sprOf() 取 assets/sheets/s<idx>.webp + SPR_SHEET 坐标（div + background-position）。
 _sp_before = len(data_js.encode('utf-8'))
 data_js = re.sub(r'"sprites"\s*:\s*\{[^{}]*\}', '"sprites":{}', data_js, count=1)
 print('剥离内嵌 base64 精灵图：%.2f MB -> %.2f MB' % (_sp_before / 1048576.0, len(data_js.encode('utf-8')) / 1048576.0))
@@ -160,9 +161,9 @@ main{max-width:1200px; margin:0 auto; padding:14px}
 .card .nm{font-weight:600; font-size:14px}
 .card .en{font-size:11px; color:var(--sub)}
 .card .bs{font-size:12px; color:var(--sub); margin-top:4px}
-/* 精灵图：相对路径 assets/sprites/sp<id>.png；缺图时 <img> 被隐藏，仅剩灰色占位框（不破版） */
+/* 精灵图（v4.6.2 合图）：div 背景定位到 assets/sheets/s<idx>.webp；缺图 → .spmiss 空占位（不请求、不破版） */
 .spbox{background:#eceff3; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden}
-.spbox img{width:100%; height:100%; image-rendering:pixelated; display:block}
+.spbox img,.spbox .spsp{width:100%; height:100%; image-rendering:pixelated; display:block}
 .spcard{width:64px; height:64px; margin:2px auto 6px}
 .spinl{width:64px; height:64px; display:inline-block; vertical-align:middle; margin-right:8px}
 .spslot{width:40px; height:40px; flex:0 0 40px; margin:0}
@@ -314,8 +315,15 @@ details.big[open]>summary::before{content:"▾ "}
 .poolcard .pl{font-size:11px; color:var(--sub); line-height:1.35}
 .poolcard .ptag{display:inline-block; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:0 5px; margin:1px 2px 0 0; color:var(--sub); max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom}
 .poolcard .psrc{position:absolute; top:2px; left:4px; font-size:12px; color:var(--sub)}
-.spmid{width:64px; height:64px; image-rendering:pixelated}
+.spmid{width:64px; height:64px}
 .spinl{image-rendering:pixelated; vertical-align:middle}
+/* v4.6.2 合图精灵基类：内联样式只带 background-image/position/size；尺寸由下列上下文规则决定（随容器缩放） */
+.spsp,.mcspr,.spmid{background-repeat:no-repeat; image-rendering:pixelated; display:inline-block; vertical-align:middle}
+.spmid,.mcspr{width:64px; height:64px; margin:0}
+.mxc .mcspr,.mxc .spmid,.mxc .spsp{width:40px; height:40px; margin:0 auto}
+.spthumb .mcspr{width:26px; height:26px}
+.slothead .spinl .spsp{width:28px; height:28px}
+.spmiss{background:#eceff3}
 /* ===== v4.x UI 定稿：就地展开（克制格）/ 轻量居中 modal（词条）/ 图片优先的紧凑卡片网格 ===== */
 .mxinline{margin:8px 0 12px; border:1px solid var(--accent); border-radius:10px; background:var(--card); padding:10px}
 .mxhd2{font-size:13px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
@@ -368,6 +376,12 @@ details.big[open]>summary::before{content:"▾ "}
 .modal .close{border:none; background:var(--line); width:26px; height:26px; border-radius:50%; cursor:pointer}
 details.inline{border:1px dashed var(--line); border-radius:8px; padding:2px 8px; margin:6px 0; background:#fff}
 details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
+/* v4.6.3 两段式互斥视图（挑选 ⇄ 详情）：纯视图切换，引擎零改动 */
+.corebackbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:4px 0 8px}
+.coreback{min-height:44px; padding:10px 16px; font-size:15px; display:inline-flex; align-items:center; gap:6px; cursor:pointer}
+.phasefade{animation:phasein .18s ease-out}
+@keyframes phasein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+@media(prefers-reduced-motion:reduce){.phasefade{animation:none}}
 </style>
 </head>
 <body>
@@ -458,9 +472,14 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
   <!-- v4.6-B：存档联动组队（我的宝可梦）—— 与下方全图鉴组队并列，不替换 -->
   <div class="sec" id="mySavCard" style="margin:6px 0">
     <h3>🎮 存档联动组队（我的宝可梦）<span class="mini" style="color:var(--sub);font-weight:400"> · 与下方「全图鉴组队」并列，互不替换</span></h3>
+    <div id="myPickWrap" class="phasefade">
     <div class="mini" style="color:var(--sub)">① 点上方「📂 解析存档 .sav」选文件（或粘贴 CSV 导入）→ ② 下方出现你的队伍与箱子 ③ 点一只精灵 = 以它为核，走同一套需求驱动引擎出完整队伍方案</div>
     <div class="poolgrid" id="myPoolWrap"><div class="mini" style="color:var(--sub)">尚未解析存档 —— 解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 末招）。</div></div>
-    <div id="myTeamOut"></div>
+    </div><!-- /#myPickWrap：挑选阶段（我的宝可梦池） -->
+    <div id="myDetailWrap" class="phasefade" style="display:none">
+      <div class="corebackbar"><button class="btn coreback" onclick="myPhase('pick')" title="返回挑选（我的宝可梦池原样保留）">← 返回挑选</button><span class="mini" style="color:var(--sub)">此核心（来自存档）的完整配队方案</span></div>
+      <div id="myTeamOut"></div>
+    </div><!-- /#myDetailWrap：详情阶段 -->
   </div>
   <div class="teamwrap">
     <div class="teambox" style="flex:1.2">
@@ -490,6 +509,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
+  <div id="corePickWrap" class="phasefade">
   <div class="bar">
     <input type="text" id="coreSearch" placeholder="搜索中文 / 英文 / 编号">
     <select id="coreSort">
@@ -514,12 +534,17 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
   <div class="chips" id="coreTypes"></div>
   <div class="grid" id="coreGrid"></div>
   <div id="coreMore" style="text-align:center;color:var(--sub);padding:10px"></div>
-  <div id="coreOut"></div>
+  </div><!-- /#corePickWrap：挑选阶段（工具栏 + 属性筛选 + 候选网格 = 仅此一屏） -->
+  <div id="coreDetailWrap" class="phasefade" style="display:none">
+    <div class="corebackbar"><button class="btn coreback" onclick="corePhase('pick')" title="返回挑选（搜索 / 筛选 / 排序状态保留）">← 返回挑选</button><span class="mini" style="color:var(--sub)">下方为此核心的完整配队方案（流派 / 队友 / 配招 / 道具 / 理由）</span></div>
+    <div id="coreOut"></div>
+  </div><!-- /#coreDetailWrap：详情阶段（方案在原容器顶部，候选屏隐藏） -->
   <div id="ruleBoxCore"></div>
 </section>
 </main>
 <script>
 __ERDATA__
+__SPRSHEET__
 /* ============ 工具函数 ============ */
 var $=function(id){return document.getElementById(id)};
 var MV={},ABI={},ITM={};
@@ -1353,16 +1378,24 @@ glModal.onclick=function(ev){if(ev.target===glModal)closeGl()};
 document.body.appendChild(glModal);
 if(document.addEventListener)document.addEventListener('keydown',function(ev){if(ev.key==='Escape'){closeGl();try{closeSp()}catch(e){}try{closeMv()}catch(e){}}});
 function closeSp(){spDrawer.classList.remove('open')}
-/* 精灵图：相对路径 assets/sprites/sp<id>.png（与 HTML 同目录，file:// 可显示）。
-   缺图时 onerror 隐藏 <img>，外层 .spbox 的灰色占位框保留 → 不破版、不影响文字。 */
-function sprOf(id){return 'assets/sprites/sp'+id+'.png'}
+/* 精灵图（v4.6.2 合图 Sprite Sheet）：SPR_SHEET[id] = [sheetIdx, col, row]（由 sheets_map.js 构建期内嵌）。
+   sprOf(id) 返回背景样式声明（sheet 背景图 + 尺寸无关定位：background-size 1600%（16 格）/ position 百分比）
+   → 同一份标记在任意容器尺寸下正确缩放；id 缺失/无映射 → 返回空串，调用侧渲染 .spmiss 空占位（不发请求、不破版）。 */
+function sprOf(id){
+  var c=(window.SPR_SHEET||{})[String(id)];
+  if(!c)return '';
+  return "background-image:url('assets/sheets/s"+c[0]+".webp');background-repeat:no-repeat;background-size:1600% 1600%;background-position:"+sppct(c[1])+" "+sppct(c[2]);
+}
+function sppct(k){return (Math.round(k*100/15*10000)/10000)+'%'}
+function sprEl(tag,id,cls){
+  var st=sprOf(id);
+  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'"':'')+'></'+tag+'>';
+}
 function sprImg(id,cls){
-  return '<span class="spbox '+(cls||'spcard')+'"><img src="'+sprOf(id)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true"></span>';
+  return '<span class="spbox '+(cls||'spcard')+'">'+sprEl('span',id,'spsp')+'</span>';
 }
-/* v4.x：裸精灵图（紧凑卡片网格用，无外层灰框）：<img class="mcspr" ...> */
-function sprRaw(id,cls){
-  return '<img class="'+(cls||'mcspr')+'" src="'+sprOf(id)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">';
-}
+/* v4.x：裸精灵图（紧凑卡片网格用，无外层灰框）：<div class="mcspr" ...> */
+function sprRaw(id,cls){return sprEl('div',id,cls||'mcspr')}
 function openSp(s){
   var base=s.base,names=['HP','攻击','防御','特攻','特防','速度'];
   var html='<h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:13px;color:var(--sub)">'+esc(s.en)+' #'+s.id+'</span>'+
@@ -2244,9 +2277,10 @@ function myPoolFromSav(rows){
   return out;
 }
 function shortTag(t){t=String(t||'');return t.length>7?t.slice(0,7)+'…':t}
-function sprImgMid(id){return '<img class="spmid" src="'+sprOf(id)+'" alt="" loading="lazy" decoding="async" onerror="this.hidden=true">'}
+function sprImgMid(id){return sprEl('div',id,'spmid')}
 function renderMyPool(){
   var w=$('myPoolWrap');if(!w)return;
+  myPhase('pick',true); /* v4.6.3：重新解析/重置选择池 → 回到挑选阶段（noscroll，不抢当前滚动） */
   var list=myPoolFromSav(SAV_ROWS);
   if(!list.length){w.innerHTML='<div class="mini" style="color:var(--sub)">尚未解析存档 —— 点上方「📂 解析存档 .sav」选文件，或用 CSV 导入；解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 末招）。</div>';return}
   w.innerHTML='<div class="mini" style="color:var(--sub);grid-column:1/-1">共 '+list.length+' 只（队伍优先、按存档顺序去重）—— 点卡片 = 以它为核出方案；悬停看招式/道具/特性明细</div>'+
@@ -2265,7 +2299,7 @@ function myCoreTeam(id){
   var s=speciesById(id);if(!s){toast('该编号不在图鉴中');return}
   var o=$('myTeamOut');if(!o)return;
   o.innerHTML='<div class="sec" style="margin:8px 0"><h3>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:12px;color:var(--sub)">#'+s.id+'</span> <span class="mini" style="color:var(--sub)">（核心来自存档 · 同一套需求驱动引擎）</span></h3></div>'+renderNeedPlan(s);
-  try{o.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}
+  myPhase('detail'); /* v4.6.3：进入详情阶段（方案置顶、池隐藏、带返回按钮） */
 }
 /* v4.6 收尾：页内轻提示（替代原生 alert —— 原生 alert 阻塞 JS 线程，历史 bu 事故同源） */
 function toast(msg,ms){
@@ -5451,6 +5485,32 @@ function renderCore(s){
   $('coreOut').innerHTML=html;
 }
 function coreFinalToggle(){optFinalOnly=$('coreFinal').checked;if(window.drawCoreList)window.drawCoreList();if(coreSel)renderCore(coreSel)}
+/* ===== v4.6.3 两段式互斥视图（核心配队 / 存档联动组队，纯视图切换、引擎零改动）=====
+   背景：点候选卡后方案渲染在长候选列表之下 → 用户以为点不动。
+   pick（挑选，默认）：工具栏 + 属性筛选 + 候选网格，仅此一屏；
+   detail（详情）：隐藏挑选屏，方案在原容器顶部 + 「← 返回挑选」（≥44px 触控）。
+   corePhase('pick') 只切 display、不触碰任何输入控件 → 搜索/筛选/排序状态天然保留。 */
+var corePhaseMode='pick';
+function corePhase(m){
+  corePhaseMode=(m==='detail')?'detail':'pick';
+  var pw=$('corePickWrap'),dw=$('coreDetailWrap');
+  if(pw&&pw.style)pw.style.display=(corePhaseMode==='pick')?'':'none';
+  if(dw&&dw.style)dw.style.display=(corePhaseMode==='detail')?'':'none';
+  if(corePhaseMode==='pick'&&window.drawCoreList)window.drawCoreList();
+  var host=$('tab-core');
+  if(host&&host.scrollIntoView){try{host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
+  else{try{window.scrollTo(0,0)}catch(e){}}
+}
+var myPhaseMode='pick';
+function myPhase(m,noscroll){
+  myPhaseMode=(m==='detail')?'detail':'pick';
+  var pw=$('myPickWrap'),dw=$('myDetailWrap');
+  if(pw&&pw.style)pw.style.display=(myPhaseMode==='pick')?'':'none';
+  if(dw&&dw.style)dw.style.display=(myPhaseMode==='detail')?'':'none';
+  if(noscroll)return;
+  var host=$('mySavCard');
+  if(host&&host.scrollIntoView){try{host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
+}
 var coreSel=null;
 function selectCore(id){
   var s=ERDATA.species.filter(function(x){return x.id==id})[0];
@@ -5458,7 +5518,7 @@ function selectCore(id){
   coreSel=s;
   switchTab('core');
   renderCore(s);
-  window.scrollTo(0,0);
+  corePhase('detail');
 }
 (function(){
   var coreFilter={types:{}},coreRoleCache={};
@@ -5549,7 +5609,20 @@ renderMyPool();
 </html>
 '''
 
-final = TEMPLATE.replace('__ERDATA__', data_js)
+# ---- v4.6.2：内嵌 sheets_map.js（SPR_SHEET 坐标表），部署不额外请求；缺失则回退空映射并告警 ----
+_sheet_path = BASE + r'\assets\sheets\sheets_map.js'
+if os.path.exists(_sheet_path):
+    sheet_js = open(_sheet_path, encoding='utf-8').read().strip()
+    if not sheet_js.startswith('window.SPR_SHEET=') or not sheet_js.endswith(';'):
+        print('[warn] sheets_map.js 格式异常 → 回退空映射（精灵图将显示空占位）')
+        sheet_js = 'window.SPR_SHEET={};'
+    else:
+        print('内嵌 SPR_SHEET：%d 只（sheets_map.js %.1f KB）' % (sheet_js.count('":['), os.path.getsize(_sheet_path) / 1024.0))
+else:
+    print('[warn] 未找到 assets/sheets/sheets_map.js → 精灵图将显示空占位（先运行 python build_sprites_sheet.py）')
+    sheet_js = 'window.SPR_SHEET={};'
+
+final = TEMPLATE.replace('__ERDATA__', data_js).replace('__SPRSHEET__', sheet_js)
 out = BASE + r'\配招助手_ER.html'
 open(out, 'w', encoding='utf-8').write(final)
 print('HTML bytes:', os.path.getsize(out))
