@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """生成交互配招工具数据（紧凑 JSON，内嵌 HTML）v2 —— 增加战术模板 + 名称校验"""
-import csv, json, openpyxl, re, os, base64, io
+import csv, json, openpyxl, re, os, base64, io, urllib.request
 from PIL import Image
 
 BASE = r'D:\game\elite-redux'
@@ -1452,6 +1452,130 @@ _gd_abi_ids = set(str(a['id']) for a in GD['abilities'])
 ABI_DESC_ZH = {k: v for k, v in ABI_DESC_ZH.items() if k in _gd_abi_ids}
 print('\nmvDescZh:', len(MV_DESC_ZH), '/', len(moves), '| abiDescZh:', len(ABI_DESC_ZH), '/', len(abilities))
 
+# ============ v4.6.4：威胁库「使用率」弱先验数据源（抓取 → 缓存 → 英名归一映射 → ERDATA） ============
+# 归属：**数据层**（本文件）负责抓取 / 落盘缓存 / 映射；引擎层（build_tool_html.py）只消费 ERDATA.usagePrior，
+#       数据层缺失时才回退它自己的 nn_data 读取或显式空态（登记缺口 #32：ER 无对战统计）。
+# 源：Smogon chaos（https://www.smogon.com/stats/<月>/chaos/<格式>-<档>.json）——**原版（PS）使用率**，非 ER 使用率。
+# 口径：ER 为第三代内核 → gen3ou 权重 1.0（同代手感）+ gen9nationaldex 权重 0.5（物种覆盖：含 Mega / 后世代）；
+#       月份 2026-09 优先、不可达回溯 2026-08；评分档 0（全档 —— 1760 档仅 ~359 只不足以覆盖 ≥700）。
+#       命中缓存即不重抓（nn_data/chaos/raw/<月>-<格式>-<档>.json，合并结果 nn_data/chaos_<月>.json）。
+# 映射：以 gameData 全表英文 name 为准做「归一键」（小写 / 去标点 / 词序无关 / 形态后缀归一），不依赖 species_map.json。
+NN_DIR = BASE + r'\nn_data'
+NN_RAW = os.path.join(NN_DIR, 'chaos', 'raw')
+NN_MONTHS = ['2026-09', '2026-08']                           # 优先月 → 回溯月
+NN_SRC = (('gen3ou', 0, 1.0), ('gen9nationaldex', 0, 0.5))   # (格式, 评分档, 权重)
+NN_MIRROR = 'https://pokemonshowdown.com/stats/%s/chaos/%s-%d.json'
+NN_FORM_ALIAS = {'alola': 'alolan', 'galar': 'galarian', 'hisui': 'hisuian', 'paldea': 'paldean',
+                 'f': 'female', 'm': 'male'}
+NN_NOTE = ('原版（Smogon/PS）使用率 ≠ ER 使用率；ER 无对战统计=已知缺口，'
+           '仅作弱先验（权重上限 0.6，次排序）')
+
+
+def nn_toks(s):
+    """归一键：小写 / 去标点 / 词序无关 / 形态后缀归一（'Charizard-Mega-X' ≡ 'Charizard Mega X'）"""
+    s = (s or '').lower().replace('\u2640', 'f').replace('\u2642', 'm')
+    s = re.sub(r'[^a-z0-9]+', ' ', s)
+    return tuple(sorted(NN_FORM_ALIAS.get(x, x) for x in s.split() if x))
+
+
+def nn_download(url, dest):
+    """下载 chaos json → dest（urllib 优先，失败退 curl.exe）；失败返回 False，不阻塞构建"""
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    for how in ('urllib', 'curl'):
+        try:
+            if how == 'urllib':
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (er-tool build)'})
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    body = r.read()
+                open(dest, 'wb').write(body)
+            else:
+                import subprocess
+                if subprocess.call(['curl.exe', '-s', '--max-time', '600', '-o', dest, url]) != 0:
+                    continue
+            if os.path.exists(dest) and os.path.getsize(dest) > 1000:
+                return True
+            print('  使用率先验：%s 下载结果异常（%s）' % (url, how))
+        except Exception as e:                               # noqa: BLE001
+            print('  使用率先验：%s 下载失败（%s: %s）' % (url, how, e))
+    return False
+
+
+def build_usage_prior():
+    """→ (usagePrior{er_id: 0..1}, usageMeta)。无数据时返回 ({}, 显式空态 meta)，供引擎空态分支断言。"""
+    merged = None
+    for mon in NN_MONTHS:                                    # ① 合并缓存命中 → 不联网
+        cp = os.path.join(NN_DIR, 'chaos_%s.json' % mon)
+        if os.path.exists(cp):
+            try:
+                _c = json.load(open(cp, encoding='utf-8'))
+                if isinstance(_c.get('priors'), dict) and _c['priors']:   # 形状校验（防止被同名异物覆盖）
+                    merged = _c
+                    print('使用率先验：合并缓存命中 %s（chaos 名 %d 个）' % (cp, len(_c['priors'])))
+                    break
+                print('使用率先验：合并缓存结构不符（无 priors）→ 视为无效，转逐源重建：%s' % cp)
+            except Exception as e:                           # noqa: BLE001
+                print('使用率先验：合并缓存损坏（%s）→ 重抓' % e)
+    if merged is None:                                       # ② 逐源取数（原始缓存优先，缺失才下载）
+        for mon in NN_MONTHS:
+            got, priors = [], {}
+            for fmt, cut, w in NN_SRC:
+                fn = '%s-%s-%d.json' % (mon, fmt, cut)
+                p = os.path.join(NN_RAW, fn)
+                if not os.path.exists(p):
+                    url = 'https://www.smogon.com/stats/%s/chaos/%s-%d.json' % (mon, fmt, cut)
+                    if not (nn_download(url, p) or nn_download(NN_MIRROR % (mon, fmt, cut), p)):
+                        print('  使用率先验：缺少 %s（Smogon / PS 镜像均不可达）' % fn)
+                        continue
+                try:
+                    d = json.load(open(p, encoding='utf-8'))
+                except Exception as e:                       # noqa: BLE001
+                    print('  使用率先验：%s 解析失败（%s）' % (fn, e))
+                    continue
+                n = 0
+                for nm, e in (d.get('data') or {}).items():
+                    u = e.get('usage')
+                    if isinstance(u, (int, float)) and u > 0:
+                        priors[nm] = priors.get(nm, 0.0) + float(u) * w
+                        n += 1
+                got.append({'file': fn, 'format': fmt, 'weight': w, 'species': n})
+            if got:
+                merged = {'month': mon, 'rating': 0, 'srcs': got, 'priors': priors}
+                os.makedirs(NN_DIR, exist_ok=True)
+                json.dump(merged, open(os.path.join(NN_DIR, 'chaos_%s.json' % mon), 'w', encoding='utf-8'),
+                          ensure_ascii=False, separators=(',', ':'))
+                print('使用率先验：落盘 nn_data/chaos_%s.json（源 %s）' %
+                      (mon, '+'.join(x['format'] for x in got)))
+                break
+    if not merged or not merged.get('priors'):               # ③ 无数据 → 显式空态
+        return {}, {'month': NN_MONTHS[0], 'rating': 0, 'srcs': [], 'coverage': 0, 'note': NN_NOTE}
+
+    er_key = {}                                              # ④ 英名归一 → ER species id（gameData 全表）
+    for s in GD['species']:
+        if (s.get('id') or 0) < 1:
+            continue
+        k = nn_toks(s.get('name'))
+        if k and k not in er_key:
+            er_key[k] = s['id']
+    prior, nomap = {}, 0
+    for nm, v in merged['priors'].items():
+        sid = er_key.get(nn_toks(nm))
+        if sid is None:
+            nomap += 1
+            continue
+        prior[str(sid)] = prior.get(str(sid), 0.0) + v
+    mx = max(prior.values()) if prior else 0.0
+    if mx > 0:                                               # 归一化 0..1（max=1）→ 引擎 1+0.6×prior 只作次排序
+        prior = {k: round(v / mx, 4) for k, v in prior.items()}
+    meta = {'month': merged['month'], 'rating': merged.get('rating', 0), 'srcs': merged['srcs'],
+            'coverage': len(prior), 'note': NN_NOTE, 'scale': 'normalized(0..1, max=1)',
+            'srcMax': round(mx, 6), 'unmapped': nomap}
+    print('使用率先验：月 %s / 源 %s / ER 命中 %d 只 / 归一化上限 %.6f / chaos 名未映射 %d' %
+          (meta['month'], '+'.join(x['format'] for x in meta['srcs']), len(prior), mx, nomap))
+    return prior, meta
+
+
+USAGE_PRIOR, USAGE_META = build_usage_prior()
+
 data = {
     'types': types,
     'matchup': matchup,
@@ -1471,6 +1595,8 @@ data = {
     'familyRoot': FAMILY_ROOT,
     'glossary': GLOSSARY,
     'matchupSp': MATCHUP_SP,
+    'usagePrior': USAGE_PRIOR,
+    'usageMeta': USAGE_META,
     'sprites': load_sprites(),
 }
 js = 'var ERDATA = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';'

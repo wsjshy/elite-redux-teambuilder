@@ -112,10 +112,18 @@ if _umax > 0:
     USAGE_PRIOR = {_k: round(_v / _umax, 4) for _k, _v in USAGE_PRIOR.items()}
 USAGE_META = {'month': '2026-09', 'rating': 0, 'srcs': _usrc, 'coverage': _ucov,
               'note': '原版（Smogon/PS）使用率 ≠ ER 使用率；ER 无对战统计=已知缺口，仅作弱先验（权重上限 0.6，次排序）'}
-data_js += ('\nERDATA.usagePrior=' + _json.dumps(USAGE_PRIOR, separators=(',', ':'), sort_keys=True) + ';'
-            + '\nERDATA.usageMeta=' + _json.dumps(USAGE_META, ensure_ascii=False, separators=(',', ':')) + ';')
-print('v4.5 使用率先验注入：源 %s / ER 命中 %d 只 / 归一化上限 %.4f' %
-      ('+'.join([x['format'] for x in _usrc]) or '无', _ucov, _umax))
+# v4.6.4：先验归属数据层（build_tool_data.py 已把 usagePrior/usageMeta 写进 data.js 字面量）。
+# 本文件只作**回退**：数据层已产出非空 usagePrior 时直接沿用（避免两处口径互相覆盖 / 用空值回写）；
+# 数据层缺失（旧产物 / nn_data 不可用）时才走上面的 nn_data 读取与注入。
+if re.search(r'"usagePrior"\s*:\s*\{[^{}]*\d', data_js):
+    _cov = re.search(r'"coverage"\s*:\s*(\d+)', data_js)
+    print('v4.5 使用率先验注入：跳过（数据层 build_tool_data.py 已产出 ERDATA.usagePrior/usageMeta，coverage=%s）' %
+          (_cov.group(1) if _cov else '?'))
+else:
+    data_js += ('\nERDATA.usagePrior=' + _json.dumps(USAGE_PRIOR, separators=(',', ':'), sort_keys=True) + ';'
+                + '\nERDATA.usageMeta=' + _json.dumps(USAGE_META, ensure_ascii=False, separators=(',', ':')) + ';')
+    print('v4.5 使用率先验注入（回退路径）：源 %s / ER 命中 %d 只 / 归一化上限 %.4f' %
+          ('+'.join([x['format'] for x in _usrc]) or '无', _ucov, _umax))
 
 TEMPLATE = r'''<!DOCTYPE html>
 <html lang="zh-CN">

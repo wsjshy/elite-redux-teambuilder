@@ -1,0 +1,141 @@
+=== v4.6.4 数据层探针原始输出（2026-10-08）===
+
+------------------------------------------------------------
+[A] tools\probe_v464.py  ——  数据层 + 引擎层内嵌 + 锚点 + UP1 + 基线计数
+    命令: python tools\probe_v464.py   (cwd = D:\game\elite-redux)
+------------------------------------------------------------
+data.js = 6269015 B | 提取内嵌 script = 2024066 B
+data.js      SHA256 CC251CC21544B1FD9C8410B6CEC7B40EA48DF240CD1D39DB1DC38323BEA786BF
+配招助手_ER.html SHA256 598390423606391D2CEDADFB343333D840395CDD42EA13880A20A6A124553129
+index.html   SHA256 598390423606391D2CEDADFB343333D840395CDD42EA13880A20A6A124553129
+
+--- A 数据层 usagePrior / usageMeta ---
+usagePrior 条数 = 747
+usageMeta = {"month": "2026-09", "rating": 0, "srcs": [{"file": "2026-09-gen3ou-0.json", "format": "gen3ou", "weight": 1.0, "species": 213}, {"file": "2026-09-gen9nationaldex-0.json", "format": "gen9nationaldex", "weight": 0.5, "species": 738}], "coverage": 747, "note": "原版（Smogon/PS）使用率 ≠ ER 使用率；ER 无对战统计=已知缺口，仅作弱先验（权重上限 0.6，次排序）", "scale": "normalized(0..1, max=1)", "srcMax": 0.516601, "unmapped": 5}
+PASS A1 usagePrior 非空且 ≥700 条 — 实际 747
+PASS A2 值域 (0,1] 全部合法 — 越界 0 条
+PASS A3 至少一条恰等 1（归一化锚） — max=1.0
+PASS A4 usageMeta.srcs 同时含 gen3ou 与 gen9nationaldex — ['gen3ou', 'gen9nationaldex']
+PASS A5 coverage == len(usagePrior) 且 ≥500 — coverage=747
+PASS A6 month/rating 字段就位 — month=2026-09 rating=0
+PASS A7 note 含「≠ ER 使用率」+「已知缺口」 — note='原版（Smogon/PS）使用率 ≠ ER 使用率；ER 无对战统计=已知缺口，仅作弱先验（权重上限 0.6，次排序）'
+
+--- B 引擎层（HTML 内嵌 script）一致 ---
+PASS B1 HTML 内嵌 usagePrior 条数与数据层一致 — HTML 747 vs data.js 747
+PASS B2 HTML 内嵌 usagePrior 取值逐一相等
+PASS B3 HTML 内嵌 usageMeta == 数据层 usageMeta
+
+--- C 抽样 5 锚点（411/469/741/1513/2232） ---
+  #411   护城龙            usagePrior=0.0016
+  #469   远古巨蜓           usagePrior=0.0028
+  #741   花舞鸟-热辣热辣风格     usagePrior=0.0006
+  #1513  超级化石翼龙         usagePrior=0.0106
+  #2232  超级土王           usagePrior=None
+PASS C1 411/469/741/1513 均有值
+PASS C2 2232（ER 专有 Mega，Showdown 无对应键）无值 — 合理
+
+--- D UP1 严格分支（引擎判据） ---
+PASS D1 引擎消费入口存在（usagePriorOf / USAGE_PRIOR_W）
+PASS D2 先验加权只作次排序（1+USAGE_PRIOR_W*usagePriorOf）
+PASS D3 USAGE_PRIOR_W = 0.6
+PASS D4 非空即走严格路径（UP1 有数据分支：非空 → 严格）
+
+--- E 既有基线计数 ---
+PASS E types == 21 — 实际 21
+PASS E matchup == 21 — 实际 21
+PASS E moves == 1032 — 实际 1032
+PASS E species == 1906 — 实际 1906
+PASS E items == 929 — 实际 929
+PASS E abilities == 1034 — 实际 1034
+PASS E abiTags == 107 — 实际 107
+PASS E abiAlias == 419 — 实际 419
+PASS E templates == 18 — 实际 18
+PASS E coreNotes == 44 — 实际 44
+PASS E movesNotes == 69 — 实际 69
+PASS E nonFinal == 653 — 实际 653
+PASS E sprites == 1906 — 实际 1906
+PASS E matchup 21×21 方阵
+PASS E moves 含 lDesc（下标 10）非空 1031
+PASS E abiTags conv 9 条
+
+=== 断言合计 32/32 PASS ===
+结论: ALL PASS
+
+------------------------------------------------------------
+[B] verify_v464.js  ——  v4.6.4 新增断言组（492 基线之外）
+    命令: node <scratch>\verify_v464.js   (cwd = D:\game\elite-redux)
+------------------------------------------------------------
+PASS V1 usagePrior 非空且 ≥700 条 — 实际 747
+PASS V2 值域 (0,1] 全合法 — 越界 0 条
+PASS V3 至少一条恰等 1（归一化上限） — max=1
+PASS V4 usageMeta.srcs 双源（gen3ou + gen9nationaldex） — gen3ou×1(213) + gen9nationaldex×0.5(738)
+PASS V5 coverage 记录物种数 == usagePrior 条数 — coverage=747
+PASS V6 month=2026-09 — month=2026-09
+PASS V7 note 含「≠ ER 使用率」+「已知缺口」 — 原版（Smogon/PS）使用率 ≠ ER 使用率；ER 无对战统计=已知缺口，仅作弱先验（权重上限 0.6，次排序）
+PASS V8 USAGE_PRIOR_W === 0.6（只作次排序） — W=0.6
+PASS V9 锚点 411/469/741/1513 有值，2232（ER 专有 Mega）无值 — #411(护城龙)=0.0016 | #469(远古巨蜓)=0.0028 | #741(花舞鸟-热辣热辣风格)=0.0006 | #1513(超级化石翼龙)=0.0106 | #2232(超级土王)=0
+PASS V10 归一化锚 #248（班基拉斯）== 1 — P[248]=1
+PASS V11 严格分支生效：威胁代表序列读到非零先验（≥1 类） — 3/9 类命中 → PHYS=超级赫拉克罗斯(0.0092) | WX=超级班基拉斯(0.0361) | IMM=火恐龙(0.0004)/六尾(0.0002)/九尾(0.0099)/烈焰马(0.0026)
+PASS V12 threatPriorLine 可渲染（含来源+覆盖） — 威胁先验：第三代 OU 使用率（权重 1） + 第九代全国图鉴使用率（权重 0.5）｜覆盖 747 只（2026-09）｜**原版使用率 ≠ ER 使用率**，仅弱先验（ER 无对战统计=已知缺口）
+各类别代表序列命中先验数：HZ:0/6 HZR:0/6 BOOST:0/6 PRIO:0/6 PHYS:1/6 SPEC:0/6 WX:1/6 IMM:4/6 TYPE:0/6
+注：PHYS 前 5 代表 0/5 有先验（该类别前列为 ER 专有 Mega/Redux，Showdown 无键 = 无先验，属预期）
+UP3 同款行：W=0.6 ｜ 纯BST序=超级请假王-人猿形态/超级请假王/超级坚盾剑怪R/超级武道熊师/超级超梦X ｜ 先验后代表=超级请假王-人猿形态(p=0)/超级请假王(p=0)/超级坚盾剑怪R(p=0)/超级武道熊师(p=0)/超级超梦X(p=0)
+
+=== v4.6.4 组：12/12 PASS ===
+
+------------------------------------------------------------
+[C] 492 基线（既有套件，未改动）
+    命令: node <scratch>\verify_v1.js  /  node <scratch>\verify_v4.js   (cwd = D:\game\elite-redux)
+------------------------------------------------------------
+verify_v1.js 汇总: PASS=216  FAIL=0      （行首 FAIL 计数 = 0；其中「存档导入回归」真实 .sav 段见下）
+verify_v4.js 汇总: PASS=276  FAIL=0      （行首 FAIL 计数 = 0）
+合计: 492 PASS / 0 FAIL —— 485 基线不降
+
+存档导入回归（verify_v1 内，真实 .sav）：
+  使用 D:\mGBA-0.10.2-win64\ROM\elite redux\ER2.65简汉化\ERv2.65-beta2-debug汉化版.sav
+  summary={"total":431,"party":6,"pc":425,"special":15,"K":3}
+  anchorsOk=["护城龙 BOX1第1格 ✓","远古巨蜓 BOX4第1格 ✓","花舞鸟 BOX20第1格 ✓","超级化石翼龙 BOX26第28格 ✓","土王Mega(队伍首条) 队伍首条 ✓"]
+  PASS  总记录 431  → 431
+  PASS  段轮换链 K 已识别（K∈[3,4]…）  → 3
+  PASS  5 锚点全过  → ok=5 fail=
+  PASS  D2 .sav 导入后队伍恰为 6 只  → 6 只
+  PASS  D2 .sav 导入队伍与存档队伍逐一一致（无静默丢弃）  → 2232,598,2667,1677,249,882 vs 2232,598,2667,1677,249,882
+移动端：
+  PASS  v463-7 移动端 360px 不引入横向滚动（返回栏 flex-wrap 无固定宽；详情为就地展开，非浮层/抽屉）
+
+------------------------------------------------------------
+[D] HTML 面「零改动」证明（_html_diff.py）
+    目的：证明本轮仅改数据，CSS/标记/引擎代码逐字节未动 → 360px 布局不可能回归
+------------------------------------------------------------
+文件大小: 旧 361515 B / 新 361352 B  (+-163)          ← 非字面量部分；净 -163 B = 新增先验在字面量内、旧空注入语句 2 条被移除
+前缀（HTML head + <script> 开头）一致: True  (27699 B)
+后缀原样一致: False  (333816 B / 333653 B)
+剔除旧注入语句（2 条）后后缀一致: True  (333653 B / 333653 B)
+ERDATA 键: 新增 ['usagePrior', 'usageMeta'] / 移除 []
+ERDATA 同键取值变化: 无
+结论: PASS —— 新旧 HTML 除「ERDATA 新增 usagePrior/usageMeta」与「移除旧空注入语句两条」外逐字节一致（无 CSS / 标记 / 引擎代码改动 → 移动端 360px 布局不可能回归）
+
+------------------------------------------------------------
+[E] 构建链日志（两级）
+------------------------------------------------------------
+python build_tool_data.py (EXIT 0) 关键行:
+  使用率先验：落盘 nn_data/chaos_2026-09.json（源 gen3ou+gen9nationaldex）
+  使用率先验：月 2026-09 / 源 gen3ou+gen9nationaldex / ER 命中 747 只 / 归一化上限 0.516601 / chaos 名未映射 5
+  data.js bytes: 6497640
+python build_tool_html.py (EXIT 0) 关键行:
+  剥离内嵌 base64 精灵图：6.20 MB -> 1.83 MB
+  EV-3 派生注入：nonFinalER=653 只 / finalOf=616 条（ER CanEvolve = kd∈{0,3,4}）
+  使用率先验：species_map.json 读取失败（[Errno 2] No such file or directory: 'D:\\game\\elite-redux\\nn_data\\species_map.json'）→ 无先验
+  v4.5 使用率先验注入：跳过（数据层 build_tool_data.py 已产出 ERDATA.usagePrior/usageMeta，coverage=747）
+  HTML bytes: 2366477
+node --check D:\game\elite-redux\_chk_script_1.js  →  EXIT=0
+
+------------------------------------------------------------
+[F] 产物指纹（python hashlib / PowerShell Get-FileHash 一致）
+------------------------------------------------------------
+配招工具_data.js      6,497,640 B   SHA256 CC251CC21544B1FD9C8410B6CEC7B40EA48DF240CD1D39DB1DC38323BEA786BF
+配招助手_ER.html      2,366,477 B   SHA256 598390423606391D2CEDADFB343333D840395CDD42EA13880A20A6A124553129
+index.html            2,366,477 B   SHA256 598390423606391D2CEDADFB343333D840395CDD42EA13880A20A6A124553129
+_chk_script_1.js      2,024,066 B   node --check EXIT 0
+对照 oracle（重建前）: 配招工具_data.js 6,487,486 B / SHA256 A4D3393D097DD491F89B3DE09A88DF38E7D5EA7CE6CA5F51ACEC230D29B3C3C3
+                       配招助手_ER.html  2,356,562 B
