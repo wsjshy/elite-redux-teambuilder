@@ -4706,6 +4706,112 @@ var DIM_IMPL={
    · needScore：候选 s 对某条需求的正向得分 = Σ(维度分 × 权重) × 天性确定性
    · needSatisfied：候选是否「能承担」该需求（求值器判定，用于多功能计数与状态回写）
    · 零硬门：门（gate）只判「能不能干这个活」，不达标 = 不进该需求候选，但候选池全量可见 */
+/* ==================== v4.7 规则偏移层（确定性修正接入排序强度/健康维度） ====================
+   来源（可复算，非拍脑袋系数）：
+     · nn_data/shift_layer.py（M5 形态 A 确定性修正：S1 特性池 n 选 1 取 max / S2 3 天性常驻求和 /
+       S3 -ate 属性转换 / S4 18 体系受益；权重 IM 1.5/1.0/0.25、HF 0.8/0.5/0.1、OUT 1.0、DEF 0.30、
+       STAT 0.25、ADD 0.5、ATE 0.5/0.5、SYS 0.5/0.2/0.15）
+     · nn_data/dataset_engine_v0_winrate.jsonl（M5 真值标签：4000 队 × 24 局 ring 邻域赛胜率；
+       标签口径 = 非核心槽位引擎位次均分，未承接记 0；物种级划分 train 2808 / val 380 / test 812）
+   系数：train 拟合 → test 复算（脚本 _p47_calib*.py / 常量 _p47_const.json）
+     · L1 逐候选排序（注入 needScore 的 RS 维度；z → 分，最大项 2.0 分）
+         slow −2.000 · syscnt +2.000 · bst +2.000
+         test AUROC 0.6332 / rho +0.2657（未修正引擎标量 0.3991 / −0.1901）
+     · L2 团队强度（尺度保持：与旧引擎位次均分同均值 22.428 / 同标准差 4.145）
+         S' = 22.428 + 4.145 × (lin − 0.14355) / 0.56729
+         lin = −0.4031·z(E) − 0.0340·z(sh) − 0.8362·z(slow) − 0.8775·z(spd) + 0.5131·z(syscnt) + 0.8504·z(bst)
+         test AUROC 0.6630 / rho +0.3181（train 0.6511）
+     · 登记：M5 偏移层标量 sh 的排序边际实测≈0（与引擎既有 ABI_TAGS/体系维度冗余，印证 M5 报告
+       「偏移层增量 ΔAUROC=0.000」）→ L1 排序权重 0、仅作展示分解；L2 系数 −0.0340（≈0）。
+       引擎对 S1~S4 的确定性消费自 v4.3 起已存在（im/hf/out/def/stat/add、3 天性、-ate、体系受益）。
+   一键回退：RULE_SHIFT_ENABLED=false → 完全恢复 v4.6.4 排序行为（本层不参与任何打分与展示）。 */
+var RULE_SHIFT_ENABLED=true;
+var RULE_SHIFT={
+  MU:{sh:1.0885026774215414,slow:0.39652951941977904,spd:77.40825594794279,bst:566.171151630177,syscnt:0.15298583338981903},
+  SD:{sh:0.902463780258984,slow:0.489176716175758,spd:37.03634769970907,bst:85.47958129291573,syscnt:0.4186487685816198},
+  L1:{slow:-2.0,syscnt:2.0,bst:2.0},
+  L2:{wE:-0.4031,wsh:-0.034,wslow:-0.8362,wspd:-0.8775,wsyscnt:0.5131,wbst:0.8504,b0:0.15288,eMean:22.356,eStd:4.165126,mu:0.14355,sd:0.56729,mean:22.428,sdE:4.1445},
+  W:{imSelf:1.5,imCover:1.0,imIdle:0.25,hfSelf:0.8,hfCover:0.5,hfIdle:0.1,out:1.0,def:0.30,stat:0.25,add:0.5,ate:0.5,ateNew:0.5,sys:0.5,sysSet:0.2,sysOrphan:0.15},
+  SRC:'M5 确定性偏移层（shift_layer.py）+ 4000 队真值标签拟合（train→test 复算）'
+};
+function rsList(v){if(v===undefined||v===null)return [];if(typeof v==='string')return v?[v]:[];if(typeof v==='number')return [v];if(v.length!==undefined)return v;return Object.keys(v)}
+function rsZ(k,v){var m=RULE_SHIFT.MU[k],s=RULE_SHIFT.SD[k]||1;return ((v||0)-m)/s}
+/* M5 偏移层 S1~S4（逐成员口径；与 nn_data/shift_layer.py 同定义，夹具对拍见报告 §v4.7） */
+function rsShiftMember(s,teamIds){
+  var W=RULE_SHIFT.W,weakSet={},weakCount={},ids=(teamIds||[]);
+  try{(coreWeak(s)||[]).forEach(function(t){weakSet[t]=1})}catch(e){}
+  ids.forEach(function(id){var t=spId2Obj(id);if(!t)return;
+    try{(coreWeak(t)||[]).forEach(function(x){weakCount[x]=(weakCount[x]||0)+1})}catch(e){}});
+  function util(n){
+    var id=null;try{id=abiIdByZhOrEn(n)}catch(e){}
+    var tg=(id!=null&&ERDATA.abiTags&&ERDATA.abiTags[id])?ERDATA.abiTags[id]:null;if(!tg)return 0;
+    var u=0,im=rsList(tg.im),hf=rsList(tg.hf),i;
+    for(i=0;i<im.length;i++){var t=im[i];u+=(weakSet[t]?W.imSelf:(weakCount[t]?W.imCover:W.imIdle))}
+    for(i=0;i<hf.length;i++){var h=hf[i];u+=(weakSet[h]?W.hfSelf:(weakCount[h]?W.hfCover:W.hfIdle))}
+    if(tg.out&&typeof tg.out==='object'){var mul=parseFloat(tg.out.mul||1);if(isFinite(mul)&&mul>1)u+=W.out*(mul-1)}
+    if(tg.def)u+=W.def;if(tg.stat)u+=W.stat;if(tg.add)u+=W.add;
+    return u;
+  }
+  var S1=0,S2=0;
+  rsList(s.abis).forEach(function(n){var v=util(n);if(v>S1)S1=v});
+  rsList(s.inns).forEach(function(n){S2+=util(n)});
+  var tstab={};ids.forEach(function(id){var t=spId2Obj(id);if(t){tstab[t.t1]=1;if(t.t2)tstab[t.t2]=1}});
+  var S3=0,cl=[];try{cl=convOf(s)||[]}catch(e){cl=[]}
+  rsList(cl).forEach(function(x){
+    var tt=(typeof x==='string')?x:((x&&(x.type||x.t))||'');if(!tt)return;
+    S3+=W.ate+(tstab[tt]?0:W.ateNew);
+  });
+  var setters={},abusers={};
+  ids.forEach(function(id){var t=spId2Obj(id);if(!t)return;
+    var isSet=false;try{isSet=!!isSetterAny(t)}catch(e){}
+    var ss=[];try{ss=coreSys(t)||[]}catch(e){ss=[]}
+    ss.forEach(function(x){if(isSet){setters[x]=(setters[x]||0)+1}else{abusers[x]=(abusers[x]||0)+1}})});
+  var S4=0,keys={};
+  Object.keys(setters).forEach(function(k){keys[k]=1});Object.keys(abusers).forEach(function(k){keys[k]=1});
+  Object.keys(keys).forEach(function(k){var na=(abusers[k]||0),ns=(setters[k]||0);
+    S4+=(ns>0)?(W.sys*na+W.sysSet*ns):(W.sysOrphan*na)});
+  return {total:S1+S2+S3+S4,S1:S1,S2:S2,S3:S3,S4:S4};
+}
+/* 逐成员特征（z 的 mu/sd = M5 4000 队逐成员分布，见常量块） */
+function rsFeat(s){
+  var b=(s&&s.base)||[0,0,0,0,0,0],sysn=0;
+  try{sysn=(coreSys(s)||[]).length}catch(e){}
+  return {spd:(b[5]||0),slow:((b[5]||0)<=60?1:0),
+    bst:(b[0]||0)+(b[1]||0)+(b[2]||0)+(b[3]||0)+(b[4]||0)+(b[5]||0),syscnt:sysn};
+}
+/* L1：逐候选「规则偏移」维度 → {pts,why}（RULE_SHIFT_ENABLED=false 时返回 null，不参与打分/展示） */
+function rsL1Of(s,teamIds){
+  if(!RULE_SHIFT_ENABLED)return null;
+  var f=rsFeat(s),W=RULE_SHIFT.L1;
+  var p1=W.slow*rsZ('slow',f.slow),p2=W.syscnt*rsZ('syscnt',f.syscnt),p3=W.bst*rsZ('bst',f.bst);
+  var why=[];
+  if(f.slow)why.push('速度线：角速 '+f.spd+' ≤60 → 龟速占比惩罚 '+p1.toFixed(2)+' 分（实测口径：龟速堆胜率代理偏低）');
+  if(f.syscnt)why.push('体系受益维度 '+(p2>=0?'+':'')+p2.toFixed(2)+' 分（持有 '+f.syscnt+' 项体系受益）');
+  why.push('单体强度维度 '+(p3>=0?'+':'')+p3.toFixed(2)+' 分（种族和 '+Math.round(f.bst)+'；只作一项权重，不再是唯一强度口径）');
+  return {pts:p1+p2+p3,why:'规则偏移层：'+why.join('；')+'（来源：'+RULE_SHIFT.SRC+'）'};
+}
+/* L2：团队强度校准（尺度保持：与旧引擎位次均分同均值/同标准差）——修正「高估龟速传说堆」 */
+function rsTeamCard(members){
+  if(!RULE_SHIFT_ENABLED)return null;
+  var rows=members||[],ids=[],sum=0,cnt=0,i;
+  rows.forEach(function(m){ids.push(m.s.id)});
+  rows.forEach(function(m){if(m.core)return;sum+=(m.score==null?0:m.score);cnt++});
+  if(!cnt)return null;
+  var E=sum/cnt,acc={sh:0,slow:0,spd:0,bst:0,syscnt:0},nf=0;
+  rows.forEach(function(m){
+    var f=rsFeat(m.s),shv=0;
+    try{shv=(rsShiftMember(m.s,ids)||{total:0}).total}catch(e){shv=0}
+    acc.sh+=rsZ('sh',shv);acc.slow+=rsZ('slow',f.slow);acc.spd+=rsZ('spd',f.spd);
+    acc.bst+=rsZ('bst',f.bst);acc.syscnt+=rsZ('syscnt',f.syscnt);nf++;
+  });
+  if(!nf)return null;
+  var z={};for(var k in acc)z[k]=acc[k]/nf;
+  var L=RULE_SHIFT.L2;
+  var zE=(E-L.eMean)/(L.eStd||1);   /* v4.7c：z_E 用 train 集基准（与标定一致，非全体均值） */
+  var lin=L.b0+L.wE*zE+L.wsh*z.sh+L.wslow*z.slow+L.wspd*z.spd+L.wsyscnt*z.syscnt+L.wbst*z.bst;   /* v4.7c：含 logistic 截距 b0 */
+  var S=L.mean+L.sdE*(lin-L.mu)/L.sd;
+  return {E:E,S:S,d:S-E,z:z,lin:lin};
+}
 function needCtx(core,o){
   o=o||{};
   return {core:core,sysKey:o.sysKey||'',sysKey2:o.sysKey2||'',need:o.need||[],holes:o.holes||[],
@@ -4729,6 +4835,15 @@ function needScore(s,need,cx){
   if(need.kind==='wxsrc'&&cx&&cx.sysKey&&!isAbilSet(s,cx.sysKey)){
     total*=0.72;
     dims.push({id:'X1',dim:'设置方式',w:1,pts:0,txt:'第二手：仅可学天气/场地招，非自动特性设置手 → 降权排后（不剔除）'});
+  }
+  /* v4.7 规则偏移层：强度/健康维度（系数 = M5 真值标签拟合；RULE_SHIFT_ENABLED=false 一键回退） */
+  if(RULE_SHIFT_ENABLED){
+    try{
+      var rsv=rsL1Of(s,(cx&&cx.team)||[]);
+      if(rsv&&isFinite(rsv.pts)&&Math.abs(rsv.pts)>0.001){
+        total+=rsv.pts;dims.push({id:'RS',dim:'规则偏移(实测系数)',w:1,pts:rsv.pts,txt:rsv.why});
+      }
+    }catch(eRS){}
   }
   dims.sort(function(a,b){return b.pts-a.pts});
   return {score:total*cert,raw:total,cert:cert,dims:dims,gate:(typeof g==='string'?g:def.role)};
@@ -5170,6 +5285,18 @@ function renderNeedPlan(s){
   });
   h+='</div>';
   var au=plan.audit;
+  /* v4.7：强度校准行（规则偏移层 L2，尺度保持口径；默认开启、可一键回退） */
+  try{
+    var rc=rsTeamCard(plan.team);
+    if(rc){
+      h+='<div class="tip" style="font-size:11px;background:#eef7ff;border-color:#90caf9"><b>强度校准（规则偏移层 · 确定性修正）</b>：'+
+        '引擎位次均分 '+rc.E.toFixed(1)+' → 校准强度 <b>'+rc.S.toFixed(1)+'</b>（'+(rc.d>=0?'+':'')+rc.d.toFixed(1)+'）'+
+        '<br>逐维度（z 加权）：速度线 '+rc.z.slow.toFixed(2)+'｜单体强度 '+rc.z.bst.toFixed(2)+'｜体系协同 '+rc.z.syscnt.toFixed(2)+'｜偏移层 '+rc.z.sh.toFixed(2)+
+        '<br><span style="color:var(--sub)">口径：修正「高估龟速传说堆」——引擎位次均分与真值胜率负相关（AUROC 0.399 / rho −0.190），'+
+        '校准后 AUROC 0.663 / rho +0.318（4000 队真值标签 train→test 复算）；系数来源 shift_layer.py + dataset_engine_v0_winrate.jsonl，非拍脑袋。'+
+        '回退开关 RULE_SHIFT_ENABLED。</span></div>';
+    }
+  }catch(eRC){}
   h+='<div class="tip" style="font-size:11px">体检：需求覆盖 '+au.needCoverage+'%（已满足 '+au.satisfied+'/'+au.total+'）· 队伍 '+au.filled+' 只 · 停止原因 '+esc(stopReasonZh(plan.stopReason))+
     (au.openNeeds.length?('<br>未满足需求：'+au.openNeeds.map(esc).join('；')):'')+
     (au.warnings.length?('<br>告警：'+au.warnings.map(esc).join('<br>告警：')):'')+'</div>';
