@@ -1,0 +1,225 @@
+﻿==============================================================================
+v4.x 数据层探针 | D:\game\elite-redux
+==============================================================================
+
+[1] 新字段存在性
+  [OK]   ERDATA 含字段 mvDescZh
+  [OK]   ERDATA 含字段 abiDescZh
+  [OK]   ERDATA 含字段 sysSet
+  [OK]   ERDATA 含字段 familyRoot
+  [OK]   ERDATA 含字段 glossary
+  [OK]   ERDATA 含字段 matchupSp
+
+[2] 既有无回归（基线 species 1906 / items 929 / abilities 1034 / moves 1032 / abiTags 107 / nonFinal 640 / types 21 / matchup 21x21）
+  [OK]   species == 1906  -> 1906
+  [OK]   items == 929  -> 929
+  [OK]   abilities == 1034  -> 1034
+  [OK]   moves == 1032  -> 1032
+  [OK]   abiTags == 107  -> 107
+  [OK]   abiAlias == 419  -> 419
+  [OK]   movesNotes == 69  -> 69
+  [OK]   coreNotes == 44  -> 44
+  [OK]   nonFinal == 640  -> 640
+  [OK]   types == 21  -> 21
+  [OK]   matchup 21x21  -> [21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21]
+  [OK]   templates == 18  -> 18
+  [OK]   sprites == 1906  -> 1906
+
+[3] D1 中文描述字典 mvDescZh / abiDescZh
+  [OK]   覆盖总数落在 300~500  -> (291, 118, 409)
+  [OK]   mvDescZh 全部 id 存在于 gameData.moves
+  [OK]   mvDescZh 全部 id 存在于 ERDATA.moves
+  [OK]   abiDescZh 全部 id 存在于 gameData.abilities
+  [OK]   abiDescZh 全部 id 存在于 ERDATA.abilities
+  [OK]   mvDescZh 无残留英文长词（HP/Mega 除外）
+  [OK]   abiDescZh 无残留英文长词（HP/Mega 除外）
+  [OK]   译文非占位重复  -> (271, 114)
+  [OK]   ABI_TAGS(107) 全部有中文 desc
+  [OK]   MOVES_NOTES(69) 全部有中文 desc
+
+  -- 翻译抽样 3 条（中英对照）--
+   [招式 id=85] 十万伏特 / Thunderbolt
+      EN(desc): A strong electrical attack that may paralyze the foe.
+      ZH      : 强力的电流攻击，可能使对手陷入麻痹。
+   [招式 id=446] 隐形岩 / Stealth Rock
+      EN(desc): Sets floating stones that hurt a foe switching in.
+      ZH      : 布下漂浮的岩石，伤害换入的对手。
+   [招式 id=240] 求雨 / Rain Dance
+      EN(desc): Boosts the power of Water-type moves for 5 turns.
+      ZH      : 在5回合内提升水属性招式威力。
+   [特性 id=91] 适应力 / Adaptability
+      EN(desc): Increases STAB from 1.5x to 2x.
+      ZH      : 本系加成由×1.5提升至×2。
+   [特性 id=169] 毛皮大衣 / Fur Coat
+      EN(desc): Halves damage taken by Physical moves. Does NOT double Defense.
+      ZH      : 受到物理招式的伤害减半（并非防御×2）。
+   [特性 id=96] 一般皮肤 / Normalize
+      EN(desc): Its moves become Normal-type, get 1.1x boost, ignore resists.
+      ZH      : 自身招式变为一般属性并获得×1.1加成；可无视属性抗性，但不能无视属性免疫。
+
+[4] D2 SYS_SET 数据驱动（desc 正则派生）
+  [OK]   sysSet 为 int id 列表  -> [2, 45, 70, 117, 226, 227, 228, 229, 584, 604, 834, 989]
+  [OK]   既有口径 9 个设置手全部命中
+  [OK]   sysSet 全部 id 存在于 gameData.abilities
+  [OK]   sysSet 全部 id 存在于 ERDATA.abilities
+  [OK]   sysSet 与 desc 正则推导完全一致
+  sysSet = [2, 45, 70, 117, 226, 227, 228, 229, 584, 604, 834, 989]
+  相对旧 9 条硬编码新增: [584, 604, 989]
+    id 2    Drizzle          出场时降下雨水，持续8回合。
+    id 45   Sand Stream      出场时掀起沙暴，持续8回合。
+    id 70   Drought          出场时召唤晴天，持续8回合。
+    id 117  Snow Warning     出场时降下冰雹，持续8回合。
+    id 226  Electro Surge    出场时展开电气场地，持续8回合。
+    id 227  Psychic Surge    出场时展开精神场地，持续8回合。
+    id 228  Misty Surge      出场时展开薄雾场地，持续8回合。
+    id 229  Grassy Surge     出场时展开青草场地，持续8回合。
+    id 584  Orichalcum Pulse 出场时召唤晴天；晴天下自身物攻×1.33。
+    id 604  Desert Spirit    出场时掀起沙暴；沙暴中地面属性招式可命中飞行中的对手。
+    id 834  Toxic Surge      出场时展开剧毒场地。
+    id 989  Storm Cloud      出场时降下雨水，持续8回合；自身获得电属性本系加成。
+
+  -- D2 顺带确认 SYS_MAP（受益者；源头在 build_tool_html.py，只读核对）--
+  [OK]   SYS_MAP 条目 == 21  -> 21
+  [OK]   SYS_MAP 特性名全部可在 ERDATA 解析
+  [OK]   SYS_MAP 21 条全部解析到特性 id  -> 21
+  ⚠ 旧 9 设置手中不在 SYS_MAP 的: ['834'] （834 毒沼制造者；SYS_MAP 原文无「剧毒场地」体系 —— build_tool_html.py 只读，
+     属**既有**缺口而非本次回归；引擎层可按需把 剧毒场地/834 补进 SYS_MAP）
+  [OK]   旧 9 中的天气/四场地设置手均在 SYS_MAP 内（受益者口径未回归）
+  SYS_MAP 体系集合: ['晴', '沙', '电场', '精神场地', '薄雾场地', '雨', '雪', '青草场地']
+  新 3 设置手尚未进 SYS_MAP（信息项，引擎层可按需补）: [584, 604, 989]
+
+[5] D3 FAMILY familyRoot 探针校验
+  [OK]   familyRoot 为 dict
+  [OK]   familyRoot 条目 == 534（265 root + 269 形态）  -> 534
+  [OK]   全部 kd==1 目标形态在表中  -> 269
+  [OK]   每个 Mega/Redux 形态有 root 且 root ∈ 来源基础物种
+  [OK]   沿链上溯收敛（root 自映射，可反查）
+  [OK]   distinct roots == 265  -> 265
+  [OK]   每个 root 自身非 kd==1 目标（链头基础形态）
+  [OK]   familyRoot 键值均在 gameData.species 中
+  [OK]   familyRoot 键值均在 ERDATA.species 中
+
+  -- FAMILY 校验输出（家族样例）--
+   3(Venusaur) -> root 3(Venusaur)
+   6(Charizard) -> root 6(Charizard)
+   9(Blastoise) -> root 9(Blastoise)
+   1501(Venusaur Mega Y) -> root 3(Venusaur)
+   2188(Venusaur Mega X) -> root 3(Venusaur)
+   2208(Pikachu Mega) -> root 1594(Pikachu Kanto)
+  家族成员数 Top3（含 root）: [('6', 4), ('3', 3), ('9', 3)]
+  root 家族数: 265 | Mega/Redux 形态数: 269 | kd==1 边数: 287
+
+[6] D4 GLOSSARY 机制词条
+  [OK]   glossary 条目 == 40  -> 40
+  [OK]   每条含 key/term/zh/body
+  [OK]   key / zh 唯一
+  [OK]   body 非空
+  [OK]   每条 body 注明来源档位  -> 40
+  body 明确引用引擎参数名(WCONF/hazardRules/WEATHER_MV)的条目: 26
+
+  -- GLOSSARY 40 条列表 --
+   1. weather_rain           雨天           Rain (Rain Dance / Drizzle)
+   2. weather_sun            晴天           Sun (Sunny Day / Drought)
+   3. weather_sand           沙暴           Sandstorm
+   4. weather_hail           冰雹（雪天）       Hail / Snow
+   5. weather_manual         手动天气招式       Manual Weather Moves
+   6. weather_ability        特性天气         Weather Abilities
+   7. weather_rock           天气岩石         Weather Rocks
+   8. terrain_boost          场地增伤         Terrain Boost
+   9. terrain_dur            场地持续         Terrain Duration
+  10. terrain_extender       场地延展器        Terrain Extender
+  11. terrain_electric       电气场地         Electric Terrain
+  12. terrain_psychic        精神场地         Psychic Terrain
+  13. terrain_grassy         青草场地         Grassy Terrain
+  14. terrain_misty          薄雾场地         Misty Terrain
+  15. terrain_toxic          剧毒场地         Toxic Terrain
+  16. hazard_spikes          撒菱           Spikes
+  17. hazard_stealthrock     隐形岩          Stealth Rock
+  18. hazard_toxicspikes     毒菱           Toxic Spikes
+  19. hazard_stickyweb       粘网           Sticky Web
+  20. hazard_clear           除钉范围         Hazard Removal
+  21. status_para            麻痹           Paralysis
+  22. status_frostbite       冻伤           Frostbite
+  23. status_burn            烧伤           Burn
+  24. status_toxic           剧毒           Badly Poisoned
+  25. status_sleep           睡眠           Sleep
+  26. boost_dance            强化招式         Stat Boost Moves
+  27. priority               先制           Priority
+  28. trickroom              戏法空间         Trick Room
+  29. tailwind               顺风           Tailwind
+  30. charge                 蓄力招式         Charging Moves
+  31. recharge               僵直（再蓄力）      Recharge
+  32. recoil                 反伤           Recoil
+  33. ate                    -ate 属性转换    -ate Abilities
+  34. stab                   本系加成         STAB
+  35. relic_stone            圣石（STAB 压制）  Relic Stone
+  36. recover                回复类招式        Recovery Moves
+  37. weatherball            天气球          Weather Ball
+  38. intimidate_guard       防威吓          Intimidate Immunity
+  39. weather_double         天气增伤翻倍       Weather Double Boost
+  40. hazard_bug             隐形岩非首铺疑似失效   Stealth Rock Bug (Beta2)
+
+  -- CSV 第 10/11 列确认（D4 第一项，记录在案、不改结构）--
+  表头[9]/[10]/[11] = '附加几率' '描述' '详细描述'
+  样例 id=1 第10列(简版英文 desc) = 'Pounds the foe with forelegs or tail.'
+  样例 id=1 第11列(详细英文 lDesc) = 'A physical attack delivered with a long tail or a foreleg, etc.'
+  [OK]   CSV 第10列=描述 / 第11列=详细描述
+  [OK]   前 59 行第10/11列均为英文文本  -> 58
+
+[7] D5 模板扩充（12 → 18）
+  [OK]   templates == 18  -> 18
+  [OK]   既有 12 套全部保留
+  [OK]   6 套新增模板齐备
+  [OK]   全部模板字段同构（name/theme/roles/keys/match/counters/flow/tips）
+  [OK]   match 结构一致（abis/moves/types）
+  [OK]   各字段非空 / tips ≥ 3
+  [OK]   全部模板 keys（特性/招式/道具名）可解析
+  [OK]   新增 6 套 tips 未写死数值（无 %/×N/N倍 硬编码）
+  [OK]   新增模板 tips 引用 WCONF 语义  -> 12
+  [OK]   新增 tips 提及的特性名可解析
+
+  -- 新增模板清单 --
+   * 毒钉受队   | 毒菱铺场 + 剧毒消耗 → 钢/毒豁免规避 → 再生力轮转逼换
+   * 强化接力   | 剑舞/龙舞/蝶舞堆强化 → 接棒传递 → 高速打手一击清场
+   * 天气双核   | 天气手开局 → 提速核先手 + 增伤核爆破 → 双线压制
+   * 场地控制   | 场地制造者铺场 → 场地增伤 + 反先制/防睡 → 场地窗口内控节奏
+   * 吸血站场   | 吸取类招式回血 + 寄生种子/剩饭叠加 → 耐久站场滚雪球
+   * 双天气轮换  | 两套天气设置者轮换 → 针对对手天气反制 → 天气窗口错峰压制
+
+  -- 全部 18 套 --
+    雨天速攻 / 晴天速攻 / 沙暴联防 / 雪天堡垒 / 电气场地速攻 / 精神场地特攻 / 青草场地回复 / 薄雾场地龙盾 / 强化清场轴 / 顺风游击 / 戏法空间 / 钉子受队 / 毒钉受队 / 强化接力 / 天气双核 / 场地控制 / 吸血站场 / 双天气轮换
+
+[8] MATCHUP_SP 预计算矩阵（{攻属性:{spId:倍率}} 稀疏；口径 = 天性档 defCellTrio(s,at).inn）
+  [OK]   matchupSp 为 dict  -> 18
+  [OK]   matchupSp 键均为 ERDATA.types 属性名
+  [OK]   matchupSp 值为 {spId:倍率}
+  [OK]   matchupSp 的 spId 均存在于 species
+  [OK]   倍率档位 ⊆ {0,0.125,0.25,0.5,2,4}  -> [0, 0.125, 0.25, 0.5, 2, 4]
+  [OK]   稀疏性：不存在倍率 = 1 的格（未列出即 1×）
+  [OK]   非 1 格数（规模）  -> 15809
+  [OK]   有非 1 格的物种数  -> 1904
+  [OK]   存在 0×（免疫）档  -> 1723
+  [OK]   存在 4×（双弱点）档
+  [OK]   存在 0.25× 档
+  [OK]   缺失的攻击属性仅限全中性属性（星晶/无/神秘）  -> ['星晶', '无', '神秘']
+  [OK]   独立重算 21×1906 全量比对一致（0 处不符）
+    独立重算规模：18 个攻击属性 / 15809 格
+  [OK]   抽样金标 64 项（土王/雷电云/Storming/凤王/尼多王/超级土王/暴鲤龙/Breezing）
+  [OK]   Storming 电机理：水/飞行基础 = 4×，天性 add 电后 = 2×  -> (4, 2.0)
+  [OK]   水/飞行 共 11 只：9 只电 = 4×（无 add）/ 仅 Storming·Breezing 2×  -> (11, 9, ['Breezing', 'Storming'])
+  [OK]   仍存在 电 = 4× 的物种（全库）  -> 12
+
+  -- MATCHUP_SP 规模 --
+   攻击属性 18 个（全中性 星晶/无/神秘 不入表）| 非 1 格 15809 | 有格物种 1904 | 档位 [0, 0.125, 0.25, 0.5, 2, 4]
+   其中 0×（免疫）1723 格 / 0.125× 7 格 / 0.25× 858 格 / 0.5× 6906 格 / 2× 5862 格 / 4× 453 格
+   -- 抽样（实际承受倍率）--
+   * 980 土王(毒/地面) → 格斗=0.5 冰=2 电=0 虫=0.5 地面=2 毒=0.25 水=0 超能力=2 岩石=0.5 妖精=0.5
+   * 642 雷电云(电/飞行) → 格斗=0.5 冰=2 电=0 虫=0.5 飞行=0.5 钢=0.5 草=0.5 地面=0 岩石=2
+   * 2667 Storming(水/飞行) → 格斗=0.5 火=0.5 电=2.0 虫=0.5 飞行=0.5 钢=0.25 地面=0 水=0.5 岩石=2
+   * 250 凤王(火/妖精) → 格斗=0.5 火=0.5 冰=0.5 虫=0.25 草=0.5 地面=0 毒=2 恶=0.5 水=2 岩石=2 龙=0 妖精=0.5
+   * 34 尼多王(毒/地面) → 格斗=0.5 冰=2 电=0 虫=0.5 地面=2 毒=0.25 水=2 超能力=2 岩石=0.5 妖精=0.5
+
+==============================================================================
+探针结果: PASS 81 / FAIL 0
+全部通过 ✓
+==============================================================================

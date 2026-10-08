@@ -1,0 +1,1033 @@
+﻿招式编号,招式中文,招式英文,属性,分类,威力,命中,PP,先制,附加几率,描述,详细描述
+0,-,-,一般,物理,0,0,0,0,0,,
+1,拍击,Pound,一般,物理,40,100,20,0,0,Pounds the foe with forelegs or tail.,"A physical attack delivered with a long tail or a foreleg, etc."
+2,空手劈,Karate Chop,格斗,物理,90,100,10,0,0,A chopping attack with a high critical-hit ratio.,The foe is attacked with a sharp chop. It has a high critical-hit ratio.
+3,连环巴掌,Double Slap,一般,物理,25,100,10,0,10,Slaps the foe at least twice. May cause confusion.,Repeatedly slaps the foe. Each hit after the second has a 10% confusion chance.
+4,连续拳,Comet Punch,一般,物理,15,100,10,1,0,Repeatedly punches the foe 2 to 5 times. +1 priority.,Hits 2 to 5 times. Has +1 priority. Iron Fist boost.
+5,百万吨重拳,Mega Punch,一般,物理,95,100,15,0,0,A strong punch thrown with incredible power.,The foe is slugged by a punch with great power. Iron Fist boost.
+6,聚宝功,Pay Day,一般,物理,60,100,20,0,100,Throws coins at the foe. Money is recovered after.,Numerous coins are hurled at the foe. Money is earned after battle.
+7,火焰拳,Fire Punch,火,物理,85,100,15,0,10,A fiery punch that may burn the foe.,The foe is punched with a fiery fist. 10% burn chance. Iron Fist boost.
+8,冰冻拳,Ice Punch,冰,物理,85,100,15,0,10,An icy punch that may leave the foe with frostbite.,The foe is punched with an icy fist. 10% frostbite chance. Iron Fist boost.
+9,雷电拳,Thunder Punch,电,物理,85,100,15,0,10,An electrified punch that may paralyze the foe.,A punch with an electrified fist. 10% paralyze chance. Iron Fist boost.
+10,抓,Scratch,一般,物理,40,100,20,0,0,Scratches the foe with sharp claws.,"Hard, pointed, and sharp claws rake the foe."
+11,夹住,Vise Grip,虫,物理,120,85,5,0,0,Grips the foe with large and powerful pincers.,"Huge, impressive pincers grip and squeeze the foe. Very high crit ratio."
+12,极落钳,Guillotine,虫,物理,120,80,5,0,20,A powerful pincer attack High critical ratio.,A vicious tearing attack with pincers. Keen Edge boost. High crit ratio.
+13,旋风刀,Razor Wind,飞行,特殊,70,100,10,0,0,Wind slices through Rock for super effective damage.,super effective vs Rock. +1 priority in tailwind. High crit. keen edge boost.
+14,剑舞,Swords Dance,一般,变化,0,0,20,0,0,A fighting dance that sharply raises Attack.,A frenetic dance of fighting. It sharply raises the Attack stat.
+15,居合劈,Cut,钢,物理,60,100,20,0,10,Cuts the foe. Always crits.,"Sharp Steel attack, always crits. Keen Edge boost. Field-based."
+16,起风,Gust,飞行,特殊,40,100,15,1,0,A sudden gust of wind. Has +1 priority.,Strikes the foe with a gust of wind whipped up by wings. Air-based.
+17,翅膀攻击,Wing Attack,飞行,物理,90,100,20,0,0,Strikes the foe with wings spread wide.,"The foe is struck with large, imposing wings spread wide. Air-based."
+18,吹飞,Whirlwind,飞行,特殊,60,100,10,-6,0,Blows away the foe with wind and ends the battle.,"The foe is made to switch out with an ally. In the wild, the battle ends."
+19,飞翔,Fly,飞行,物理,110,100,15,0,0,"Flies up on the first turn, then strikes the next turn.",A 2-turn move. Use it to fly to any known town. Air-based.
+20,绑紧,Bind,一般,特殊,50,100,10,0,100,Binds and squeezes the foe for 2 to 5 turns.,A long body or tentacles are used to bind the foe for four or five turns.
+21,摔打,Slam,一般,物理,95,100,10,0,0,"Slams the foe with a long tail, vine, etc.","The foe is struck with a long tail, vines, etc."
+22,藤鞭,Vine Whip,草,物理,80,100,15,0,30,Strikes with slender vines. Has 30% flinch chance.,"The foe is struck with slender, whip-like vines. 30% flinch chance."
+23,踩踏,Stomp,一般,物理,65,100,20,0,30,Stomps the foe and terrain flat. May cause flinching.,Destroys terrain. 30% chance to flinch. Strike boost.
+24,二连踢,Double Kick,格斗,物理,45,100,20,0,0,A double-kicking attack that strikes the foe twice.,Kicks the foe quickly twice. Striker boost.
+25,百万吨重踢,Mega Kick,一般,物理,95,100,15,0,0,An extremely powerful kick with intense force.,The foe is attacked by a kick with great power. Striker boost.
+26,飞踢,Jump Kick,格斗,物理,100,95,10,0,0,A strong jumping kick. May miss and hurt the kicker.,"The user jumps up high, then kicks. Hurts on miss. Striker boost."
+27,回旋踢,Rolling Kick,格斗,物理,40,100,15,1,0,A fast kick delivered from a rapid spin.,A quick kick from a rolling spin. +1 priority. Striker boost.
+28,泼沙,Sand Attack,地面,变化,0,100,15,0,0,Reduces the foe's accuracy by hurling sand in its face.,"A lot of sand is hurled in the foe's face, reducing its accuracy."
+29,头锤,Headbutt,一般,物理,85,100,15,0,30,A ramming attack that may cause flinching.,The user sticks its head out and rams. 30% flinch chance. Field-based.
+30,角撞,Horn Attack,一般,物理,85,100,15,0,10,Jabs the foe with sharp horns. High crit chance.,Jabs with sharply pointed horn. High crit. Mighty Horn boost.
+31,乱击,Fury Attack,一般,物理,25,100,20,0,0,"Jabs the foe 2 to 5 times with sharp horns, etc.",Hits 2-5x with a horn or beak. High crit. Mighty Horn boost.
+32,角钻,Horn Drill,一般,物理,95,100,5,0,20,Ignores abilities and stat changes. High crit.,Ignores the target's ability and stat changes. High crit. Mighty Horn boost.
+33,撞击,Tackle,一般,物理,40,100,20,0,0,Charges the foe with a full-body tackle.,"A physical attack in which the user charges, full body, into the foe."
+34,泰山压顶,Body Slam,一般,物理,85,100,15,0,30,A full-body slam that may cause paralysis.,The user drops its full body on the foe. 30% paralyze chance.
+35,紧束,Wrap,一般,物理,50,100,10,0,100,"Wraps and squeezes the foe 2 to 5 times with vines, etc.",A long body or vines are used to wrap the foe for four or five turns.
+36,猛撞,Take Down,格斗,物理,85,100,20,0,20,"Slams into the foe, knocking them back and lowering speed.",Slams the foe back. 20% chance to lower Speed.
+37,大闹一番,Thrash,一般,物理,130,100,5,0,100,A rampage of 2 to 3 turns that confuses the user.,"The user rampages about for two to three turns, then becomes confused."
+38,舍身冲撞,Double-Edge,一般,物理,130,100,10,0,0,A life-risking tackle that also hurts the user.,"A reckless, life-risking tackle that also has 33% recoil damage."
+39,摇尾巴,Tail Whip,一般,变化,0,100,20,0,0,Wags the tail to lower the foe's Defense.,"The user wags its tail cutely, making the foe lower its Defense stat."
+40,毒针,Poison Sting,毒,物理,40,100,15,1,10,Has 10% poison chance and +1 priority.,Quick and painful sting. Has 10% poison chance. Has +1 priority.
+41,双针,Twineedle,虫,物理,45,100,20,0,50,Stingers on the forelegs jab the foe twice.,The foe is stabbed twice with foreleg stingers. 50% poison chance.
+42,飞弹针,Pin Missile,虫,物理,25,100,20,0,0,Sharp pins are fired to strike 2 to 5 times.,Sharp pins are shot at the foe and hit two to five times at once.
+43,瞪眼,Leer,一般,变化,0,100,20,0,0,Frightens the foe with a leer to lower Defense.,The foe is given an intimidating look that lowers its Defense stat.
+44,咬住,Bite,恶,物理,60,100,20,0,30,Bites with vicious fangs. May cause flinching.,The user bites with vicious fangs. 30% flinch chance. Strong Jaw boost.
+45,叫声,Growl,一般,特殊,60,100,15,0,100,Growls cutely to reduce the foe's Attack.,"The user growls in a cute way, making the foe lower its Attack stat."
+46,吼叫,Roar,一般,变化,0,0,20,-6,0,Makes the foe flee to end the battle.,"The foe is made to switch out with an ally. In the wild, the battle ends."
+47,唱歌,Sing,一般,变化,0,60,15,0,0,A soothing song lulls the foe into a deep slumber.,A soothing song in a calming voice lulls the foe into a deep slumber.
+48,超音波,Supersonic,一般,变化,0,85,5,0,0,Emits bizarre sound waves that may confuse foes.,The user generates odd sound waves that confuse foes.
+49,音爆,Sonic Boom,一般,特殊,70,100,20,0,0,Launches shock waves that are super effective vs rock.,The foe is hit with a shock wave that is super effective vs steel types.
+50,定身法,Disable,一般,变化,0,100,20,0,0,Psychically disables one of the foe's moves.,"For a few turns, it prevents the foe from using the move it last used."
+51,溶解液,Acid,毒,特殊,70,100,20,0,30,Super effective vs Steel. May lower Defense.,Super effective vs Steel. Hits both foes. 30% chance to lower SpDef.
+52,火花,Ember,火,特殊,20,100,20,0,100,A weak fire attack that burns the target.,The foe is attacked with small flames. 100% burn chance.
+53,喷射火焰,Flamethrower,火,特殊,90,100,15,0,10,A powerful fire attack that may inflict a burn.,The foe is scorched with intense flames. 10% burn chance.
+54,白雾,Mist,冰,变化,0,0,20,0,0,Creates a mist that stops reduction of abilities.,The ally party is protected by a mist that prevents stat reductions.
+55,水枪,Water Gun,水,特殊,40,100,15,1,10,Squirts water to attack the foe.,A quick quirt of water. 10% drench chance. +1 priority. Mega Launcher boost.
+56,水炮,Hydro Pump,水,特殊,110,85,5,0,30,Blasts water at high power to strike the foe.,Blasts with a massive amount of water. 30% drench chance. Mega Launcher boost
+57,冲浪,Surf,水,特殊,90,100,15,0,20,"Creates a huge wave, then crashes it down on the foe.",A big wave crashes down on the foe. 20% drench chance. Field-based.
+58,冰冻光束,Ice Beam,冰,特殊,90,100,10,0,10,Blasts the foe with an icy beam. May cause frostbite.,The foe is struck with an icy beam. 10% frostbite chance. Mega Launcher boost
+59,暴风雪,Blizzard,冰,特殊,110,85,5,0,30,Hits the foe with an icy storm. May cause frostbite.,The foe is blasted with a blizzard. 20% frostbite chance. Weather-based.
+60,幻象光线,Psybeam,超能,特殊,65,100,20,0,100,Fires a peculiar ray that lowers Special Attack.,A peculiar ray is shot at the foe. that lowers SpAtk. Mega Launcher boost
+61,泡沫光线,Bubble Beam,水,特殊,25,100,20,0,0,Forcefully sprays bubbles that hit repeatedly.,A spray of bubbles strikes the foe 2-5 times. Mega Launcher boost
+62,极光束,Aurora Beam,冰,特殊,65,100,20,0,100,A rainbow-colored beam which lowers the foe's Attack 100%.,A rainbow-colored attack beam. 100% attack drop. Mega Launcher boost
+63,破坏光线,Hyper Beam,一般,特殊,150,100,5,0,0,"Powerful, but leaves the user immobile the next turn.",Does severe damage. Needs recharging. Mega Launcher boost
+64,啄,Peck,飞行,物理,25,100,20,0,0,"Attacks the foe with a jabbing beak, etc.",Hits 2-5x with a horn or beak. Mighty Horn boost.
+65,啄钻,Drill Peck,飞行,物理,90,100,20,0,10,A corkscrewing attack with a high critical-hit ratio.,A corkscrewing attack. High crit. Mighty Horn boost.
+66,深渊翻滚,Submission,格斗,物理,120,100,10,0,0,A reckless body slam that also hurts the user.,"A reckless, full-body throw attack. 33% recoil damage."
+67,踢倒,Low Kick,格斗,物理,1,100,20,0,0,A kick that inflicts more damage on heavier foes.,Inflicts more damage on heavier foes. Striker boost.
+68,双倍奉还,Counter,格斗,物理,1,100,20,-5,0,Retaliates any physical hit with double the power.,A retaliation move that counters any physical hit with double the damage.
+69,地球上投,Seismic Toss,格斗,物理,1,100,10,0,0,Carries the foe into the sky then deals damage based on level.,Immobilizes and then slams the foe. Inflicts level damage and triggers hazards.
+70,怪力,Strength,岩石,物理,110,100,5,0,100,A powerful slam attack. Lowers the user's defenses.,The foe is slugged at maximum power. Drops Defenses. Field-based.
+71,吸取,Absorb,草,特殊,50,100,20,0,100,Covers the foe with plants that remove stat changes,Covers the foe with plants that remove stat changes.
+72,超级吸取,Mega Drain,草,特殊,50,100,15,0,0,An attack that absorbs 75% of the damage inflicted.,A tough attack that drains 75% of the damage it inflicted to restore HP.
+73,寄生种子,Leech Seed,草,变化,0,90,10,0,0,Plants a seed on the foe to steal HP on every turn.,Plants a seed that steals HP every turn. Never misses if user is Grass-type.
+74,生长,Growth,一般,变化,0,0,20,0,0,Forces the body to grow. Ups Attack and SpAtk,"The user's body is forced to grow, raising its Atk. and Sp. Atk stat."
+75,飞叶快刀,Razor Leaf,草,物理,55,100,20,0,10,Cuts both foes with sharp leaves. Always crits.,Both foes are hit with a cutting leaf. Always crits. Keen Edge boost.
+76,日光束,Solar Beam,草,特殊,120,100,10,0,0,"Absorbs light in one turn, then attacks next turn.",Strong 2-turn move. Weather-based. Mega Launcher boost
+77,毒粉,Poison Powder,毒,变化,0,75,20,0,0,Scatters a toxic powder that may poison the foe.,A cloud of toxic dust is scattered. It poisons the foe.
+78,麻痹粉,Stun Spore,草,变化,0,100,20,0,0,Scatters a powder that may paralyze the foe.,Wildly scatters powder that paralyzes the foe. Can paralyze Electric-types.
+79,催眠粉,Sleep Powder,草,变化,0,75,15,0,0,Scatters a powder that may cause the foe to sleep.,A sleep-inducing dust is scattered in high volume around a foe.
+80,花瓣舞,Petal Dance,草,特殊,120,100,5,0,100,A rampage of 2 to 3 turns that confuses the user.,"The user attacks with petals for two to three turns, then gets confused."
+81,吐丝,String Shot,虫,变化,0,100,20,0,0,Binds the foes with string to harshly reduce Speed.,The foe is bound with strings shot from the mouth to reduce its Speed.
+82,龙之怒,Dragon Rage,龙,特殊,80,100,20,0,0,Launches shock waves that can damage Fairy mons.,The foe is hit with a shock wave that can damage Fairy Pokémon neutrally.
+83,火焰旋涡,Fire Spin,火,特殊,50,90,10,0,100,Traps the foe in a ring of fire for 2 to 5 turns.,The foe is trapped in an intense spiral of fire that rages four or five turns.
+84,电击,Thunder Shock,电,特殊,80,100,15,0,30,An electrical attack that may flinch the foe.,An electric shock attack with a 30% flinch chance.
+85,十万伏特,Thunderbolt,电,特殊,90,100,15,0,10,A strong electrical attack that may paralyze the foe.,A strong electrical attack with a 10% paralyze chance.
+86,电磁波,Thunder Wave,电,变化,0,90,10,0,0,A weak jolt of electricity that paralyzes the foe.,A weak shock paralyzes the foe. Never misses if user is Electric-type.
+87,打雷,Thunder,电,特殊,110,85,5,0,30,A lightning attack that may cause paralysis.,A brutal lightning attack. 30% paralyze chance. Weather-based.
+88,落石,Rock Throw,岩石,物理,90,100,10,0,0,Throws small rocks to strike the foe.,The user attacks with small rocks. Throw-based.
+89,地震,Earthquake,地面,物理,100,100,10,0,0,"A powerful quake, but has no effect on flying foes.",An earthquake that strikes all Pokémon in battle excluding the user.
+90,地裂,Fissure,地面,物理,120,85,5,0,0,Very powerful attack. Hits both foes.,The foe is dropped into a fissure. Hits both foes.
+91,挖洞,Dig,地面,物理,110,100,10,0,0,Digs underground the first turn and strikes next turn.,An attack that hits on the 2nd turn. Field-based.
+92,剧毒,Toxic,毒,变化,0,90,10,0,100,Poisons the foe with an intensifying toxin.,Inflicts a poison that gets worse every turn. Never misses if user is Poison-type.
+93,念力,Confusion,超能,特殊,50,100,20,0,100,A psychic attack that causes confusion.,A weak telekinetic attack that confuses the foe.
+94,精神强念,Psychic,超能,特殊,90,100,15,0,20,A powerful psychic attack that may lower Sp. Def.,A strong telekinetic attack. 20% chance to drop foe's SpDef stat.
+95,催眠术,Hypnosis,超能,变化,0,60,20,0,0,A hypnotizing move that may induce sleep.,Hypnotic suggestion is used to make the foe fall into a deep sleep.
+96,瑜伽姿势,Meditate,超能,变化,0,0,20,0,0,Meditates peacefully to raise Attack and SpDef.,Meditates to raise Attack and Special Defense.
+97,高速移动,Agility,超能,变化,0,0,20,0,0,Relaxes the body to sharply boost Speed.,The user relaxes and lightens its body to sharply boost its Speed.
+98,电光一闪,Quick Attack,一般,物理,40,100,20,2,0,An extremely fast attack that always strikes first.,An almost invisibly fast attack with +2 priority.
+99,愤怒,Rage,格斗,物理,120,100,5,0,100,A rampage of 2 to 3 turns that confuses the user.,"The user thrashes about for two to three turns, then becomes confused."
+100,瞬间移动,Teleport,超能,变化,0,0,20,-6,0,A psychic move for fleeing from battle instantly.,Use it to flee from any wild Pokémon. Also warps to the last POKé CENTER.
+101,黑夜魔影,Night Shade,幽灵,特殊,1,100,15,0,0,Inflicts damage identical to the user's level.,An attack with a mirage that inflicts damage matching the user's level.
+102,模仿,Mimic,一般,变化,0,0,10,0,0,Copies a move used by the foe during one battle.,The user copies the move last used by the foe for the rest of the battle.
+103,刺耳声,Screech,一般,变化,0,85,20,0,0,Emits a screech to sharply reduce the foe's Defense.,An ear-splitting screech is emitted to sharply reduce the foe's Defense.
+104,影子分身,Double Team,一般,变化,0,0,15,0,0,Creates illusory copies to raise evasiveness.,The user creates illusory copies of itself to raise its evasiveness.
+105,自我再生,Recover,一般,变化,0,0,5,0,0,Recovers up to half the user's maximum HP.,A self-healing move that restores HP by up to half of the user's maximum HP.
+106,变硬,Harden,一般,变化,0,0,20,0,0,Stiffens the body's muscles to raise Defense.,The user stiffens all the muscles in its body to raise its Defense stat.
+107,变小,Minimize,一般,变化,0,0,1,0,0,Minimizes the user's size to raise evasiveness.,The user compresses all the cells in its body to raise its evasiveness.
+108,烟幕,Smokescreen,一般,变化,0,0,20,0,0,Obscures the user's party in smoke for 5 turns.,"Obscures the user's party in smoke for 5 turns, increasing evasiveness by 25%."
+109,奇异之光,Confuse Ray,幽灵,变化,0,100,5,0,0,A sinister ray that confuses the foe.,The foe is exposed to a sinister ray that triggers confusion.
+110,缩入壳中,Withdraw,水,变化,0,0,20,1,0,Withdraws the body into its hard shell to raise Defense.,"The user withdraws its body in its hard shell, raising its Defense stat."
+111,变圆,Defense Curl,一般,变化,0,0,20,0,0,Curls up to conceal weak spots and raise Defense.,The user curls up to conceal weak spots and raise its Defense stat.
+112,屏障,Barrier,超能,变化,0,0,20,0,0,Forms the Psychic Terrain into a powerful barrier.,The user sets Light Screen and Reflect if Psychic Terrain is active.
+113,光墙,Light Screen,超能,变化,0,0,20,0,0,Creates a wall of light that lowers Sp. Atk damage.,A wall of light cuts damage from Sp. Atk attacks for five turns.
+114,黑雾,Haze,冰,变化,0,0,20,0,0,Creates a black haze that eliminates all stat changes.,Eliminates all stat changes among all Pokémon engaged in battle.
+115,反射壁,Reflect,超能,变化,0,0,20,0,0,Creates a wall of light that weakens physical attacks.,A wall of light cuts damage from physical attacks for five turns.
+116,聚气,Focus Energy,一般,变化,0,0,20,0,0,Focuses power to raise the critical-hit ratio.,The user takes a deep breath and focuses to raise its critical-hit ratio.
+117,忍耐,Bide,一般,物理,1,0,10,1,0,Endures attack for 2 turns to retaliate double.,"The user endures attacks for two turns, then strikes back double."
+118,挥指,Metronome,一般,变化,0,0,10,0,0,An unknown power uses any Pokémon move at random.,An unknown power stimulates the brain into using any move at random.
+119,鹦鹉学舌,Mirror Move,飞行,变化,0,0,20,0,0,Counters the foe's attack with the same move.,The user counters the move last used by the foe with the same move.
+120,玉石俱碎,Self-Destruct,一般,物理,200,100,5,0,0,Inflicts severe damage but makes the user faint.,The user blows up to inflict severe damage. Deals 2x damage if hit first.
+121,炸蛋,Egg Bomb,火,物理,100,100,10,0,30,An egg is forcibly hurled at the foe.,Hurls a hot egg. 30% Burn chance. 1.5x damage under Gravity. Throw-based.
+122,舌舔,Lick,幽灵,物理,60,100,20,0,30,Licks with a long tongue to injure. May also flinch.,The foe is licked and hit with a long tongue. 30% flinch chance.
+123,浊雾,Smog,毒,特殊,50,70,20,0,50,An exhaust-gas attack that may also poison.,The foe is attacked with exhaust gases. 50% poison chance.
+124,污泥攻击,Sludge,毒,特殊,70,100,20,0,30,Super effective vs Water. May poison foes.,Hurls toxic sludge at the foe. Super-effective on Water. 30% poison chance.
+125,骨棒,Bone Club,地面,物理,80,100,15,0,30,Clubs the foe with a bone. May cause flinching.,The foe is clubbed with a bone. 30% flinch chance.
+126,大字爆炎,Fire Blast,火,特殊,110,85,5,0,30,Incinerates everything it strikes. May cause a burn.,The foe is hit with an intense flame. It has a 20% burn chance.
+127,攀瀑,Waterfall,水,物理,85,100,15,0,20,Charges the foe with speed to climb waterfalls.,A powerful charge attack. 20% flinch chance. Field-based.
+128,贝壳夹击,Clamp,水,物理,50,90,10,0,100,Traps and squeezes the foe for 2 to 5 turns.,The foe is clamped and squeezed by the user's shell for four or five turns.
+129,高速星星,Swift,一般,特殊,65,100,5,2,0,Sprays star-shaped rays that never miss.,Special-based extreme speed. Has +2 priority.
+130,火箭头锤,Skull Bash,一般,物理,120,100,10,0,0,"Tucks in the head, then attacks on the next turn.","The user raises its Attack on the 1st turn, then attacks on the 2nd turn."
+131,尖刺加农炮,Spike Cannon,水,物理,25,100,15,0,0,Launches sharp spikes that strike 2 to 5 times.,Sharp spikes are fired two to five times. Mega Launcher boost
+132,缠绕,Constrict,一般,物理,60,100,15,0,100,Constricts to inflict pain. May lower Speed.,The foe is attacked with long tentacles or vines. Lowers foe's Speed.
+133,瞬间失忆,Amnesia,超能,变化,0,0,20,0,0,Forgets about something and sharply raises Sp. Def.,Forgets about something and sharply raises Sp. Def.
+134,折弯汤匙,Kinesis,超能,变化,0,100,10,1,0,"Animates the foe's item, surprising them.","Causes the foe's item to fly away, removing it and flinching the target."
+135,生蛋,Soft-Boiled,一般,变化,0,100,5,0,0,Recovers up to half the user's maximum HP.,Heals the user by up to half its full HP. It can be used to heal an ally.
+136,飞膝踢,High Jump Kick,格斗,物理,130,90,10,0,0,"A jumping knee kick. If it misses, the user is hurt.",A strong jumping knee kick. Hurts on miss. Striker boost.
+137,大蛇瞪眼,Glare,一般,变化,0,100,20,0,0,Intimidates and frightens the foe into paralysis.,An intense gaze frightens the foe into paralysis. Can paralyze Electric-types.
+138,食梦,Dream Eater,超能,特殊,120,100,15,0,0,Takes one half the damage inflicted on a sleeping foe.,Absorbs half the damage it inflicted on a sleeping foe to restore HP.
+139,毒瓦斯,Poison Gas,毒,特殊,65,100,15,0,20,Super effective vs Flying. gas that may poison.,Super effective vs Flying. Hits both foes. 30% chance to poison.
+140,投球,Barrage,钢,物理,25,100,15,0,0,Hurls round objects at the foe 2 to 5 times.,Round objects are hurled at the foe to strike two to five times.
+141,吸血,Leech Life,虫,物理,80,100,10,0,0,An attack that steals half the damage inflicted.,An attack that absorbs half the damage it inflicted. Strong Jaw boost.
+142,恶魔之吻,Lovely Kiss,一般,变化,0,85,10,0,0,Demands a kiss with a scary face that induces sleep.,The user forces a kiss on the foe with a scary face that induces sleep.
+143,神鸟猛击,Sky Attack,飞行,物理,140,90,5,0,0,"Searches out weak spots, then strikes the next turn.","Raises its Attack on the first turn, then makes a brutal strike on the second."
+144,变身,Transform,一般,变化,0,0,10,0,0,Alters the user's cells to become a copy of the foe.,The user transforms into a copy of the foe with even the same move set.
+145,泡沫,Bubble,水,特殊,55,100,15,0,100,An attack using bubbles. Always lowers foe's Speed.,A spray of bubbles hits both foes. 100% chance to drop foe's Speed.
+146,迷昏拳,Dizzy Punch,一般,物理,85,100,10,0,20,A rhythmic punch that may confuse the foe.,The foe is hit with a rhythmic punch. 20% confusion chance.
+147,蘑菇孢子,Spore,草,变化,0,100,15,0,0,Scatters a cloud of spores that always induce sleep.,The user scatters bursts of fine spores that induce sleep.
+148,闪光,Flash,电,特殊,60,100,20,0,50,Looses a blast of light. 50% chance to drop Atk.,A blast of light that has 50% chance to drop foe's Atk. Field-based.
+149,精神波,Psywave,超能,特殊,40,100,15,1,10,Quick wave of psychic energy. Has +1 priority.,A quick wave of psychic energy. +1 priority. 10% confusion chance.
+150,跃起,Splash,水,物理,1,100,10,0,20,Does more damage if the user outweighs the foe.,The user slams the foe. 20% drench chance. Heavier users are stronger.
+151,溶化,Acid Armor,毒,变化,0,0,20,0,0,Liquifies the user's body to sharply raise Defense.,The user alters its cells to liquefy itself and sharply raise Defense.
+152,蟹钳锤,Crabhammer,水,物理,100,100,10,0,10,Hammers with a pincer. Has a high critical-hit ratio.,A large pincer is used to hammer the foe. It has a high critical-hit ratio.
+153,大爆炸,Explosion,一般,物理,250,100,5,0,0,Inflicts severe damage but makes the user faint.,The user explodes to inflict terrible damage even while fainting itself.
+154,乱抓,Fury Swipes,一般,物理,25,100,15,0,0,"Rakes the foe with sharp claws, etc., 2 to 5 times.",Hits 2-5x with sharp claws or scythes. High crit rate. Keen edge boost.
+155,骨头回力镖,Bonemerang,地面,物理,45,100,10,0,0,Throws a bone. Hits airborne targets and strikes twice.,"The user throws a bone that hits the foe once, then once again on return."
+156,睡觉,Rest,超能,变化,0,0,10,0,0,"The user sleeps for 2 turns, restoring HP and status.",The user sleeps for two turns to fully restore HP and heal any status problem.
+157,岩崩,Rock Slide,岩石,物理,75,100,10,0,20,Large boulders are hurled. May cause flinching.,Large boulders are hurled at the foe. 20% flinch chance. Throw-based.
+158,终结门牙,Hyper Fang,一般,物理,85,100,15,0,30,Attacks with sharp fangs. May cause flinching.,The foe is attacked with sharp fangs. 30% flinch chance. Strong Jaw boost.
+159,棱角化,Sharpen,一般,变化,0,0,20,0,0,Sharpens its edges to boost Attack and Crit.,The user sharpens its edges. Raises highest Attack and Crit and sets Cutthroat.
+160,纹理,Conversion,一般,变化,0,0,20,0,0,Boosts SpAtk and Speed and changes type.,Boosts SpAtk and Speeds and changes its type to its first move's type.
+161,三重攻击,Tri Attack,一般,特殊(取最高攻),90,100,15,0,30,Fires three types of beams at the same time.,"30% chance to paralyze, burn, or frostbite foes. Uses highest Attack."
+162,愤怒门牙,Super Fang,一般,物理,1,90,10,0,0,Attacks with sharp fangs and cuts half the foe's HP.,The user attacks with sharp fangs and halves the foe's HP.
+163,劈开,Slash,一般,物理,60,100,10,0,20,"Slashes with claws, etc. Always crits.","The foe is slashed with claws, etc. Always crits. Keen Edge boost."
+164,替身,Substitute,一般,变化,0,0,10,0,0,Creates a decoy using 1/4 of the user's maximum HP.,The user creates a decoy using one-quarter of its full HP.
+165,挣扎,Struggle,一般,物理,50,0,1,0,0,Used only if all PP are gone. Also hurts the user a little.,An attack that is used only if there is no PP. It also hurts the user.
+166,写生,Sketch,一般,变化,0,0,1,0,0,Copies the foe's last move permanently.,"This move copies the move last used by the foe, then disappears."
+167,三连踢,Triple Kick,格斗,物理,20,90,10,0,0,Kicks the foe 3 times in a row with rising intensity.,A 3-kick attack. More powerful with each successive hit. Striker boost.
+168,小偷,Thief,恶,物理,60,100,20,0,100,"While attacking, it may steal the foe's held item.",Steals or removes the foe's item. +1 priority if the user has no item.
+169,蛛网,Spider Web,虫,变化,0,0,10,0,0,Ensnares the foe to stop it from fleeing or switching.,Ensnares the foe with sticky string so it doesn't flee or switch out.
+170,心之眼,Mind Reader,超能,变化,0,0,10,4,0,Reads the opponent's mind to dodge their attack.,Dodges all attacks and lowers the SpDef of attackers. May fail if used in succession.
+171,恶梦,Nightmare,幽灵,特殊,120,100,10,0,100,Haunts the foe with a terrifying nightmare doing heavy damage.,Deals heavy damage to a sleeping foe and makes them lose 1/4 HP each turn.
+172,火焰轮,Flame Wheel,火,物理,40,100,10,0,0,Rolls into a wheel to strike with rising intensity.,A rolling attack that becomes stronger each time it hits.
+173,打鼾,Snore,一般,特殊,85,100,15,0,30,A loud attack that can be used only while asleep.,An attack that can be used only while asleep. Has a 30% flinch chance.
+174,诅咒,Curse,幽灵,变化,0,0,10,0,0,A move that functions differently for GHOSTS.,Inflicts a curse when used in fog or by Ghosts. For others boosts stats.
+175,抓狂,Flail,一般,物理,85,100,10,0,0,Inflicts critical damage when the user's HP is low.,A desperate attack that deals critical damage when the user is below 50% HP.
+176,纹理2,Conversion 2,一般,变化,0,0,20,0,0,Boosts SpAtk and Speed and changes type.,Boosts SpAtk and Speed and changes type to resist the last attack taken.
+177,气旋攻击,Aeroblast,飞行,特殊,100,100,5,0,0,Launches a vacuumed blast. High crit ratio.,A vortex of air is shot at the foe. High crit ratio. Air-based.
+178,棉孢子,Cotton Spore,草,变化,0,100,20,0,0,"Spores cling to the foe, sharply reducing Speed.","Cotton-like spores cling to the foe, sharply reducing its Speed stat."
+179,绝处逢生,Reversal,格斗,物理,80,100,10,0,0,Inflicts critical damage when the user's HP is low.,A desperate attack that deals critical damage when the user is below 50% HP.
+180,怨恨,Spite,幽灵,变化,0,100,10,0,0,Spitefully cuts the PP of the foe's last move.,A move that cuts 2 to 5 PP from the move last used by the foe.
+181,细雪,Powder Snow,冰,特殊,80,100,20,0,30,Blasts the foe with a snowy gust. May cause freezing.,Blasts the foe with a snowy gust. 30% chance to frostbite the foe.
+182,守住,Protect,一般,变化,0,0,10,4,0,"Evades attack, but may fail if used in succession.",Enables the user to evade all attacks. It may fail if used in succession.
+183,音速拳,Mach Punch,格斗,物理,40,100,15,1,0,A punch is thrown at wicked speed to strike first.,A punch thrown at blinding speed. +1 priority. Iron Fist boost.
+184,可怕面孔,Scary Face,一般,变化,0,100,10,0,0,Frightens with a scary face to sharply reduce Speed.,Frightens the foe with a scary face. Inflicts fear and sharply lowers Speed.
+185,出奇一击,Feint Attack,恶,物理,80,0,10,0,0,"Draws the foe close, then strikes without fail.","The user draws up close to the foe disarmingly, then hits without fail."
+186,天使之吻,Sweet Kiss,妖精,变化,0,75,10,0,0,"Demands a kiss, causing confusion and infatuation.",Kisses the foe with a sweet cuteness that causes confusion and infatuation.
+187,腹鼓,Belly Drum,一般,变化,0,0,10,0,0,Maximizes Attack while sacrificing HP.,The user maximizes its Attack stat at the cost of half its full HP.
+188,污泥炸弹,Sludge Bomb,毒,特殊,90,100,15,0,30,Sludge is hurled to inflict damage. May also poison.,Filthy sludge is hurled at the foe. 30% poison chance.
+189,掷泥,Mud-Slap,地面,特殊,25,100,10,0,0,Hurls mud in the foe's face dealing repeated damage.,Mud is hurled in the foe's face to inflict damage 2-5 times.
+190,章鱼桶炮,Octazooka,水,特殊,120,50,10,0,100,Fires a lump of ink to damage and cut accuracy.,Ink is blasted in the foe's face. Lowers accuracy. Mega Launcher boost
+191,撒菱,Spikes,地面,变化,0,0,20,0,0,Sets spikes that hurt a foe switching in.,A trap of spikes is laid around the foe's party to hurt foes switching in.
+192,电磁炮,Zap Cannon,电,特殊,120,50,5,0,100,"Powerful and sure to cause paralysis, but inaccurate.",An electric blast is fired like a cannon. Always paralyzes. Mega Launcher boost
+193,识破,Foresight,一般,变化,0,0,20,0,0,Negates the foe's efforts to heighten evasiveness.,Completely negates the foe's efforts to heighten its ability to evade.
+194,同命,Destiny Bond,幽灵,变化,0,0,5,0,0,"If the user faints, the foe is also made to faint.","If the user faints, the foe delivering the final hit also faints."
+195,终焉之歌,Perish Song,一般,变化,0,0,5,0,0,Any Pokémon hearing this song faints in 3 turns.,Any battler that hears this faints in three turns unless it switches.
+196,冰冻之风,Icy Wind,冰,特殊,60,100,15,0,100,A chilling attack that lowers the foe's Speed.,A chilling wind is used to attack. Lowers foe's Speed. Air-based.
+197,看穿,Detect,格斗,变化,0,0,10,4,0,"Evades attack, but may fail if used in succession.",Evades attacks that may miss. Cannot be broken. May fail if used in succession.
+198,骨棒乱打,Bone Rush,地面,物理,15,100,10,1,0,Strikes with a bone 2 to 5 times. Always goes first.,Strikes with a bone 2 to 5 times. Hits swiftly with +1 priority.
+199,锁定,Lock-On,一般,变化,0,0,5,0,0,Locks on to the foe to ensure the next move hits.,"The user locks on to the foe, making the next move sure to hit."
+200,逆鳞,Outrage,龙,物理,120,100,5,0,100,A rampage of 2 to 3 turns that confuses the user.,"The user thrashes about for two to three turns, then becomes confused."
+201,沙暴,Sandstorm,岩石,变化,0,0,10,0,0,Causes a sandstorm that rages for several turns.,"An 8-turn sandstorm that damages all types except Rock, Ground, and Steel."
+202,终极吸取,Giga Drain,草,特殊,75,100,10,0,0,An attack that steals half the damage inflicted.,A harsh attack that absorbs half the damage it inflicted to restore HP.
+203,挺住,Endure,一般,变化,0,0,5,4,0,"Endures any attack for 1 turn, leaving at least 1HP.",The user endures any hit with 1 HP left. It may fail if used in succession.
+204,撒娇,Charm,妖精,变化,0,100,20,0,0,Charms the foe and sharply reduces its Attack.,"The foe is charmed by the user's cute appeals, sharply cutting its Attack."
+205,滚动,Rollout,岩石,物理,40,100,10,0,0,Rolls into a ball to strike with rising intensity.,A rolling attack that becomes stronger each time it hits.
+206,点到为止,False Swipe,一般,物理,120,100,20,0,50,An attack that leaves the foe with at least 1 HP.,Can't KO the foe. 50% chance to inflict bleed. Keen Edge boost.
+207,虚张声势,Swagger,一般,变化,0,85,15,0,100,"Enrages the foe, but also sharply raises Attack.","A move that makes the foe enraged, but also sharply raises its Attack."
+208,喝牛奶,Milk Drink,一般,变化,0,0,5,0,0,Recovers up to half the user's maximum HP.,Heals the user by up to half its full HP. It can be used to heal an ally.
+209,电光,Spark,电,物理,40,100,15,2,10,An electrified tackle with +2 priority. May paralyze.,Rapid electrical tackle. Has 10% paralyze chance. Has +2 priority.
+210,连斩,Fury Cutter,虫,物理,20,90,10,0,0,Slices the foe 3 times in a row with rising intensity.,A 3-slice attack. More powerful with each successive hit. Keen Edge boost.
+211,钢翼,Steel Wing,钢,物理,90,100,15,0,20,Strikes the foe with hard wings spread wide.,Hits with wings of steel. 20% chance to raise Defense. Air-based.
+212,黑色目光,Mean Look,一般,变化,0,0,5,0,0,Fixes the foe with a mean look that prevents escape.,The foe is fixed with a mean look that prevents it from escaping.
+213,迷人,Attract,一般,变化,0,90,15,0,0,Halves the Atk & SpAtk of the opposite gender.,Inflicts infatuation on opposite gender which halves Atk and SpAtk.
+214,梦话,Sleep Talk,一般,变化,0,0,10,0,0,Uses an available move randomly while asleep.,"While asleep, the user randomly uses one of the moves it knows."
+215,治愈铃声,Heal Bell,一般,变化,0,0,5,0,0,Chimes soothingly to heal all status abnormalities.,Heals the status problems of allies and restores 30% HP to the user.
+216,报恩,Return,一般,物理,102,100,20,0,0,A reliable and strong Normal-type attack.,A strong and reliable attack that shows the user's loyalty.
+217,礼物,Present,神秘,特殊,80,100,15,0,0,A sly attack that damages foes and heals allies.,"Deals typeless damage to foes, restores 50% HP to allies."
+218,迁怒,Frustration,恶,物理,75,100,10,0,0,Deals double damage if the last move failed.,The user unleashes its frustration. Failing moves doubles damage.
+219,神秘守护,Safeguard,一般,变化,0,0,20,0,0,A mystical force prevents all status problems.,It protects the user's party from all status problems for five turns.
+220,分担痛楚,Pain Split,一般,变化,0,0,20,0,0,"Adds the user and foe's HP, then shares them equally.","The user adds its HP to the foe's HP, then equally shares the total HP."
+221,神圣之火,Sacred Fire,火,物理,100,100,5,0,100,A mystical fire attack that may inflict a burn.,A mystical and powerful fire attack that always inflicts a burn.
+222,震级,Magnitude,地面,物理,1,100,20,0,0,A ground-shaking attack of random intensity.,A ground-shaking attack against all standing Pokémon. Its power varies.
+223,爆裂拳,Dynamic Punch,格斗,物理,120,50,5,0,100,"Powerful and sure to cause confusion, but inaccurate.",The foe is punched with the user's full power. It confuses the foe if it hits.
+224,超级角击,Megahorn,虫,物理,120,85,10,0,20,A brutal ramming attack using out-thrust horns.,A brutal ramming attack. Ignores foe's stat changes. Mighty Horn boost.
+225,龙息,Dragon Breath,龙,特殊,20,100,20,0,100,Strikes the foe with an incredible blast of breath.,The foe is hit with an incredible blast. 100% burn chance.
+226,接棒,Baton Pass,一般,变化,0,0,20,0,0,Switches out the user while keeping effects in play.,"The user switches out, passing along any stat changes to the new battler."
+227,再来一次,Encore,一般,变化,0,100,5,0,0,Makes the foe repeat its last move over 2 to 6 turns.,Makes the foe use the move it last used repeatedly for two to six turns.
+228,追打,Pursuit,恶,物理,50,100,20,0,0,Inflicts bad damage if used on a foe switching out.,An attack move that works especially well on a foe that is switching out.
+229,高速旋转,Rapid Spin,一般,物理,60,100,20,0,0,Clears some hazards. Ups speed by +1.,"Frees the user from Bind, Leech Seed, Spikes etc. Ups Speed by +1."
+230,甜甜香气,Sweet Scent,一般,变化,0,100,20,0,0,Allures the foe to harshly reduce evasiveness.,Allures the foe to reduce evasiveness. It also attracts wild Pokémon.
+231,铁尾,Iron Tail,钢,物理,90,100,10,0,20,Attacks with a rock-hard tail. May lower Defense.,An attack with a steel-hard tail. 20% chance to lower foe's Defense.
+232,金属爪,Metal Claw,钢,物理,75,100,20,0,20,A claw attack that may raise the user's Attack.,The foe is attacked with steel claws. 20% chance to raise the user's Attack.
+233,借力摔,Vital Throw,格斗,物理,120,0,10,-1,0,"Makes the user's move last, but it never misses.","Makes the user attack after the foe. In return, it will not miss."
+234,晨光,Morning Sun,一般,变化,0,0,5,0,0,Restores HP. The amount varies with the weather.,Restores the user's HP. The amount of HP regained varies with the weather.
+235,光合作用,Synthesis,草,变化,0,0,5,0,0,Restores HP. The amount varies with the weather.,Restores the user's HP. The amount of HP regained varies with the weather.
+236,月光,Moonlight,妖精,变化,0,0,5,0,0,Restores HP. The amount varies with the weather.,Restores the user's HP. The amount of HP regained varies with the weather.
+237,觉醒力量,Hidden Power,一般,特殊,80,100,15,0,0,The effectiveness varies with the user.,An attack that varies in type depending on the user.
+238,十字劈,Cross Chop,格斗,物理,40,100,15,0,0,A double-chopping attack. High critical-hit ratio.,The foe is hit with double chops. It has a high critical-hit ratio.
+239,龙卷风,Twister,龙,特殊,50,90,20,0,100,Whips up a vicious twister to engulf the foe.,A vicious twister envelops the foe for 4 to 5 turns. Air-based.
+240,求雨,Rain Dance,水,变化,0,0,10,0,0,Boosts the power of Water-type moves for 5 turns.,"A heavy rain falls for eight turns, powering up Water-type moves 50%."
+241,大晴天,Sunny Day,火,变化,0,0,10,0,0,Boosts the power of Fire-type moves for 5 turns.,"The sun blazes for eight turns, powering up Fire-type moves by 50%."
+242,咬碎,Crunch,恶,物理,90,100,15,0,20,Crunches with sharp fangs. May lower Defense.,The foe is crunched with sharp fangs. 20% chance to lower foe's Def.
+243,镜面反射,Mirror Coat,超能,特殊,1,100,20,-5,0,Counters the foe's special attack at double the power.,A retaliation move that pays back the foe's special attack double.
+244,自我暗示,Psych Up,一般,变化,0,0,10,0,0,Copies the foe's effect(s) and gives to the user.,The user hypnotizes itself into copying any stat change made by the foe.
+245,神速,Extreme Speed,一般,物理,80,100,5,2,0,An extremely fast and powerful attack.,A blindingly speedy charge attack with +2 priority.
+246,原始之力,Ancient Power,岩石,特殊,60,100,5,0,10,An attack that may raise all stats.,An ancient power is used to attack. 10% chance to raise all the user's stats.
+247,暗影球,Shadow Ball,幽灵,特殊,90,100,15,0,20,Hurls a black blob that may lower the foe's Sp. Def.,A shadowy blob is hurled at the foe. 20% chance to lower foe's SpDef.
+248,预知未来,Future Sight,超能,特殊,120,100,10,0,0,Heightens inner power to strike 2 turns later.,"Two turns after this move is used, the foe is attacked psychically."
+249,碎岩,Rock Smash,格斗,物理,60,100,15,0,100,A rock-crushing attack that lowers the foe's Defense.,An attack which also cuts foe's Defense. It can also smash cracked boulders.
+250,潮旋,Whirlpool,水,特殊,50,90,10,0,30,Traps and hurts the foe in a whirlpool for 2 to 5 turns.,The foe is trapped for four or five turns. 30% drench chance. Field-based.
+251,围攻,Beat Up,恶,物理,1,100,10,0,0,Summons party Pokémon to join in the attack.,"All party Pokémon join in the attack. The more allies, the more damage."
+252,击掌奇袭,Fake Out,一般,物理,40,100,10,3,100,"A 1st-turn, 1st-strike move that causes flinching.",An attack that hits first and causes flinching. Usable only on 1st turn.
+253,吵闹,Uproar,一般,特殊,120,100,5,0,100,A tantrum of 2 to 3 turns that confuses the user.,"The user throws a tantrum for two to three turns, then becomes confused."
+254,蓄力,Stockpile,一般,变化,0,0,5,0,0,Charges up power for up to 3 turns.,The user charges up power for use later. It can be used three times.
+255,喷出,Spit Up,一般,特殊,120,100,2,0,0,Spits up stored stockpiles for heavy damage.,Uses the attacker's primary type. Uses Stockpiles in place of PP if available.
+256,吞下,Swallow,一般,变化,0,0,2,0,0,Swallows down Stockpiles to restore HP.,Restores 50% HP. Uses Stockpiles in place of PP if available.
+257,热风,Heat Wave,火,特殊,95,90,10,0,10,Exhales a hot breath on the foe. May inflict a burn.,The user exhales a heated breath. 10% burn chance. Air-based.
+258,冰雹,Hail,冰,变化,0,0,10,0,0,Summons a hailstorm that strikes every turn.,A hailstorm lasting eight turns damages all Pokémon except the Ice-type.
+259,无理取闹,Torment,恶,变化,0,100,15,0,0,Torments the foe and stops successive use of a move.,"It enrages the foe, making it incapable of using the same move successively."
+260,吹捧,Flatter,恶,变化,0,100,15,0,0,"Enrages the foe, but raises its SpAtk","Flattery is used to enrage the foe, but its Sp. Atk also rises."
+261,磷火,Will-O-Wisp,火,变化,0,90,10,0,0,Inflicts a burn on the foe with intense fire.,A blueish-white flame burns the target. Never misses if user is Fire-type.
+262,临别礼物,Memento,恶,变化,0,100,10,0,0,The user faints and lowers the foe's abilities.,"The user faints, but sharply lowers the foe's Attack and SpAtk"
+263,硬撑,Facade,一般,物理,70,100,20,0,0,"Doubles damage if burned, paralyzed, or poisoned.","An attack that is boosted if user is burned, poisoned, or paralyzed."
+264,真气拳,Focus Punch,格斗,物理,150,100,20,-3,0,A powerful loyalty attack. Damage is reduced if hit.,Moves last. Damage reduced to 40BP if hit. Iron Fist boost.
+265,清醒,Smelling Salts,格斗,物理,75,100,10,0,0,Deals damage and cures the user of their status.,Deals damage and cures the user's status.
+266,看我嘛,Follow Me,一般,变化,0,100,20,2,0,Draws attention to make foes attack only the user.,"The user draws attention to itself, making foes attack only the user."
+267,自然之力,Nature Power,一般,物理,50,100,15,0,0,Type and power changes depending on the terrain.,This move's type and power changes depending on the terrain when used.
+268,充电,Charge,电,变化,0,100,20,0,0,Charges power to boost the electric move used next.,The user charges power to boost the Electric move it uses next.
+269,挑衅,Taunt,恶,变化,0,100,20,0,0,Taunts the foe into only using attack moves.,The foe is taunted into a rage that allows it to use only attack moves.
+270,帮助,Helping Hand,一般,变化,0,100,20,5,0,Boosts the power of the recipient's moves.,A move that boosts the power of the ally's attack in a battle.
+271,戏法,Trick,超能,变化,0,100,10,0,0,Tricks the foe into trading held items.,A move that tricks the foe into trading held items with the user.
+272,扮演,Role Play,超能,变化,0,0,10,0,0,Mimics the target and copies its special ability.,The user mimics the foe completely and copies the foe's ability.
+273,祈愿,Wish,一般,变化,0,0,10,0,0,A wish that restores HP. It takes time to work.,A self-healing move that restores half the full HP on the next turn.
+274,借助,Assist,一般,变化,0,100,20,0,0,Attacks randomly with one of the partner's moves.,The user randomly picks and uses a move of an allied Pokémon.
+275,扎根,Ingrain,草,变化,0,100,20,0,0,Lays roots that restore HP. The user can't switch out.,The user lays roots that restore HP on every turn. It can't switch out.
+276,蛮力,Superpower,格斗,物理,120,100,5,0,0,"Boosts strength sharply, but lowers abilities.","A powerful attack, but it also lowers the user's Attack and Defense stats."
+277,魔法反射,Magic Coat,超能,变化,0,100,15,4,0,Reflects special effects back to the attacker.,Reflects back the foe's Leech Seed and any status-damaging move.
+278,回收利用,Recycle,一般,变化,0,100,5,0,0,Recycles a used item for one more use.,A move that recycles a used item for use once more.
+279,报复,Revenge,格斗,物理,60,100,10,0,0,An attack that gains power if injured by the foe.,An attack move that gains in intensity if the target has hurt the user.
+280,劈瓦,Brick Break,格斗,物理,85,100,15,0,0,Destroys barriers such as Reflect and causes damage.,An attack that also breaks any barrier like Light Screen and Reflect.
+281,哈欠,Yawn,一般,变化,0,0,10,0,0,"Lulls the foe into yawning, then sleeping next turn.",A huge yawn lulls the foe into falling asleep on the next turn.
+282,拍落,Knock Off,恶,物理,65,100,20,0,100,Knocks down the foe's held item to prevent its use.,Knocks down the foe's held item to prevent its use during the battle.
+283,蛮干,Endeavor,一般,物理,1,100,5,0,0,Gains power if the user's HP is lower than the foe's HP.,Gains power the fewer HP the user has compared with the foe.
+284,喷火,Eruption,火,特殊,150,100,5,0,0,"The higher the user's HP, the more damage caused.","The higher the user's HP, the more powerful it is. Mega Launcher boost"
+285,特性互换,Skill Swap,超能,变化,0,0,10,0,0,The user swaps special abilities with the target.,The user employs its psychic power to swap abilities with the foe.
+286,封印,Imprison,超能,变化,0,100,10,0,0,Prevents foes from using moves known by the user.,Prevents foes from using any move that is also known by the user.
+287,焕然一新,Refresh,一般,变化,0,100,10,0,0,Rests for a moment to cure status and heal.,Cures status and heals the user for 25% HP.
+288,怨念,Grudge,幽灵,变化,0,100,5,0,0,"If the user faints, deletes all PP of foe's last move.","If the user faints, this move deletes the PP of the move that finished it."
+289,抢夺,Snatch,恶,变化,0,100,10,4,0,Steals the effects of the move the target uses next.,Steals the effects of the foe's healing or status-changing move.
+290,秘密之力,Secret Power,一般,物理,80,100,20,0,0,Physical Hidden Power. Varies with the user.,Physical Hidden Power. Varies in type depending on the user. Field-based.
+291,潜水,Dive,水,物理,110,100,15,0,10,Dives underwater the first turn and strikes next turn.,The user dives underwater and hits next turn. 10% drench chance. Field-based.
+292,猛推,Arm Thrust,格斗,物理,25,100,15,0,0,Straight-arm punches that strike the foe 2 to 5 times.,Straigh-arm punches that hit two to five times.
+293,保护色,Camouflage,一般,变化,0,0,10,4,0,Shields the user from an attack and becomes that type.,Protects against attacks and copies their types. May fail if used in succession.
+294,萤火,Tail Glow,虫,变化,0,0,20,0,0,Flashes a light that raises Sp. Atk by +3.,The user flashes a light that raises its Sp. Atk stat by +3.
+295,洁净光芒,Luster Purge,超能,特殊,110,100,10,0,50,Attacks with a burst of light. May lower Sp. Def.,A burst of light injures the foe. Has 50% chance to lower the foe's SpDef.
+296,薄雾球,Mist Ball,超能,特殊,110,100,10,0,50,Attacks with a flurry of down. May lower SpAtk,A flurry of down hits the foe. Has 50% chance to lower the foe's SpAtk.
+297,羽毛舞,Feather Dance,飞行,变化,0,100,15,0,0,Envelops the foe with down to sharply reduce Attack.,The foe is covered with a mass of down that sharply cuts the Attack stat.
+298,摇晃舞,Teeter Dance,一般,变化,0,100,20,0,0,Confuses all Pokémon on the scene.,A wobbly dance that confuses all the Pokémon in battle.
+299,火焰踢,Blaze Kick,火,物理,85,100,10,0,10,A kick with a high critical-hit ratio. May cause a burn.,A fiery kick with a high crit ratio. 10% burn chance. Striker boost.
+300,玩泥巴,Mud Sport,地面,变化,0,100,15,0,0,Covers the user in mud to raise electrical resistance.,Weakens Electric-type attacks while the user is in the battle.
+301,冰球,Ice Ball,冰,物理,40,100,10,0,0,Rolls into a ball to strike with rising intensity.,A rolling attack that becomes stronger each time it rolls.
+302,尖刺臂,Needle Arm,草,物理,75,100,5,0,100,Attacks with thorny arms. May cause flinching.,Attacks with thorny arms. Sets creeping thorns. Iron Fist boost.
+303,偷懒,Slack Off,一般,变化,0,100,5,0,0,Slacks off and restores half the maximum HP.,The user slacks off and restores its HP by half its full HP.
+304,巨声,Hyper Voice,一般,特殊,95,100,10,0,0,A loud attack that uses sound waves to injure.,The user lets loose a horribly loud shout with the power to damage.
+305,剧毒牙,Poison Fang,毒,物理,70,100,15,0,50,A sharp-fanged attack. May badly poison the foe.,The foe is bitten with toxic fangs. 50% poison chance. Strong Jaw boost.
+306,撕裂爪,Crush Claw,一般,物理,75,100,10,0,50,Tears at the foe with sharp claws. May lower Defense.,The foe is attacked with sharp claws. 50% chance to lower foe's Defense.
+307,爆炸烈焰,Blast Burn,火,特殊(取最高攻),130,100,5,0,0,"Powerful, but can't be used next turn.",The foe is hit with a huge explosion. Can only be used every-other turn.
+308,加农水炮,Hydro Cannon,水,特殊(取最高攻),130,100,5,0,0,"Powerful, but can't be used the next turn.",The foe is hit with a watery cannon. Can only be used every-other turn.
+309,彗星拳,Meteor Mash,钢,物理,90,90,10,0,20,Fires a meteor-like punch. May raise Attack.,"Hard, fast punch. 20% chance to raise user's Attack. Iron Fist boost."
+310,惊吓,Astonish,幽灵,物理,40,100,10,3,100,An attack that shocks the foe into flinching.,A startling shout that flinches the target. Can only be used on the first turn.
+311,气象球,Weather Ball,一般,特殊,50,100,15,0,0,The move's type and power change with the weather.,Varies in power and type depending on the weather. Weather-based.
+312,芳香治疗,Aromatherapy,草,变化,0,0,5,0,0,Heals all status problems with a soothing scent.,Heals the status problems of allies and restores 30% HP to the user.
+313,假哭,Fake Tears,恶,变化,0,100,20,0,0,Feigns crying to sharply lower the foe's Sp. Def.,The user feigns crying to sharply lower the foe's Sp. Def stat.
+314,空气利刃,Air Cutter,飞行,物理,75,100,20,0,0,Hacks with razorlike wind. High critical-hit ratio.,Strikes with sharp wind. High crit ratio. Air-based. Keen edge boost.
+315,过热,Overheat,火,特殊,130,100,5,0,100,"Allows a full-power attack, but sharply lowers SpAtk",An intense attack that also sharply reduces the user's Sp. Atk stat.
+316,气味侦测,Odor Sleuth,一般,变化,0,0,20,0,0,Negates the foe's efforts to heighten evasiveness.,Completely negates the foe's efforts to heighten its ability to evade.
+317,岩石封锁,Rock Tomb,岩石,物理,55,100,15,0,100,Stops the foe from moving with rocks and cuts Speed.,Attacks with Boulders that lower speed on hit. Throw-based.
+318,银色旋风,Silver Wind,虫,特殊,60,100,5,0,10,A powdery attack that may raise abilities.,Attacks with silver dust. 10% chance to raise all stats. Weather-based.
+319,金属音,Metal Sound,钢,变化,0,85,20,0,0,Emits a horrible screech that sharply lowers Sp. Def.,A horrible metallic screech is used to sharply lower the foe's Sp. Def.
+320,草笛,Grass Whistle,草,变化,0,60,15,0,0,Lulls the foe into sleep with a pleasant melody.,A pleasant melody is played to lull the foe into a deep sleep.
+321,挠痒,Tickle,一般,变化,0,100,20,0,0,Makes the foe laugh to lower Attack and Defense.,"The foe is made to laugh, reducing its Attack and Defense stats."
+322,宇宙力量,Cosmic Power,超能,变化,0,0,20,0,0,Raises Defense and Sp. Def with a mystic power.,The user absorbs a mystic power to raise its Defense and Sp. Def.
+323,喷水,Water Spout,水,特殊,150,100,5,0,10,Inflicts more damage if the user's HP is high.,Does more damage at high HP. 10% drench chance. Mega Launcher boost
+324,信号光束,Signal Beam,虫,特殊,85,100,15,0,20,A strange beam attack that may confuse the foe.,Hits with a flashing beam. 20% confusion chance Mega Launcher boost
+325,暗影拳,Shadow Punch,幽灵,物理,90,0,20,0,0,An unavoidable punch that is thrown from shadows.,A strong punch from the shadows. Always hits. Iron Fist boost.
+326,神通力,Extrasensory,超能,特殊,90,0,15,0,10,Attacks with a peculiar power. May cause flinching.,Attacks with an odd power. 10% flinch chance. Never misses. Increased crit rate.
+327,冲天拳,Sky Uppercut,格斗,物理,85,100,15,0,0,An uppercut thrown as if leaping into the sky.,The user attacks with an uppercut thrown skywards. Iron Fist boost.
+328,流沙深渊,Sand Tomb,地面,物理,50,90,10,0,100,Traps and hurts the foe in quicksand for 2 to 5 turns.,The foe is trapped inside a painful sandstorm for four or five turns.
+329,绝对零度,Sheer Cold,冰,特殊,100,80,5,0,20,Super effective on Water. 20% frostbite chance.,This move is super effective on Water. 20% frostbite chance.
+330,浊流,Muddy Water,地面,特殊,70,100,10,0,30,Attacks with muddy water. May lower accuracy.,Ground-and Water-type at the same time. 30% chance to lower foe's accuracy.
+331,种子机关枪,Bullet Seed,草,物理,25,100,20,0,0,Shoots 2 to 5 seeds in a row to strike the foe.,The user shoots seeds at the foe. Two to five seeds are shot at once.
+332,燕返,Aerial Ace,飞行,物理,60,0,20,0,0,An extremely speedy and unavoidable attack.,Always crits and never misses. Keen Edge boost.
+333,冰锥,Icicle Spear,冰,物理,25,100,20,0,0,Attacks the foe by firing 2 to 5 icicles in a row.,Sharp icicles are fired at the foe. It strikes two to five times.
+334,铁壁,Iron Defense,钢,变化,0,0,15,0,0,Hardens the body's surface to sharply raise Defense.,The user hardens its body's surface to sharply raise its Defense stat.
+335,挡路,Block,一般,变化,0,0,5,0,0,Blocks the foe's way to prevent escape.,The user blocks the foe's way with arms spread wide to prevent escape.
+336,长嚎,Howl,一般,变化,0,0,20,0,0,Howls to raise the spirit and boosts Attack.,The user howls to raise its spirit and boost its Attack stat.
+337,龙爪,Dragon Claw,龙,物理,90,100,15,0,10,Slashes the foe with sharp claws.,"Sharp, huge claws hook and slash the foe quickly. Keen Edge boost."
+338,疯狂植物,Frenzy Plant,草,特殊(取最高攻),130,100,5,0,0,"Powerful, but can't be used next turn.",The foe is hit with an enormous branch. Can only be used every-other turn.
+339,健美,Bulk Up,格斗,变化,0,0,20,0,0,Bulks up the body to boost both Attack and Defense.,The user bulks up its body to boost both its Attack and Defense stats.
+340,弹跳,Bounce,飞行,物理,100,100,10,0,30,"Bounces up, then down the next turn. May paralyze.",The user bounces on the foe on the 2nd turn. 30% paralyze chance.
+341,泥巴射击,Mud Shot,地面,特殊,40,100,15,1,10,10% Speed drop chance. Has +1 priority.,Has a 10% chance to drop foe's Speed. Has +1 priority. Mega Launcher boost
+342,毒尾,Poison Tail,毒,物理,60,100,10,-6,10,Forces the target to Switch. May also poison.,An attack that forces the target to switch. 10% poison chance.
+343,渴望,Covet,一般,物理,60,100,20,0,100,Cutely begs to obtain an item held by the foe.,Steals or removes the foe's item. +1 priority if the user has no item.
+344,伏特攻击,Volt Tackle,电,物理,120,100,10,0,10,A life-risking tackle that slightly hurts the user.,"The user throws an electrified tackle. 25% recoil, 10% paralyze chance."
+345,魔法叶,Magical Leaf,草,特殊(取防御)5: 待定,80,0,20,0,0,Attacks with a strange leaf that cannot be evaded.,Attacks with a leaf that can't be evaded and deals physical damage.
+346,玩水,Water Sport,水,变化,0,100,15,0,0,The user becomes soaked to raise resistance to fire.,Weakens Fire-type attacks while the user is in the battle.
+347,冥想,Calm Mind,超能,变化,0,0,20,0,0,Raises Sp. Atk and Sp. Def by focusing the mind.,The user focuses its mind to raise the Sp. Atk and Sp. Def stats.
+348,叶刃,Leaf Blade,草,物理,90,100,15,0,10,Slashes with a sharp leaf. High critical-hit ratio.,The foe is slashed with a sharp leaf. High crit ratio. Keen Edge boost.
+349,龙之舞,Dragon Dance,龙,变化,0,0,20,0,0,A mystical dance that ups Attack and Speed.,"A mystic, powerful dance that boosts the user's Attack and Speed stats."
+350,岩石爆击,Rock Blast,岩石,物理,25,100,15,0,0,Hurls boulders at the foe 2 to 5 times in a row.,The user hurls two to five hard rocks at the foe to attack.
+351,电击波,Shock Wave,电,特殊,40,0,15,2,0,A fast and unavoidable +2 priority attack.,A rapid jolt of electricity strikes. Never misses. Has +2 priority.
+352,水之波动,Water Pulse,水,特殊,80,100,20,0,20,Attacks with ultrasonic waves. May confuse the foe.,A pulsing blast of water. Has 20% confusion chance. Mega Launcher boost
+353,破灭之愿,Doom Desire,钢,特殊,140,100,5,0,0,Summons strong sunlight to attack 2 turns later.,A move that attacks the foe with a blast of light two turns after use.
+354,精神突进,Psycho Boost,超能,特殊,140,100,5,0,100,"Allows a full-power attack, but sharply lowers SpAtk",An intense attack that also sharply reduces the user's Sp. Atk stat.
+355,羽栖,Roost,飞行,变化,0,0,5,0,0,Restores the user's HP by half of its max HP.,The user lands and rests its body. It restores up to half of its max HP.
+356,重力,Gravity,超能,变化,0,0,5,0,0,Gravity is intensified negating levitation.,"Gravity is upped for five turns, making flight unusuable and negating Levitate."
+357,奇迹之眼,Miracle Eye,超能,变化,0,0,20,0,0,Inverts the target's type matchups.,The foe is treated as being in inverse room. Psychic-type is immune to Dark.
+358,唤醒巴掌,Wake-Up Slap,格斗,物理,100,100,10,0,100,"Powerful against sleeping foes, but also heals them.",This attack hits sleeping foes for big damage. It also wakes the foe up.
+359,臂锤,Hammer Arm,格斗,物理,100,100,10,0,100,A swinging fist attack that also lowers Speed.,"A strong, heavy fist is swung. Drops the user's Speed. Iron Fist boost."
+360,陀螺球,Gyro Ball,钢,物理,1,100,10,0,0,A high-speed spin that does more damage to faster foes.,"A fast spin. The slower the user, the greater the damage."
+361,治愈之愿,Healing Wish,超能,变化,0,0,10,0,0,The user faints to heal up the recipient.,The user faints. Its replacement has its HP restored and status cured.
+362,盐水,Brine,水,特殊,70,100,10,0,0,Deals Super Effective damage vs Water.,Deals Super Effective damage vs Water.
+363,自然之恩,Natural Gift,一般,物理,1,100,15,0,100,The effectiveness varies with the held Berry.,The user's Berry determines this attack's type and its power.
+364,佯攻,Feint,一般,物理,50,100,10,2,100,An attack that hits foes using moves like Protect.,"Hits a foe using moves like Protect, lifting the effect of those moves."
+365,啄食,Pluck,飞行,物理,60,100,20,0,100,"Plucks the foe's item away, eating it if it's a Berry.","Plucks away the foe's item, eating it if it's a Berry. Strong Jaw boost."
+366,顺风,Tailwind,飞行,变化,0,0,15,0,0,Whips up a turbulent breeze that raises Speed.,A turbulent whirl-wind that ups the Speed stat of the party for 4 turns.
+367,点穴,Acupressure,一般,变化,0,0,20,0,0,The user sharply raises one of its stats.,"The user applies pressure to stress points, sharply boosting one stat."
+368,金属爆炸,Metal Burst,钢,物理,0,100,10,-5,0,Retaliates any hit with greater power.,The user retaliates with greater power against the last foe to damage it.
+369,急速折返,U-turn,虫,物理,70,100,20,0,0,Does damage then switches out the user.,"The user strikes, and then switches with a waiting party Pokémon."
+370,近身战,Close Combat,格斗,物理,120,100,5,0,100,A strong attack but lowers the defensive stats.,"Fights up close, without guarding. Cuts Defenses."
+371,以牙还牙,Payback,恶,物理,60,100,10,0,0,An attack that gains power if the user moves last.,"If the user moves after the foe, this attack does double the damage."
+372,恶意追击,Assurance,恶,物理,75,100,10,0,0,An attack that gains power if the foe has been hurt.,Power doubles if the foe has already taken damage in the same turn.
+373,查封,Embargo,恶,变化,0,100,15,0,0,Prevents the foe from using any items.,"Prevents the foe from using its item. Items cannot be used on it, either."
+374,投掷,Fling,恶,物理,90,100,10,0,100,The effectiveness varies with the held item.,The user flings its item to attack. Outcome varies with items. Throw-based.
+375,精神转移,Psycho Shift,超能,变化,0,100,10,0,0,Transfers status problems to the foe.,The user transfers its status problems to the target using psychic powers.
+376,王牌,Trump Card,一般,特殊,85,100,10,0,0,Inflicts critical damage when the user's HP is low.,A desperate attack that deals critical damage when the user is below 50% HP.
+377,回复封锁,Heal Block,超能,变化,0,100,15,0,0,Prevents the foe from recovering any HP.,"The foe cannot use any moves, held items or Abilities that recover HP."
+378,绞紧,Wring Out,一般,特殊,80,100,10,0,0,"Crushes quicker foes, nullifying their ability.",Negates abilities until switch out if the foe moves first. Ignores abilities.
+379,力量戏法,Power Trick,超能,变化,0,0,10,0,0,The user swaps its Attack and Defense stats.,The user swaps its Attack and Defense stats and stat boosts.
+380,胃液,Gastro Acid,毒,变化,0,100,10,0,0,Suppresses the foe's ability and poisons it.,"Spews stomach acid at the foe, negating its abilities and poisoning it."
+381,幸运咒语,Lucky Chant,一般,变化,0,0,20,0,0,Prevents the foe from landing critical hits.,"For 5 turns, the foe is prevented from landing critical hits."
+382,抢先一步,Me First,一般,变化,0,0,20,0,0,Executes the foe's attack with greater power.,"The foe's intended move is stolen and used first, with greater power."
+383,仿效,Copycat,一般,变化,0,0,20,0,0,The user mimics the last move used by a foe.,The user tries to mimic the move used immediately before it.
+384,力量互换,Power Swap,超能,变化,0,0,10,0,0,Swaps Attack and Special Attack with the foe.,Swaps Attack and Special Attack stats and stat boosts with the target.
+385,防守互换,Guard Swap,超能,变化,0,0,10,0,0,Swaps Defense and Special Defense with the foe.,Swaps Defense and Special Defense stats and stat boosts with the target.
+386,惩罚,Punishment,恶,物理,80,100,15,0,0,Does more damage if the foe has powered up.,Deals more damage if the user has more stat changes. Pierces increased defenses.
+387,珍藏,Last Resort,一般,物理,140,100,5,0,0,Can only be used if every other move has been used.,This fails unless the user has used its other moves in the battle already.
+388,烦恼种子,Worry Seed,草,变化,0,100,10,0,0,Plants a seed that causes Fear and gives Insomina.,A seed that is planted that causes Fear and gives Insomnia.
+389,突袭,Sucker Punch,恶,物理,70,100,5,1,0,Strikes first if the foe is preparing an attack.,User strikes first. It fails if the foe is not attacking.
+390,毒菱,Toxic Spikes,毒,变化,0,0,20,0,0,Sets spikes that poison a foe switching in.,Poison spikes are laid at the foe's feet. They poison foes that switch in.
+391,心灵互换,Heart Swap,超能,变化,0,0,10,0,0,Swaps any stat changes with the foe.,The user employs its psychic powers to swap stat changes with the target.
+392,水流环,Aqua Ring,水,变化,0,0,20,0,0,Forms a veil of water that restores HP.,The user envelops itself in a veil of water. It regains 1/16 HP every turn.
+393,电磁飘浮,Magnet Rise,电,变化,0,0,10,0,0,The user levitates with electromagnetism.,The user levitates using electrically generated magnetism for five turns.
+394,闪焰冲锋,Flare Blitz,火,物理,120,100,10,0,10,A charge that may burn the foe. Also hurts the user.,"A ruthless, fiery charge which has 33% recoil. Has 10% burn chance."
+395,发劲,Force Palm,格斗,物理,50,100,20,0,100,"Sends a shock wave through the foe, clearing their stats.",The foe is attacked with a shock wave. Clears stat changes.
+396,波导弹,Aura Sphere,格斗,特殊,85,0,20,0,0,Attacks with an aura blast that cannot be evaded.,A strong blast of aura power. Always hits. Mega Launcher boost
+397,岩石打磨,Rock Polish,岩石,变化,0,0,20,0,0,Polishes the body to sharply raise Speed.,The user polishes its body to reduce drag. This sharply raises its Speed.
+398,毒击,Poison Jab,毒,物理,80,100,20,0,30,A stabbing attack that may poison the foe.,A stabbing attack with 30% poison chance. Iron Fist & Mighty Horn boost.
+399,恶之波动,Dark Pulse,恶,特殊,85,100,15,0,20,Attacks with a horrible aura. May cause flinching.,Releases an aura with dark thoughts. 20% flinch chance. Mega Launcher boost
+400,暗袭要害,Night Slash,恶,物理,75,100,15,0,20,Hits as soon as possible. High critical-hit ratio.,"The user waits to strike, slashing the foe. High crit. Keen Edge boost."
+401,水流尾,Aqua Tail,水,物理,90,100,10,0,0,The user swings its tail like a wave to attack.,The user attacks by swinging its tail. High crit chance.
+402,种子炸弹,Seed Bomb,草,物理,90,100,15,0,0,A barrage of hard seeds is fired at the foe.,A barrage of hard-shelled seeds is slammed on the foe from above.
+403,空气之刃,Air Slash,飞行,特殊,80,100,15,0,30,Attacks with a blade of air. May cause flinching.,A blade of air with 30% flinch chance. Keen Edge boost. Air-based.
+404,十字剪,X-Scissor,虫,物理,90,100,15,0,10,Cuts like scissors. High critical-hit ratio.,"Slashes with crossed scythes, claws etc. High crit ratio. Keen Edge boost."
+405,虫鸣,Bug Buzz,虫,特殊,90,100,10,0,20,A damaging sound wave that may lower Sp. Def.,A harsh sound wave from the user. 20% chance to drop foe's Sp. Def.
+406,龙之波动,Dragon Pulse,龙,特殊,90,100,10,0,0,Generates a shock wave to damage the foe.,The user's gaping mouth generates a shock wave attack. Mega Launcher boost
+407,龙之俯冲,Dragon Rush,龙,物理,120,100,10,0,20,Tackles the foe with menace. Damages the user.,A tackle exhibiting devastating menace. 20% flinch chance. 33% recoil.
+408,力量宝石,Power Gem,岩石,特殊,90,100,15,0,0,Attacks with rays of light that sparkle like diamonds.,"A ray of light is shot at the foe, sparkling as if it were made of gems."
+409,吸取拳,Drain Punch,格斗,物理,75,100,10,0,0,A punch that absorbs over 30% of damage inflicted.,A forceful punch that recovers 50% of the damage. Iron Fist boost.
+410,真空波,Vacuum Wave,格斗,特殊,40,100,15,1,0,Whirls its fists to send a wave that strikes first.,A pure vacuum is fired at the foe. +1 priority.
+411,真气弹,Focus Blast,格斗,特殊,120,75,5,0,65,Attacks at full power. May lower Sp. Def.,Mental power is un-leashed. 65% chance to lower foe's SpDef. Mega Launcher boost
+412,能量球,Energy Ball,草,特殊,90,100,15,0,10,Draws power from nature to attack. May lower Sp. Def.,Power is drawn from nature and fired at the foe. 10% chance to drop foe's SpDef.
+413,勇鸟猛攻,Brave Bird,飞行,物理,120,100,10,0,0,A low altitude charge that also hurts the user.,"Wings tucked in, the user charges at the foe. 33% recoil damage."
+414,大地之力,Earth Power,地面,特殊,90,100,15,0,10,Makes the ground erupt with power. May lower Sp. Def.,The ground erupts below the foe. 10% chance to lower the foe's SpDef.
+415,掉包,Switcheroo,恶,变化,0,100,10,0,0,Swaps items with the foe faster than the eye can see.,The user trades held items with the foe faster than the eye can follow.
+416,终极冲击,Giga Impact,一般,物理,150,100,5,0,0,"Powerful, but leaves the user immobile the next turn.","Hits with immense force. Deals severe damage, needs to recharge."
+417,诡计,Nasty Plot,恶,变化,0,0,20,0,0,Thinks bad thoughts to sharply boost SpAtk,"The user stimulates its brain with bad thoughts, sharply raising its SpAtk"
+418,子弹拳,Bullet Punch,钢,物理,40,100,15,1,0,Punches as fast as a bul-let. It always hits first.,Bullet-fast punches barrage the target. +1 priority. Iron Fist boost.
+419,雪崩,Avalanche,冰,物理,70,100,10,-4,0,An attack that gains power if injured by the foe.,An attack move that gains in intensity if the target has hurt the user.
+420,冰砾,Ice Shard,冰,物理,40,100,15,1,0,Hurls a chunk of ice that always strike first.,Flash-frozen ice chunks are hurled at the foe. +1 priority.
+421,暗影爪,Shadow Claw,幽灵,物理,80,100,15,0,10,Strikes with a shadow claw. High critical-hit ratio.,Claws made from shadows strike the foe. High crit. Keen Edge boost.
+422,雷电牙,Thunder Fang,电,物理,80,100,15,0,10,May cause flinching or leave the foe paralyzed.,Electrified fangs. 10% paralyze or flinch chance. Strong Jaw boost.
+423,冰冻牙,Ice Fang,冰,物理,80,100,15,0,10,May cause flinching or leave the foe frostbiten.,Frozen fangs. 10% frostbite or flinch chance. Strong Jaw boost.
+424,火焰牙,Fire Fang,火,物理,80,100,15,0,10,May cause flinching or leave the foe with a burn.,Fiery fangs. 10% burn or flinch chance. Strong Jaw boost.
+425,影子偷袭,Shadow Sneak,幽灵,物理,40,100,15,1,0,Extends the user's shadow to strike first.,The user's shadow extends and strikes the foe. +1 priority.
+426,泥巴炸弹,Mud Bomb,地面,特殊,70,100,10,0,100,"Can hit Flying foes, then knocks them to the ground.","This move also hits foes that are in the air, and knocks them down."
+427,精神利刃,Psycho Cut,超能,物理,75,100,20,0,20,Tears with psychic blades. High critical-hit ratio.,Psychic blades strike the foe. High crit ratio. Keen Edge boost.
+428,意念头锤,Zen Headbutt,超能,物理,80,100,15,0,30,Hits with a strong head-butt. May cause flinching.,"The user focuses, and strikes the foe. 20% flinch chance. Field-based."
+429,镜光射击,Mirror Shot,钢,特殊,65,100,10,0,100,Emits a flash of energy to damage and cut SpDef.,A flash of energy is loosed at the foe. Lowers Special Defense.
+430,加农光炮,Flash Cannon,钢,特殊,90,100,10,0,10,Releases a blast of light that may lower Sp. Def.,Light energy attack. 10% chance to lower their SpDef stat. Mega Launcher boost
+431,攀岩,Rock Climb,岩石,物理,110,100,20,0,30,A charging attack that may confuse the foe.,A charging attack. 30% confusion chance. Field-based.
+432,清除浓雾,Defog,飞行,变化,0,0,15,0,0,Removes obstacles and lowers evasion.,"Wind blows across the battlefield, clearing barriers, obstacles, etc."
+433,戏法空间,Trick Room,超能,变化,0,0,5,-7,0,Slower Pokémon get to move first for 5 turns.,A bizarre area is constructed for 5 turns where slower Pokémon move first.
+434,流星群,Draco Meteor,龙,特殊,130,100,5,0,100,Casts comets onto the foe. Harshly lowers the SpAtk,Comets strike down upon the foe. This harshly reduces the user's Sp. Atk stat.
+435,放电,Discharge,电,特殊,80,100,15,0,30,Zaps the field with electri-city. May cause paralysis.,Electricity is loosed on the field. 30% paralyze chance to foes/ally.
+436,喷烟,Lava Plume,火,特殊,80,100,15,0,30,Scarlet flames torch everything around the user.,Scarlet flames wash over all Pokémon in battle. 30% burn chance.
+437,飞叶风暴,Leaf Storm,草,特殊,130,100,5,0,100,Whips up a storm of leaves. Harshly lowers SpAtk,A storm of sharp leaves is whipped up. The user's Sp. Atk sharply falls.
+438,强力鞭打,Power Whip,草,物理,120,90,10,0,0,Violently lashes the foe with vines or tentacles.,The user violently whirls its vines or tentacles to lash at the foe.
+439,岩石炮,Rock Wrecker,岩石,特殊(取最高攻),120,100,5,0,0,"Powerful, but leaves the user immobile the next turn.",Hurls a massive rock at the foe. User recharges after hit. Throw-based.
+440,十字毒刃,Cross Poison,毒,物理,40,100,10,0,10,Two slashes that may poison a foe and do critical damage.,Hits twice. High crit ratio. 10% poison chance. Keen Edge boost.
+441,垃圾射击,Gunk Shot,毒,物理,120,80,5,0,30,Shoots filthy garbage at the foe. May also poison.,Filthy garbage is shot at the foe. 30% poison chance. Mega Launcher boost
+442,铁头,Iron Head,钢,物理,80,100,15,0,30,Slams the foe with a hard head. May cause flinching.,The user slams the foe with its steel-hard head. 30% flinch chance.
+443,磁铁炸弹,Magnet Bomb,钢,特殊,70,0,20,0,0,Launches a magnet that is Super Effective vs Steel.,Launches a magnetic bomb that is Super Effective vs Steel. Never misses.
+444,尖石攻击,Stone Edge,岩石,物理,100,90,10,0,20,Stabs the foe with stones. High critical-hit ratio.,Sharpened stones stab the foe from below. Critical hits land more easily.
+445,诱惑,Captivate,妖精,特殊,65,100,20,0,0,Deals additional damage if the target is infatuated.,Deals double damage vs infatuated foes.
+446,隐形岩,Stealth Rock,岩石,变化,0,0,20,0,0,Sets floating stones that hurt a foe switching in.,Levitating stones surround the foe. This hurts foes that switch in.
+447,打草结,Grass Knot,草,特殊,1,100,20,0,0,A snare attack that does more damage to heavier foes.,A snaring grass trap that inflicts more damage on heavier foes.
+448,喋喋不休,Chatter,飞行,特殊,90,100,15,0,100,Attacks with a sound wave that causes confusion.,The foe is left confused by sound waves of deafening chatter.
+449,制裁光砾,Judgment,一般,特殊,120,100,5,0,0,The type varies with the kind of Plate held.,The type of this move varies with the kind of Plate the user is holding.
+450,虫咬,Bug Bite,虫,物理,60,100,20,0,100,"Tears away the foe's item, eating it if it's a Berry.",Removes the foe's item and eats it if it's a Berry. Strong Jaw boost.
+451,充电光束,Charge Beam,电,特殊,50,100,15,0,100,Fires a beam of electricity. Raises Sp. Atk by one stage.,Attacks with an electric charge. Raises own SpAtk. Mega Launcher boost
+452,木槌,Wood Hammer,草,物理,120,100,10,0,0,Slams the body into a foe The user gets hurt too.,The user slams its rugged body into the foe. 33% recoil damage.
+453,水流喷射,Aqua Jet,水,物理,40,100,20,1,0,Strikes first by dashing at the foe at a high speed.,The user lunges at the foe at a fast speed. This has +1 priority.
+454,攻击指令,Attack Order,虫,特殊(取最高攻),120,100,15,0,0,Underlings pummel the foe. High critical-hit ratio.,Underlings pummel the foe. Critical hits land more easily.
+455,防御指令,Defend Order,虫,变化,0,0,15,0,0,Raises Defense and Sp. Def with a living shield.,Underlings form a living shield which up the user's Sp. Def and Defense.
+456,回复指令,Heal Order,虫,变化,0,0,5,0,0,The user's underlings show up to heal half its max HP.,"The user calls out its underlings to heal it, restoring half of its max HP."
+457,双刃头锤,Head Smash,岩石,物理,150,85,5,0,0,A life-risking headbutt that seriously hurts the user.,"A hazardous, full-power headbutt hits the foe. 50% recoil damage."
+458,二连击,Double Hit,一般,物理,45,100,10,0,0,Slams the foe with a tail etc. Strikes twice.,The user slams the foe twice in a row. Increased crit rate.
+459,时光咆哮,Roar of Time,龙,特殊,90,100,10,-6,0,"Moves last, but forces the target to switch out.",A blast which distorts even time. Forces the target to switch. Moves last.
+460,亚空裂斩,Spacial Rend,龙,特殊,100,100,5,0,0,"Tears the foe, and space. High critical-hit ratio.","The foe, and the space around it, is torn. Critical hits land more easily."
+461,新月舞,Lunar Dance,超能,变化,0,0,10,0,0,The user faints to heal up the recipient.,The user faints. Its replacement has its HP restored and status cured.
+462,捏碎,Crush Grip,一般,物理,120,100,5,0,0,"Crushes quicker foes, nullifying their ability.",This attack will also negate the foe's Ability if it has moved already.
+463,熔岩风暴,Magma Storm,火,特殊,100,90,5,0,100,Traps the foe in a vortex of fire for 2 to 5 turns.,The foe becomes trapped within a maelstrom of fire for 4 or 5 turns.
+464,暗黑洞,Dark Void,恶,变化,0,80,10,0,0,"Drags the foe into total darkness, inducing Sleep.",The foe is dragged into a world of total darkness that puts it to sleep.
+465,种子闪光,Seed Flare,草,特殊,120,85,5,0,40,Generates a shock wave that sharply reduces Sp. Def.,A shock wave is loosed at the foe. 40% chance to lower foe's SpDef.
+466,奇异之风,Ominous Wind,幽灵,特殊,55,100,5,0,10,A repulsive attack that may raise all stats.,10% chance to raise all user's stats. Deals double damage in fog.
+467,暗影潜袭,Shadow Force,幽灵,物理,120,100,5,0,100,Vanishes on the first turn then strikes the next turn.,"The user vanishes. The next turn, it strikes the foe, ignoring Protect."
+468,磨爪,Hone Claws,恶,变化,0,0,15,0,0,Sharpens its claws to raise Attack and Accuracy.,The user sharpens its claws to boost its Attack stat and accuracy.
+469,广域防守,Wide Guard,岩石,变化,0,0,10,3,0,Evades wide-ranging attacks for one turn.,"For 1 turn, the user and its allies are protected from wide-ranging moves."
+470,防守平分,Guard Split,超能,变化,0,0,10,0,0,Averages changes to Defense and Sp. Def with the foe.,The user's Defense and Sp. Def stats are averaged with those of the target.
+471,力量平分,Power Split,超能,变化,0,0,10,0,0,Averages changes to Attack and Sp. Atk with the foe.,The user's Attack and Sp. Atk stats are averaged with those of the target.
+472,奇妙空间,Wonder Room,超能,变化,0,0,10,0,0,Attack and SpAtk stats are swapped for 5 turns.,"For 5 turns, Attack and SpAtk stats are swapped and their stat buffs are ignored."
+473,精神冲击,Psyshock,超能,特殊(取防御)5: 待定,80,100,10,0,0,Attacks with a psychic wave that does physical damage.,The user casts an odd psychic wave to attack the foe for physical damage.
+474,毒液冲击,Venoshock,毒,特殊,65,100,10,0,0,Does double damage if the foe is poisoned.,A special liquid that damages for double the power on poisoned targets.
+475,身体轻量化,Autotomize,钢,变化,0,0,15,0,0,Sheds additional weight to sharply boost Speed.,"The user sheds part of its body to be lighter, sharply raising its Speed."
+476,愤怒粉,Rage Powder,虫,变化,0,0,20,2,0,Scatters powder to make foes attack only the user.,"Foes aim only at the user, enraged by a cloud of its irritating powder."
+477,意念移物,Telekinesis,超能,变化,0,0,15,0,0,Makes the foe float. It is easier to hit for 3 turns.,"The user floats its foe psychically for 3 turns, making the foe easier to hit."
+478,魔法空间,Magic Room,超能,变化,0,0,10,0,0,Disables stones and passive DMG for 5 turns.,Prevents passive damage and disables mega stones for 5 turns.
+479,击落,Smack Down,岩石,物理,70,100,15,0,100,Throws a rock to knock the foe down to the ground.,The user throws a stone at its foe. Flying foes will fall to the ground.
+480,山岚摔,Storm Throw,格斗,物理,60,100,10,0,0,This attack always results in a critical hit.,A fierce blow upon the foe which will always result in a critical hit.
+481,烈焰溅射,Flame Burst,火,特殊,40,100,15,1,100,Also hits the foe's ally for 1/4 dmg. Has +1 priority.,Also hits foe's ally for 1/4 dmg. +1 priority. Mega Launcher boost
+482,污泥波,Sludge Wave,毒,特殊,95,100,10,0,10,Swamps the foe with a wave of sludge. May also poison.,It swamps the area around the user with sludge. 10% poison chance.
+483,蝶舞,Quiver Dance,虫,变化,0,0,10,0,0,Dances to raise Sp. Atk Sp. Def and Speed.,"A beautiful, mystic dance which boosts the user's Sp. Atk, Sp. Def and Speed."
+484,重磅冲撞,Heavy Slam,钢,物理,1,100,10,0,0,Does more damage if the user outweighs the foe.,The user slams the foe with its heavy body. Heavier users are stronger.
+485,同步干扰,Synchronoise,超能,特殊,95,100,10,0,0,An odd shock wave that Matches user's second type.,An odd shockwave. Matches the user's second type. Sound-based.
+486,电球,Electro Ball,电,特殊,1,100,10,0,0,Hurls an orb that does more damage to slower foes.,An electric orb is hurled at the foe. Faster users deal greater damage.
+487,浸水,Soak,水,变化,0,100,20,0,0,Sprays water at the foe making it Water-type.,The foe is struck by a torrent of water which changes its type to Water.
+488,蓄能焰袭,Flame Charge,火,物理,50,100,20,0,100,Attacks in a cloak of flames. Raises Speed.,"Cloaked in flames, the user strikes. This raises its Speed stat."
+489,盘蜷,Coil,毒,变化,0,0,10,0,0,Coils up to raise Attack Defense and Accuracy.,"The user coils up, raising its Attack, Defense and its accuracy."
+490,下盘踢,Low Sweep,格斗,物理,60,100,20,0,100,Attacks the foe's legs lowering its Speed.,"The user strikes swiftly at the foe's legs, lowering the foe's Speed stat."
+491,酸液炸弹,Acid Spray,毒,特殊,40,100,20,0,100,Sprays a hide-melting acid. Sharply reduces Sp. Def.,An acidic fluid is spat at the foe. This harshly lowers the foe's Sp. Def.
+492,欺诈,Foul Play,恶,物理,95,100,15,0,0,The higher the foe's Attack the more damage caused.,"The higher the foe's Attack stat, the greater the damage this deals."
+493,单纯光束,Simple Beam,一般,变化,0,100,15,0,0,A beam that changes the foe's ability to Simple.,The user's odd psychic wave changes the foe's Ability to Simple.
+494,找伙伴,Entrainment,一般,变化,0,100,15,0,0,"Makes the foe mimic the user, gaining its ability.",An odd dance that compels the target to mimic the Ability of the user.
+495,您先请,After You,一般,变化,0,0,15,0,0,"Helps out the foe, letting it move next.",The user helps the target and forces it to move right after the user.
+496,轮唱,Round,一般,特殊,60,100,15,0,20,A song that inflicts damage. Others can join in too.,A loud song attack. Deals 2x damage if ally also uses Round. 20% flinch chance.
+497,回声,Echoed Voice,一般,特殊,20,90,15,0,0,Slices the foe 3 times in a with rising intensity.,A 3-hit attack. More powerful with each successive hit. Sound-based.
+498,逐步击破,Chip Away,一般,物理,75,100,20,0,40,Chips away at the foe's attack and defense.,40% chance to lower Attack and/or Defense. Ignores stat changes.
+499,清除之烟,Clear Smog,毒,特殊,50,0,15,0,100,Attacks with white haze that eliminates all stat changes.,"A clump of special mud is hurled at the foe, resetting their stat changes."
+500,辅助力量,Stored Power,超能,特殊,20,100,10,0,0,The higher the user's stats the more damage caused.,"The more the user's stats are raised, the greater this move's power."
+501,快速防守,Quick Guard,格斗,变化,0,0,10,1,0,Protects against priority attacks for 3 turns.,Protects the user and its allies from priority for 3 turns.
+502,交换场地,Ally Switch,超能,变化,0,0,15,2,0,The user switches places with its partner.,The user teleports using a strange power and swaps with its ally.
+503,热水,Scald,水,特殊,75,100,15,0,30,Shoots boiling water at the foe. May inflict a burn.,Boiling hot water is shot at the foe. 30% burn chance.
+504,破壳,Shell Smash,一般,变化,0,0,15,0,0,"Raises offensive stats, but lowers defensive stats.","A broken shell ups Atk, Sp.Atk and Spe, while reducing Def and Sp.Def."
+505,治愈波动,Heal Pulse,超能,变化,0,0,10,0,0,Recovers up to half the target's maximum HP.,"A pulse is loosed, healing the target by up to half of their maximum HP."
+506,祸不单行,Hex,幽灵,特殊,65,100,10,0,0,Does double damage if the foe has a status problem.,Double damage to foes affected by status problems.
+507,自由落体,Sky Drop,飞行,物理,60,100,10,0,0,Takes the foe into the sky then drops it the next turn.,Immobilizes and then slams the foe. Deals damage and triggers hazards. Throw based.
+508,换档,Shift Gear,钢,变化,0,0,10,0,0,Rotates its gears to raise Attack and Speed.,"The user rotates its gears, raising its Attack and sharply raising its Speed."
+509,巴投,Circle Throw,格斗,物理,60,100,10,-6,0,Knocks the foe away to end the battle.,"The foe is thrown, dragging out another Pokémon into battle. Wild Pokémon flee."
+510,烧净,Incinerate,火,特殊,60,100,15,0,100,Burns up Berries and Gems preventing their use.,A fiery attack that burns up any Berry or Gem the foe may be holding.
+511,延后,Quash,超能,变化,0,100,5,0,0,Suppresses distortions that let battlers move first.,Suppresses most effects that would affect turn order.
+512,杂技,Acrobatics,飞行,物理,75,100,15,0,0,Does 1.5x damage if the user has no item.,The user nimbly strikes the foe. 50% more damage without an item.
+513,镜面属性,Reflect Type,一般,变化,0,0,15,1,0,The user makes the foe reflect the user's type.,"The user projects its type onto the foe, making it the same type."
+514,报仇,Retaliate,一般,物理,80,100,10,0,0,An attack that does more damage if an ally fainted.,This vengeful move deals double damage if an ally fainted in the turn before.
+515,搏命,Final Gambit,格斗,特殊,1,100,5,0,0,The user faints to damage the foe equal to its HP.,"This attack causes the user to faint, but does damage equal to its HP."
+516,传递礼物,Bestow,一般,变化,0,0,15,0,0,The user gives its item and status to the foe.,The user gives its item and status to the foe.
+517,烈火深渊,Inferno,火,特殊,120,50,5,0,100,"Powerful and sure to inflict a burn, but inaccurate.",The foe is engulfed in an intense fire. Burns the foe. Mega Launcher boost
+518,水之誓约,Water Pledge,水,特殊(取最高攻),90,100,15,0,100,Attacks with a column of water. May make a rainbow.,Creates a rainbow in sun or a swamp with grass. Uses highest attack.
+519,火之誓约,Fire Pledge,火,特殊(取最高攻),90,100,15,0,100,Attacks with a column of fire. May burn the grass.,Creates a rainbow in rain or a firestorm with grass. Uses highest attack.
+520,草之誓约,Grass Pledge,草,特殊(取最高攻),90,100,15,0,100,Attacks with a column of grass. May create a swamp.,Creates a swamp in rain and a firestorm in sun. Uses highest attack.
+521,伏特替换,Volt Switch,电,特殊,70,100,20,0,0,Does damage then switches out the user.,"The user strikes, and then switches with a waiting party Pokémon."
+522,虫之抵抗,Struggle Bug,虫,特殊,80,100,10,0,0,Inflicts critical damage when the user's HP is low.,A desperate attack that deals critical damage when the user is below 50% HP.
+523,重踏,Bulldoze,地面,物理,55,100,20,0,100,Stomps down on the ground. Lowers Speed.,"A mighty stomp which hits all foes, and lowers their Speed stat."
+524,冰息,Frost Breath,冰,特殊,60,100,10,0,30,This attack always results in a critical hit.,A fierce blow upon the foe which will always result in a critical hit.
+525,龙尾,Dragon Tail,龙,物理,60,100,10,-6,0,Knocks the foe away to end the battle.,"The foe is thrown, dragging out another Pokémon into battle. Wild Pokémon flee."
+526,自我激励,Work Up,一般,变化,0,0,20,0,0,The user is roused. Ups Attack and SpAtk,"The user is roused, and its Attack and Sp. Atk stats increase."
+527,电网,Electroweb,电,特殊,60,100,15,0,100,Snares the foe with an electric net. Lowers Speed.,The foe is caught in an electric net. This lowers their Speed stat.
+528,疯狂伏特,Wild Charge,电,物理,90,100,15,0,10,An electrical tackle with 10% paralyze chance.,"An electric, reckless crash attack with 10% paralyze chance."
+529,直冲钻,Drill Run,地面,物理,85,100,15,0,10,Spins its body like a drill. High critical-hit ratio.,Rotates its body like a drill. High crit ratio. Mighty Horn boost.
+530,二连劈,Dual Chop,龙,物理,40,100,15,0,0,Attacks with brutal hits that strike twice.,Brutal strikes hit twice. High crit ratio. Keen Edge boost.
+531,爱心印章,Heart Stamp,超能,物理,80,100,15,0,30,A sudden blow after a cute act. May cause flinching.,"The foe's guard drops, and the user strikes. 30% flinch chance."
+532,木角,Horn Leech,草,物理,75,100,15,0,0,An attack that absorbs half the damage inflicted.,Absorbs half the damage. Ignores foe's stat changes. Mighty Horn boost.
+533,圣剑,Sacred Sword,格斗,物理,90,100,15,0,0,Strikes through the foe's stat changes.,The user cuts its foe. Ignores foe's stat changes. Keen Edge boost.
+534,贝壳刃,Razor Shell,水,物理,75,100,15,0,50,Tears at the foe with sharp shells. May lower Defense.,High crit ratio. 50% chance to lower foe's Def. Keen Edge boost.
+535,高温重压,Heat Crash,火,物理,1,100,10,0,0,Does more damage if the user outweighs the foe.,The user slams the foe with its heavy body. Heavier users are stronger.
+536,青草搅拌器,Leaf Tornado,草,特殊,50,90,10,0,100,Traps and hurts the foe in a tornado for 2 to 5 turns.,The foe is trapped with sharp leaves for four or five turns.
+537,疯狂滚压,Steamroller,虫,物理,80,100,10,0,0,A speedy attack that crushes the foe with the user's body.,Attacks as if Speed was 50% higher for determining turn order.
+538,棉花防守,Cotton Guard,草,变化,0,0,10,0,0,Wraps its body in cotton. Drastically raises Defense.,"The user protects itself with soft cotton, drastically raising its Defense."
+539,暗黑爆破,Night Daze,恶,特殊,40,100,15,1,0,Looses a pitch-black shock wave. Has +1 priority.,Strucks with a pitch-black shock wave. Has +1 priority.
+540,精神击破,Psystrike,超能,特殊(取防御)5: 待定,100,100,10,0,0,Attacks with a psychic wave that does physical damage.,The user casts an odd psychic wave to attack the foe for physical damage.
+541,扫尾拍打,Tail Slap,一般,物理,25,100,10,0,0,Strikes the foe with its tail 2 to 5 times.,"The user attacks by striking the foe with its hard tail, two to five times."
+542,暴风,Hurricane,飞行,特殊,110,80,10,0,30,Traps the foe in a fierce wind. May cause confusion.,30% chance to confuse the foe. Weather-and Air-based.
+543,爆炸头突击,Head Charge,一般,物理,130,100,10,0,0,A charge using guard hair. It hurts the user a little.,Powerful guard hair headbutts the foe in an attack. 25% recoil damage.
+544,齿轮飞盘,Gear Grind,钢,物理,50,100,15,0,0,Throws two steel gears that strike twice.,The user attacks by throwing steel gears at its target twice.
+545,火焰弹,Searing Shot,火,特殊,100,100,5,0,30,Scarlet flames torch everything around the user.,Scarlet flames torch the field. 30% burn chance. Mega Launcher boost
+546,高科技光炮,Techno Blast,一般,特殊,120,100,5,0,0,The type varies based on the user.,A beam of light. Changes type based on Hidden Power type.
+547,古老之歌,Relic Song,一般,特殊(取最高攻),100,100,10,0,10,Attacks with an ancient song. May induce sleep.,An ancient song that may induce sleep. Uses highest Attack stat.
+548,神秘之剑,Secret Sword,格斗,特殊(取防御)5: 待定,85,100,10,0,0,Cuts with a long horn that does physical damage.,"The user cuts its foe, oddly dealing physical damage. Keen Edge boost."
+549,冰封世界,Glaciate,冰,特殊,80,100,10,0,100,Blows very cold air at the foe. It lowers their Speed.,The user blows freezing cold air at its foes that lowers their Speed.
+550,雷击,Bolt Strike,电,物理,130,100,5,0,20,Strikes with a great amount of lightning. May paralyze.,The user strikes its foe with electricity. 30% paralyze chance.
+551,青焰,Blue Flare,火,特殊,130,100,5,0,20,Engulfs the foe in a blue flame. May inflict a burn.,The foe is engulfed in a beautiful flame. 20% burn chance.
+552,火之舞,Fiery Dance,火,特殊,80,100,10,0,50,Dances cloaked in flames. May raise SpAtk,The user flaps its flame-cloaked wings. 50% chance to raise its SpAtk.
+553,冰冻伏特,Freeze Shock,冰,物理,140,90,5,0,30,A powerful 2-turn move that may paralyze the foe.,Paralyzes attackers that make contact while charging. 30% paralyze chance.
+554,极寒冷焰,Ice Burn,冰,特殊,140,90,5,0,30,A powerful 2-turn move that may inflict a burn.,Burns attackers that make contact while charging. 30% burn chance.
+555,大声咆哮,Snarl,恶,特殊,60,100,15,0,100,Yells and rants at the foe lowering its SpAtk,"The user yells as if it is ranting, lowering the Sp. Atk of its foe."
+556,冰柱坠击,Icicle Crash,冰,物理,85,100,10,0,20,Drops large icicles on the foe. May cause flinching.,"Sharp icicles fall onto the foe, with a 20% flinch chance."
+557,Ｖ热焰,V-create,火,物理,180,100,5,0,100,"Very powerful, but lowers Defense, Sp. Def and Speed.","A powerful strike that lowers the user's Defense, Sp. Def and Speed."
+558,交错火焰,Fusion Flare,火,特殊,100,100,5,0,0,Summons a fireball. Works well with a thunderbolt.,A giant flame that deals more damage when joined with a big thunderbolt.
+559,交错闪电,Fusion Bolt,电,物理,100,100,5,0,0,Summons a thunderbolt. Works well with a fireball.,A giant thunderbolt that deals more damage when joined with a big flame.
+560,飞身重压,Flying Press,格斗,物理,100,100,10,0,0,This attack does Fighting and Flying-type damage.,A wrestling attack that is Fighting or Flying based on effectiveness.
+561,掀榻榻米,Mat Block,格斗,变化,0,0,15,1,0,Evades damaging moves for one turn.,A pulled-up mat is used to protect the user and its ally from damaging moves.
+562,打嗝,Belch,毒,特殊,120,100,5,0,0,Lets out a loud belch. Must eat a Berry to use it.,The user eats its held Berry and lets out a damaging belch at the foe.
+563,耕地,Rototiller,地面,变化,0,0,10,0,0,Ups the Attack and Sp. Atk of Grass-type Pokémon.,Boosts the Atk and SpAtk of Grass-types by 1 stage or 2 stages in Grassy Terrain.
+564,黏黏网,Sticky Web,虫,变化,0,0,20,0,0,Weaves a sticky net that slows foes switching in.,A sticky net woven around the foe that drops the Speed of foes that switch in.
+565,致命针刺,Fell Stinger,虫,物理,60,100,20,0,0,If it knocks out a foe the Attack stat is raised.,"If this attack knocks out a foe, the user's Attack rises by +3."
+566,潜灵奇袭,Phantom Force,幽灵,物理,90,100,15,0,100,Vanishes on the first turn then strikes the next turn.,"The user vanishes. The next turn, it strikes the foe, ignoring Protect."
+567,万圣夜,Trick-Or-Treat,幽灵,变化,0,100,20,0,0,Goes trick-or-treating making the foe Ghost-type.,The user adds the Ghost-type to its foe and makes it weakened by fog.
+568,战吼,Noble Roar,一般,变化,0,100,20,0,0,"Intimidates foes, cutting their Attack and SpAtk",A noble roar that intimidates foes and lowers their Attack and SpAtk
+569,等离子浴,Ion Deluge,电,变化,0,0,20,1,0,Electrifies Normal-type moves with charged atoms.,The user disperses charged particles which electrify Normal-type moves.
+570,抛物面充电,Parabolic Charge,电,特殊,90,100,10,0,0,Damages adjacent Pokémon and heals up by 1/4 of it.,"The user attacks all around it, and restores HP by 25% of damage dealt."
+571,森林咒术,Forest's Curse,草,变化,0,100,20,0,0,Puts a curse on the foe making the foe Grass-type.,The user puts a forest curse on the foe. The foe is now Grass-type as well.
+572,落英缤纷,Petal Blizzard,草,物理,100,100,15,0,0,Stirs up a violent storm of petals to attack.,"A violent petal blizzard stirs up, hitting everything around it."
+573,冷冻干燥,Freeze-Dry,冰,特殊,70,100,15,0,10,Super effective on Water-types. May cause freezing.,This move is super effective on Water. 10% frostbite chance.
+574,魅惑之声,Disarming Voice,妖精,特殊,60,0,15,0,0,Lets out a charming cry that cannot be evaded.,The user cries out with a disarmingly cute voice. This never misses.
+575,抛下狠话,Parting Shot,恶,变化,0,100,20,0,0,"Lowers the foe's Attack and Sp. Atk, then switches out.",The foe's Attack and Sp. Atk stats are lowered by a parting threat.
+576,颠倒,Topsy-Turvy,恶,变化,0,0,20,0,0,Swaps all stat changes that affect the target.,All stat changes affecting the foe turn topsy-turvy and are inverted.
+577,吸取之吻,Draining Kiss,妖精,特殊,75,100,10,0,0,An attack that absorbs over 50% of damage inflicted.,A kiss that absorbs 50% of damage it inflicted to restore HP.
+578,戏法防守,Crafty Shield,妖精,变化,0,0,10,3,0,Evades status moves for one turn.,A mysterious power protects the user and its allies from status moves.
+579,鲜花防守,Flower Shield,妖精,变化,0,0,10,0,0,Raises the Defense of Grass-type Pokémon.,A mysterious power raises the Defense of all Grass-type Pokémon in battle.
+580,青草场地,Grassy Terrain,草,变化,0,0,10,0,0,The ground turns to grass for 8 turns. Restores HP.,"For 8 turns, the ground turns grassy. This ups Grass-type moves, and heals."
+581,薄雾场地,Misty Terrain,妖精,变化,0,0,10,0,0,Covers the ground with mist for 8 turns. Blocks status.,"Boosts Fairy-type moves for 8 turns, and prevents status conditions for all."
+582,输电,Electrify,电,变化,0,0,3,0,0,"Electrifies the foe, making its next move Electric-type.",Makes the foe's next move Electric-type. May fail if used in succession.
+583,嬉闹,Play Rough,妖精,物理,90,100,10,0,10,Plays rough with the foe. May lower Attack.,"The user and foe play rough, with a 10% chance to drop foe's Attack."
+584,妖精之风,Fairy Wind,妖精,特殊,40,100,15,1,0,Quick cloud of pixie dust. Has +1 priority.,A quick moving cloud of pixie dust. Has +1 Priority. Air-based.
+585,月亮之力,Moonblast,妖精,特殊,90,100,15,0,20,Attacks with the power of the moon. May lower SpAtk,The power of the moon strikes the foe. 20% chance to lower foe's SpAtk.
+586,爆音波,Boomburst,一般,特殊,140,100,5,0,0,Attack everything then take recoil.,Attacks everything around the user. Takes 50% recoil after.
+587,妖精之锁,Fairy Lock,妖精,变化,0,0,10,0,0,Locks down the battlefield preventing escape next turn.,"For 1 turn, the user locks down the battlefield and prevents fleeing."
+588,王者盾牌,King's Shield,钢,变化,0,0,10,4,0,"Evades damage, and reduces Attack if struck.",A protective stance is assumed. Contact by the foe lowers its Attack.
+589,和睦相处,Play Nice,一般,变化,0,0,20,0,0,"Befriend the foe, lowering its Attack without fail.",Lowers all foes' Attack by 1 stage. Always hits.
+590,密语,Confide,一般,变化,0,0,20,0,0,"Shares a secret with the foe, lowering SpAtk",The foe's Sp. Atk drops after being told a secret by the user.
+591,钻石风暴,Diamond Storm,岩石,特殊,100,100,5,0,50,Whips up a storm of diamonds. May up Defense.,A storm of diamonds pelts the foes. 50% chance to up user's Defense.
+592,蒸汽爆炸,Steam Eruption,水,特殊,110,100,5,0,30,Immerses the foe in heated steam. May inflict a burn.,30% burn chance. Deals normal damage in Harsh Sunlight. Mega Launcher boost
+593,异次元洞,Hyperspace Hole,幽灵,特殊,100,0,5,1,0,Uses a warp hole to attack. Can't be evaded.,"Using a wormhole, the user strikes. Has +1 priority. Ignores Protect etc."
+594,飞水手里剑,Water Shuriken,水,特殊,18,100,20,1,0,Throws 2 to 5 stars that are sure to strike first.,The user hits the foe with 2 to 5 throwing stars. +1 priority.
+595,魔法火焰,Mystical Fire,火,特殊,80,100,10,0,100,"Breathes a special, hot fire. May lower SpAtk","The user breathes a special, hot fire. This lowers the foe's Sp. Atk stat."
+596,尖刺防守,Spiky Shield,草,变化,0,0,10,4,0,"Evades attack, and causes bleeding if struck.",This prickly shield protects the user and causes bleeding on contact.
+597,芳香薄雾,Aromatic Mist,妖精,变化,0,0,10,0,0,Raises the Special Defense of the user and its partner.,Sharply raises the Special Defense of the user and its partner.
+598,怪异电波,Eerie Impulse,电,变化,0,100,15,0,0,Exposes the foe to a pulse that sharply cuts SpAtk,The foe's Sp. Atk is harshly lowered by exposure to an eerie impulse.
+599,毒液陷阱,Venom Drench,毒,变化,0,100,20,0,0,"Lowers the Attack, Sp. Atk and Speed of a poisoned foe.","Poisoned foes suffer lowered Attack, Sp. Atk and Speed stats."
+600,粉尘,Powder,虫,变化,0,100,20,1,0,Damages the foe if it uses a Fire-type move.,"If the foe uses a Fire-type move, it will be damaged by this powder."
+601,大地掌控,Geomancy,妖精,变化,0,0,10,0,0,"Raises Sp. Atk, Sp. Def and Speed on the 2nd turn.","On the 2nd turn, the user sharply ups its Sp. Atk, Sp. Def and Speed stats."
+602,磁场操控,Magnetic Flux,电,变化,0,0,20,0,0,Boosts the defenses of those with Plus or Minus.,The user boosts the defenses of allies with the Plus or Minus Ability.
+603,欢乐时光,Happy Hour,一般,变化,0,0,20,0,0,Doubles the amount of Prize Money received.,This move doubles the amount of prize money received after battle.
+604,电气场地,Electric Terrain,电,变化,0,0,10,0,0,Electrifies the ground for 8 turns. Prevents sleep.,"For 8 turns, the charged ground ups Electric-type moves and prevents sleep."
+605,魔法闪耀,Dazzling Gleam,妖精,特殊,80,100,10,0,0,Damages foes by emitting a bright flash.,"The user emits a powerful flash, hitting all foes."
+606,庆祝,Celebrate,一般,变化,0,0,20,0,0,Congratulates you on your special day.,The Pokémon congratulates you on your special day!
+607,牵手,Hold Hands,一般,变化,0,0,20,0,0,The user and ally hold hands making them happy.,The user and ally hold hands. This makes them very happy.
+608,圆瞳,Baby-Doll Eyes,妖精,变化,0,0,20,1,0,Lowers the foe's Attack before it can move.,"Before it can move, the foe's Attack stat is lowered by an adorable stare."
+609,蹭蹭脸颊,Nuzzle,电,物理,20,100,20,0,100,"Rubs its cheeks against the foe, paralyzing it.","The user's electrified cheeks nuzzle the foe, paralyzing the foe."
+610,手下留情,Hold Back,格斗,物理,120,100,20,0,50,An attack that leaves the foe with at least 1 HP.,Can't KO the foe. 50% chance to cause confusion.
+611,纠缠不休,Infestation,虫,特殊,50,90,10,0,100,The foe is infested and attacked for 2 to 5 turns.,The foe is infested for 4 or 5 turns. The foe cannot flee during this time.
+612,增强拳,Power-Up Punch,格斗,物理,40,100,20,0,100,A hard punch that raises the user's Attack.,"The user strikes, strengthening its fists. This raises their Attack stat."
+613,归天之翼,Oblivion Wing,飞行,特殊,80,100,10,0,0,An attack that absorbs over 75% of damage inflicted.,The user absorbs over 75% of the damage inflicted. Air-based.
+614,千箭齐发,Thousand Arrows,地面,物理,90,100,10,0,100,"Can hit Flying foes, then knocks them to the ground.","This move also hits foes that are in the air, and knocks them down."
+615,千波激荡,Thousand Waves,地面,物理,90,100,10,0,100,Those hit by the wave can no longer escape.,Those hit by this crawling wave can no longer escape the battle.
+616,大地神力,Land's Wrath,地面,物理,100,100,10,0,0,Gathers the energy of the land to attack every foe.,The user gathers the energy of the land and focuses it on its foes.
+617,破灭之光,Light Of Ruin,妖精,特殊,140,100,5,0,0,Fires a great beam of light that also hurts the user.,The user fires a powerful beam of light that has 50% recoil damage.
+618,根源波动,Origin Pulse,水,特殊,130,100,10,0,0,Beams of glowing blue light blast both foes.,Attacks both foes with deep blue beams of light. Mega Launcher boost
+619,断崖之剑,Precipice Blades,地面,物理,130,100,10,0,0,Fearsome blades of stone attack both foes.,The foes are all attacked with fearsome blades of stone and rock.
+620,画龙点睛,Dragon Ascent,飞行,物理,120,100,5,0,100,A strong attack but lowers the defensive stats.,"The user soars up, then strikes. This cuts its Defense and Sp. Def stats."
+621,异次元猛攻,Hyperspace Fury,恶,物理,100,0,5,1,100,Uses a warp hole to attack. Can't be evaded.,"Using a wormhole, the user strikes. Has +1 priority. Ignores Protect etc."
+622,集沙,Shore Up,地面,变化,0,0,5,0,0,Restores the user's HP. More HP in a sandstorm.,"Heals the user by up to half its full HP, restoring more in a sandstorm."
+623,迎头一击,First Impression,虫,物理,75,100,10,3,100,Hits hard and first. Only works first turn.,An attack that hits first with great power. Usable only on first turn.
+624,碉堡,Baneful Bunker,毒,变化,0,0,10,4,0,Protects user and poisons foes on contact.,This move protects the user and poisons any foe that makes contact.
+625,缝影,Spirit Shackle,幽灵,物理,85,100,10,0,100,"After being hit, foes can no longer escape.","The foe's shadow is pinned down when it is hit, preventing it from escaping."
+626,DD金勾臂,Darkest Lariat,恶,物理,95,100,10,0,0,Swings the arms to strike It ignores stat changes.,"The foe swings both arms to hit its foe, ignoring any stat changes."
+627,泡影的咏叹调,Sparkling Aria,水,特殊,100,100,10,0,100,Sings with bubbles. Cures burns on contact.,"Musical bubbles hit those around the user, healing the burn of those hit."
+628,冰锤,Ice Hammer,冰,物理,100,100,10,0,0,"Swings a fist to strike. Deals good, consistent damage.","A strong, heavy fist is swung. Iron Fist boost."
+629,花疗,Floral Healing,妖精,变化,0,0,10,0,0,Restores an ally's HP. Heals more on grass.,Heals the target by up to half its max HP. It heals more in grassy terrain.
+630,十万马力,High Horsepower,地面,物理,95,100,10,0,0,Slams hard into the foe with its entire body.,The user fiercely attacks the foe. Striker boost.
+631,吸取力量,Strength Sap,草,变化,0,100,5,0,0,"Saps the foe's Attack to heal HP, then drops Attack.","Restores HP by the amount of the foe's Attack stat, and drops their Attack."
+632,日光刃,Solar Blade,草,物理,125,100,10,0,0,"Charges first turn, then chops with a blade of light.",A 2-turn move that slices the foe. Weather-based. Keen Edge boost.
+633,树叶,Leafage,草,物理,40,100,15,1,0,Attacks with a flurry of small leaves.,The user attacks by pelting the target with leaves.
+634,聚光灯,Spotlight,一般,变化,0,0,15,3,0,Makes the foe attack the spotlighted Pokémon.,"For 1 turn, a spot-light is shone on the foe so that only it is attacked."
+635,毒丝,Toxic Thread,毒,变化,0,100,20,0,0,Attacks with a thread that poisons and drops Speed.,"Poisoned threads shoot at the foe, poisoning it and lowering its Speed."
+636,磨砺,Laser Focus,一般,变化,0,0,20,0,0,Guarantees the next move will be a critical hit.,"The user focuses intensely, making sure its next move is a critical hit."
+637,辅助齿轮,Gear Up,钢,变化,0,0,10,0,0,Boosts the attacks of those with Plus or Minus.,"The user rotates its gears, raising its SpAtk and sharply raising its Speed."
+638,深渊突刺,Throat Chop,恶,物理,80,100,15,0,0,Chops the throat to disable sound moves for 2 turns.,"For 2 turns after being hit, the foe cannot use moves that emit sound."
+639,花粉团,Pollen Puff,虫,特殊,90,100,15,0,0,"Explodes on foes, but restores ally's HP.","A pollen puff that will explode to damage foes, but will heal allies."
+640,掷锚,Anchor Shot,钢,物理,80,100,20,0,100,Strangles the foe with a chain. The foe can't switch.,"The user's anchor chain strikes and entangles the foe, preventing escape."
+641,精神场地,Psychic Terrain,超能,变化,0,0,10,0,0,The ground turns weird for 8 turns. Blocks priority.,"For 8 turns, faster moves will fail and Psychic-type moves deal more damage."
+642,猛扑,Lunge,虫,物理,60,100,15,0,100,Lunges at the foe to lower its Attack stat.,"The user lunges at the foe with full force, lowering the foe's Attack stat."
+643,火焰鞭,Fire Lash,火,物理,80,100,15,0,100,Whips the foe with fire lowering its Defense.,The foe is struck with a burning lash that lowers its Defense stat.
+644,嚣张,Power Trip,恶,物理,20,100,10,0,0,It hits harder the more stat boosts the user has.,"The more the user's stats are raised, the greater this attack's power."
+645,燃尽,Burn Up,火,特殊,130,100,5,0,100,Burns out the user fully removing the Fire type.,"To strike at full force, the user burns out and loses its Fire-type."
+646,速度互换,Speed Swap,超能,变化,0,0,10,0,0,Swaps Speed with the foe.,Swaps Speed stat and stat boosts with the target.
+647,修长之角,Smart Strike,钢,物理,80,0,10,0,0,Hits with an accurate horn that never misses.,Stabs the foe with a sharp horn. Ignores Abilities. Mighty Horn boost.
+648,净化,Purify,毒,变化,0,0,20,0,0,Cures the foe's status to restore HP.,The user tries to heal the target's status condition to restore its own HP.
+649,觉醒之舞,Revelation Dance,一般,特殊,100,100,15,0,0,Dances with mystical power. Matches user's first type.,The user attacks by dancing. The user's type determines the type of this move.
+650,核心惩罚者,Core Enforcer,龙,物理,100,100,10,0,0,Hits with a ray that nullifies the foe's ability.,This attack will also negate the foe's Ability if it has moved already.
+651,热带踢,Trop Kick,草,物理,75,100,15,0,100,An intense kick from the tropics. Lowers Attack.,"An intense, tropical kick. This lowers foe's Attack. Striker boost."
+652,号令,Instruct,超能,变化,0,0,15,0,0,Orders the target to use its last move again.,The user instructs the target to use the target's last move again.
+653,鸟嘴加农炮,Beak Blast,飞行,物理,100,100,15,0,30,Heats up beak to attack. Burns foe on contact.,The user strikes with its heated beak. Has 30% burn chance.
+654,鳞片噪音,Clanging Scales,龙,特殊,110,100,5,0,0,Makes a big noise with its scales. Drops Defense.,The user attacks by rubbing the scales on its body. This lowers its Defense.
+655,龙锤,Dragon Hammer,龙,物理,100,100,15,0,0,Swings its whole body like a hammer to damage.,"Using its body like a hammer, the user attacks its foe."
+656,狂舞挥打,Brutal Swing,恶,物理,90,100,20,0,0,Violently swings around to hurt everyone nearby.,"The user violently swings its body around, damaging everyone nearby."
+657,极光幕,Aurora Veil,冰,变化,0,0,20,0,0,"Weakens all attacks, but only usable with hail.","For 5 turns, damage from attacks are weakened. This fails without Hail."
+658,陷阱甲壳,Shell Trap,火,特殊,150,100,10,-3,0,Sets a shell trap that damages on contact.,The user sets a shell trap that is set off by physical attacks.
+659,花朵加农炮,Fleur Cannon,妖精,特殊,130,100,5,0,100,A strong ray that harshly lowers Sp. Attack.,A strong beam. Harshly lowers the user's SpAtk Mega Launcher boost
+660,精神之牙,Psychic Fangs,超能,物理,85,100,15,0,0,Chomps with psychic fangs. Destroys any barriers.,Breaks any barrier like Light Screen and Reflect. Strong Jaw boost.
+661,跺脚,Stomping Tantrum,地面,物理,75,100,10,0,0,Stomps around angrily. Stronger after a failure.,A frustrated strike that deals twice the damage if the last move failed.
+662,暗影之骨,Shadow Bone,幽灵,物理,90,100,15,0,20,Strikes with a haunted bone. Might drop Defense.,The foe is hit by a spirit bone. 20% chance to drop foe's Defense.
+663,冲岩,Accelerock,岩石,物理,40,100,15,1,0,Hits with a high-speed rock that always goes first.,The user smashes into the foe at high speed. Has +1 priority.
+664,水流裂破,Liquidation,水,物理,85,100,15,0,20,Slams the foe with water. Can lower Defense.,A full-force blast of water with a 20% chance to lower foe's Defense.
+665,棱镜镭射,Prismatic Laser,超能,特殊(取最高攻),140,100,10,0,0,A high power laser that can't be used next turn.,Severely damaging laser beams. Can't be used twice in a row. Mega Launcher boost
+666,暗影偷盗,Spectral Thief,幽灵,物理,90,100,15,0,100,"Steals the target's stat boosts, then attacks.","Hiding in the foe's shadow, the user steals its stat boosts and attacks."
+667,流星闪冲,Sunsteel Strike,钢,物理,120,100,5,0,0,A sun-fueled strike that ignores abilities.,Slams into the foe like a meteor. Ignores Abilities. Mega Launcher boost
+668,暗影之光,Moongeist Beam,幽灵,特殊,120,100,5,0,0,A moon-powered beam that ignores abilities.,A sinister ray attacks the foe. Ignores Abilities. Mega Launcher boost
+669,泪眼汪汪,Tearful Look,一般,变化,0,0,20,1,0,"The user tears up, dropping Special Attack.",The foe's Special Attack is lowered by the user's teary eyes.
+670,麻麻刺刺,Zing Zap,电,物理,80,100,15,0,30,An electrified impact that can cause flinching.,A strong electric blast crashes on the foe. 30% flinch chance.
+671,自然之怒,Nature's Madness,妖精,特殊,1,100,5,0,0,Halves the foe's HP with the power of nature.,"The user hits the foe with the force of nature, halving the foe's HP."
+672,多属性攻击,Multi-Attack,一般,特殊(取最高攻),120,100,10,0,0,An attack that changes with Memories.,A high-energy slam. The memory held determines the move's type.
+673,惊爆大头,Mind Blown,火,特殊,150,100,5,0,10,It explodes the user's head to damage everything around.,"The user attacks everything nearby, causing its own head to explode."
+674,等离子闪电拳,Plasma Fists,电,物理,100,100,15,0,0,Hits with electrical fists. Normal moves become Electric.,Electrifies Normal-type moves used in the same turn. Iron Fist boost.
+675,光子喷涌,Photon Geyser,超能,特殊(取最高攻),100,100,5,0,0,User's highest attack stat determines its category.,A pillar of light. Uses the best Atk stat. Mega Launcher boost
+676,电电加速,Zippy Zap,电,物理,50,100,15,2,0,Electric bursts always go first and land a critical hit.,High-speed electric bursts that always go first and land in a critical hit.
+677,滔滔冲浪,Splishy Splash,水,特殊,90,100,15,0,30,A huge electrified wave that may paralyze the foe.,The user creates a huge electrified wave that may paralyze the foe.
+678,飘飘坠落,Floaty Fall,飞行,物理,90,100,15,0,30,Floats in air and dives at angle. May cause flinching.,Floats in the air and dives at a steep angle. It may make the target flinch.
+679,闪闪雷光,Pika Papow,电,特殊(取最高攻),110,0,10,0,0,A reliable and strong Electric type attack. Uses best offense.,Pikachu's love for its trainer raises this move's power. It never misses.
+680,活活气泡,Bouncy Bubble,水,特殊,60,100,20,0,0,An attack that absorbs all the damage inflicted.,An attack that absorbs all the damage it inflicted to restore HP.
+681,麻麻电击,Buzzy Buzz,电,特殊,60,100,20,0,100,Shoots a jolt of electricity that always paralyzes.,The user shoots a jolt of electricity that always paralyzes the foe.
+682,熊熊火爆,Sizzly Slide,火,物理,60,100,20,0,100,User cloaked in fire charges. Leaves the foe with a burn.,"The user cloaks itself in fire and charges at the foe, leaving a burn."
+683,哗哗气场,Glitzy Glow,超能,特殊,80,100,15,0,0,"Telekinetic force that sets wall, lowering Sp. Atk damage.","A Telekinetic force attacks the foe, putting a wall that raises Sp. Defense."
+684,坏坏领域,Baddy Bad,恶,特殊,80,100,15,0,0,"Acting badly, attacks. Sets wall, lowering Attack damage.","The user acts bad and attacks, putting a wall that raises Defense."
+685,茁茁炸弹,Sappy Seed,草,物理,100,90,10,0,0,Giant stalk scatters seeds that drain HP every turn.,"Grows a giant stalk, scattering seeds that drain the foe's HP every turn."
+686,冰冰霜冻,Freezy Frost,冰,特殊,100,90,10,0,0,Crystal from cold haze hits. Eliminates all stat changes.,Attack with crystal made of cold frozen haze. It eliminates all stat changes.
+687,亮亮风暴,Sparkly Swirl,妖精,特殊,120,85,5,0,0,Wrap foe with whirlwind of scent. Heals party's status.,Wraps foe with a whirlwind of scent. It heals all status of the user's party.
+688,砰砰击破,Veevee Volley,一般,特殊(取最高攻),110,0,10,0,0,A reliable and strong Normal type attack. Uses best offense.,Eevee's love for its trainer raises this move's power. It never misses.
+689,钢拳双击,Double Iron Bash,钢,物理,60,100,5,0,30,The user spins and hits with its arms. May cause flinch.,"Spinning rapidly, the user strikes twice. Has 30% flinch chance."
+690,极巨炮,Dynamax Cannon,龙,特殊,100,100,5,0,0,Fires a strong beam. Deals 2x damage to Mega foes.,The user unleashes a strong beam that damages Mega foes twice as hard.
+691,狙击,Snipe Shot,水,特殊,90,100,15,0,0,The user ignores effects that draw in moves.,The user ignores effects that draw in moves. High crit. Mega Launcher boost
+692,紧咬不放,Jaw Lock,格斗,物理,90,100,15,0,0,Prevents the user and the target from escaping.,Prevents both the user and the foe from switching out. Strong Jaw boost.
+693,大快朵颐,Stuff Cheeks,一般,变化,0,0,10,0,0,"Consumes the user's Berry, then sharply raises Def.","The user eats its held Berry, then sharply raises its Defense stat."
+694,背水一战,No Retreat,格斗,变化,0,0,5,0,0,Raises all of the user's stats but prevents escape.,"Ups all the user's stats. However, the user cannot switch out or flee."
+695,沥青射击,Tar Shot,岩石,变化,0,100,15,0,0,Lowers the foe's Speed and makes it weak to Fire.,"Sticky tar lowers the foe's Speed, and makes it weaker to Fire-type moves."
+696,魔法粉,Magic Powder,超能,变化,0,100,20,0,0,Magic powder changes the target into a Psychic-type.,A cloud of magic powder that changes the foe to Psychic-type.
+697,龙箭,Dragon Darts,龙,物理,50,100,10,0,0,The user attacks twice. Parental Bond boost.,User fires two dragon-shaped darts. 1.25x boost from Parental Bond.
+698,茶会,Teatime,一般,变化,0,0,10,0,0,All Pokémon have teatime and eat their Berries.,"All Pokémon in the battle have teatime, and eat their held Berry."
+699,蛸固,Octolock,格斗,物理,20,100,15,0,0,Traps the foe to lower Def and Sp. Def fall each turn.,"Prevents escape, and lowers the Sp. Def and Defense of the foe each turn."
+700,电喙,Bolt Beak,电,物理,70,100,10,0,0,Double power if the user moves before the target.,"If attacking before the target, move power doubles. Strong Jaw boost"
+701,鳃咬,Fishious Rend,水,物理,70,100,10,0,0,Double power if the user moves before the target.,"If attacking before the target, move power doubles. Strong Jaw boost"
+702,换场,Court Change,一般,变化,0,100,10,0,0,The user swaps effects on either side of the field.,A mysterious power that swaps the effects on either side of the field.
+703,魂舞烈音爆,Clangorous Soul,龙,变化,0,100,5,0,0,The user uses some of its HP to raise all its stats.,The user raises all its stats by using 1/3 of its HP.
+704,扑击,Body Press,格斗,物理,80,100,10,0,0,Does more damage the higher the user's Def.,A body slam attack which inflicts more damage the higher the user's Defense.
+705,装饰,Decorate,妖精,特殊,80,100,15,0,0,Strikes foes with a brush or decorates allies to buff them.,"Damages foes. Raises allies' Attack, Special Attack, and Crit by 2 stages."
+706,鼓击,Drum Beating,草,物理,80,100,10,0,100,Plays a drum to attack. The foe's Speed is lowered.,"The user attacks the foe with its drum, lowering the foe's Speed stat."
+707,捕兽夹,Snap Trap,钢,物理,100,85,10,0,100,Snares the target in a snap trap for four to five turns.,The user snares the target in a snap trap for four to five turns.
+708,火焰球,Pyro Ball,火,物理,120,90,5,0,10,Launches a fiery ball at the target. It may cause a burn.,The user launches a fiery ball at the foe. 10% chance to burn the foe.
+709,巨兽斩,Behemoth Blade,钢,物理,100,100,5,0,0,Strikes as a sword. It deals 2x damage to Dynamaxed foes.,"The user strikes as a sword, dealing double the damage to Mega Pokemon."
+710,巨兽弹,Behemoth Bash,钢,物理,100,100,5,0,0,Does more damage the higher the user's Def.,Uses defense for damage calculation. Double damage vs Mega Pokemon.
+711,气场轮,Aura Wheel,电,物理,110,100,10,0,100,Raises Speed to attack. Both Electric-and Dark-type.,Electric or Dark based on effectiveness. Raises Speed.
+712,广域破坏,Breaking Swipe,龙,物理,60,100,15,0,100,Swings its tail to attack. Lowers the Atk of those hit.,"The user swings at both foes with its tail, lowering the foes' Attack stat."
+713,木枝突刺,Branch Poke,草,物理,40,100,20,0,0,The user pokes the target with a pointed branch.,The user attacks the foe by poking it with a sharply pointed branch.
+714,破音,Overdrive,电,特殊,85,100,10,0,0,"The user twangs its guitar, causing strong vibrations.","The user twangs its guitar to attack both foes with a huge, echoing boom."
+715,苹果酸,Apple Acid,草,特殊,80,100,10,0,100,Attacks with tart apple acid to lower the foe's Sp. Def.,An acidic liquid attack created from tart apples. Lowers the foe's Sp. Def.
+716,万有引力,Grav Apple,草,物理,80,100,10,0,100,Drops an apple from above. Lowers the foe's Defense.,"Drops an apple on the foe, lowering the foe's Defense. Throw-based."
+717,灵魂冲击,Spirit Break,妖精,物理,75,100,15,0,100,Attacks with spirit-breaking force. Lowers SpAtk,"A forceful, spirit-breaking attack that lowers the foe's Sp. Atk stat."
+718,神奇蒸汽,Strange Steam,妖精,特殊,90,100,10,0,20,Emits a strange steam to potentially confuse the foe.,The user attacks by emitting steam. 20% chance to confuse the foe.
+719,生命水滴,Life Dew,水,变化,0,0,10,0,0,Scatters water to restore the HP of itself and allies.,The user restores the HP of itself and its allies with mysterious water.
+720,拦堵,Obstruct,恶,变化,0,0,10,4,0,"Protects itself, harshly lowering Def on contact.","Protects the user, and lowers the Defense of foes that make contact."
+721,假跪真撞,False Surrender,恶,物理,80,0,10,0,0,Bows to stab the foe with hair. It never misses.,"The user pretends to bow, then stabs its foe. This move never misses."
+722,流星突击,Meteor Assault,格斗,物理,140,100,5,0,0,Attacks with a thick leek. Can't be used next turn.,Attacks wildly with a thick leek. Can only be used every-other turn. Keen Edge boost.
+723,无极光束,Eternabeam,龙,特殊,140,100,5,0,0,Eternatus' strongest move. The user rests next turn.,"Eternatus's most powerful move. On the next turn, the user must rest."
+724,铁蹄光线,Steel Beam,钢,特殊,140,100,5,0,0,Fires a beam of steel from its body. It hurts the user.,Fires a powerful beam of steel. 50% recoil damage. Mega Launcher boost.
+725,广域战力,Expanding Force,超能,特殊,80,100,10,0,0,Power goes up and damages all foes on Psychic Terrain.,This move's power goes up and damages all foes while on Psychic Terrain.
+726,铁滚轮,Steel Roller,钢,物理,80,100,15,0,0,Rolls over the opponent while destroying terrain.,Rolls over the opponent while destroying terrain.
+727,鳞射,Scale Shot,龙,物理,25,100,20,0,100,"Shoots scales 2 to 5 times. Ups Speed, lowers defense.","Hits 2 to 5 times. Boosts Speed, but lowers Defense. Mega Launcher boost"
+728,流星光束,Meteor Beam,岩石,特殊,120,100,10,0,0,A 2-turn move that raises Sp. Attack before attacking.,A 2-turn move that gathers space power raising Sp. Attack before attacking.
+729,臂贝武器,Shell Side Arm,毒,特殊(取最高伤害),100,100,10,0,20,Deals better of physical and special damage. May poison.,"Physical or special damage, whichever is more effective May poison the foe."
+730,薄雾炸裂,Mistsplosion,妖精,特殊,200,100,5,0,0,Hit everything and faint. Powers up on Misty Terrain.,Attacks everything and faints the user. Its power increases on Misty Terrain.
+731,青草滑梯,Grassy Glide,草,物理,70,100,20,0,0,"Gliding on ground, hits. Goes first on Grassy Terrain.","Gliding on the ground, it attacks. Always goes first on Grassy Terrain."
+732,电力上升,Rising Voltage,电,特殊,70,100,20,0,0,This move's power doubles when on Electric Terrain.,Its power doubles on Electric Terrain when the target is grounded.
+733,大地波动,Terrain Pulse,一般,特殊,50,100,15,0,0,Type and power changes depending on the terrain.,This move's type and power changes depending on the terrain when used.
+734,爬击,Skitter Smack,虫,特殊,60,100,15,0,100,User skitters behind foe to attack. Lowers foe's SpAtk,The user skitters behind the foe to attack. This lowers the foe's SpAtk
+735,妒火,Burning Jealousy,火,特殊,70,100,5,0,100,Attacks both foes with a 50% chance to burn boosted foes.,Attacks both foes jealously. 50% burn chance if foe has stat boosts.
+736,泄愤,Lash Out,恶,物理,80,100,15,0,0,Increases in damage as the user's stats are lowered,+20 BP for each negative stat stage and ignores negative attack stages.
+737,灵骚,Poltergeist,幽灵,物理,110,90,5,0,0,Control foe's item to attack. Fails if foe has no item.,Controls the foe's item to attack. It fails if the foe has no item.
+738,腐蚀气体,Corrosive Gas,毒,特殊,40,100,20,0,100,Highly acidic gas melts items held by surrounding Pokémon.,Highly acidic gas that melts items held by every surrounding Pokémon.
+739,指导,Coaching,格斗,变化,0,0,10,0,0,Properly coaches allies to up their Attack and Defense.,"The user properly coaches its ally Pokémon, upping their Attack and Defense."
+740,快速折返,Flip Turn,水,物理,60,100,20,0,0,Attacks and rushes back to switch with a party Pokémon.,"The user strikes, and then switches with a waiting party Pokémon."
+741,三旋击,Triple Axel,冰,物理,20,90,10,0,0,A 3-kick attack that gets more powerful with each hit.,A 3-kick attack. More powerful with each successive hit. Striker boost.
+742,双翼,Dual Wingbeat,飞行,物理,45,100,10,0,0,User slams the target with wings and hits twice in a row.,The user slams the foe with its wings. Hits twice. Air-based.
+743,热沙大地,Scorchng Sands,地面,特殊,75,100,15,0,30,Throws scorching sand at the target. May leave a burn.,Throws scorching sand at the target. 30% chance to burn the target.
+744,丛林治疗,Jungle Healing,草,变化,0,0,10,0,0,Heals HP and status of itself and allies in battle.,"Becomes one with the jungle, healing HP and status of itself and allies."
+745,暗冥强击,Wicked Blow,恶,物理,80,100,5,0,0,"Mastering the Dark style, strikes with a critical hit.","Having mastered the Dark style, strikes with a fierce blow. Iron Fist boost."
+746,水流连打,Surging Strikes,水,物理,25,100,5,0,0,"Mastering the Water style, strikes with 3 critical hits.","Having mastered the Water style, strikes 3 critical hits with a flowing motion."
+747,雷电囚笼,Thunder Cage,电,特殊,80,90,15,0,100,Traps the foe in a cage of electricity for 2 to 5 turns.,The user traps the foe in a cage of electricity for four or five turns.
+748,巨龙威能,Dragon Energy,龙,特殊,150,100,5,0,0,The higher the user's HP the more damage caused.,"The higher the user's HP, the more powerful it is. Mega Launcher boost"
+749,冰冷视线,Freezing Glare,超能,特殊,95,100,10,0,20,Shoots psychic power from the eyes. May frostbite the foe.,The user shoots psychic power from its eyes to attack. 20% frostbite chance.
+750,怒火中烧,Fiery Wrath,恶,特殊,95,100,10,0,20,An attack fueled by your wrath. May cause flinching.,It uses its wrath to fuel a fire-like aura attack. Has 20% flinch chance.
+751,雷鸣蹴击,Thunderous Kick,格斗,物理,95,100,10,0,100,Uses a lightning-like kick to hit. Lowers foe's Defense.,Fast lightning kick. It lowers the foe's Defense. Striker boost.
+752,雪矛,Glacial Lance,冰,物理,120,100,5,0,0,Strikes by hurling a blizzard-cloaked icicle lance at a foe.,Strikes by hurling a blizzard-cloaked icicle lance at opposing Pokémon.
+753,星碎,Astral Barrage,幽灵,特殊,120,100,5,0,0,Strikes by sending a frightful amount of ghosts at a foe.,Attacks with ghosts that hit both targets. Throw-Based.
+754,诡异咒语,Eerie Spell,超能,特殊,110,80,10,0,0,Attacks with psychic power. Foe's last move has 3 PP cut.,Foe's last move has 6 PP cut. Never misses in fog.
+755,死亡翻滚,Deathroll,水,物理,100,100,5,0,20,Does a deadly roll in water. Ignores target's stat changes.,20% confusion chance. Strong Jaw boost. Ignores target's stat changes.
+756,神剑,Excalibur,钢,物理,120,80,5,0,20,Double damage on Dragon-types. High critical ratio.,Double damage on Dragons. High critical ratio. Keen Edge boost.
+757,水流牙,Aqua Fang,水,物理,85,100,15,0,20,Has 10% flinch chance. Strong Jaw boost.,Bites with aquatic fangs. Has 20% flinch chance. Strong Jaw boost.
+758,波动冲,Wave Crash,水,物理,120,100,10,0,10,A life-risking tackle that with 33% recoil damage.,Slams into the target on a giant wave. 10% drench chance. 33% recoil.
+759,闪电惩击,Smite,电,物理,120,80,15,0,20,Attacks from above with strong electricity. Smack Down effect.,Attacks from above with strong electricity. 20% paralysis chance. Smack Down effect.
+760,蒸汽爆发,Outburst,一般,特殊,250,100,5,0,0,Severe special damage but makes the user faint.,The user explodes to inflict terrible damage even while fainting itself.
+761,地震拳,Seismic Fist,地面,物理,85,100,15,0,20,A ground-breaking punch. 20% chance to drop Def.,Throws a ground-breaking fist. 20% chance to drop the foe's Def.
+762,钢之牙,Iron Fangs,钢,物理,85,100,15,0,0,Chomps with hard fangs. Destroys any barriers.,Breaks any barrier like Light Screen and Reflect. Strong Jaw boost.
+763,暗影牙,Shadow Fangs,幽灵,物理,80,100,15,0,10,A bone-chilling bite. 10% curse chance.,The foe shudders. 10% chance to curse the foe. Strong Jaw boost.
+764,迷人啃咬,Lovely Bite,妖精,物理,85,100,15,0,10,Bites the foe with love. 10% chance to infatuate.,An affectionate bite. 10% chance to infatuate the foe. Strong Jaw boost.
+765,岩石牙,Jagged Fangs,岩石,物理,80,100,15,0,10,Bites aggressively. 10% chance to up Atk.,A ferocious bite. 10% chance to raise user's Attack. Strong Jaw boost.
+766,大地烈焰,Scorched Earth,火,特殊,70,100,10,0,10,Precisely burns the ground under the foe. May burn.,Fire or Ground based on effectiveness. Has 10% burn chance.
+767,大愤慨,Raging Fury,火,物理,120,100,5,0,100,A rampage of 2 to 3 turns that confuses the user.,"The user thrashes about for two to three turns, then becomes confused."
+768,等离子脉冲,Plasma Pulse,电,特殊,65,100,10,0,10,Double damage to foes with status problems.,Double damage against status. 10% paralyze chance. Mega Launcher boost
+769,原初光线,Primal Beam,龙,物理,90,100,10,0,20,"An strange beam that uses the user's Attack, may rise it.","An strange beam that uses the user's Attack, may rise own Atk."
+770,龙之牙,Draconic Fangs,龙,物理,85,100,15,0,20,Bites with draconic fangs. May cause flinching.,The user bites with draconic fangs. 20% flinch chance. Strong Jaw boost.
+771,妖精光线,Pixie Beam,妖精,特殊,110,85,5,0,20,A powerfull magic beam 30% chance to drop user SpAtk.,A powerful magic beam. 20% chance to lower SpAtk. Mega launcher.
+772,妖精猛砍,Pixie Slash,妖精,物理,90,100,20,0,0,The foe is slashed with a whimsical blade. High Crit ratio.,The foe is slashed with a whimsical blade. High Crit ratio. Keen Edge boost.
+773,结构切割,Seismic Blade,地面,物理,90,100,20,0,0,The foe is slashed with a tectonic blade. High Crit ratio.,The foe is slashed with a tectonic blade. High Crit ratio. Keen Edge boost.
+774,岩石巨块,Mountain Chunk,地面,物理,110,90,10,0,30,Hurls a chunk of a mountain at the opponent. Can flinch.,Hurls a chunk of a mountain at the foe. 30% flinch chance. Mega Launcher boost.
+775,死亡射击,Archer Shot,一般,物理,95,100,20,0,0,Shoots a dead center arrow at the target. Archer boost.,Shoots a dead center arrow at the target. Archer boost.
+776,霜之烙印,Frost Brand,冰,物理,80,100,20,0,10,The foe is slashed with an icy blade. May inflict frostbite.,Slahes with an ice-cold cryo blade. 10% frostbite chance. Keen Edge boost.
+777,霜冻箭矢,Frost Bolt,冰,物理,80,100,20,0,20,Not done yet.,The user shoots a freezing arrow. 20% frostbite chance. Arrow boost.
+778,冰川崩塌,Glacier Crash,冰,物理,95,100,20,0,0,Not done yet.,A large glacier crashes into foes. Hits all others. Mega Launcher boost.
+779,音速射击,Supersonic Shot,飞行,物理,60,100,10,0,0,An arrow attack. always crits.,Fires a high-speed arrow. Always crits. Archer boost.
+780,和风突袭,Zephyr Rush,飞行,物理,100,95,10,0,0,Not done yet.,User fires itself with a gale. Hurts on miss. Mega Launcher boost. Air-based.
+781,闪电利刺,Shocking Jab,电,物理,80,100,10,0,20,Not done yet.,An electric jab strikes the foe. 20% paralysis chance. Mighty Horn boost.
+782,闪电切割,Shocking Edge,电,物理,80,100,10,0,10,Not done yet.,The foe is slashed with an electric blade. 10% paralyze chance. Keen Edge boost.
+783,光源打击,Lightning Strike,电,物理,70,100,20,0,20,"A rapid strike with a lightning bolt, maybe raising Speed.","Leaps, strikes with a lightning bolt. 20% chance to raise Speed. Mega Launcher boost."
+784,雷电福特,Volt Bolt,电,物理,70,100,20,0,0,Not done yet.,Doubles damage if foe is paralyzed. Arrow move. Archer boost.
+785,动能轰炸,Kinetic Barrage,超能,物理,90,100,20,0,30,Throws nearby objects using telekinesis. May Confuse.,Lifts up objects and hurls them at the foe. 30% confusion. Mega Launcher boost.
+786,寄生獠牙,Fertile Fangs,草,物理,80,100,20,0,10,User inserts its ingraining fangs. May apply leech seed.,Inserts ingraining fangs. 10% chance to apply Leech Seed. Strong Jaw boost.
+787,散射爆炸,Scatter Blast,地面,特殊,65,100,5,0,100,Not done yet.,A blast of sand that scatters Stealth Rocks. Mega Launcher boost.
+788,岩石拳,Jagged Punch,岩石,物理,80,100,10,0,10,Not done yet.,The foe is punched by a stony fist. 10% chance to set Stealth Rocks.
+789,迷恋拍打,Cutsie Slap,妖精,物理,85,100,10,0,10,Slaps the foe cutely. May cause infatuation.,The foe is slapped cutely. 10% infatuation chance. Iron Fist boost.
+790,妖精法球,Fairy Spheres,妖精,特殊(取特防),20,100,10,0,0,Not done yet.,Magical spheres hit 2 to 5 times. Hits SpDef. Mega Launcher boost.
+791,荆棘爆炸,Bramble Blast,草,物理,85,100,10,0,30,30% chance to apply leech seed. Archer boost.,Fires thorny brambles. 30% chance to apply Leech Seed. Archer boost.
+792,小行星波动,Asteroid Shot,岩石,物理,90,0,20,0,0,Launches a asteroid onto the target. Cannot miss.,Launches a small asteroid onto the target. Cannot miss. Mega Launcher boost.
+793,水流戳刺,Aqua Bash,水,物理,80,100,15,0,20,A mystical jab strikes the foe. 20% flinch chance.,A mystical jab strikes the foe. 20% flinch chance. Mighty Horn boost.
+794,砂之牙,Tectonic Fangs,地面,物理,85,100,15,0,10,User inserts its ground shaking fangs. 10% chance to flinch.,"User inserts its ground shaking fangs, 10% chance to flinch. Strong Jaw boost."
+795,丘比特射击,Cupid Shot,妖精,物理,75,100,10,0,20,Not done yet.,20% chance to infatuate the foe. Arrow move. Archer boost.
+796,粘土飞镖,Clay Dart,地面,物理,80,100,10,0,0,Not done yet.,Super-effective on Flying-types. Arrow move. Archer boost.
+797,钻石箭,Diamond Arrow,岩石,物理,85,100,10,0,0,Not done yet.,Cuts through foe's stat changes. Sharp as a diamond. Archer boost.
+798,钻石切割,Diamond Blade,岩石,物理,80,100,10,0,10,Not done yet.,Slashes with an unbreakable blade. 10% chance of Stealth Rocks. Keen Edge boost.
+799,毒液箭矢,Venom Bolt,毒,物理,75,100,10,0,20,Not done yet.,Shoots a toxic arrow with precision. +1 crit 20% poison chance. Archer boost.
+800,农药炸弹,Fumigation Bomb,毒,物理,75,100,10,0,0,Not done yet.,Hurls a pesticide bomb. Super-effective on Bug-types. Mega Launcher boost.
+801,黑暗巫术,Black Magic,恶,特殊(取最高攻),90,100,10,0,20,Not done yet.,Calls on dark power to attack. 20% chance to inflict bleed.
+802,火焰舌,Flame Tongue,火,物理,80,100,10,0,10,Not done yet.,Slashes foe with a fiery blade. 10% chance to burn. Keen Edge boost.
+803,火焰箭矢,Blazing Arrow,火,物理,80,100,10,0,20,Not done yet.,Fires a blazing arrow. +1 crit chance. 20% burn chance. Archer boost.
+804,火箭飞拳,Rocket Shot,钢,物理,100,100,10,0,0,Not done yet.,Launches a body part like a rocket. Has +1 crit rate. Mega Launcher boost.
+805,黏网射击,Web Shot,虫,物理,75,100,10,0,100,Not done yet.,Fires a sticky trap. Sets up Sticky Web. +1 crit chance. Archer boost.
+806,光环力量,Aura Force,格斗,物理,70,100,10,0,0,Not done yet.,Imbues strikes with aura power. Super-effective on Ghost. Mega Launcher boost.
+807,双重导弹,Draco Missile,龙,物理,100,90,10,0,0,Not done yet.,Hits both foes on the field with draconic force. Archer boost.
+808,荷花浴,Lotus Shower,草,物理,85,100,10,0,10,Not done yet.,Lotus drifts to foes and explodes. Hits both foes. 10% Sleep. Mega Launcher boost.
+809,岩石巨角,Jagged Horns,岩石,物理,85,100,10,0,10,Not done yet.,A rocky jab strikes the foe. 10% flinch chance. 10% bleed chance. Mighty Horn boost.
+810,血液射击,Blood Shot,恶,变化,0,100,10,0,0,Makes the target bleed with black magic.,Hurls a sphere of cursed blood magic. Causes the foe to bleed profusely.
+811,闪烁冻结,Flash Freeze,冰,变化,0,90,10,0,0,"Drains the heat from the target, causing frostbite.","Rapidly chills the foe, causing frostbite. Never misses if user is Ice-type."
+812,幻影波动,Phantom Glove,幽灵,物理,85,100,10,0,30,Not done yet.,Throws foe with a ghostly hand. 30% chance to lower Speed. Mega Launcher boost.
+813,追踪箭,Homing Fletch,钢,物理,80,0,10,0,0,Not done yet.,User fires a seeking arrow. Cannot miss. Has +1 crit chance. Archer boost.
+814,冤冤相报,Bitter Malice,幽灵,特殊,85,0,15,0,30,Attacks with spine-chilling resentment. May cause frostbite.,A spine-chilling strike. 30% frostbite chance. 50% boost if target is statused.
+815,群魔乱舞,Infernal Parade,幽灵,特殊,85,0,15,0,30,Not done yet.,Attacks with spectral fireballs. 30% burn chance. 50% if target has status.
+816,恶意射击,Devious Shot,恶,物理,80,0,15,0,50,Not done yet.,A devious arrow strike. +1 crit chance. 50% bleed chance. Archer boost.
+817,星爆,Starburst,一般,物理,110,90,10,0,30,The user crashes a large star onto the opponent. May flinch.,The user crashes a star shaped ray down. 30% flinch chance. Mega Launcher boost.
+818,暗算射击,Cheap Shot,恶,物理,120,100,20,0,0,"The user sneaks into the shadows, then attacks.","The user sneaks into shadows, then attacks with hidden projectile. Mega Launcher boost."
+819,洪流拳,Torrent Fist,水,物理,80,100,15,0,20,20% chance to drop speed. Iron Fist boost.,Strikes with a water-infused fist. 20% chance to drop speed. Iron Fist boost.
+820,星星碰撞,Star Crash,妖精,物理,120,100,10,0,0,33% recoil damage.,Strikes the foe like a falling star. 33% recoil damage.
+821,岩斧,Stone Axe,岩石,物理,60,100,10,0,100,Deals damage and sets stealth rock. Keen edge.,"Swings its Stone Axes into the foe, leaving behind Stealth Rocks. Keen Edge boost."
+822,能量波,Energy Wave,一般,特殊,115,90,5,0,0,Deals damage.,The user unleashes a deadly wave of energy to strike the enemy.
+823,叶片漂移,Fluttering Leaf,草,物理,60,100,20,0,0,Deals damage and switches.,The user moves like a fluttering leaf and strikes. User switches afterwards.
+824,突飞猛扑,Headlong Rush,地面,物理,120,100,5,0,100,Drops Def and SpDef.,"The user slams the target with a full-body tackle, dropping both its defenses."
+825,复生祈祷,Revival Blessing,一般,变化,0,0,1,0,0,Revives a fainted teammate with 50% HP.,"Revives a fainted teammate, restoring them to 50% HP with holy power."
+826,旋转袭击,Whirling Strikes,飞行,物理,20,90,10,0,0,Hits 3 times. Each hit does more damage.,Hits 3 times. Each hit does more damage. Striker.
+827,精神崩溃,Mind Break,超能,物理,110,90,10,0,20,20% confuse chance.,Uses psychic power to shatter foes' psyche. 20% chance to confuse.
+828,气流风波,Wyrm Wind,龙,特殊,25,100,20,0,100,"Hits 2-5 times. Drops SpDef, raises Speed.",Hits 2-5 times. Lowers SpDef. Raises Speed. Mega launcher boost.
+829,断尾,Shed Tail,一般,变化,0,0,10,0,0,Uses 50% HP to create substitute and switch out.,The user creates a substitute using its own HP and switches with a party Pokémon.
+830,浆果粉碎,Berry Smash,草,物理,70,100,5,0,0,Deals damage. User eats their berry.,"User smashes its berry, gaining its effect. Super Slammer boost."
+831,水蒸气,Hydro Steam,水,特殊,80,100,15,0,0,The user blasts the target with boiling-hot water.,The user blasts the target with boiling hot water. Boosted in harsh sunlight.
+832,过热火焰,Boiling Flame,火,特殊,80,100,15,0,0,Deals damage. Does increase damage in rain.,Deals damage. Deals increased damage in rain.
+833,三连箭,Triple Arrows,格斗,物理,90,100,10,0,50,50% chance to lower Def. 30% chance to flinch. High-crit.,50% chance to drop Def. 30% chance to flinch. High crit. Arrow-based.
+834,双重套索,Double Lariat,格斗,物理,85,100,10,0,0,Hits both targets. Silences hit targets.,User hits both foes with whirling arms. Foes cannot use any sound moves after.
+835,寄生利刃,Leech Blade,草,物理,75,100,15,0,0,Heals 50% damage done.,Heals 50% of damage done to the foe. Keen Edge boost.
+836,世界树之力,Yggdrasil Force,草,物理,120,100,5,0,0,Lowers user's Atk and Def.,Nature's overcharges the user's strike. Lowers Atk and Def.
+837,智力汲取,Drain Brain,超能,变化,0,100,10,0,0,Lowers targets SpAtk. Heals that much HP.,Saps the foe's SpAtk and heals HP by the same amount.
+838,心灵猛击,Psychokinetic Slam,超能,物理,120,100,10,0,0,Deals damage. 33% recoil damage.,"User charges, boosted by psychic power. 33% recoil damage."
+839,气场之翼,Esper Wing,超能,特殊,80,100,10,0,0,Deals damage. Drains 50% hp.,The user slashes the foe with aura wings. Drains 50% HP. Air-based.
+840,晶光转转,Mortal Spin,毒,特殊,30,100,15,0,100,Deals damage. Removes hazards. Poisons targets.,The user spins and removes all hazards. This also poisons the foe.
+841,宝石导弹,Gem Missile,岩石,特殊,40,100,15,1,0,+1 priority.,A fast attack that strikes the foe with a sharp gem. +1 priority.
+842,骑士踢,Rider Kick,虫,物理,90,0,10,0,0,Deals damage that can't miss. Ignores target ability.,An unerring kick that ignores the foe's ability. Can't miss. Striker boost.
+843,水波刀,Aqua Cutter,水,物理,75,100,20,0,20,20% chance to bleed. High-crit.,The user expels pressurized water. 20% bleed chance. High crit ratio.
+844,反转空间,Inverse Room,超能,变化,0,0,5,0,0,Reverses type matchups for 5 turns.,The user exerts an unknown power that reverses the type chart for 5 turns.
+845,炽热骨头,Blazing Bone,火,物理,15,100,10,1,0,Hits 2-5 times. +1 priority.,Strikes with a fiery bone 2-5 times. Has +1 priority. Bone-based.
+846,业障,Karma,毒,变化,0,0,20,0,0,Raises SpAtk and SpDef. Lowers Speed.,"Purges its impurities. Lowers Speed, raises SpAtk and SpDef."
+847,泼冷水,Chilling Water,水,特殊,75,100,15,0,30,Shoots ice-cold water at the foe. May cause frostbite.,Fires ice-cold water at the foe. 30% chance to inflict Frostbite.
+848,苍白回声,Ghastly Echo,幽灵,特殊,20,100,10,0,0,"Deals damage and switches out, empowring the ally.",Deals damage and switches. Switch-in gets 50% boost for 1 turn. Sound-based.
+849,冷笑话,Chilly Reception,冰,变化,0,0,10,0,0,Sets hail and switches.,The user tells a bad joke and switches with an ally. This summons hail.
+850,冰旋,Ice Spinner,冰,物理,80,100,15,0,100,Deals damage and removes terrain.,Deals damage and removes active terrain. Field-based.
+851,大扫除,Tidy Up,一般,变化,0,0,10,0,0,Removes hazards. Boosts Atk and Speed.,The user tidies up and removes hazards. This also boosts its Atk and Speed.
+852,鼠数儿,Population Bomb,一般,物理,20,90,10,0,0,Hits 10 times.,The user's fellows gather in droves to attack the foe 1 to 10 times in a row.
+853,愤怒灵魂,Raging Souls,幽灵,特殊,130,100,5,0,100,Sharply lowers user's SpAtk.,Souls from astral plane strike the foe. This lowers Sp. Atk by 2 stages.
+854,双光束,Twin Beam,超能,特殊,45,100,10,0,0,Hits twice.,The user shoots two mystical beams from its eyes. Mega Launcher boost.
+855,安魂曲,Requiem,幽灵,特殊,90,100,10,0,10,10% chance to curse.,Sings a haunting melody. 10% chance to inflict curse. Sound-based.
+856,铠农炮,Armor Cannon,火,特殊,120,100,5,0,100,Lowers user's Atk and Def.,The user shoots its own armor. This lowers its defs. Mega Launcher boost.
+857,悔念剑,Bitter Blade,火,物理,90,100,10,0,0,Heals 50% damage done.,The user forces its bitter feelings into a slashing attack and restores health.
+858,土壤吸收,Soil Drain,地面,特殊,75,100,10,0,0,Heals 50% damage done.,Foe's power is leeched into the ground. Heals 50% of damage done.
+859,巨力锤,Gigaton Hammer,钢,物理,140,100,5,0,0,Super effective vs Steel. Can't be used twice in a row.,Super effective vs Steel. Can't be used twice in a row. Hammer-based.
+860,三连钻,Triple Dive,水,物理,20,90,10,0,0,Hits 3 times.,"The user performs a perfectly timed triple dive, hitting the foe three times."
+861,喷射拳,Jet Punch,水,物理,60,100,10,1,0,+1 priority.,An aquatic punch. Always goes first. Iron Fist boost.
+862,愤怒之拳,Rage Fist,幽灵,物理,80,100,5,0,0,+20 base power per time damaged.,+20 base power per time damaged. Max. +120 power. Iron fist boost.
+863,黑暗暴冲,Wicked Torque,恶,物理,85,100,10,0,10,10% chance to sleep.,10% chance to put the foe to sleep with a wicked twist.
+864,灼热暴冲,Blazing Torque,火,物理,85,100,20,0,30,30% chance to burn.,30% chance to burn the foe with fiery force.
+865,剧毒暴冲,Noxious Torque,毒,物理,100,100,20,0,30,30% chance to poison.,30% chance to poison the foe with toxic spins.
+866,魔法暴冲,Magical Torque,妖精,物理,85,100,20,0,30,30% chance to confuse.,30% chance to confuse the foe with mystical spins.
+867,格斗暴冲,Combat Torque,格斗,物理,85,100,20,0,30,30% chance to paralyze,30% chance to paralyze the foe with a fierce slam.
+868,仆刀,Kowtow Cleave,恶,物理,85,0,10,0,0,Can't miss. High-crit.,Slashes the target. Can't miss. High-crit. Keen Edge boost.
+869,千变万花,Flower Trick,草,物理,70,0,5,0,0,Can't miss. Always crits.,The user throws a bouquet at the foe. This move always hits and lands a crit hit.
+870,流水炫舞,Aqua Step,水,物理,80,100,10,0,100,Deals damage. Raises speed.,The user attacks the foe with light and fluid dance steps. Raises user's Speed.
+871,闪焰高歌,Torch Song,火,特殊,80,100,10,0,100,Deals damage. Raises SpAtk.,The user blows fire as if singing a song. Raises SpAtk by +1. Sound based.
+872,巨剑突击,Glaive Rush,龙,物理,120,100,5,0,100,Deals damage. User takes double damage for rest of turn.,Charges at the foe. The foe's next move deals double damage. Keen edge boost.
+873,线阱,Silk Trap,虫,变化,0,0,10,4,0,The user spins a silken trap protects and lowers target speed,The user protects itself with a silken trap. Contact by the foe lowers its Speed.
+874,扫墓,Last Respects,幽灵,物理,90,100,5,0,0,An avenging attack empowered by lost allies.,"The user attacks to avenge its allies. More fainted allies, greater the power."
+875,琉光冲激,Lumina Crash,超能,特殊,80,100,10,0,100,Lowers SpDef with a peculiar light.,The user unleashes a peculiar light which harshly lowers the foe's Sp. Def.
+876,上菜,Order Up,龙,物理,80,100,10,0,100,The user attacks with elegant poise Boosts stat with Tatsugiri.,The user attacks with poise. Gets a stat boost based on the Tatsugiri's form.
+877,辣椒精华,Spicy Extract,草,变化,0,0,15,0,100,A spicy extract sharply raises Atk and lowers Def.,The user's spices sharply raises the foe's Atk & harshly lowers its Def.
+878,疾速转轮,Spin Out,钢,物理,120,100,5,0,100,The user spins furiously by straining its legs. Lowers speed,The user furiously spins to attack the foe. Harshly lowers the user's Speed.
+879,盐腌,Salt Cure,岩石,物理,40,100,15,0,100,"The user salt cures the target, inflicting damage every turn.",The user salt cures the foe. Water and Steel take more damage every turn.
+880,描绘,Doodle,一般,变化,0,100,10,0,0,Copies the foe's ability to the user and its ally.,The user sketches the foe and changes its and its allies ability to match it.
+881,甩肉,Fillet Away,一般,变化,0,0,10,0,0,The user sharply boosts stats using its own HP.,"The user sharply boosts its Atk, Sp. Atk, and Speed by using its HP."
+882,怒牛,Raging Bull,一般,物理,90,100,10,0,0,Smashes barriers like a raging bull.,This move's type depends on the user form. Also breaks the foe's barriers.
+883,淘金潮,Make It Rain,钢,特殊,120,100,5,0,100,The user attacks by throwing out a mass of coins Lower's user SPA,The user attacks by throwing coins. This lowers its SpAtk Money is earned.
+884,精神剑,Psyblade,超能,物理,85,100,15,0,0,The user rends the target with an ethereal blade.,The user rends the target with ethereal blades. Boosted in Electric Terrain.
+885,大灾难,Ruination,恶,特殊,1,100,5,0,0,The user summons a ruinous disaster that cuts HP in half.,The user summons a ruinous disaster. This cuts the foe's HP in half.
+886,全开猛撞,Collision Course,格斗,物理,100,100,5,0,0,Causes an ancient explosion. Deals more damage on weakness.,The user transforms and crashes to the ground. Deals 33% more damage on super effective.
+887,闪电猛冲,Electro Drift,电,特殊,100,100,5,0,0,Attacks with future power. Deals more damage on weakness.,The user races forward at ultrafast speeds. Deals 33% more damage on super effective.
+888,虫扑,Pounce,虫,物理,50,100,20,0,100,"The user pounces on the target, lowering their Speed.",The user attacks by pouncing on the foe. This lowers the foe's Speed.
+889,起草,Trailblaze,草,物理,50,100,20,0,100,Deals damage and boosts the user's Speed stat.,The user attacks suddenly as leaping from tall grass. Raises user's Speed.
+890,强力钻,Hyper Drill,一般,物理,100,100,5,0,0,Spins and pierces the target Hits through protect.,The user spins the pointed part of its body to attack. Can hit through protect.
+891,电光双击,Double Shock,电,物理,60,100,5,0,100,"Unleashes two strong shocks, then loses the Electric-type.","Unleashes two strong shocks, then loses the Electric-type."
+892,复仇,Comeuppance,恶,物理,0,100,10,-5,0,Retaliates against an attacker with great force.,The user hits with much greater force against the foe that last hurt it.
+893,血月,Blood Moon,一般,特殊,140,100,5,0,0,The user unleashes the spirit from a full red moon.,The user's spirit surges from a crimson full moon. Can't be used twice in a row.
+894,下压踢,Axe Kick,恶,物理,120,90,10,0,30,"An all-in, reckless kick that might confuse the foe.",Slams its heel. 30% confusion chance. Hurts on miss. Striker boost.
+895,毒千针,Barb Barrage,毒,物理,85,100,15,0,30,The user launches countless toxic barbs 30% chance to poison,Barbs are shot at the foe. 30% chance to poison. 50% boost if target is statused.
+896,粉碎现实,Smashin' Realities,恶,物理,90,100,5,-3,0,smashes the realities around it. Removes weather and terrain,Removes weather and terrain. -3 priority. Hammer based.
+897,匍匐荆棘,Creeping Thorns,草,变化,0,0,20,0,0,Thorns surround the foe. Hurts foes on switch in.,Thorn-covered vines surround the foe. This hurts foes on switch in.
+898,刷刷茶炮,Matcha Gotcha,草,特殊,80,100,10,0,20,Fires a blast of tea. May burn and heals 50% dmg dealt.,Fires a tea blast. Absorbs half the damage inflicted. 20% burn chance.
+899,糖浆炸弹,Syrup Bomb,草,特殊,60,100,10,0,100,An explosion of sugary syrup slows the foe over 3 turns.,"Causes an explosion with syrup, slowing the target's Speed each turn for 3 turns."
+900,荆棘棒,Ivy Cudgel,草,物理,100,100,10,0,0,Strikes the foe with an ivy-wrapped cudgel.,Type changes depending on the mask. High crit. Hammer-based.
+901,电光束,Electro Shot,电,特殊,120,100,10,0,100,gathers electricity for a high-voltage shot. +1 SPA,Charging 1st turn: boosts SpAtk. Fires on second turn. In rain: fires immediately.
+902,随机光,Fickle Beam,龙,特殊,80,100,5,0,30,Shoots a strange beam of light that might deal double damage.,Shoots a beam of light to inflict damage. 30% chance to deal double damage.
+903,火焰守护,Burning Bulwark,火,变化,0,0,10,4,0,The user's intensely hot fur protects from attacks.,The user's hot fur shields from attacks and burns any direct attacker.
+904,迅雷,Thunderclap,电,特殊,70,100,5,1,0,Preempts the foe's attack with a flash of lightning.,User strikes first with +1 priority. Fails if target's not readying an attack.
+905,迅子利刃,Tachyon Cutter,钢,特殊(取最高攻),50,0,10,0,0,Launches particle blades at the target twice in a row.,Launches particle blades twice. Never misses. uses higher offense.
+906,硬压,Hard Press,钢,物理,80,100,10,0,0,"Crushes quicker foes, nullifying their ability.",This attack will also negate the foe's Ability if it has moved already.
+907,龙声鼓舞,Dragon Cheer,龙,变化,0,0,15,0,100,Raises crit by one stage for all allies. +2 if DRAGON,Raises crit by +1 for all allies. +2 crit for Dragons.
+908,魅诱之声,Alluring Voice,妖精,特殊,80,100,10,0,100,Attacks the target using its angelic voice. May confuse.,Attacks with an angelic voice. Causes confusion if target's stats were boosted.
+909,强刃攻击,Mighty Cleave,岩石,物理,95,100,5,0,0,Wields a light blade. Hits through protect.,The user wields light atop its head to cleave the target. Hits through Protect.
+910,豁出去,Temper Flare,火,物理,75,100,10,0,0,"Attacks desperately, Doubles dmg if it missed the previous turn","Spurred by desperation, user attacks. Power doubles if previous move failed."
+911,闪电强袭,Supercell Slam,电,物理,100,95,10,0,0,Tackles with its shock body. Hurts on miss.,The user takes 50% HP in recoil on miss. Hammer-based.
+912,精神噪音,Psychic Noise,超能,特殊,80,100,15,0,100,Attacks with sound waves. Target can't heal.,The user attacks with unpleasant sound waves. Blocks healing for 2 turns.
+913,快手还击,Upper Hand,格斗,物理,65,100,15,3,100,Deals damage and flinches if the target uses a prio. move.,Flinches the target. +3 priority. Fails if the target doesn't use a priority move.
+914,邪毒锁链,Malignant Chain,毒,特殊(取最高攻),100,100,5,0,50,The user pours toxins into the target. Badly poisons the target,Attacks with a poison imbued chain. 50% toxic chance. uses higher offense.
+915,新月祈祷,Lunar Blessing,超能,变化,0,0,10,0,0,Heals HP and status of itself and allies in battle.,Heals 25% HP to all allied battlers and cures their status.
+916,叶绿爆震,Chloroblast,草,特殊,150,100,5,0,0,Deal powerful damage. Take 50% max HP damage.,The user attack the foe with its amassed chlorophyll. This does 50% in recoil.
+917,屏障猛攻,Psyshield Bash,超能,物理,70,100,10,0,100,Deals damage. Raises Defense by 1 stage.,Deals damage. Raises Defense by 1 stage. Mighty horn.
+918,秘剑·千重涛,Ceaseless Edge,恶,物理,75,100,10,0,100,Deals damage. Applies spikes.,The user slashes the foe with shell blade. Leaves Splinters. A high crit hit ratio.
+919,胜利之舞,Victory Dance,格斗,变化,0,0,10,0,0,"Raises Attack, Defense, and Speed by 1 stage.","An intense dance which boosts the user's Attack, Defense and Speed."
+920,枯叶风暴,Bleakwind Storm,飞行,特殊(取最高攻),100,90,5,0,100,"Attacks with savage, roaring winds. Sets tailwind.","Attacks with savage, roaring winds. Sets tailwind. Weather-based."
+921,鸣雷风暴,Wildbolt Storm,电,特殊(取最高攻),100,90,5,0,100,Savagely attacks the foe with a thunderous tempest. Sets rain.,Attacks the foe with a thunderous tempest. Sets rain. Weather-based.
+922,热沙风暴,Sandsear Storm,地面,特殊(取最高攻),100,90,5,0,100,Attacks with searing winds and hot sand. Sets sandstorm.,Attacks with searing winds and sands. Sets sandstorm. Weather-based.
+923,阳春风暴,Springtide Storm,妖精,特殊(取最高攻),100,90,5,0,100,Attacks with winds of love and hate. Sets fairy terrain.,Attacks with winds of love and hate. Sets fairy terrain. Weather-based.
+924,克命爪,Dire Claw,毒,物理,80,100,15,0,50,"Slices the foe. Might paralyze, poison, or bleed.","A slice that has a 50% chance to cause paralysis, poison, or bleed. Keen Edge boost."
+925,闭关,Shelter,钢,变化,0,0,10,0,0,Sharply raises the Defense of the user and their partner.,Sharply raises the Defense of the user and their partner.
+926,狂野挥打,Wild Swing,一般,物理,60,100,20,-6,0,Takes a mighty swing that forces the foe to retreat.,Forces the target to switch. -6 priority. Hammer-based.
+927,腿骨捶打,Femur Breaker,电,物理,120,70,10,0,100,The foe is struck fearsomely on the legs. Paralyzes the target.,The user strikes the foe's legs. Always paralyzes. Hammer-based.
+928,奇妙锤击,Squeaky Hammer,妖精,物理,80,100,15,0,20,The user hits the opponent with an cute sounding attack.,An oddly sounding attack that may infatuate the foe. Hammer-based.
+929,原始侵袭,Primitive Strike,地面,物理,120,95,5,-2,0,A slow but mighty strike from the ancient past.,The foe is struck with ancient attacks. -2 priority. Hammer-based.
+930,捣碎南瓜,Smashing Pumpkins,草,物理,60,0,20,0,100,Smashes the foe with a seed-filled pumpkin.,Deals damage and sets grassy terrain. Hammer-based.
+931,空中抨击,Airborne Slam,一般,物理,0,0,0,0,0,"Slams the user, always aiming for the head. 20% chance to confuse.",20% chance to confuse. Hammer-based.
+932,脊椎折断,Spine Breaker,岩石,物理,80,100,15,0,30,The foe is struck fearsomely on the back. 30% chance to paralyze.,Strikes the foe fearsomely on the back. 30% chance to paralyze.
+933,爆裂锤击,Crackle Slam,电,物理,70,100,15,0,0,Strikes with a conductive hammer. Super-effective vs Steel.,Slams foes with lots of electricity. Super-effective against Steel. Hammer-based.
+934,暴风乱锤,Squall Hammer,飞行,物理,95,100,10,-1,50,Hammers the foe with winds that might remove hazards.,50% chance to clear hazards. -1 priority. Hammer-based.
+935,百万吨铁锤,Megaton Hammer,格斗,物理,80,100,10,0,0,A devistating blow delivered with a heavy weapon.,A massive strike with a hammer of immense power. Ignores Protect.
+936,破城槌,Battering Ram,龙,物理,90,100,15,0,0,Charges its whole body forwards with the force of a hammer.,The user launches a heavy object. Breaks barriers. Hammer-based.
+937,陷阱锤,Pitfall,地面,物理,80,100,10,0,30,An overhead strike that attempts to bury the opponent.,30% chance to trap and make attacks always hit the target. Hammer-based.
+938,病毒攻击,Viral Strike,毒,物理,110,90,5,0,0,Slams the foe and transfers the user's status.,"Transfers the user's status to the target, curing the user. Hammer-based."
+939,暗影之锤,Shadow Hammer,幽灵,物理,120,100,10,0,0,The user forms a part of their body into a hammer and strikes.,The user slams its ghostly body into the foe. 33% recoil damage.
+940,巨响,Bonk,妖精,物理,75,100,5,0,50,"Strikes the foe on the head, possibly causing drowsiness.",50% chance to cause drowsiness. Hammer-based.
+941,熔融冲打,Molten Strike,火,物理,100,100,10,0,100,"Slams the foe like a molten hammer, but lowers Speed.",Lowers the user's speed. Iron fist boost. Hammer-based.
+942,幻影抨击,Mirage Slam,超能,物理,120,85,10,0,0,A psychedelic slam that hits again in the Future.,Predicts a 40bp Future Sight. Hammer-based.
+943,地裂斩,Earthsplitter,钢,物理,90,100,10,0,50,A might slam that can lower defense.,Can lower the defense of targets. Hammer-based.
+944,甲壳虫狂欢,Beetle Bash,虫,物理,120,90,5,0,30,Attacks with a beetle-like hammer. May confuse.,Slams with a beetle-like hammer. 30% to confuse. Hammer-based.
+945,鹅卵石淋浴,Pebble Shower,岩石,特殊,75,100,10,0,20,20% chance to flinch. Hits both targets.,A rain of pebbles hits both targets. 20% flinch chance.
+946,大河急流,Rapid River,水,物理,45,100,15,0,10,Hits twice. Mega Launcher boost.,A surge of water that hits twice. 10% drench chance. Mega Launcher boost.
+947,毒针头,Toxic Needles,毒,物理,25,100,10,0,10,Hits 2-5 times. 10% chance to poison.,Toxic pins are shot at the foe and hit 2 - 5 times. 10% poison chance.
+948,熏热号角,Smolder Bash,火,物理,80,100,15,0,10,A scorching jab that has a 10% chance to burn.,Bashes the foe with a fiery horn. 10% chance to burn. Horn-based.
+949,快攻,Beatdown,恶,物理,25,100,20,0,0,Hits 2-5 times with an attack flurry.,Attacks the foe with a flurry of blows. hits 2-5 times.
+950,诡异浓雾,Eerie Fog,幽灵,变化,0,0,10,0,0,"An unnatural fog descends, draining stat boosts.",An eerie fog lasting eight turns drains boosts from non-Ghost and Psychic mons.
+951,神秘之舞,Mystic Dance,龙,变化,0,0,20,0,0,Not implemented.,"A mystic, powerful dance that boosts the user's SpAtk and Speed stats."
+952,无情猛打,Relentless Clobber,恶,物理,25,100,20,0,0,Hits 2-5 times with an attack flurry.,Pummels the target repeatedly. Hammer based.
+953,火焰迸发,Popping Mayhem,火,物理,25,100,20,0,10,Hits 2-5 times and can burn.,Pelts the target with hot kernels.10% burn chance.
+954,千斤重牙,Kilobite,钢,物理,85,100,10,0,100,Rushes forward and bites the foe's weak spot.,Rushes forward and bites the foe. -1 Speed to foe or +1 Speed to user.
+955,诱陷外壳,Tangling Husk,草,变化,0,0,10,4,0,Slows attackers while avoiding damage from non-Fire moves.,Protects against non-Fire-type moves. Slows attackers on contact.
+956,疯狂撕扯,Rip and Tear,恶,物理,110,90,5,0,50,The user tears into the foe with its fangs.,Lowers Speed. 50% chance to bleed. Can't be used twice in a row.
+957,逞强,Bravado,一般,特殊,70,100,20,0,0,"Doubles damage if burned, paralyzed, or poisoned.","An attack that is boosted if user is burned, poisoned, or paralyzed."
+958,恐惧冲锋,Terror Charge,恶,物理,65,100,15,0,50,A frightening headbutt that may bleed or fear.,50% chance to bleed. 50% chance to fear. Double damage when switching in.
+959,恐惧枷锁,Terror Locks,幽灵,物理,85,100,15,0,30,"Cut the foe with long, black hair.",30% chance to bleed. 50% more damage if the foe is bleeding. Keen Edge boost.
+960,睡梦侵袭,Dream Invasion,一般,物理,70,100,10,0,10,"Strikes through dreams, hitting sleeping foes hard.",Deals 2x damage to sleeping foes. 10% chance for drowsy. Hits both foes.
+961,晶光星群,Tera Starstorm,一般,特殊(取最高攻),120,100,10,0,0,Strikes both foes with a rain of crystals.,Strikes both foes with a rain of crystals. Uses higher offense.
+962,闪耀弹幕,Sparkling Barrage,超能,物理,30,100,10,0,0,Hits 3 Times with light rays.,The user shoots 3 beams of light at the target.
+963,幽灵夜曲,Spectral Serenade,幽灵,特殊(取最高攻),130,100,5,0,0,Not Implemented.,The foe is hit with a huge explosion. Can only be used every-other turn.
+964,黑光,Merculight,电,变化,0,0,10,4,0,Evades attacks and paralyzes the attacker.,"Evades attacks with certainty, paralyzing attackers. May fail if used in succession."
+965,大霹雳,Big Bang,一般,特殊,90,100,10,0,20,Does Damage. Small burn chance.,The foe is hit with a huge explosion. 20% burn chance.
+966,幽灵火,Spectral Flame,幽灵,变化,0,85,10,0,0,Emits a flame that moves as if alive and inflicts burn.,"Burns the target, including Fire types. Suppresses abilities in fog."
+967,战栗惶恐,Trepidation,毒,特殊,20,90,20,0,100,The foe falls into despair and misses all Psychic moves.,The foe falls into despair. All Psychic-type moves they use miss for 3 turns.
+968,星拳,Astral Hand,超能,物理,85,100,15,0,0,Projects a fist to strike the foe.,Strikes the foe with a projected fist. Ignores stat boosts. Iron Fist boost.
+969,取回,Fetch,一般,物理,0,0,5,0,0,The user runs off the field in search of its lost item.,The user retrieves its lost item and switches to an ally.
+970,变形攻击,Transmute,超能,特殊,80,100,5,0,0,"Strikes the foe, remaking the user's item on KO.",Recovers a used item if this attack knocks out the opponent.
+971,万里无云,Clear Skies,一般,变化,0,0,15,0,0,Clears the weather and prevents new weather.,Clears the current weather and prevents new weather from being set for 5 turns.
+972,准备好了,Ready or Not,一般,物理,80,100,15,0,30,Hides on the first turn and then surprises the foe.,Hides on the first turn scares the foe on the second. 30% flinch chance.
+973,飓风,Giant Gale,飞行,特殊,110,100,5,0,100,"Strikes the foe with a mighty gale, but lowers Speed.","Strikes with a mighty gale, but the user's Speed is lowered. Air based."
+974,虚空恼怒,Vexing Void,恶,特殊,110,85,5,0,30,A terrifying void engulfs the foe.,30% chance to lower Special Defense. Never misses in fog.
+975,日食,Eclipse,恶,特殊,130,100,5,0,100,The darkness within erupts from the user for heavy damage.,Deals heavy damage. Afterwards the user loses its Dark typing.
+976,逃之夭夭,Take Flight,飞行,特殊,60,100,20,0,0,Blasts the foe with wind and takes to the sky.,Deals damage and then switches out. Air based.
+977,铁蒺藜,Caltrops,钢,变化,0,0,20,0,0,Spreads dangerous spikes that inflict bleeding.,Spreads spikes that inflict bleeding on the next opponent to switch in.
+978,鼓起勇气,Take Heart,超能,变化,0,0,5,0,0,"Steadies itself, healing its status and boosting Special.",Heals status and raises SpAtk and SpDef by 1 stage.
+979,安全通道,Safe Passage,一般,变化,0,0,20,0,0,"Guides an ally onto the field, shielding them from harm.",Guides an ally onto the field. They take -35% damage this turn.
+980,超能华尔兹,Esper Waltz,超能,特殊,80,100,10,0,50,A mesmerizing waltz that may raise Special Attack.,50% chance to raise Special Attack. Dance move.
+981,极速摇摆,Zap Jive,电,特殊,80,100,10,0,50,An electrifying dance that may raise Speed.,50% chance to raise Speed. Dance move.
+982,巫术疾走,Hex Trot,幽灵,特殊,80,100,10,0,50,A lively yet haunting dance that may raise Speed.,50% chance to raise Speed. Dance move.
+983,山岳飓风,Mountain Gale,冰,物理,100,85,10,0,30,A bone chilling wind buffets foes. May flinch.,Hits both opponents. 30% chance to flinch. Air based.
+984,坏蛋,Bad Egg,毒,特殊,40,100,10,0,100,Throws an egg filled with toxins. Poisons on hit.,Throws an egg filled with toxins. Badly poisons the target
+985,神秘之力,Mystical Power,超能,特殊(取最高攻),70,100,10,0,100,Strikes with a strange power that empowers the user.,Deals damage and raises the user's highest attack or defense by 1 stage.
+986,龙角,Dragon Jab,龙,物理,80,100,15,0,30,Jabs with a horn. can bleed on hit.,A jabbing attack. 30%  chance to inflict bleeding. Mighty Horn boost.
+987,冰柱穿刺,Icicle Impale,冰,物理,80,100,15,0,30,Jabs with a horn. May lower defense.,A jabbing attack. 30%  chance to lower Defense. Mighty Horn boost.
+988,剧毒俯冲,Toxic Plunge,毒,物理,110,100,10,0,20,Dives into a pool of poison then strikes on the next turn.,Dives and then attacks on the next turn. 20% chance to poison.
+989,好戏上场,Showtime,超能,变化,0,0,5,0,0,Sets the stage with a Magic Room then bows out.,"Clears other rooms and sets Magic Room, then switches to an ally."
+990,放逐之力,Banished Power,恶,特殊(取最高攻),70,100,10,0,100,Strikes with a forbidden power that empowers the user.,Deals damage and raises the user's highest attack or defense by 1 stage.
+991,三连震,Triple Tremor,地面,物理,20,90,10,0,0,Strikes with three intensifying shockwaves.,Hits three times. More powerful with each successive hit.
+992,火剑,Fire Glaive,火,物理,85,100,10,0,0,The user strikes with a white hot horn.,"Strikes with a white hot horn, ignoring stat changes. Might Horn boost."
+993,枯竭光线,Depletion Beam,龙,物理,85,100,10,0,0,Attacks with metallic power. Foe's last move has 3 PP cut.,Foe's last move has 3 PP cut. Mega launcher boost.
+994,寸拳,One-Inch Punch,格斗,物理,90,0,10,0,0,Picks a weak spot and then strikes with immense force.,A powerful punch that never misses. High crit rate. Iron Fist boost.
+995,狂战士之角,Berserker Horn,格斗,物理,85,100,15,0,10,Spins its body like a drill. High critical-hit ratio.,Rotates its body like a drill. High crit ratio. Mighty Horn boost.
+996,恶鬼之拳,Oni Fist,恶,物理,90,0,20,0,0,An unavoidable punch that is thrown from shadows.,A strong punch from the shadows. Always hits. Iron Fist boost.
+997,虫之冲击,Insect Impact,虫,物理,80,100,15,0,30,A punch that may drop the target's defense stat.,A powerful punch. 30% chance to drop defense. Iron Fist boost.
+998,闪电子弹,Lightning Bullet,电,物理,90,100,15,0,10,Shoots a powerful energy projectile that may paralyze.,Shoots a strong energy projectile. 10% paralyze chance Mega Launcher Boost.
+999,金属旋律,Metallic Melody,钢,特殊,85,100,10,0,0,Hits the body rhythmically to damage the opponent with sound.,The user emits a sound by hitting their metallic body rhythmically.
+1000,蓝月,Blue Moon,冰,特殊,130,100,5,0,0,The user unleashes the spirit from a full blue moon.,The user's spirit surges from a azure full moon. Cannot be used twice in a row.
+1001,五星拳,Five-Star Fury,虫,物理,15,100,10,1,0,Repeatedly punches the foe 2 to 5 times. +1 priority.,Hits 2 to 5 times. Has +1 priority. Iron Fist boost.
+1002,海啸之锤,Tsunami Hammer,水,物理,125,100,5,0,0,Super effective vs Water. Can't be used twice in a row.,Super effective vs Poison. Can't be used twice in a row. Hammer-based.
+1003,感染替换,Septic Switch,毒,变化,0,100,20,0,0,Supress abilities then switch.,Supresses the targets abilities then switches out.
+1004,水锁,Waterlog,水,变化,0,100,15,3,20,Target moves last and may be drenched.,"Makes the target move last. 20% drench chance, 50% in rain."
+1005,Incite,Incite,恶,变化,0,100,10,0,0,Adds dark type and enrages foe.,Adds the Dark type to the target and enrages them.
+1006,Jetstream Burst,Toxic Terrain,毒,变化,0,0,10,0,0,Boosts Poison and damages mons for 8 turns.,Boosts Poison-type moves for 8 turns and deals 1/16 HP damage.
+1007,Sky Quake,Jetstream Burst,飞行,特殊,120,100,5,0,0,Strikes by using flurries of wind.,Attacks with wind that hits both targets.
+1008,Toxic Terrain,Sky Quake,飞行,物理,90,100,15,0,0,Strikes with harsh winds.,"Howling winds shake the heavens, hitting both foes."
+1009,Sunstrike (N),Sunstrike (N),火,特殊,60,100,15,1,0,Strikes with harsh winds.,"Strikes and negates evs, items, boosts, and hits lowest defense."
+1010,Tempest Storm (N),Tempest Storm (N),电,变化,0,0,5,0,0,Sets a thundershock storm.,Hits both sides with a thundershock at the end of each turn for 2-5 turns.
+1011,Prism Blast (P),Prism Blast,岩石,特殊,95,90,5,0,10,"Deals damage, lowers accuracy, and may confuse.",Fires and energy prism that damages and reduces accuracy. 10% chance to confuse.
+1012,Seismic Slam,Seismic Slam,地面,物理,120,100,10,0,0,Deals damage. 33% recoil damage.,Charges with earth shattering power. 33% recoil damage.
+1013,Chiller,Chiller,冰,物理,30,100,15,0,10,Hits 3 times with snowballs.,Hits the foe with 3 explosive snowballs. 10% Frostbite.
+1014,Spread Bomb,Spread Bomb,火,物理,90,100,10,0,20,Hits everyone else. 30% Burn chance.,"A wide reaching bomb is thrown, hitting the field with A 30% burn chance."
+1015,Ball Toss,Ball Toss,一般,物理,90,100,15,0,0,A ball attack. 20% flinch.,Throws a ball forward. 20% flinch chance
+1016,Party Favors(P),Party Favors,妖精,物理,60,100,10,0,0,Damages the foe and heals allies.,Heals you and your ally by 25% and does damage.
+1017,Shot Put,Shot Put,钢,物理,85,100,15,0,0,A ball attack. 30% speed drop.,Throws a heavy sphere. 30% to lower speed.
+1018,Block Dropper,Block Dropper,地面,物理,25,100,15,0,0,A ball attack. 20% flinch.,Drops 2 to 5 blocks onto the target.
+1019,Saber Slashes,Saber Slashes,火,物理,35,100,10,0,0,A ball attack. 20% flinch.,Hits twice. Uses elec. or fire based on effectiveness.
+1020,Dragon Dash,Dragon Dash,龙,物理,40,100,20,1,0,+1 priority attack.,Lunges at the target quickly. +1 prio.
+1021,Pocket Sand,Pocket Sand,地面,物理,40,100,20,0,0,"+1 priority, 10% acc drop.","The user throws sand on a dime. 10% acc. drop, +1 priority."
+1022,Concoction,Concoction,草,物理,30,100,5,0,0,Damages and uses a berry.,Attacks and uses a random berry effect.
+1023,Hacksaw,Hacksaw,钢,物理,80,100,15,0,0,Super effective vs Steel.,Tampers with the target. Stronger vs Steel.
+1024,Godspeed,Godspeed,飞行,物理,65,0,5,2,0,Super effective vs Steel.,Swoops with incredible speed. +2 prio.
+1025,Psycho Wave,Psycho Wave,超能,特殊,150,85,5,0,0,A life-risking energy with 50% recoil.,A hazardous energy ball hits the foe. 50% recoil damage.
+1026,Atomic Fire,Atomic Fire,火,特殊,120,100,10,0,0,A life-risking energy with 50% recoil.,A hazardous energy ball hits the foe. 50% recoil damage.
+1027,Rain Flush,Rain Flush,水,特殊,120,100,5,0,100,A powerful rain attack. Lowers the user's defenses.,An all consuming rain hits the foe. drops your defenses.
+1028,Ice Wall,Ice Wall,冰,物理,70,100,5,0,0,Sets reflect with ice.,"The user applies a stone cold barrier, setting reflect."
+1029,Obscured Shot,Obscured Shot,恶,特殊,70,100,5,1,0,Strikes first if the foe is preparing an attack.,User strikes first. It fails if the foe is not attacking.
+1030,Blitz Arrow,Blitz Arrow,格斗,物理,85,100,10,0,20,20% flinch chance. arrow based.,Shoots an arrow with fighter will. 20% flinch chance.
+1031,Rumble Kick,Rumble Kick,岩石,物理,90,100,15,0,30,May down attack. Striker.,A kick from a reinforced leg. 20% Atk drop. Striker.

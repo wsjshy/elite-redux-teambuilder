@@ -1,0 +1,30 @@
+# ===== 隐私：游戏 ROM / 存档（严禁上传）=====
+*.gba
+*.sav
+*.ss1
+*.ss2
+ER2.65简汉化/
+
+# ===== 大体积数据产物（可由 build 脚本重建）=====
+*.xlsx
+*.xlsm
+招式表_可学总表.csv
+存档解析*.csv
+存档解析*.json
+
+# ===== ER-source：只推权威数据 json，其余为官方仓库克隆/图片（可上游重建）=====
+ER-source/*
+!ER-source/gameDataV2.65beta.json
+!ER-source/additionalV2.65beta.json
+
+# ===== NN 数据与模型（中间产物/大文件）=====
+nn_data/
+nn_models/
+
+# ===== 顶层探针与调试残留（根级下划线前缀，一次性脚本/输出）=====
+/_*
+顺风
+
+# ===== Python =====
+__pycache__/
+*.pyc

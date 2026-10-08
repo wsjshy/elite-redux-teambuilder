@@ -1,0 +1,61 @@
+﻿
+=== every-other turn ===
+  307 爆炸烈焰  |  The foe is hit with a huge explosion. Can only be used every-other turn.
+  308 加农水炮  |  The foe is hit with a watery cannon. Can only be used every-other turn.
+  338 疯狂植物  |  The foe is hit with an enormous branch. Can only be used every-other turn.
+  722 流星突击  |  Attacks wildly with a thick leek. Can only be used every-other turn. Keen Edge boost.
+  963 幽灵夜曲  |  The foe is hit with a huge explosion. Can only be used every-other turn.
+  小计 5
+
+=== on the next turn ===
+  273 祈愿  |  A self-healing move that restores half the full HP on the next turn.
+  281 哈欠  |  A huge yawn lulls the foe into falling asleep on the next turn.
+  723 无极光束  |  Eternatus's most powerful move. On the next turn, the user must rest.
+  988 剧毒俯冲  |  Dives and then attacks on the next turn. 20% chance to poison.
+  小计 4
+
+=== two turns ===
+  117 忍耐  |  The user endures attacks for two turns, then strikes back double.
+  156 睡觉  |  The user sleeps for two turns to fully restore HP and heal any status problem.
+  248 预知未来  |  Two turns after this move is used, the foe is attacked psychically.
+  353 破灭之愿  |  A move that attacks the foe with a blast of light two turns after use.
+  小计 4
+
+=== must rest / rests ===
+  723 无极光束  |  Eternatus's most powerful move. On the next turn, the user must rest.
+  小计 1
+
+=== recharg ===
+  63 破坏光线  |  Does severe damage. Needs recharging. Mega Launcher boost
+  416 终极冲击  |  Hits with immense force. Deals severe damage, needs to recharge.
+  439 岩石炮  |  Hurls a massive rock at the foe. User recharges after hit. Throw-based.
+  小计 3
+
+=== charge / first turn（蓄力型） ===
+  33 撞击  |  A physical attack in which the user charges, full body, into the foe.
+  63 破坏光线  |  Does severe damage. Needs recharging. Mega Launcher boost
+  127 攀瀑  |  A powerful charge attack. 20% flinch chance. Field-based.
+  143 神鸟猛击  |  Raises its Attack on the first turn, then makes a brutal strike on the second.
+  245 神速  |  A blindingly speedy charge attack with +2 priority.
+  254 蓄力  |  The user charges up power for use later. It can be used three times.
+  268 充电  |  The user charges power to boost the Electric move it uses next.
+  310 惊吓  |  A startling shout that flinches the target. Can only be used on the first turn.
+  394 闪焰冲锋  |  A ruthless, fiery charge which has 33% recoil. Has 10% burn chance.
+  413 勇鸟猛攻  |  Wings tucked in, the user charges at the foe. 33% recoil damage.
+  416 终极冲击  |  Hits with immense force. Deals severe damage, needs to recharge.
+  431 攀岩  |  A charging attack. 30% confusion chance. Field-based.
+  439 岩石炮  |  Hurls a massive rock at the foe. User recharges after hit. Throw-based.
+  451 充电光束  |  Attacks with an electric charge. Raises own SpAtk. Mega Launcher boost
+  553 冰冻伏特  |  Paralyzes attackers that make contact while charging. 30% paralyze chance.
+  554 极寒冷焰  |  Burns attackers that make contact while charging. 30% burn chance.
+  569 等离子浴  |  The user disperses charged particles which electrify Normal-type moves.
+  604 电气场地  |  For 8 turns, the charged ground ups Electric-type moves and prevents sleep.
+  623 迎头一击  |  An attack that hits first with great power. Usable only on first turn.
+  682 熊熊火爆  |  The user cloaks itself in fire and charges at the foe, leaving a burn.
+  836 世界树之力  |  Nature's overcharges the user's strike. Lowers Atk and Def.
+  838 心灵猛击  |  User charges, boosted by psychic power. 33% recoil damage.
+  872 巨剑突击  |  Charges at the foe. The foe's next move deals double damage. Keen edge boost.
+  901 电光束  |  Charging 1st turn: boosts SpAtk. Fires on second turn. In rain: fires immediately.
+  972 准备好了  |  Hides on the first turn scares the foe on the second. 30% flinch chance.
+  1012 Seismic Slam  |  Charges with earth shattering power. 33% recoil damage.
+  小计 26
