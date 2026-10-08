@@ -11,6 +11,8 @@ ER2.65简汉化/
 招式表_可学总表.csv
 存档解析*.csv
 存档解析*.json
+# 旧精灵图源（v4.6.2 合图后零引用；本地保留供 build_sprites_sheet.py 重跑，不入库）
+assets/sprites/
 
 # ===== ER-source：只推权威数据 json，其余为官方仓库克隆/图片（可上游重建）=====
 ER-source/*

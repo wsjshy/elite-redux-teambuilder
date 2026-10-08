@@ -37,7 +37,7 @@
 D:\game\elite-redux\
 ├── 配招助手_ER.html          ← 前端主程序（纯 HTML+JS，数据内嵌，约 2.3MB）
 ├── 配招工具_data.js           ← 全量数据（物种/招式/特性/道具/可学池，6.5MB）
-├── assets\sprites\            ← 精灵图源 1906 张 PNG（保留为源/回退，页面不再请求）
+├── assets\sprites\            ← 精灵图源 1906 张 PNG（本地保留供重跑，.gitignore 排除不入库）
 ├── assets\sheets\             ← 合图 8 张 WebP + sheets_map.js（页面实际加载，1906 请求 → 8）
 ├── parse_er_save_v4.py        ← 存档解析器（独立可用，5 锚点自检）
 ├── build_movesets.py 等        ← 数据生成链

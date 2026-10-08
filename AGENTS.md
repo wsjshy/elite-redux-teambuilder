@@ -25,7 +25,7 @@ D:\game\elite-redux\
 ├── box_override.json                ← 人工箱号修正模板（特殊区15条用）
 ├── 存档解析v4_20261006.csv/.json    ← v4.1 最新产物（431条，53列）
 ├── 存档解析_20261006.csv/.json      ← v3.1 旧产物（19列，历史对照）
-├── 配招助手_ER.html                 ← ★★v3 配队配招工具（7 Tab + 特性/天性整体聚合评估；双击即用，**数据自包含 + 精灵图走 assets\sprites 相对路径**）
+├── 配招助手_ER.html                 ← ★★v3 配队配招工具（7 Tab + 特性/天性整体聚合评估；双击即用，**数据自包含 + 精灵图走 assets\sheets 合图相对路径**）
 ├── 配招工具_data.js                 ← 配招工具中间数据产物（build_tool_data.py 输出，已内嵌进 HTML；其内嵌的 base64 精灵图在 HTML 生成时被剥离）
 ├── docs\                           ← ★战斗分析文档体系（2026-10-06 新增，配招引擎升级依据）
 │   ├── 战斗分析\01_属性克制体系.md   ← ★机制分析：21×21克制表全表/火打地面=1x裁定/12条规则
@@ -551,7 +551,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html`+`配招工具_data.js`+`assets/`+`.nojekyll`+`ER-source` 两 json，与 master 跟踪集对齐避免切换冲突）。
 - **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`（v4.6 验证：index 2,332,615B/data.js 6,487,486B/精灵图/.nojekyll 全 200，index 与本地同 SHA）。
 - **更新流程**：改 build 脚本→重生成 HTML→`git commit`+`push github master`→孤儿分支重建 gh-pages（`checkout --orphan gh-pages`→清工作区**先移出 ER-source 与 4 项脱跟踪构建输入**（`招式表_可学总表.csv` / `ER2.65简汉化\ER2.65beta版图鉴v0.3.xlsm` / `ER2.65简汉化\分类.xlsx` / `ER2.5正式版图鉴v0.5.xlsm`——**曾于 v4.6.4 期被误删，重建见 §12**）→`checkout master -- 部署产物`→commit→`push github gh-pages --force`）→`checkout master`→移回 ER-source→`reset --hard master`。
-- **部署硬前提**：HTML 与 `assets\sprites` 必须同目录（相对路径引用）；`.gitignore` 排除清单见文件本身（.gba/.sav/.ss*/ER2.65简汉化/ER-source 除两 json 外全部/nn_data/nn_models/顶层 `/_*` 探针/大 CSV/xlsx）。
+- **部署硬前提**：HTML 与 `assets\sheets` 必须同目录（相对路径引用）；`.gitignore` 排除清单见文件本身（.gba/.sav/.ss*/ER2.65简汉化/ER-source 除两 json 外全部/nn_data/nn_models/顶层 `/_*` 探针/大 CSV/xlsx/**assets/sprites/**——旧精灵图源本地保留供 build_sprites_sheet.py 重跑，不入库）。
 - **ER-source 内嵌仓库处理**：官方克隆的 `ER-source\.git` 已改名 `.git.bak`（防 gitlink 吞文件）；恢复上游关联时改回 `.git` 即可，数据文件零改动。
 
 
