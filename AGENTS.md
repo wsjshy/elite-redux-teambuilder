@@ -543,3 +543,23 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 新增字段/机制：先设计→对齐→实施→用三个轮换档回归测试→更新本文档与 Skill references。
 - 测试档（_baseline/_after_candy/_after_stomp）保留，勿删；解析器自动排除。
 - 官方 GitHub 仓库 master(2024-04) 太旧无 v2.65 高编号物种，仅作参考；权威数据一律走 NextDex gameData。
+- **README 是对外重要介绍，每次版本迭代须同步更新**（功能清单/快速开始/更新记录/数据源版权）；仓库主页靠 README 呈现，缺它 GitHub 显示占位简介。
+
+## 8. GitHub 部署（2026-10-08 起）
+
+- **仓库**：`github.com/wsjshy/elite-redux-teambuilder`（公开）；远程名 `github`（代理：Git 全局 `http.https://github.com.proxy http://127.0.0.1:7890`）。
+- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html`+`配招工具_data.js`+`assets/`+`.nojekyll`+`ER-source` 两 json，与 master 跟踪集对齐避免切换冲突）。
+- **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`（v4.6 验证：index 2,332,615B/data.js 6,487,486B/精灵图/.nojekyll 全 200，index 与本地同 SHA）。
+- **更新流程**：改 build 脚本→重生成 HTML→`git commit`+`push github master`→孤儿分支重建 gh-pages（`checkout --orphan gh-pages`→清工作区**先移出 ER-source**→`checkout master -- 部署产物`→commit→`push github gh-pages --force`）→`checkout master`→移回 ER-source→`reset --hard master`。
+- **部署硬前提**：HTML 与 `assets\sprites` 必须同目录（相对路径引用）；`.gitignore` 排除清单见文件本身（.gba/.sav/.ss*/ER2.65简汉化/ER-source 除两 json 外全部/nn_data/nn_models/顶层 `/_*` 探针/大 CSV/xlsx）。
+- **ER-source 内嵌仓库处理**：官方克隆的 `ER-source\.git` 已改名 `.git.bak`（防 gitlink 吞文件）；恢复上游关联时改回 `.git` 即可，数据文件零改动。
+
+
+## 9. v4.6.1 收尾补丁（2026-10-08）
+
+- **唯一可改源**：`build_tool_html.py`（改后 403,447 B）；产物 `配招助手_ER.html` = `index.html` = ROM 副本 = **2,323,369 B / SHA256 `4C27F7705AC8461A59FF4080432C35AB8DD1EF943B873329601DF95BF5DEA288`**（三处逐字节一致）。
+- **v4.6.1 四项**：① 长溯源标注（构建口径 L5186 / 判定口径 L5446 / ER 特化提示 L5536）折叠为 `details.inline` 一行可展开，正文零删减；② `.scroll` 补 `-webkit-overflow-scrolling:touch`（L205）；③ R1/R3 两处队友推荐并存 → `需求驱动队友`（L5173，默认展示）与 `体系补盲队友`（L5427，`details.big.subsec` 默认收起）标签区分；④ `index.html` 同哈希副本 + ROM 副本同步。
+- **验证链**：`node --check` EXIT 0；`verify_v1.js` 216/0 + `verify_v4.js` 260/0 = **476 PASS / 0 FAIL**（469 基线不降，新增 v461 组 7 条）；渲染探针 render errors 0；token 扫描全 0；移动端 360px 六项自检全过；存档 5 锚点全过（431/6/425/15 + anchorsOk=5）。
+- **环境登记（非代码问题）**：① 数据层 `usagePrior` 被清空（751→0，`usageMeta.srcs=[] coverage=0`）→ `UP1` 断言改为「契约 + 显式空态」双分支，待数据层恢复；② 存档 fixture 项目副本被部署清理删除 → 断言改候选路径（项目副本 → ROM `ER2.65简汉化\ERv2.65-beta2-debug汉化版.sav` → ROM `elite redux 2.5 debug.sav`），ROM 副本 5 锚点全过，仅 `K=3`（原 4，K 为存档自身轮换指纹）→ `K∈[3,4]` 并注明；③ `B④` 流派卡计数改为「`.big` 总数 − `.big.subsec`」。
+- **临时文件**：全部写 Agent workspace（不落项目根）；提取脚本 `_chk_script_1.js` 用后删除；`.gitignore` 已排除顶层 `/_*`。
+- **待办**：主 Agent 重新部署 gh-pages（指纹见上）；剩余登记项（`changelog`×9 与源码宏名参数玩家化）仍待拍板，未擅动。
