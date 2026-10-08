@@ -543,3 +543,12 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 新增字段/机制：先设计→对齐→实施→用三个轮换档回归测试→更新本文档与 Skill references。
 - 测试档（_baseline/_after_candy/_after_stomp）保留，勿删；解析器自动排除。
 - 官方 GitHub 仓库 master(2024-04) 太旧无 v2.65 高编号物种，仅作参考；权威数据一律走 NextDex gameData。
+
+## 8. GitHub 部署（2026-10-08 起）
+
+- **仓库**：`github.com/wsjshy/elite-redux-teambuilder`（公开）；远程名 `github`（代理：Git 全局 `http.https://github.com.proxy http://127.0.0.1:7890`）。
+- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html`+`配招工具_data.js`+`assets/`+`.nojekyll`+`ER-source` 两 json，与 master 跟踪集对齐避免切换冲突）。
+- **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`（v4.6 验证：index 2,332,615B/data.js 6,487,486B/精灵图/.nojekyll 全 200，index 与本地同 SHA）。
+- **更新流程**：改 build 脚本→重生成 HTML→`git commit`+`push github master`→孤儿分支重建 gh-pages（`checkout --orphan gh-pages`→清工作区**先移出 ER-source**→`checkout master -- 部署产物`→commit→`push github gh-pages --force`）→`checkout master`→移回 ER-source→`reset --hard master`。
+- **部署硬前提**：HTML 与 `assets\sprites` 必须同目录（相对路径引用）；`.gitignore` 排除清单见文件本身（.gba/.sav/.ss*/ER2.65简汉化/ER-source 除两 json 外全部/nn_data/nn_models/顶层 `/_*` 探针/大 CSV/xlsx）。
+- **ER-source 内嵌仓库处理**：官方克隆的 `ER-source\.git` 已改名 `.git.bak`（防 gitlink 吞文件）；恢复上游关联时改回 `.git` 即可，数据文件零改动。
