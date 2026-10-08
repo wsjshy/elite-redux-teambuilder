@@ -202,7 +202,7 @@ tr.mv.open + .mvdesc{display:table-row}
 .btn{border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px}
 .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
 .btn-mini{border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:10px; cursor:pointer; font-size:12px; vertical-align:middle}
-.scroll{overflow-x:auto}
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
 .mini{font-size:12px}
 .badge{display:inline-block; border-radius:10px; padding:1px 8px; font-size:12px; margin-right:4px}
 .badge-weak{background:#fce4ec; color:#b71c1c}
@@ -5170,7 +5170,7 @@ function stopReasonZh(r){return ({STOP_ALL_NEEDS_MET:'需求已清零',STOP_BELO
 function renderNeedPlan(s){
   var plan=null;
   try{plan=buildTeamByNeeds(s)}catch(e){return '<div class="sec"><h3>队伍构建方案</h3><div class="tip">方案生成失败：'+esc(''+e)+'</div></div>'}
-  var h='<div class="sec" id="teamPlan"><h3>🧩 队伍构建方案（需求驱动 · 动态推导）</h3>';
+  var h='<div class="sec" id="teamPlan"><h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
   h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
     '· <b>怎么启动：</b>'+esc(plan.overview.start)+'<br>'+
     '· <b>怎么受益：</b>'+esc(plan.overview.benefit)+'<br>'+
@@ -5183,10 +5183,11 @@ function renderNeedPlan(s){
       esc(wt?wt.s.zh:'—')+(wt?('（'+(wt.gate||'')+'）'):'')+' 作为 '+esc(plan.sysKey)+' 体系手；'+
       '核心自身非设置手，配招功能槽不放天气招（把手位留给队友，核心专注输出/联防）。</div>';
   }
-  h+='<div class="ruleline">构建口径（需求驱动 · 动态推导）：<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
+  h+='<details class="inline"><summary>📐 构建口径（需求驱动 · 动态推导）—— 展开看评分与终止规则</summary><div style="margin-top:4px">'+
+    '<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
     '逐条需求在全图鉴做正向评分，选最优填充者；一只满足多条需求 = 多功能加分 <b>+(k−1)×'+NEED_CFG.MULTI_ROLE_BONUS+'</b>；'+
     '满 '+NEED_CFG.MAX_TEAM+' 只 / 需求清零 / 剩余最高优先级 &lt; '+NEED_CFG.STOP_PRIORITY+' → 立即停手（允许 &lt;'+NEED_CFG.MAX_TEAM+' 只紧凑队，不自动补齐）。'+
-    '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。</div>';
+    '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。</div></details>';
   var pr=plan.prof;
   var _sb=(pr.side==='特殊'?pr.atk.sp:pr.atk.ph)||pr.atk.sp||pr.atk.ph;
   h+='<div class="tip"><b>核心画像</b>（四画像推导）：'+esc(pr.role)+' · '+esc(pr.side)+'向 · 力度 '+pr.power+'（本系最高 '+esc(_sb?MV[_sb.id][1]+'('+_sb.pow+')':'—')+'）'+
@@ -5422,14 +5423,15 @@ function renderCore(s){
   /* v4.3 队伍构建方案卡（需求驱动）：核心画像 → 队伍需求（动态） → 每需求最优推荐与全量候选 → 队伍成员（置于 Top6 表之前，作为主展示） */
   html+=renderNeedPlan(s);
   /* 队友（整体联防；各流派的差异化队友见上方流派卡内） */
-  html+='<div class="sec"><h3>推荐队友（'+(optFinalOnly?'最终形态 + 奇石优势形态':'全图鉴')+' Top 6，'+(side)+'向优先，点击入队）</h3>';
+  /* v4.6.1 ③ R1/R3：第二种队友来源（整体联防）→ 明确标签「体系补盲队友」，与「需求驱动队友」区分；**默认收起**（同屏视觉重复折叠其一，默认展示需求驱动） */
+  html+='<details class="big subsec"><summary>🧩 体系补盲队友（整体联防 Top 6 · '+(optFinalOnly?'最终形态 + 奇石优势形态':'全图鉴')+' · '+(side)+'向优先 · 点击入队）</summary>';
   if(recs.length){
     html+='<div class="scroll"><table><thead><tr><th>队友</th><th>属性</th><th>评分</th><th>理由</th><th></th></tr></thead><tbody>';
     recs.forEach(function(r){html+=tmRow(r)});
     html+='</tbody></table></div>';
   }else html+='<div class="tip">暂无高匹配队友（试试换核心）</div>';
   html+='<div class="ruleline">队友口径（正向体系构建）：按流派侧向分流（物理侧→物防/威吓联防；特殊侧→特防联防；受队→剧毒/钉子/回复）+ 体系维度分（同一张维度权重表，逐维度列分可解释）+ 家族去重（同族只留最高形态，标注「+N形态」）+ 免疫/抵抗弱点 + 补盲。排序键：**体系契合优先**（同体系受益/设置手 → 中立/联防补盲 → 自带另一套天气者），对立天气体系只排序靠后、仍可见（候选池 '+((recs&&recs.pool)||'—')+' 只，全部参与打分）。</div>';
-  html+='</div>';
+  html+='</details>';
   /* B10：天气/场地数值卡（全部读 WCONF，带待实测徽标） */
   var ownWx=ownWxList(s,learnOf(s)),cvCard=convOf(s);
   html+='<div class="sec"><h3>天气 / 场地数值（读 WCONF 口径表）</h3>'+
@@ -5441,7 +5443,8 @@ function renderCore(s){
     '<div style="font-size:12px;margin-top:2px">剧毒场地：'+WCONF.toxicTerrain.durTurns+' 回合 / 毒招 ×'+WCONF.toxicTerrain.boost+'（+'+pct(WCONF.toxicTerrain.boost-1)+'，用户确认） / 非毒钢接地每回合 '+fracTxt(WCONF.toxicTerrain.dmgFraction)+' 最大HP</div>'+
     (ownWx.length?'<div style="font-size:12px;margin-top:2px">本只体系：'+ownWx.map(function(o){return esc(o.sys)+'（'+esc(o.src)+'）'}).join(' / ')+'</div>':'')+
     (cvCard?'<div style="font-size:12px;margin-top:2px">-ate 属性转换：'+esc(cvCard.abi)+'（'+esc(cvCard.scope)+'）→ '+convSrcLabel(cvCard)+'转为 '+tlabel(cvCard.type)+'、按本系 ×1.6（.onStab 已按游戏源码核对）＋ 转换招 ×'+ateMulOf(cvCard.id)+(ateMulOf(cvCard.id)>1?'（三特例 ×1.1）':'（宏族 ×1.0，无 10% 加成）')+(cvCard.src&&cvCard.src!=='一般'?'（来源属性 '+cvCard.src+'→'+cvCard.type+'，非一般系来源）':'')+'</div>':'')+
-    '<div class="ruleline">判定口径：天气/场地回合与倍率读 WCONF（'+esc(v4ContractNote())+'）；流派卡「选招依据 / 判定口径」两行给出每招倍率构成（pow×stab×hit×prio×cover×weather×func×abi）。</div>'+
+    '<details class="inline"><summary>📐 判定口径：天气/场地回合与倍率读 WCONF（'+esc(v4ContractNote())+'）—— 展开看每招倍率构成</summary>'+
+    '<div style="margin-top:4px">流派卡「选招依据 / 判定口径」两行给出每招倍率构成（pow×stab×hit×prio×cover×weather×func×abi）。</div></details>'+
     '</div>';
   html+='</div>';
   /* 注：机制口径折叠块由独立容器 #ruleBoxCore（L335）渲染 —— 不在此重复追加，避免出现两遍 */
@@ -5530,13 +5533,13 @@ function initRuleBoxes(){
   var hr=wxRuleRefHtml();
   ['ruleBoxTeam','ruleBoxTpl'].forEach(function(id){var e=$(id);if(e)e.innerHTML=hr});
   var tipEl=$('tplRuleTip');
-  if(tipEl)tipEl.innerHTML='💡 ER 特化提示（读 WCONF 口径表 · 已按游戏源码核对）：'+
+  if(tipEl)tipEl.innerHTML='<details class="inline"><summary>💡 ER 特化提示（读 WCONF 口径表 · 已按游戏源码核对）—— 展开看天气/冻伤/PP/词条说明</summary><div style="margin-top:4px">'+
     '天气 '+WCONF.abilityDurTurns+' 回合（岩石 '+WCONF.rockTurnsAbility+' 回合），手动招与特性同档；'+
     '晴/雨增伤 ×'+(1+WCONF.boost)+'（已按游戏源码核对：不分手动/特性，无「特性 20%」档）；'+
     '冻伤替代冰冻（每回合 '+fracTxt(WCONF.frostbite.dmgFraction)+' 最大HP + 特攻 ×'+WCONF.frostbite.spAtkMult+'，'+'冰雹触发 ×'+WCONF.frostbite.hailChanceMult+pendBadge()+' 游戏源码中未见）；'+
     '个体默认 31、Iron Pill 可把速度 IV 调 0（空间队）；所有招式 PP 全满；训练师全员 4 特性+道具。'+
     '<br>v4.x：'+esc(v4ContractNote())+'；词条解释（天气/场地/钉子/强化/异常/先制/蓄力/属性转换/冻伤/麻痹等）在正文中以虚线下划线标出，悬停看释义、点击开「词条卡片」（居中轻量 modal，带遮罩与关闭）。'+
-    '<br>场地：'+terrainNums()+'；顺风 '+WCONF.tailwindTurns+' 回合 / 空间 '+WCONF.trickroomTurns+' 回合'+pendBadge()+WCONF.trickroomPrio;
+    '<br>场地：'+terrainNums()+'；顺风 '+WCONF.tailwindTurns+' 回合 / 空间 '+WCONF.trickroomTurns+' 回合'+pendBadge()+WCONF.trickroomPrio+'</div></details>';
 }
 initRuleBoxes();
 renderTpl();
