@@ -136,16 +136,6 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 输出：CSV(utf-8-sig, 53列) + JSON(summary+records)。特殊区箱号人工指定 → `box_override.json`。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；xlsm 缺失时中文名回退英文。
 
-### 5.1 部署（GitHub Pages，2026-10-08 生效）
-
-- **分支约定**：`master` 开发 + `gh-pages` 部署（勿混淆；gh-pages 只放部署产物）
-- **远程**：`github` = https://github.com/wsjshy/elite-redux-teambuilder.git（账号 wsjshy，公开）
-- **线上地址**：https://wsjshy.github.io/elite-redux-teambuilder/（手机可访问，移动端适配验证入口；HTTP 200 已验证，终版 2,332,615B）
-- **部署产物**（gh-pages 根目录）：`index.html`（=配招助手_ER.html 同哈希）+ `配招工具_data.js` + `assets\sprites\`（相对路径同目录**硬前提**）+ `.nojekyll`
-- **一键脚本**：`tools\deploy_er.ps1 <版本> <消息>`（UTF-8 BOM；master 提交推送 → gh-pages 三件套 → 切回 master）
-- **前置**：Git 代理 `git config --global http.https://github.com.proxy http://127.0.0.1:7890`（中国大陆必需）
-- **红线**：存档/ROM（`*.gba`/`*.sav`/`*.ss*`）严禁上传——`.gitignore` 已排除
-
 ## 6. 当前状态（2026-10-06）
 
 - ✅ v4.1 完成并验证：431 条（队伍6/电脑425/特殊区15/散落1），5 锚点全过。
@@ -553,6 +543,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 新增字段/机制：先设计→对齐→实施→用三个轮换档回归测试→更新本文档与 Skill references。
 - 测试档（_baseline/_after_candy/_after_stomp）保留，勿删；解析器自动排除。
 - 官方 GitHub 仓库 master(2024-04) 太旧无 v2.65 高编号物种，仅作参考；权威数据一律走 NextDex gameData。
+- **README 是对外重要介绍，每次版本迭代须同步更新**（功能清单/快速开始/更新记录/数据源版权）；仓库主页靠 README 呈现，缺它 GitHub 显示占位简介。
 
 ## 8. GitHub 部署（2026-10-08 起）
 
