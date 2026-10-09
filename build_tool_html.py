@@ -235,6 +235,14 @@ tr.mv.open + .mvdesc{display:table-row}
 .tgtsel{border:1px solid var(--line); background:var(--card); padding:7px 8px; border-radius:8px; font-size:13px; min-height:44px; cursor:pointer; vertical-align:middle}
 .scalebar{background:#f1f8ff; border-left:3px solid #64b5f6; border-radius:4px; padding:8px 10px; margin:6px 0; font-size:12px}
 .fillrow{border-left:3px solid #90caf9; background:#f7fbff; border-radius:4px; padding:6px 8px; margin:6px 0}
+/* v4.9 阶段 1：多方案标签条 / 核心思路横幅 / 环境威胁榜（移动端优先：可换行、触控 ≥44px） */
+.planbar{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:4px 0 6px}
+.planbar .planv{min-height:44px; border-radius:10px}
+.planbar .planv.on{background:#e3f2fd; border-color:#64b5f6; font-weight:700}
+.ideabar{background:#e3f2fd; border-color:#64b5f6}
+.axbar{background:#f3e5f5; border-color:#ba68c8}
+.thrcard{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:6px 8px; font-size:12px}
+.thrrow{display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px}
 .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
 .mini{font-size:12px}
 .badge{display:inline-block; border-radius:10px; padding:1px 8px; font-size:12px; margin-right:4px}
@@ -569,6 +577,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
   </div><!-- /#corePickWrap：挑选阶段（工具栏 + 属性筛选 + 候选网格 = 仅此一屏） -->
   <div id="coreDetailWrap" class="phasefade" style="display:none">
     <div class="corebackbar"><button class="btn coreback" onclick="corePhase('pick')" title="返回挑选（搜索 / 筛选 / 排序状态保留）">← 返回挑选</button><span class="mini" style="color:var(--sub)">下方为此核心的完整配队方案（流派 / 队友 / 配招 / 道具 / 理由）</span></div>
+    <div id="thrBoardCore"></div>
     <div id="coreOut"></div>
   </div><!-- /#coreDetailWrap：详情阶段（方案在原容器顶部，候选屏隐藏） -->
   <div id="ruleBoxCore"></div>
@@ -577,6 +586,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 <script>
 __ERDATA__
 __SPRSHEET__
+__AXISLIB__
 /* ============ 工具函数 ============ */
 var $=function(id){return document.getElementById(id)};
 var MV={},ABI={},ITM={};
@@ -2330,7 +2340,7 @@ function renderMyPool(){
 function myCoreTeam(id){
   var s=speciesById(id);if(!s){toast('该编号不在图鉴中');return}
   var o=$('myTeamOut');if(!o)return;
-  o.innerHTML='<div class="sec" style="margin:8px 0"><h3>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:12px;color:var(--sub)">#'+s.id+'</span> <span class="mini" style="color:var(--sub)">（核心来自存档 · 同一套需求驱动引擎）</span></h3></div>'+renderNeedPlan(s);
+  o.innerHTML='<div class="sec" style="margin:8px 0"><h3>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:12px;color:var(--sub)">#'+s.id+'</span> <span class="mini" style="color:var(--sub)">（核心来自存档 · 同一套需求驱动引擎）</span></h3></div>'+renderPlanSet(s);
   myPhase('detail'); /* v4.6.3：进入详情阶段（方案置顶、池隐藏、带返回按钮） */
 }
 /* v4.6 收尾：页内轻提示（替代原生 alert —— 原生 alert 阻塞 JS 线程，历史 bu 事故同源） */
@@ -3002,7 +3012,7 @@ function renderTplBody(i){
   /* v4.2：原「已排除（维度表硬否决）」红框已按用户裁定删除——推荐逻辑改正向体系构建，不再有排除面板 */
   html+='</div>';
   /* v4.2：该模板的完整队伍方案（槽位骨架 + 逐槽位正向评分 Top1-3；锚 = 本模板 Top1 候选） */
-  if(recs.length)html+=renderNeedPlan(recs[0].s);
+  if(recs.length)html+=renderPlanSet(recs[0].s);
   /* 评分维度权重表（体系化：维度 / 权重 / 判定口径，可解释） */
   html+='<div class="sec"><h3>评分维度（'+esc(tArch)+' 体系维度权重表）</h3><div class="scroll"><table class="tbl" style="font-size:12px">'+
     '<thead><tr><th>维度</th><th>权重</th><th>判定口径</th></tr></thead><tbody>';
@@ -4985,10 +4995,167 @@ function rsTeamCard(members){
   var S=L.mean+L.sdE*(lin-L.mu)/L.sd;
   return {E:E,S:S,d:S-E,z:z,lin:lin};
 }
+/* ===== v4.9 阶段 2：协同轴引擎（axis）=====
+   数据契约（数据层/方法论线产出，构建期内嵌）：`AXIS_LIB` = nn_data/axis_lib.json
+     轴 = {id,name, 轴手判定:{role,ability_tags,moves}, 受益者判定:{ability_tags,moves,immune_types,speed_or_power_rule},
+            联动说明, 弱点体系:[{threat,建议}], 依据:[...]}（字段名即契约；缺失 → 空数组，轴方案不出现、不报错）
+   设计（零硬门 / 正向构建，延续用户方法论）：
+     · **轴检测三态**：核心可作「轴手 / 受益者 / 联防件」——任一成立即可围绕该轴构建方案；
+     · **轴方案 = 轴需求前置**（在标准需求清单前面插入该轴优先需求），仍交给同一套全图鉴正向评分填充
+       → 队伍成员动态产生，**无固定名单/无固定槽位**；候选池全量可见（零硬门）；
+     · **轴内协同显式计入**：候选命中轴手/受益者/联防件 → needScore 追加「轴协同」维度（可溯源）；
+     · **数据层新字段消费**：ERDATA.tacticRole（招式 → 打法标签）/ ERDATA.synergyRole（特性 → 协同标签）
+       与轴库 abilities/moves 名单并列作为「标签命中」证据（补充，不替代）。 */
+var AXIS_SYS={rain:'雨',sun:'晴',sand:'沙',snow:'雪',e_terrain:'电场',misty:'薄雾场地',grassy:'青草场地',psychic:'精神场地',toxic:'剧毒场地'};
+var AXIS_ROLE_TAGS={
+  rain:['雨天','天气手·雨'],sun:['晴天','天气手·晴'],sand:['沙','天气手·沙'],snow:['雪','冰雹','天气手·雪'],
+  e_terrain:['电气','电场'],misty:['薄雾'],grassy:['青草'],psychic:['精神'],toxic:['剧毒场地','毒沼'],
+  trickroom:['空间'],hazard:['钉子','菱','隐形岩','黏黏网'],boost:['强化'],
+  stall:['受','回复','耐久'],pivot:['轮转','折返','游击','威吓'],weaken:['削弱','异常','减伤','免疫']};
+/* 轴 → 需求 kind（**全部复用既有求值器**：零新门、零硬门）＋ 优先权重 */
+var AXIS_KIND_SPEC={
+  rain:[['wxsrc',5],['wxabuse',4],['wxreset',3]], sun:[['wxsrc',5],['wxabuse',4],['wxreset',3]],
+  sand:[['wxsrc',5],['wxabuse',4],['wxreset',3]], snow:[['wxsrc',5],['wxabuse',4],['wxreset',3]],
+  e_terrain:[['wxsrc',5],['wxabuse',4],['wxreset',3]], misty:[['wxsrc',5],['wxabuse',4],['wxreset',3]],
+  grassy:[['wxsrc',5],['wxabuse',4],['wxreset',3]], psychic:[['wxsrc',5],['wxabuse',4],['wxreset',3]],
+  toxic:[['wxsrc',5],['wxreset',3]],
+  trickroom:[['trset',4],['truse',3]], hazard:[['haz',4],['clear',3]],
+  boost:[['sub',4],['walls',3],['clear',3]], stall:[['rec',4],['wear',4],['haz',3],['clear',3]],
+  pivot:[['pivot',4],['speed',3]], weaken:[['wear',4],['walls',3],['anti',2]]
+};
+function axisLib(){try{return (typeof AXIS_LIB!=='undefined'&&AXIS_LIB&&AXIS_LIB.length)?AXIS_LIB:[]}catch(e){return []}}
+function axisById(id){var out=null;axisLib().forEach(function(a){if(a&&a.id===id)out=a});return out}
+function mvTacticTags(id){try{var t=ERDATA.tacticRole&&ERDATA.tacticRole[''+id];return t||[]}catch(e){return []}}
+function abiSynergyTags(id){try{var t=ERDATA.synergyRole&&ERDATA.synergyRole[''+id];return t||[]}catch(e){return []}}
+function spTacticTags(s){var out=[];try{learnC(s).forEach(function(id){mvTacticTags(id).forEach(function(x){if(out.indexOf(x)<0)out.push(x)})})}catch(e){}return out}
+function spSynergyTags(s){
+  var out=[];
+  try{(s.abis||[]).concat(s.inns||[]).forEach(function(n){var id=NM2ID[n];if(id==null)return;
+    abiSynergyTags(id).forEach(function(x){if(out.indexOf(x)<0)out.push(x)})})}catch(e){}
+  return out;
+}
+function spHasAbiName(s,list){var names=(s.abis||[]).concat(s.inns||[]);return (list||[]).some(function(n){return names.indexOf(n)>-1})}
+function spHasMvName(s,list,L){L=L||learnC(s);return (list||[]).some(function(n){return learnHasName(s,n,L)})}
+/* 三态判定：核心相对该轴 = 轴手 / 受益者 / 联防件（含体系内判定） */
+function axisStateOf(s,ax){
+  ax=ax||{};
+  var setD=ax['轴手判定']||{},abrD=ax['受益者判定']||{};
+  var sys=AXIS_SYS[ax.id]||'',cs=[];try{cs=coreSys(s)||[]}catch(e){}
+  var sysMatch=!!(sys&&cs.indexOf(sys)>-1);
+  var syn=spSynergyTags(s);
+  var kw=AXIS_ROLE_TAGS[ax.id]||[ax.name||''];
+  function tagHit(tags){return (tags||[]).some(function(x){return kw.some(function(k){return k&&String(x).indexOf(k)>-1})})}
+  var setter=false,abuser=false,glue=false,why=[];
+  if(spHasAbiName(s,setD.ability_tags)||spHasMvName(s,setD.moves)){setter=true;why.push('持有'+ax.name+'轴手要素（特性/招式）')}
+  else if(tagHit(syn)){setter=true;why.push('协同标签命中'+ax.name+'轴手（数据层 synergyRole）')}
+  if(spHasAbiName(s,abrD.ability_tags)||spHasMvName(s,abrD.moves)){abuser=true;why.push('持有'+ax.name+'受益要素（特性/招式）')}
+  else if(tagHit(spTacticTags(s))||tagHit(syn)){abuser=true;why.push('打法/协同标签命中'+ax.name+'受益面（tacticRole/synergyRole）')}
+  else {
+    /* 轴库「受益者判定.speed_or_power_rule」仅在「特性/招式/免疫三类判定全空」时才作为受益口径消费
+       —— 此时规则是该轴唯一的受益判据（如戏法空间轴：低速受益）。其余轴的 rule 字段是描述性备注（含数值），
+       若泛化消费会把无关宝可梦误判为受益者（实测：妙蛙花在雨轴被「最高攻项」字样误命中）。 */
+    var abrEmpty=!(abrD.ability_tags&&abrD.ability_tags.length)&&!(abrD.moves&&abrD.moves.length)&&!(abrD.immune_types&&abrD.immune_types.length);
+    var spr=abrEmpty?(''+(abrD.speed_or_power_rule||'')):'';
+    if(spr){
+      var spd=(s.base&&isFinite(s.base[5]))?s.base[5]:0;
+      var pow=0;try{var st0=stabBest(s,'物理'),st1=stabBest(s,'特殊');pow=Math.max(st0?st0.pow:0,st1?st1.pow:0)}catch(e){}
+      if(/速度反转|慢者先手|低速|slowly|slowest/i.test(spr)&&spd>0&&spd<=60){abuser=true;why.push('速度 '+spd+'（低速）符合'+ax.name+'受益规则')}
+      else if(/力度/.test(spr)&&pow>=90){abuser=true;why.push('本系最高威力 '+pow+' 符合'+ax.name+'受益规则')}
+    }
+  }
+  var ims=abrD.immune_types||[];
+  if(ims.length){
+    var names=(s.abis||[]).concat(s.inns||[]);
+    var hit=ims.filter(function(t){var arr=IMMUNE_RISK[t]||[];return arr.some(function(x){return names.indexOf(x)>-1})});
+    if(hit.length){glue=true;why.push('轴联防件（'+hit.join('/')+'免）')}
+  }
+  var viable=sys?(sysMatch||setter):(setter||abuser||glue);
+  return {axis:ax,sys:sys,sysMatch:sysMatch,setter:setter,abuser:abuser,glue:glue,viable:viable,why:why};
+}
+function axisDetect(s){
+  var out=[];
+  axisLib().forEach(function(ax){try{var st=axisStateOf(s,ax);if(st.viable)out.push(st)}catch(e){}});
+  out.sort(function(a,b){
+    function sc(x){return (x.setter?4:0)+(x.abuser?3:0)+(x.glue?2:0)+(x.sysMatch?1:0)}
+    return sc(b)-sc(a);
+  });
+  return out;
+}
+/* 轴协同（needScore 的 AX 维度；加分来源=轴库三态判定 + 数据层标签，非拍脑袋系数） */
+function axisSyncOf(s,ax){
+  if(!ax)return null;
+  var st=null;try{st=axisStateOf(s,ax)}catch(e){return null}
+  if(!st)return null;
+  var pts=0,hit=[];
+  if(st.setter){pts+=6;hit.push('轴手')}
+  if(st.abuser){pts+=5;hit.push('受益者')}
+  if(st.glue){pts+=4;hit.push('联防件')}
+  if(!pts)return null;
+  if(st.sysMatch)pts+=1;
+  return {pts:pts,why:'轴协同（'+ax.name+'）：'+hit.join(' + ')+(st.sysMatch?' + 体系内':'')+
+    '；依据=轴库「轴手/受益者/联防件」判定 + 数据层 synergyRole/tacticRole 标签'};
+}
+/* 轴需求（前置=优先需求；kind 全部复用既有求值器） */
+function axisNeedList(core,cx,axis,base){
+  var spec=AXIS_KIND_SPEC[axis&&axis.id]||[],out=[],i=0,have={};
+  (base||[]).forEach(function(n){have[n.kind+'|'+(n.arg==null?'':n.arg)]=1});
+  spec.forEach(function(pair){
+    var k=pair[0],prio=pair[1],def=NEED_KINDS[k];if(!def)return;
+    if(have[k+'|'])return;
+    out.push({id:'A-'+('0'+(++i)).slice(-2),kind:k,kindGroup:def.kind,
+      label:(typeof def.label==='function'?def.label(null,null):def.label),role:def.role,
+      priority:prio,status:'open',satisfiedBy:[],arg:null,def:def,axisNeed:true,
+      why:'轴需求（'+axis.name+'）：'+(def.role||'')});
+  });
+  return out;
+}
+/* 轴方案（最多 3 套：轴手/受益者/联防件 三种角色各一；与规模/风格变体并列为完整方案） */
+function axisVariantsOf(s){
+  var det=[],out=[];
+  try{det=axisDetect(s)}catch(e){det=[]}
+  det.slice(0,3).forEach(function(st){
+    var ax=st.axis,role=(st.setter?'轴手':(st.abuser?'受益者':'联防件'));
+    var idea=st.setter?('核心起手开'+ax.name+'窗口，队友吃满收益')
+      :(st.abuser?('队友补'+ax.name+'来源，核心吃窗口收益')
+      :('核心做'+ax.name+'的联防件，压住对手同类体系'));
+    out.push({
+      id:'ax_'+ax.id,name:ax.name+'·'+role,idea:idea,
+      opts:{target:6,axis:{id:ax.id,name:ax.name,role:role,idea:idea,
+        state:{setter:st.setter,abuser:st.abuser,glue:st.glue,sysMatch:st.sysMatch},
+        winline:(ax['联动说明']||''),weakness:(ax['弱点体系']||[]).slice(0,2),
+        basis:(ax['依据']||[]).slice(0,3),why:(st.why||[])}},
+      axis:{id:ax.id,name:ax.name,role:role}});
+  });
+  return out;
+}
+/* 关键协同高亮（轴标签命中的队友）＋ 弱点预警（轴库 弱点体系，提示性、不硬门） */
+function axSynHtml(plan){
+  var out=[];
+  (plan&&plan.team||[]).forEach(function(m){
+    /* 核心自身若就是该轴的参与者（轴手/受益者/联防件）→ 也属「关键协同」，不能只列队友 */
+    if(m.core&&plan&&plan.axis){
+      var self='';
+      try{
+        var axo=axisById(plan.axis.id);
+        if(axo){var st=axisStateOf(m.s,axo);
+          if(st.setter)self='轴手';else if(st.abuser)self='受益者';else if(st.glue)self='联防件';}
+      }catch(e){}
+      if(self){out.push(sprImg(m.s.id,'spinl')+'<span class="abi" onclick="event.stopPropagation();openSpById('+m.s.id+')">'+esc(m.s.zh||'')+'（核心·'+self+'）</span>');return}
+    }
+    if(m.core)return;
+    var hit=false;(m.dims||[]).forEach(function(d){if(d.id==='AX')hit=true});
+    if(hit)out.push(sprImg(m.s.id,'spinl')+'<span class="abi" onclick="event.stopPropagation();openSpById('+m.s.id+')">'+esc(m.s.zh||'')+'</span>');
+  });
+  return out.length?out.join(' '):'<span style="color:var(--sub)">（本方案暂无轴标签命中的队友——仍按轴需求正向排序）</span>';
+}
+function axWeakHtml(ax){
+  var w=(ax&&ax.weakness)||[];if(!w.length)return '（轴库未登记弱点体系）';
+  return w.map(function(x){return '被 '+esc(x.threat)+' → 建议 '+esc(x.建议)}).join('；');
+}
 function needCtx(core,o){
   o=o||{};
   return {core:core,sysKey:o.sysKey||'',sysKey2:o.sysKey2||'',need:o.need||[],holes:o.holes||[],
-    team:o.team||[],L:o.L,names:o.names,conv:o.conv};
+    team:o.team||[],L:o.L,names:o.names,conv:o.conv,axis:o.axis||null};
 }
 function needScore(s,need,cx){
   var def=need&&need.def;if(!def)return null;
@@ -5017,6 +5184,13 @@ function needScore(s,need,cx){
         total+=rsv.pts;dims.push({id:'RS',dim:'规则偏移(实测系数)',w:1,pts:rsv.pts,txt:rsv.why});
       }
     }catch(eRS){}
+  }
+  /* v4.9 阶段 2：轴方案 → 「轴协同」维度（正向加分；依据=轴库三态判定 + 数据层标签，非拍脑袋系数） */
+  if(cx&&cx.axis){
+    try{
+      var axr=axisSyncOf(s,cx.axis);
+      if(axr&&isFinite(axr.pts)&&axr.pts>0.001){total+=axr.pts;dims.push({id:'AX',dim:'轴协同',w:1,pts:axr.pts,txt:axr.why})}
+    }catch(eAX){}
   }
   dims.sort(function(a,b){return b.pts-a.pts});
   return {score:total*cert,raw:total,cert:cert,dims:dims,gate:(typeof g==='string'?g:def.role)};
@@ -5163,7 +5337,7 @@ function poolForNeed(core,cx0,need,team,used){
     if(used&&used[''+t.id])return;
     var L=learnC(t);
     var loc=needCtx(core,{sysKey:cx0.sysKey,holes:cx0.holes||[],team:team||[{s:core}],L:L,
-      names:(t.abis||[]).concat(t.inns||[]),conv:convOf(t)});
+      names:(t.abis||[]).concat(t.inns||[]),conv:convOf(t),axis:cx0.axis});   /* v4.9：轴上下文（AX 维度） */
     loc.need=(cx0.needHoles||(cx0.need||[]));
     var r=needScore(t,need,loc);if(!r)return;
     var kRaw=countSatisfied(t,open,loc),k=Math.min(kRaw,1+teamMultiMax());   /* v4.8 G3：合并上限=产品级参数（默认 2=现行为） */
@@ -5180,12 +5354,33 @@ function poolForNeed(core,cx0,need,team,used){
 /* buildTeamByNeeds(core,opts)：需求驱动 → 完整队伍方案（体系总览 + 需求清单 + 成员） */
 function buildTeamByNeeds(core,opts){
   opts=opts||{};
-  /* v4.8 G2/G3：目标规模与多功能合并上限 = 产品级参数（默认 6 / 2 = v4.7 现行为） */
-  var tgt=teamTarget(),mm=teamMultiMax(),fillsWanted=Math.max(0,parseInt(opts.fill,10)||0);
+  /* v4.8 G2/G3：目标规模与多功能合并上限 = 产品级参数（默认 6 / 2 = v4.7 现行为）
+     v4.9 阶段 1：允许**按方案覆写** opts.target / opts.multiMax（多方案切换框架用）；
+     **不传 = 与 v4.8 逐字节一致**（解析式对 undefined 安全：tgt→teamTarget()、mm→teamMultiMax()）。 */
+  var tgt=(opts.target!=null?Math.max(1,Math.min(TEAM_CFG.TARGET_MAX,parseInt(opts.target,10)||teamTarget())):teamTarget());
+  var mm=(opts.multiMax!=null?Math.max(1,parseInt(opts.multiMax,10)||1):(opts.target!=null?multiMaxForTarget(tgt):teamMultiMax()));
+  var fillsWanted=Math.max(0,parseInt(opts.fill,10)||0);
   var sy=sysForCore(core),sysKey=sy.sysKey,prof=profileOf(core);
   var holes=coverHoles(core).slice(0,6);
   var base=cx0Of(core,sysKey,holes);
   var needs=needList(core,base);
+  /* v4.9 阶段 2：轴方案 → **轴需求前置**（优先需求）；ctx 挂轴上下文（AX 维度协同加分）
+     规则：① 轴表里的 kind 若已在基础清单中 → 提到最前并标 axisNeed（继承轴表权重，不重复插入）；
+           ② 基础清单缺的 kind → 由 axisNeedList 生成新轴需求，插在轴内已有需求之后；
+           ③ 其余基础需求按原顺序跟在后面（**不删任何需求 → 零硬门**）。 */
+  var axis=opts.axis||null;
+  if(axis){
+    try{
+      var aks=(AXIS_KIND_SPEC[axis.id]||[]).map(function(p){return p[0]});
+      var prioMap={};(AXIS_KIND_SPEC[axis.id]||[]).forEach(function(p){prioMap[p[0]]=p[1]});
+      var byKind={};needs.forEach(function(n){if(aks.indexOf(n.kind)>-1&&!byKind[n.kind])byKind[n.kind]=n});
+      var promoted=aks.map(function(k){return byKind[k]}).filter(Boolean);
+      promoted.forEach(function(n){n.axisNeed=true;if(prioMap[n.kind])n.priority=prioMap[n.kind]});
+      var rest=needs.filter(function(n){return promoted.indexOf(n)<0});   /* 其余需求原样保留（零硬门：不删需求） */
+      var anx=axisNeedList(core,base,axis,needs);   /* 去重口径 = 完整需求清单（含已前置者）→ 不重复插入同 kind */
+      needs=promoted.concat(anx).concat(rest);
+    }catch(eAN){}
+  }
   var team=[{s:core,core:true,need:null,score:null,dims:[],multi:0,gate:'核心',links:[]}];
   var used={},fam={};used[''+core.id]=1;fam[teamFamKey(core)]=1;
   var pools={},stopReason='',guard=0;
@@ -5198,7 +5393,7 @@ function buildTeamByNeeds(core,opts){
        处理结论：有引用（常量 / 本分支 / UI 文案）→ **登记不清理**；保留作护栏——
        未来若引入 0 优先级需求（如「可选补强」类）本分支即生效，按优先级截断。 */
     if(need.priority<NEED_CFG.STOP_PRIORITY){stopReason='STOP_BELOW_PRIORITY';break}
-    var ctx=base;ctx.openNeeds=open;ctx.used=used;ctx.need=teamNeed({team:team});
+    var ctx=base;ctx.openNeeds=open;ctx.used=used;ctx.need=teamNeed({team:team});ctx.axis=axis;
     var pool=poolForNeed(core,ctx,need,team,used);
     /* 形态去重（07 §4.5.4）：同 familyRoot 已在队中 → 不在该需求池中出现（保留最高分形态） */
     var pool2=pool.filter(function(x){return !fam[teamFamKey(x.s)]});
@@ -5233,7 +5428,7 @@ function buildTeamByNeeds(core,opts){
      **不改动**任何需求的 satisfied 状态（补位与需求闭合互不干扰；候选池从不枯竭）。 */
   var fillCands=[],fillN=0;
   if(fillsWanted>0&&team.length<tgt){
-    var fctx=base;fctx.used=used;fctx.need=teamNeed({team:team});
+    var fctx=base;fctx.used=used;fctx.need=teamNeed({team:team});fctx.axis=axis;
     fctx.openNeeds=[{id:'FILL',kind:'fill',arg:null,label:'补位（非需求驱动）',priority:0,def:NEED_KINDS.fill}];
     for(var fi=0;fi<fillsWanted&&team.length<tgt;fi++){
       var fneed={id:'FILL',kind:'fill',arg:null,label:'补位（非需求驱动）',priority:0,def:NEED_KINDS.fill};
@@ -5265,6 +5460,7 @@ function buildTeamByNeeds(core,opts){
   return {core:core,prof:prof,sysKey:sysKey,sys:sy,refName:sy.refName,arch:sy.arch,
     needs:needs,team:team,pools:pools,audit:audit,stopReason:stopReason,
     target:tgt,multiMax:mm,fills:fillN,fillCands:fillCands,   /* v4.8 G2/G3：规模参数与补位候选一并回传 */
+    axis:axis,   /* v4.9 阶段 2：轴方案上下文（null=标准方案） */
     overview:teamOverview({core:core,prof:prof,sysKey:sysKey,team:team,needs:needs})};
 }
 /* 兼容别名（旧调用点/旧脚本）：buildTeam(s,opts) → 需求驱动版 */
@@ -5442,20 +5638,170 @@ function planFillMore(coreId){
 }
 function reRenderPlan(coreId){
   var s=spId2Obj(coreId);if(!s)return;
-  var h=renderNeedPlan(s);
-  var nodes=document.querySelectorAll('[id="teamPlan_'+coreId+'"]'),arr=[];
+  var h=renderPlanSet(s);
+  var nodes=document.querySelectorAll('[id="planSet_'+coreId+'"]'),arr=[];
   for(var i=0;i<nodes.length;i++)arr.push(nodes[i]);
-  if(arr.length){for(var j=0;j<arr.length;j++){try{arr[j].outerHTML=h}catch(e){}}}
+  if(!arr.length){var n2=document.querySelectorAll('[id="teamPlan_'+coreId+'"]');for(var j=0;j<n2.length;j++)arr.push(n2[j]);}
+  if(arr.length){for(var k=0;k<arr.length;k++){try{arr[k].outerHTML=h}catch(e){}}}
   else{var o=$('coreOut');if(o)o.innerHTML=h}
 }
-function renderNeedPlan(s){
+/* ===== v4.9 阶段 1：多方案切换框架 / 「核心思路」横幅 / 环境威胁榜 =====
+   设计（延续用户方法论：正向构建、零硬门、动态推导）：
+   · **方案 = 同一核心的风格化变体**，各自独立构建（构建参数不同 → 队伍不同），互不覆盖、互不参与对方评分；
+   · **懒渲染**：默认只渲染当前方案，其余方案点标签才渲染 → 首屏轻量、移动端不横向溢出（多图少文）；
+   · 方案序号按核心记忆（PLAN_VAR）→ 切目标规模 / 局部重渲染都不丢当前方案；
+   · 阶段 2：数据层 axis_lib.json 落盘后由 axisVariantsOf() 追加**轴方案**（字段名即消费契约）；
+     未落盘时本框架照常工作（仅三态规模/风格变体），不阻塞。
+   【为什么不是「固定模板」】变体只改**构建参数**（目标规模 / 补位数 / 轴需求优先级），
+   队伍成员仍由 needList → poolForNeed 全图鉴正向评分动态产生 —— 无固定槽位、无固定名单。 */
+var PLAN_VAR={};   /* coreId → 当前方案序号（默认 0） */
+var PLAN_VARIANTS=[
+  {id:'std',   name:'标准需求驱动', idea:'需求驱动、够用即止（默认）',                opts:{}},
+  {id:'tight', name:'紧凑核心队',   idea:'只留核心 + 必要补位，少上人少负担',          opts:{target:4}},
+  {id:'full',  name:'满编六只',     idea:'需求清零后按广义正向分补满 6 只，候选不枯竭', opts:{target:6,fill:9}}
+];
+/* 方案表（阶段 2 追加轴方案：axisVariantsOf(s) → [{id,name,idea,opts,axis:{...}}]） */
+function planVariantList(s,plan){
+  var out=PLAN_VARIANTS.slice(0);
+  if(typeof axisVariantsOf==='function'){try{out=out.concat(axisVariantsOf(s,plan)||[])}catch(e){}}
+  return out;
+}
+function planVarOf(coreId){var v=parseInt(PLAN_VAR[''+coreId],10);return (v>0?v:0)}
+/* 「核心思路」一句话（玩家可读、无内部编号；阶段 2 有轴时前缀换成轴名 + 赢法） */
+function coreIdeaOf(s,plan,vi,list){
+  var V=(list||[])[vi]||{},pr=(plan&&plan.prof)||{};
+  var scope=(plan&&plan.axis&&plan.axis.name)?plan.axis.name:((plan&&plan.sysKey)?plan.sysKey:'无天气/场地依赖');
+  var ben=String((plan&&plan.overview&&plan.overview.benefit)||'').replace(/^窗口内受益者：/,'');
+  if(ben.length>30)ben=ben.slice(0,30)+'…';
+  return (V.name?V.name+' · ':'')+scope+' · '+((pr.role||'')+(pr.side||'')+'向')+' —— '+String(V.idea||'需求驱动')+'；'+ben;
+}
+function planSwitcherHtml(s,cur,list){
+  list=list||planVariantList(s,null);
+  var h='<div class="planbar" id="planBar_'+s.id+'"><b>方案</b> ';
+  list.forEach(function(V,i){
+    var on=(i===cur);
+    h+='<button class="btn-mini planv'+(on?' on':'')+'" data-vi="'+i+'" onclick="planSetShow('+s.id+','+i+')" title="'+escq('方案：'+V.name+'（'+V.idea+'）')+'">'+(on?'● ':'')+esc(V.name)+'</button> ';
+  });
+  h+='<span style="font-size:11px;color:var(--sub)">共 '+list.length+' 套（各自独立构建；点标签切换）</span></div>';
+  return h;
+}
+/* 切换方案（纯视图切换 + 懒渲染：只替换 #planSetBody_<id>，不动其它 Tab 与任何输入控件） */
+function planSetShow(coreId,k){
+  var s=spId2Obj(coreId);if(!s)return;
+  k=parseInt(k,10)||0;
+  var list=planVariantList(s,null);if(k>=list.length)k=0;
+  PLAN_VAR[''+coreId]=k;
+  var body=document.getElementById('planSetBody_'+coreId);
+  if(body){try{body.innerHTML=renderNeedPlan(s,k)}catch(e){}}
+  var bar=document.getElementById('planBar_'+coreId);
+  if(bar){try{bar.innerHTML=planSwitcherHtml(s,k,list).replace(/^<div class="planbar"[^>]*>/,'').replace(/<\/div>$/,'')}catch(e2){}}
+  toast('方案 '+(k+1)+'/'+list.length+'：'+((list[k]||{}).name||''));
+}
+/* 多方案容器（详情页用）：方案标签条 + 当前方案卡（其余懒渲染） */
+function renderPlanSet(s){
+  var list=planVariantList(s,null),cur=planVarOf(s.id);
+  if(cur>=list.length)cur=0;
+  return '<div class="sec planSet" id="planSet_'+s.id+'">'+planSwitcherHtml(s,cur,list)+
+    '<div id="planSetBody_'+s.id+'">'+renderNeedPlan(s,cur)+'</div></div>';
+}
+var THREAT_MV={HZ:FUNC_MV.hazard,HZR:FUNC_MV.removal,BOOST:FUNC_MV.boost};
+function threatShare(t){
+  var ids=t&&THREAT_MV[t.id];
+  if(!ids||!ids.length)return null;
+  return Math.round(thrFrac(ids)*1000)/10;
+}
+/* 榜（玩家可读）：按可学率降序；每格 = 威胁名 + 可学率 + 代理口径 + 代表物种（精灵图 + 可点跳详情） */
+function threatBoardHtml(){
+  var rows=THREAT_LIB.map(function(t){return {t:t,sh:threatShare(t)}});
+  rows.sort(function(a,b){var x=(a.sh==null?-1:a.sh),y=(b.sh==null?-1:b.sh);return y-x});
+  var h='<div class="tip" style="font-size:11px">'+esc(threatPriorLine())+'</div><div class="grid">';
+  rows.forEach(function(r){
+    var t=r.t,rep=[];try{rep=threatRep(t.id,null,6)||[]}catch(e){rep=[]}
+    h+='<div class="thrcard"><b>'+esc(t.name)+'</b>'+(r.sh!=null?(' <span class="badge">可学率 '+r.sh+'%</span>'):'')+
+      '<div style="font-size:11px;color:var(--sub)">口径：'+esc(t.deriv)+'</div><div class="thrrow">'+
+      rep.map(function(x){return sprImg(x.id,'spinl')+'<span class="abi" onclick="event.stopPropagation();openSpById('+x.id+')">'+esc(x.zh||x.name||'')+'</span>'}).join(' ')+
+      '</div></div>';
+  });
+  h+='</div><div class="tip" style="font-size:11px">榜为**代理口径**（ER 无对战统计：以「可学该机制者占比 + 种族力度」代理），仅提示性、不参与任何硬门。</div>';
+  return h;
+}
+function drawThreatBoard(){
+  var box=document.getElementById('thrBoardCore');if(!box)return;
+  try{box.innerHTML='<details class="inline big"><summary>🌩 环境威胁榜（代理口径 · 提示性）—— 展开看当前环境最需要防的几类</summary>'+threatBoardHtml()+'</details>'}catch(e){}
+}
+/* 方案级「被 X 体系克制 n 只 → 建议 Y」（四类可判定的对位缺口；**提示性、零硬门**） */
+function planThreatWarnHtml(plan){
+  var team=(plan&&plan.team)||[];if(team.length<2)return '';
+  var items=[];
+  /* v4.9：判定对象 = **推荐配装**（玩家实际带的 4 招 / 特性 / 道具），而非可学池
+     —— 与卡面显示的招组同源（roleTagOf* / itemTagOf* / mkBuild 参数完全一致），
+        否则「可学即算有」会给出与卡面矛盾的结论。 */
+  var sets=[];
+  team.forEach(function(m){
+    var b=null;
+    try{
+      var rt=m.core?roleTagOfCore(plan,m.s):(m.fill?roleTagOfProf(profileOf(m.s)):roleTagOfNeed(m.need));
+      var it=(m.core?itemTagOfCore(plan,m.s):(m.fill?coreItemTagOf(profileOf(m.s),m.s,plan.sysKey):itemTagOfNeed(m.need)));
+      b=mkBuild(m.s,coreSide(m.s),'队员配置',stabBest(m.s,'特殊'),stabBest(m.s,'物理'),rt||'输出',it,{sys:plan.sysKey,need:m.need&&m.need.kind});
+    }catch(e){}
+    sets.push({m:m,b:b});
+  });
+  function mainIds(x){return ((x.b&&x.b.mv&&x.b.mv.main)||[]).map(function(v){return v.id})}
+  function hasRemoval(x){return mainIds(x).some(function(id){return FUNC_MV.removal.indexOf(id)>-1})}
+  function hasPrio(x){return mainIds(x).some(function(id){var mv=MV[id];return mv&&mv[8]>0})}
+  /* ① 钉子环境：推荐招组里无除钉手段，且「怕钉者」≥3（飞行/漂浮免疫钉子） */
+  var rem=0,soft=0;
+  sets.forEach(function(x){
+    if(hasRemoval(x))rem++;
+    var ts=[x.m.s.t1,x.m.s.t2],ab=(x.m.s.abis||[]).concat(x.m.s.inns||[]);
+    if(ts.indexOf('飞行')<0&&ab.indexOf('漂浮')<0)soft++;
+  });
+  if(rem===0&&soft>=3)items.push({t:'钉子环境',n:soft,adv:'带一名除钉手（高速旋转清自身侧 / 清除浓雾清双方）或给怕钉者配厚底靴'});
+  /* ② 强化怪：推荐招组无先制招 → 缺少抢先打断强化的手段 */
+  var prio=sets.filter(hasPrio).length;
+  if(prio===0)items.push({t:'强化怪',n:team.length,adv:'补一名带先制招（或挑拨）的成员，别让对面白强化'});
+  /* ③ 免疫特性墙：本系主攻属性落在常见免疫属性上的成员 ≥2 → 建议非本系补盲 */
+  var imm=0;
+  team.forEach(function(m){
+    var st=stabBest(m.s,coreSide(m.s));if(!st)return;
+    if(IMMUNE_RISK[String(st.type)]&&IMMUNE_RISK[String(st.type)].length)imm++;
+  });
+  if(imm>=2)items.push({t:'免疫特性墙',n:imm,adv:'给这几只补一招非本系覆盖招（本系主攻可能被免疫特性挡住）'});
+  /* ④ 窗口（天气/场地）：体系核心非设置手且队内无该体系设置手 */
+  if(plan.sysKey){
+    var setter=false;
+    team.forEach(function(m){try{if(isSetterAny(m.s)&&coreSys(m.s).indexOf(plan.sysKey)>-1)setter=true}catch(e){}});
+    if(!setter)items.push({t:plan.sysKey+' 体系',n:team.length,adv:'补一名 '+plan.sysKey+' 设置手（否则体系增伤拿不到）'});
+  }
+  if(!items.length)return '<div class="tip" style="font-size:11px">对位预警：本方案未命中可判定的对位缺口（钉子 / 强化 / 免疫墙 / 窗口 四类）。</div>';
+  var h='<div class="tip" style="font-size:11px;background:#fff8e1;border-color:var(--warn)"><b>对位预警</b>（提示性 · 不硬门）：';
+  h+=items.map(function(x){return '被 <b>'+esc(x.t)+'</b> 克制 <b>'+x.n+'</b> 只 → 建议：'+esc(x.adv)}).join('<br>');
+  return h+'</div>';
+}
+function renderNeedPlan(s,vi){
+  /* v4.9：vi = 方案序号（不传 → 当前方案）；**方案①（vi=0）与 v4.8 行为逐字节一致**（含手动补位数） */
+  var _list=planVariantList(s,null),_vi=(vi==null?planVarOf(s.id):(parseInt(vi,10)||0));
+  if(_vi>=_list.length)_vi=0;
+  var _V=_list[_vi]||_list[0],_o={},_k;
+  for(_k in _V.opts)_o[_k]=_V.opts[_k];
+  if(_vi===0&&_o.fill==null)_o.fill=planFillOf(s.id);
   var plan=null;
-  try{plan=buildTeamByNeeds(s,{fill:planFillOf(s.id)})}catch(e){return '<div class="sec"><h3>队伍构建方案</h3><div class="tip">方案生成失败：'+esc(''+e)+'</div></div>'}
-  var h='<div class="sec" id="teamPlan_'+s.id+'"><h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
+  try{plan=buildTeamByNeeds(s,_o)}catch(e){return '<div class="sec"><h3>队伍构建方案</h3><div class="tip">方案生成失败：'+esc(''+e)+'</div></div>'}
+  var h='<div class="sec" id="teamPlan_'+s.id+'"><div class="tip ideabar"><b>核心思路</b>：'+esc(coreIdeaOf(s,plan,_vi,_list))+'</div>';
+  /* v4.9 阶段 2：轴方案 → 轴名 / 一句话赢法 / 关键协同高亮 / 弱点预警（提示性、不硬门） */
+  if(plan.axis){
+    h+='<div class="tip axbar"><b>协同轴</b>：'+esc(plan.axis.name)+' · '+esc(plan.axis.role)+
+      '　<b>一句话赢法</b>：'+esc(plan.axis.idea||'')+
+      '<br><b>关键协同</b>：'+axSynHtml(plan)+
+      '<br><b>弱点预警</b>：'+axWeakHtml(plan.axis)+
+      '<br><span style="font-size:11px;color:var(--sub)">依据：'+esc((plan.axis.basis||[]).join('；'))+'</span></div>';
+  }
+  h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
   h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
     '· <b>怎么启动：</b>'+esc(plan.overview.start)+'<br>'+
     '· <b>怎么受益：</b>'+esc(plan.overview.benefit)+'<br>'+
     '· <b>怎么轮转：</b>'+esc(plan.overview.rotate)+'</div>';
+  h+=planThreatWarnHtml(plan);   /* v4.9 阶段 1：方案级「被 X 体系克制 n 只 → 建议 Y」（提示性、零硬门） */
   /* B⑥-4（v4.x 要求，v4.3 延续）：体系核心自身不是设置手时，天气/场地由队友提供 */
   if(plan.sysKey&&!isSetterAny(plan.core)){
     var wxn=plan.needs.filter(function(n){return n.kind==='wxsrc'})[0];
@@ -5726,7 +6072,7 @@ function renderCore(s){
     html+='</details>';
   });
   /* v4.3 队伍构建方案卡（需求驱动）：核心画像 → 队伍需求（动态） → 每需求最优推荐与全量候选 → 队伍成员（置于 Top6 表之前，作为主展示） */
-  html+=renderNeedPlan(s);
+  html+=renderPlanSet(s);
   /* 队友（整体联防；各流派的差异化队友见上方流派卡内） */
   /* v4.6.1 ③ R1/R3：第二种队友来源（整体联防）→ 明确标签「体系补盲队友」，与「需求驱动队友」区分；**默认收起**（同屏视觉重复折叠其一，默认展示需求驱动） */
   html+='<details class="big subsec"><summary>🧩 体系补盲队友（整体联防 Top 6 · '+(optFinalOnly?'最终形态 + 奇石优势形态':'全图鉴')+' · '+(side)+'向优先 · 点击入队）</summary>';
@@ -5767,6 +6113,7 @@ function corePhase(m){
   var pw=$('corePickWrap'),dw=$('coreDetailWrap');
   if(pw&&pw.style)pw.style.display=(corePhaseMode==='pick')?'':'none';
   if(dw&&dw.style)dw.style.display=(corePhaseMode==='detail')?'':'none';
+  if(corePhaseMode==='detail')drawThreatBoard();   /* v4.9 阶段 1：详情阶段渲染「环境威胁榜」（懒渲染、折叠块） */
   if(corePhaseMode==='pick'&&window.drawCoreList)window.drawCoreList();
   var host=$('tab-core');
   if(host&&host.scrollIntoView){try{host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
@@ -5893,7 +6240,25 @@ else:
     print('[warn] 未找到 assets/sheets/sheets_map.js → 精灵图将显示空占位（先运行 python build_sprites_sheet.py）')
     sheet_js = 'window.SPR_SHEET={};'
 
-final = TEMPLATE.replace('__ERDATA__', data_js).replace('__SPRSHEET__', sheet_js)
+# ---- v4.9 阶段 2：内嵌轴知识库（nn_data/axis_lib.json，由数据层/方法论线产出），部署不额外请求；
+#      缺失 → 回退空数组（多方案框架只呈现三态规模/风格变体，轴方案不出现、不报错、不阻塞） ----
+_axis_path = BASE + r'\nn_data\axis_lib.json'
+try:
+    _axis_txt = open(_axis_path, encoding='utf-8').read().strip()
+    _axis_arr = _json.loads(_axis_txt)
+    if not isinstance(_axis_arr, list):
+        raise ValueError('axis_lib 顶层不是数组')
+    _ok = sum(1 for a in _axis_arr if isinstance(a, dict) and a.get('id') and a.get('name')
+              and a.get('轴手判定') and a.get('受益者判定'))
+    if _ok != len(_axis_arr):
+        print('[warn] axis_lib.json 有 %d 条缺关键字段（照常内嵌，引擎按字段存在性容错）' % (len(_axis_arr) - _ok))
+    axis_js = 'var AXIS_LIB=' + _json.dumps(_axis_arr, ensure_ascii=False, separators=(',', ':')) + ';'
+    print('内嵌 AXIS_LIB：%d 条轴（axis_lib.json %.1f KB）' % (len(_axis_arr), os.path.getsize(_axis_path) / 1024.0))
+except Exception as _ea:
+    print('[warn] 轴知识库不可用（%s）→ 回退空数组：多方案框架仅呈现规模/风格变体' % _ea)
+    axis_js = 'var AXIS_LIB=[];'
+
+final = TEMPLATE.replace('__ERDATA__', data_js).replace('__SPRSHEET__', sheet_js).replace('__AXISLIB__', axis_js)
 out = BASE + r'\配招助手_ER.html'
 open(out, 'w', encoding='utf-8').write(final)
 print('HTML bytes:', os.path.getsize(out))

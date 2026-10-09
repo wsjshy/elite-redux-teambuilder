@@ -1576,6 +1576,546 @@ def build_usage_prior():
 
 USAGE_PRIOR, USAGE_META = build_usage_prior()
 
+
+# 15. 战术/协同角色（tacticRole / synergyRole）+ 协同轴知识库（v4.9 数据层）
+#   契约（引擎层并行消费，字段名冻结）：
+#     ERDATA.tacticRole:  {moveId(str): [角色…]}  招式战术角色（多标签；空数组=未标注）
+#     ERDATA.synergyRole: {abiId(str):  [角色…]}  特性协同角色（多标签）
+#     moves 行末追加第 12 列（index 11）= 同一份 tacticRole；abilities 行末追加第 5 列（index 4）= synergyRole
+#       （既有位置契约 0..10 / 0..3 一字不动；引擎只按固定下标读旧列，追加列不改变旧语义）
+#     nn_data\axis_lib.json: 协同轴知识库（15 轴，字段：id/name/轴手判定/受益者判定/联动说明/弱点体系/依据）
+#   依据纪律：每条规则与每条「依据」都必须落到真实存在的表 —— gameData effT/flagsT/prio、ABI_TAGS、
+#     SYS_SET_MAP、GLOSSARY、引擎 FUNC_MV、克制表 matchup、核心分类(分类.xlsx)、TEMPLATES；禁机制猜测。
+_GD_MV = {str(m['id']): m for m in GD['moves']}
+
+
+def _eff_of(m):
+    e = m.get('eff') or 0
+    return GD['effT'][e] if 0 <= e < len(GD['effT']) else ''
+
+
+# 15a. 功能招 id 清单 —— 与引擎 build_tool_html.py::FUNC_MV（L3135-3147）逐条一致；改此表必须同步引擎
+FUNC_MV_DATA = {
+    'rec': [105, 202, 234, 235, 236, 303, 355, 409],
+    'boost': [14, 187, 334, 339, 347, 349, 417, 468, 483, 504, 526],
+    'boostPhys': [14, 187, 334, 339, 349, 468, 504, 526],
+    'boostSpec': [347, 417, 483],
+    'hazard': [191, 390, 446, 564],
+    'removal': [229, 432],
+    'speed': [86, 317, 366, 433],
+    'protect': [164, 182],
+    'pivot': [369, 521],
+    'wear': [73, 92],
+    'weather': [201, 240, 241, 258, 580, 581, 604, 641],
+    'break': [73, 92, 1025, 432],
+}
+_HZ, _BPHY, _BSPEC = FUNC_MV_DATA['hazard'], FUNC_MV_DATA['boostPhys'], FUNC_MV_DATA['boostSpec']
+_REC, _WEA, _PROT = FUNC_MV_DATA['rec'], FUNC_MV_DATA['weather'], FUNC_MV_DATA['protect']
+_PIV, _WEAR, _BREAK, _SPD = FUNC_MV_DATA['pivot'], FUNC_MV_DATA['wear'], FUNC_MV_DATA['break'], FUNC_MV_DATA['speed']
+_WX_MV = (201, 240, 241, 258)          # 天气招；FUNC_MV.weather 其余 4 条为场地招
+
+
+def _mv_roles(mid, m):
+    """招式战术角色（逐条可溯源：id 清单 / gameData effT 效果名 / flagsT 旗标 / prio 先制字段）"""
+    R, eff = [], _eff_of(m)
+    prio, flags = (m.get('prio') or 0), (m.get('flags') or [])
+    if mid in _HZ: R.append('撒钉')
+    if mid == 229: R.append('除钉·自身侧')          # GLOSSARY.hazard_clear：229 清自身侧
+    if mid == 432: R.append('除钉·双方')            # GLOSSARY.hazard_clear：432 清双方（墙仅对手侧）
+    if eff in ('Haze', 'Clear Smog'): R.append('破强化·清能力')
+    if eff in ('Roar', 'Noble Roar', 'Hit Switch Target'): R.append('逼换·吹飞')
+    if mid in _BPHY: R.append('强化·物攻')
+    elif mid in _BSPEC: R.append('强化·特攻')
+    if mid in _REC: R.append('回复')
+    if mid in _WEA: R.append('天气设置' if mid in _WX_MV else '场地设置')
+    if mid in _PROT: R.append('保命')
+    if mid in _PIV: R.append('游击')
+    if mid in _WEAR: R.append('消耗')
+    if mid in _BREAK: R.append('破受')              # 引擎 FUNC_MV.break 同表
+    if mid in _SPD:
+        R.append('控速')
+        if mid == 433: R.append('低速轴核心')        # 戏法空间（gameData prio=-7）
+        if mid == 366: R.append('顺风')
+    if prio > 0: R.append('先制')
+    if eff == 'Sucker Punch': R.append('先制反击')
+    if 8 in flags: R.append('反伤')                 # flagsT[8]='Causes Recoil'
+    if eff == 'Recharge': R.append('僵直')
+    if eff in ('Multi Hit', 'Double Hit', 'Triple Kick'): R.append('连击')
+    if eff in ('Trap', 'Mean Look'): R.append('束缚·困住')
+    if eff == 'Absorb': R.append('吸血站场')
+    if eff in ('Explosion', 'Memento'): R.append('自爆·退场')
+    if eff == 'Remove Terrain No Fail': R.append('清场地')
+    if eff == 'Follow Me': R.append('双打·掩护')
+    if eff in ('Wish', 'Healing Wish') or mid in (505, 629): R.append('队医')
+    return R
+
+
+TACTIC_ROLE = {}
+for _mid, _m in _GD_MV.items():
+    if _mid in moves:
+        TACTIC_ROLE[_mid] = _mv_roles(int(_mid), _m)
+for _mid in moves:
+    TACTIC_ROLE.setdefault(_mid, [])
+
+# 15b. 特性协同角色 synergyRole
+#   来源三路：① ABI_TAGS（im/hf/def/conv/out 实测标签）② SYS_SET_MAP（出场设天气/场地特性）
+#             ③ gameData abilities.desc 英语原文正则（与既有 SYS_SET_PATTERNS 同法；例：悠游自如 desc
+#                'This Pokémon's Speed gets a 1.5x boost if rain is active' → ER 口径 ×1.5，非 ×2）
+_SPEED_DESC = [(r'Speed gets a ([\d.]+)x boost if rain is active', '雨天速度位'),
+               (r'Speed gets a ([\d.]+)x boost if sun is active', '晴天速度位'),
+               (r'Speed gets a ([\d.]+)x boost in a sandstorm', '沙暴速度位'),
+               (r'Speed gets a ([\d.]+)x boost in hail', '雪天速度位')]
+_DESC_ABI = [(r'Heals 1/3 of max HP upon switching out', '轮转·再生'),
+             (r'Traps opposing Steel-types', '捕钢陷阱'),
+             (r"Opponents can't be switched out", '踩影陷阱'),
+             (r"Enemies can't flee", '沙穴陷阱'),
+             (r'Status moves have \+1 priority', '先制变化招'),
+             (r'Only damaged by attacks', '免疫·非攻击伤害'),
+             (r"Ignores foes' stat changes", '反强化·纯朴'),
+             (r"Lowers foes' Atk by one stage on entry", '出场降攻·威吓'),
+             (r'Lowers all foes. Speed', '降速·棉絮')]
+_CONV_SRC = {'280': '岩石', '659': '钢'}   # 特例源属性（其余 -ate 类源属性=一般；v2.65 考古 §2）
+
+
+def _ab_roles(aid, a):
+    R, t, d = [], (ABI_TAGS.get(aid) or {}), (a.get('desc') or '')
+    _sysn = SYS_SET_MAP.get(int(aid))
+    if _sysn:
+        R.append(('天气手·' if _sysn in ('雨', '晴', '沙', '雪') else '场手·') + _sysn)
+    if t.get('conv'):
+        R.append('转换位·%s（源%s）' % (t['conv'], _CONV_SRC.get(aid, '一般')))
+    _ims = t.get('im') or []
+    for _ty in _ims: R.append('免疫·' + _ty)
+    if '水' in _ims: R.append('雨天免疫位')
+    if '火' in _ims: R.append('晴天免疫位')
+    if '地面' in _ims: R.append('地面免疫位')
+    for _ty in (t.get('hf') or []): R.append('减伤·' + _ty)
+    if isinstance(t.get('def'), (int, float)):
+        _cd = t.get('cond') or ''
+        for _kw, _tag in (('特殊招式', '减伤·特殊'), ('满血', '减伤·满血'), ('青草场地', '场地受益·青草场地'),
+                          ('冰雹', '天气受益·冰雹'), ('异常状态', '异常受益')):
+            if _kw in _cd:
+                R.append(_tag); break
+    _o = t.get('out') or {}
+    if (_o.get('cond') or '') in ('雨天', '晴天', '沙暴', '冰雹'):
+        R.append('天气受益·' + _o['cond'])
+    if _o.get('type'):
+        R.append('输出位·' + ('、'.join(_o['type']) if isinstance(_o['type'], list) else _o['type']))
+    for _pat, _tag in _SPEED_DESC:
+        _mm = re.search(_pat, d)
+        if _mm: R.append('%s（×%s）' % (_tag, _mm.group(1)))
+    for _pat, _tag in _DESC_ABI:
+        if re.search(_pat, d): R.append(_tag)
+    return R
+
+
+SYNERGY_ROLE = {}
+_ABI_BY_ID = {str(x['id']): x for x in GD['abilities']}
+for _aid in _ABI_BY_ID:
+    SYNERGY_ROLE[_aid] = _ab_roles(_aid, _ABI_BY_ID[_aid])
+for _r in abilities:
+    SYNERGY_ROLE.setdefault(_r[0], [])
+
+# 角色列追加（位置契约：moves 0..10 不变 → 新列 index 11；abilities 0..3 不变 → 新列 index 4）
+for _r in moves.values():
+    _r.append(TACTIC_ROLE.get(_r[0], []))
+for _r in abilities:
+    _r.append(SYNERGY_ROLE.get(_r[0], []))
+print('tacticRole: %d 条 / 已标注 %d 条 | synergyRole: %d 条 / 已标注 %d 条' %
+      (len(TACTIC_ROLE), sum(1 for v in TACTIC_ROLE.values() if v),
+       len(SYNERGY_ROLE), sum(1 for v in SYNERGY_ROLE.values() if v)))
+
+# 15c. 协同轴知识库（12–15 轴；引擎层按 id/字段名消费）
+#   字段：id, name, 轴手判定{role, ability_tags, moves}, 受益者判定{ability_tags, moves, immune_types,
+#         speed_or_power_rule}, 联动说明, 弱点体系[{threat, 建议}], 依据[溯源]
+#   标签口径：ability_tags / moves 均为**中文名**（与 SYS_SET「特性名→体系」TEMPLATES「(特性|招式,名)」惯例一致，
+#     引擎既有 name→id 解析器可直接消费）；「依据」里给出对应的 gameData/表 id 供核对。
+AXES = [
+    {
+        'id': 'rain', 'name': '雨天',
+        '轴手判定': {'role': '天气设置者（出场降雨 / 手动求雨）',
+                     'ability_tags': ['降雨', '积雨云'], 'moves': ['求雨']},
+        '受益者判定': {'ability_tags': ['悠游自如', '暴风雨', '储水', '引水', '干燥皮肤', '蒸发', '蓄电'],
+                       'moves': ['打雷', '暴风', '水炮', '冲浪'],
+                       'immune_types': ['水', '电'],
+                       'speed_or_power_rule': '速度×1.5（悠游自如33）；最高攻项×1.5（暴风雨935）；水招×1.5、火招×0.5'},
+        '联动说明': '天气手降雨2/积雨云989 → 8 回合窗口（岩石延长 12）；与晴天轴互斥（改天气）；水免/电免特性是雨天内战与防电的联防位；对应 TEMPLATES[雨天速攻] / TEMPLATES[天气双核]。',
+        '弱点体系': [
+            {'threat': '对手改天气（晴天轴：水招×0.5、火招×1.5）', '建议': '双天气轮换或手动求雨240 续场（GLOSSARY.weather_manual）'},
+            {'threat': '草 / 电属性攻击（克制表：水 2× 被 草 / 电）', '建议': '食草157 / 蓄电10 补位（ABI_TAGS），配地面或飞行联防'},
+            {'threat': '除钉与对手换场（Remove Terrain No Fail 4 招）', '建议': '配清除浓雾432 手（GLOSSARY.hazard_clear），窗口内不盲目铺钉'}],
+        '依据': ["GLOSSARY.weather_rain：水×1.5、火×0.5；持续 8 回合、岩石延长 12【v2.65 源码实证】",
+                 "SYS_SET_MAP：降雨2 / 积雨云989；FUNC_MV.weather 求雨240",
+                 "abilities[33] 悠游自如 desc：'Speed gets a 1.5x boost if rain is active'（ER 口径 ×1.5，非 ×2）",
+                 "ABI_TAGS[935] 暴风雨 out{cond:雨天}；ABI_TAGS[87] 干燥皮肤 im[水]；ABI_TAGS[114] 引水 im[水]",
+                 "TEMPLATES[雨天速攻] / TEMPLATES[天气双核]"],
+    },
+    {
+        'id': 'sun', 'name': '晴天',
+        '轴手判定': {'role': '天气设置者（出场日照 / 手动大晴天）',
+                     'ability_tags': ['日照', '绯红脉动'], 'moves': ['大晴天']},
+        '受益者判定': {'ability_tags': ['叶绿素', '太阳之力', '猛火', '适应力', '引火'],
+                       'moves': ['日光束', '大字爆炎', '闪焰冲锋'],
+                       'immune_types': ['火', '水'],
+                       'speed_or_power_rule': '速度×1.5（叶绿素34）；最高攻项×1.5（太阳之力94，每回合掉血）；火招×1.5、水招×0.5'},
+        '联动说明': '日照70 / 绯红脉动584（晴天下自身攻击×1.33）→ 8 回合；日光束/日光刃免蓄力（GLOSSARY.charge）；与雨天轴互斥；对应 TEMPLATES[晴天速攻]。',
+        '弱点体系': [
+            {'threat': '水 / 地面 / 岩石属性攻击（克制表：火 2× 被 水 / 地面 / 岩石）', '建议': '水免 / 草免位（ABI_TAGS[11]/[114]/[157]）'},
+            {'threat': '对手改天气（雨天轴：火招×0.5）', '建议': '天气手轮换（TEMPLATES[双天气轮换]）'},
+            {'threat': '沙暴体系（岩石特防×1.5，GLOSSARY.weather_sand）', '建议': '带格斗 / 水补盲'}],
+        '依据': ["GLOSSARY.weather_sun：火×1.5、水×0.5、日光束免蓄力【v2.65 源码实证】",
+                 "SYS_SET_MAP：日照70 / 绯红脉动584；FUNC_MV.weather 大晴天241",
+                 "abilities[34] 叶绿素 desc：'Speed gets a 1.5x boost if sun is active'",
+                 "ABI_TAGS[94] 太阳之力 out{cond:晴天}；ABI_TAGS[66] 猛火 out{type:火,cond:<1/3血}",
+                 "TEMPLATES[晴天速攻]"],
+    },
+    {
+        'id': 'sand', 'name': '沙暴',
+        '轴手判定': {'role': '天气设置者（出场扬沙 / 手动沙暴）',
+                     'ability_tags': ['扬沙', '沙漠意志'], 'moves': ['沙暴']},
+        '受益者判定': {'ability_tags': ['拨沙', '沙之力', '可憎怪物', '储水', '食草'],
+                       'moves': ['岩崩', '地震'],
+                       'immune_types': ['水', '草'],
+                       'speed_or_power_rule': '速度×1.5（拨沙146）；最高攻项×1.5（沙之力159）；岩石特防×1.5（原版口径，未列入 v2.65 实证清单）'},
+        '联动说明': '沙暴回合末对非岩 / 地 / 钢造成 1/16；沙漠意志604 另使地面招可打飞空；与「岩石特防×1.5」构成耐久核心；对应 TEMPLATES[沙暴联防]。',
+        '弱点体系': [
+            {'threat': '水 / 草 / 格斗属性攻击（克制表：岩石 2× 被 水 / 草 / 格斗）', '建议': '水免 / 草免位（ABI_TAGS[87]/[157]）'},
+            {'threat': '沙暴不伤岩 / 地 / 钢 → 对手同类体系免疫消耗', '建议': '带高威力覆盖招而非依赖沙暴消耗'},
+            {'threat': '天气被覆盖（雨天 / 晴天轴）', '建议': '手动沙暴201 续场（FUNC_MV.weather）'}],
+        '依据': ["GLOSSARY.weather_sand：回合末 1/16、岩石特防×1.5（原版口径）；持续 8 / 岩石 12",
+                 "SYS_SET_MAP：扬沙45 / 沙漠意志604；FUNC_MV.weather 沙暴201",
+                 "abilities[146] 拨沙 desc：'Speed gets a 1.5x boost in a sandstorm'",
+                 "ABI_TAGS[159] 沙之力 out{cond:沙暴}",
+                 "TEMPLATES[沙暴联防]"],
+    },
+    {
+        'id': 'snow', 'name': '雪天',
+        '轴手判定': {'role': '天气设置者（出场降雪 / 手动冰雹）',
+                     'ability_tags': ['降雪'], 'moves': ['冰雹']},
+        '受益者判定': {'ability_tags': ['拨雪', '冰天雪地', '可憎怪物', '厚脂肪', '引火'],
+                       'moves': ['暴风雪', '极光幕'],
+                       'immune_types': ['火'],
+                       'speed_or_power_rule': '速度×1.5（拨雪202，另免疫冰雹伤害）；冰招×1.5（冰天雪地269）；冰系防御×1.5（源码 S9）'},
+        '联动说明': '降雪117 → 8 回合；暴风雪必中（GLOSSARY.weather_hail）；极光幕需雪天；冰系防御 +50%（源码 S9）；对应 TEMPLATES[雪天堡垒]。',
+        '弱点体系': [
+            {'threat': '火 / 格斗 / 岩石 / 钢属性攻击（克制表：冰 2× 被 火 / 格斗 / 岩石 / 钢）', '建议': '引火18 / 焦香之躯446 / 灼日869 火免位（ABI_TAGS）'},
+            {'threat': '对手改天气 → 极光幕与冰系防御加成失效', '建议': '手动冰雹258 续场（FUNC_MV.weather）'},
+            {'threat': '岩石 / 钢属性物攻强压', '建议': '厚脂肪47 减伤位 + 物盾（核心分类[超级物盾]）'}],
+        '依据': ["GLOSSARY.weather_hail：冰系防御×1.5（源码 S9）、暴风雪必中、回合末 1/16【v2.65 源码实证】",
+                 "SYS_SET_MAP：降雪117；FUNC_MV.weather 冰雹258",
+                 "abilities[202] 拨雪 desc：'Speed gets a 1.5x boost in hail'（另免疫冰雹伤害）",
+                 "ABI_TAGS[269] 冰天雪地 out{cond:冰雹}；ABI_TAGS[1018] 可憎怪物 def{spd,cond:冰雹}",
+                 "TEMPLATES[雪天堡垒]"],
+    },
+    {
+        'id': 'trickroom', 'name': '戏法空间（低速轴）',
+        '轴手判定': {'role': '空间手（超低速宝可梦）', 'ability_tags': [], 'moves': ['戏法空间']},
+        '受益者判定': {'ability_tags': [], 'moves': ['破壳', '腹鼓'],
+                       'immune_types': [],
+                       'speed_or_power_rule': '速度反转（慢者先手）；戏法空间 prio −7（gameData.moves[433].prio）；回合数待实测（TRICK_ROOM_DURATION=5 与施放回合不递减冲突）'},
+        '联动说明': '空间手开局 → 5 回合窗口（实测存疑，GLOSSARY.trickroom）→ 低速高攻手先手；与强化轴叠加（慢速强化手在空间内先强化后出手）；受益者为「低速打手」类型判定，非特性判定，故 ability_tags 留空。',
+        '弱点体系': [
+            {'threat': '空间回合有限且回合数存疑', '建议': '带第二空间手，或准备空间外战术'},
+            {'threat': '先制招式在空间内仍照常先手', '建议': '配精神场地641（GLOSSARY.terrain_psychic：场地内先制失效）'},
+            {'threat': '挑衅 / 封印封空间', '建议': '带替身164 或恶免 / 高速压制的队友（FUNC_MV.protect）'}],
+        '依据': ["GLOSSARY.trickroom：5 回合、prio −7（数据驱动 gameData.moves[433].prio）【回合数待实测】",
+                 "FUNC_MV.speed 含 433 戏法空间（build_tool_html.py L3143）",
+                 "GLOSSARY.terrain_psychic：场地内先制招式失效【v2.65 源码实证】",
+                 "核心分类(分类.xlsx)：慢速打手 2 只",
+                 "TEMPLATES[戏法空间]"],
+    },
+    {
+        'id': 'e_terrain', 'name': '电气场地',
+        '轴手判定': {'role': '场地设置者（电气制造者 / 电动场地招）',
+                     'ability_tags': ['电气制造者'], 'moves': ['电气场地']},
+        '受益者判定': {'ability_tags': ['电晶体', '蓄电', '避雷针', '电气引擎', '飘浮'],
+                       'moves': ['十万伏特', '伏特替换', '迅雷'],
+                       'immune_types': ['地面'],
+                       'speed_or_power_rule': '电招×1.3（GLOSSARY.terrain_boost）；接地免疫睡眠'},
+        '联动说明': '电气制造者226 → 8 回合（场地延展器 12）；电免特性（蓄电10 / 避雷针31 / 电气引擎78）既是受益也是内战联防；飘浮26 补地面弱点；对应 TEMPLATES[电气场地速攻] / TEMPLATES[场地控制]。',
+        '弱点体系': [
+            {'threat': '地面属性攻击（克制表：电 2× 被 地面，且电招对地面无效）', '建议': '飘浮26 / 隔空取物511 / 巨翼688 地面免位（ABI_TAGS）'},
+            {'threat': '对手改场地或清场地（Remove Terrain No Fail 4 招）', '建议': '双场手或手动电气场地604 续场'},
+            {'threat': '草 / 龙属性打电系核心', '建议': '带冰 / 妖精补盲'}],
+        '依据': ["GLOSSARY.terrain_electric：电×1.3、场上免疫睡眠【v2.65 源码实证】",
+                 "GLOSSARY.terrain_boost / terrain_dur / terrain_extender：×1.3、8 回合、延展器 12",
+                 "SYS_SET_MAP：电气制造者226；FUNC_MV.weather 电气场地604",
+                 "ABI_TAGS[262] 电晶体 out{type:电}；ABI_TAGS[10] 蓄电 im[电]；ABI_TAGS[26] 飘浮 im[地面]",
+                 "TEMPLATES[电气场地速攻] / TEMPLATES[场地控制]"],
+    },
+    {
+        'id': 'misty', 'name': '薄雾场地',
+        '轴手判定': {'role': '场地设置者（薄雾制造者 / 薄雾场地招）',
+                     'ability_tags': ['薄雾制造者'], 'moves': ['薄雾场地']},
+        '受益者判定': {'ability_tags': ['妖精皮肤'],
+                       'moves': ['魔法闪耀', '嬉闹'],
+                       'immune_types': [],
+                       'speed_or_power_rule': '妖精招×1.3（同场地档 GLOSSARY.terrain_boost）；接地全队免疫异常状态'},
+        '联动说明': '薄雾制造者228 → 8 回合；全队防异常，对削弱轴 / 剧毒轴是硬反制；**龙伤减半已在 v2.65.3b 移除，不得按原版口径引用**（GLOSSARY.terrain_misty）；对应 TEMPLATES[薄雾场地龙盾]。',
+        '弱点体系': [
+            {'threat': '钢 / 毒属性（克制表：妖精 2× 被 毒，妖精招被钢抵抗）', '建议': '带地面 / 火补盲打钢'},
+            {'threat': '对手改场地 / 清场地', '建议': '第二场地手或手动薄雾场地581'},
+            {'threat': '毒属性攻击（克制表：妖精 2× 被 毒）', '建议': '钢 / 毒耐药位（ABI_TAGS[17]/[855] 减伤毒）'}],
+        '依据': ["GLOSSARY.terrain_misty：妖精增伤（同场地档）、全队免疫异常；龙伤减半已在 v2.65.3b 移除",
+                 "SYS_SET_MAP：薄雾制造者228；FUNC_MV.weather 薄雾场地581",
+                 "ABI_TAGS[182] 妖精皮肤 conv[妖精]",
+                 "TEMPLATES[薄雾场地龙盾]"],
+    },
+    {
+        'id': 'grassy', 'name': '青草场地',
+        '轴手判定': {'role': '场地设置者（青草制造者 / 青草场地招）',
+                     'ability_tags': ['青草制造者'], 'moves': ['青草场地']},
+        '受益者判定': {'ability_tags': ['草之毛皮', '花项链', '食草'],
+                       'moves': ['终极吸取', '寄生种子'],
+                       'immune_types': ['草'],
+                       'speed_or_power_rule': '草招×1.3；场上每回合回复（回复量属原版口径）；青草场地内防御 / 特防×1.5（ABI_TAGS[179]/[984]）'},
+        '联动说明': '青草制造者229 → 8 回合；地面回复 + 寄生种子 / 吸血类招式叠加站场（TEMPLATES[青草场地回复] / TEMPLATES[吸血站场]）。',
+        '弱点体系': [
+            {'threat': '火 / 冰 / 毒 / 飞行 / 虫属性攻击（克制表：草 2× 被 火 / 冰 / 毒 / 飞行 / 虫）', '建议': '厚脂肪47 / 耐热85 减伤位'},
+            {'threat': '对手改场地 / 清场地', '建议': '第二场地手或手动青草场地580'},
+            {'threat': '飞行 / 飘浮不受地面系效果，草招对飞行减半', '建议': '带岩石 / 电补盲'}],
+        '依据': ["GLOSSARY.terrain_grassy：草×1.3、回合末回复（原版口径）",
+                 "GLOSSARY.terrain_dur / terrain_extender：8 回合、延展器 12",
+                 "SYS_SET_MAP：青草制造者229；FUNC_MV.weather 青草场地580",
+                 "ABI_TAGS[179] 草之毛皮 def{def,cond:青草场地}；ABI_TAGS[984] 花项链 def{spd,cond:青草场地}",
+                 "TEMPLATES[青草场地回复]"],
+    },
+    {
+        'id': 'psychic', 'name': '精神场地',
+        '轴手判定': {'role': '场地设置者（精神制造者 / 精神场地招）',
+                     'ability_tags': ['精神制造者'], 'moves': ['精神场地']},
+        '受益者判定': {'ability_tags': ['天才思想'],
+                       'moves': ['精神强念'],
+                       'immune_types': ['恶'],
+                       'speed_or_power_rule': '超能招×1.3；接地免疫对手先制招式'},
+        '联动说明': '精神制造者227 → 8 回合；反先制（克制突袭389 / 先制收割），对先制流是硬反制；与戏法空间轴可叠加（空间内先制仍先手 → 精神场地封之）；对应 TEMPLATES[精神场地特攻]。',
+        '弱点体系': [
+            {'threat': '恶 / 幽灵 / 虫属性攻击（克制表：超能力 2× 被 恶 / 幽灵 / 虫）', '建议': '天才思想422 免疫恶 / 幽灵 / 虫（ABI_TAGS）'},
+            {'threat': '对手改场地 / 清场地', '建议': '第二场地手或手动精神场地641'},
+            {'threat': '钢属性（超能招被钢抵抗）', '建议': '带格斗 / 火 / 地面补盲'}],
+        '依据': ["GLOSSARY.terrain_psychic：超能×1.3、场地内先制招式失效【v2.65 源码实证】",
+                 "SYS_SET_MAP：精神制造者227；FUNC_MV.weather 精神场地641",
+                 "ABI_TAGS[422] 天才思想 im[恶,幽灵,虫]",
+                 "TEMPLATES[精神场地特攻]"],
+    },
+    {
+        'id': 'toxic', 'name': '剧毒场地',
+        '轴手判定': {'role': '场地设置者（毒沼制造者；剧毒场地招）',
+                     'ability_tags': ['毒沼制造者'], 'moves': []},
+        '受益者判定': {'ability_tags': [],
+                       'moves': ['剧毒', '毒液陷阱'],
+                       'immune_types': ['毒'],
+                       'speed_or_power_rule': '毒招×1.3；回合末对非毒 / 钢接地者 1/16（豁免不看接地）'},
+        '联动说明': '毒沼制造者834 → 8 回合；伤害只作用于「非毒 / 钢」，故毒 / 钢核心零成本；与钉轴 / 受队轴叠加消耗（TEMPLATES[毒钉受队]）；剧毒场地招为 data 侧 gameData effT[Toxic Terrain]（moves[1006]，中文名缺失）。',
+        '弱点体系': [
+            {'threat': '钢 / 毒属性核心完全豁免场地伤害', '建议': '带非毒 / 钢的高威力打手'},
+            {'threat': '对手改场地 / 清场地', '建议': '第二场地手或手动设置（FUNC_MV.weather 无剧毒场地招 → 依赖特性）'},
+            {'threat': '对手回复轮转抵消 1/16', '建议': '叠加剧毒92（FUNC_MV.wear）放大递增伤害'}],
+        '依据': ["GLOSSARY.terrain_toxic：毒×1.3、回合末 1/16、豁免「毒或钢全类型（不看接地）」、8 / 12 回合【v2.65 源码实证】",
+                 "SYS_SET_MAP：毒沼制造者834；gameData effT[Toxic Terrain] → moves[1006]",
+                 "核心分类(分类.xlsx)：剧毒场地 1 只",
+                 "TEMPLATES[毒钉受队]"],
+    },
+    {
+        'id': 'hazard', 'name': '钉轴（撒钉循环）',
+        '轴手判定': {'role': '钉子手（撒菱 / 毒菱 / 隐形岩 / 黏黏网）',
+                     'ability_tags': [], 'moves': ['撒菱', '毒菱', '隐形岩', '黏黏网']},
+        '受益者判定': {'ability_tags': ['魔法防守', '再生力'],
+                       'moves': ['剧毒', '寄生种子', '清除浓雾', '高速旋转'],
+                       'immune_types': ['毒'],
+                       'speed_or_power_rule': '换入伤害：撒菱 1/8·1/6·1/4（仅接地）／隐形岩按岩石克制 1/32–1/2／毒菱 中毒·剧毒／黏黏网 速度−1'},
+        '联动说明': '钉子手 = FUNC_MV.hazard {191,390,446,564}；轮转逼换（游击369/521）+ 消耗（剧毒92/寄生种子73）放大钉子收益；魔法防守98 免疫钉子伤害、再生力144 换下回复 1/3，是钉轴的两个受益位；对应 TEMPLATES[钉子受队]。',
+        '弱点体系': [
+            {'threat': '除钉（高速旋转229 清自身侧 / 清除浓雾432 清双方）', '建议': '配幽灵 / 反清场位，降低被清场后重建成本（GLOSSARY.hazard_clear）'},
+            {'threat': '对手钢 / 毒免毒菱、飞行 / 飘浮免黏黏网，且撒菱仅对落地者生效', '建议': '以隐形岩446 覆盖全属性（GLOSSARY.hazard_toxicspikes / hazard_stickyweb）'},
+            {'threat': '隐形岩非首铺疑似失效（v2.65 Beta2 社区报告，无源码结论）', '建议': '引擎输出风险提示，不假设隐形岩必然生效（GLOSSARY.hazard_bug）'}],
+        '依据': ["GLOSSARY.hazard_spikes / hazard_stealthrock / hazard_toxicspikes / hazard_stickyweb（数值与豁免）",
+                 "GLOSSARY.hazard_clear：229 清自身侧 / 432 清双方、墙仅对手侧、降闪避 1 级【v2.65 源码实证】",
+                 "FUNC_MV.hazard = [191,390,446,564]（build_tool_html.py L3141，引擎逐条消费）",
+                 "abilities[98] 魔法防守 desc：'Only damaged by attacks'（免疫入场陷阱 / 天气伤害）；abilities[144] 再生力 desc：换下回复 1/3",
+                 "TEMPLATES[钉子受队] / TEMPLATES[毒钉受队]"],
+    },
+    {
+        'id': 'boost', 'name': '强化轴（站场强化）',
+        '轴手判定': {'role': '强化手（剑舞 / 龙舞 / 诡计 / 蝶舞 / 腹鼓 / 破壳）',
+                     'ability_tags': [], 'moves': ['剑舞', '龙之舞', '诡计', '蝶舞', '腹鼓', '破壳']},
+        '受益者判定': {'ability_tags': ['多重鳞片', '幻影防守', '毛皮大衣', '毛茸茸', '适应力'],
+                       'moves': ['守住', '替身', '自我再生'],
+                       'immune_types': [],
+                       'speed_or_power_rule': '剑舞+2 物攻 / 龙舞 攻速+1 / 蝶舞 特攻特防速+1 / 诡计 特攻+2 / 破壳 攻特攻速+2 但防特防−1（GLOSSARY.boost_dance）'},
+        '联动说明': '强化手 = FUNC_MV.boost {14,187,334,339,347,349,417,468,483,504,526}（引擎 funcWeight「站场强化」权重 30/35）；减伤 / 回复特性提供强化窗口；与戏法空间轴叠加；对应 TEMPLATES[强化清场轴] / TEMPLATES[强化接力]。',
+        '弱点体系': [
+            {'threat': '清能力 / 逼换（黑雾114、清除之烟499、吼叫46、吹飞18、龙尾525）', '建议': '替身164 规避逼换（FUNC_MV.protect）'},
+            {'threat': '先制收割（子弹拳418 / 突袭389 / 神速245）', '建议': '精神场地641 或高耐久强化（GLOSSARY.terrain_psychic）'},
+            {'threat': '威吓 / 降能力（abilities[22] 出场降攻 1 级）', '建议': '不服输类被降反升（GLOSSARY.intimidate_guard）'}],
+        '依据': ["GLOSSARY.boost_dance：剑舞14 / 龙之舞349 / 蝶舞483 / 诡计417 / 破壳504 数值【招式数据】",
+                 "FUNC_MV.boost / boostPhys / boostSpec（build_tool_html.py L3137-3140）",
+                 "ABI_TAGS[136] 多重鳞片 def{满血}；ABI_TAGS[169] 毛皮大衣 phy 0.5；ABI_TAGS[91] 适应力 out 1.33",
+                 "核心分类(分类.xlsx)：站场强化 8 只",
+                 "TEMPLATES[强化清场轴] / TEMPLATES[强化接力]"],
+    },
+    {
+        'id': 'stall', 'name': '受队轴（回复+消耗）',
+        '轴手判定': {'role': '受队核心（物盾 / 特盾 / 回复手）',
+                     'ability_tags': ['多重鳞片', '毛皮大衣', '毛茸茸', '洁净之盐'],
+                     'moves': ['自我再生', '羽栖', '偷懒', '睡觉']},
+        '受益者判定': {'ability_tags': ['魔法防守', '纯朴'],
+                       'moves': ['撒菱', '隐形岩', '清除浓雾', '高速旋转'],
+                       'immune_types': ['毒'],
+                       'speed_or_power_rule': '回复半血（自我再生105 / 偷懒303 / 羽栖355）；剧毒递增 1/16→2/16（GLOSSARY.status_toxic）；烧伤 / 冻伤回合末 1/16 且能力减半'},
+        '联动说明': '受队 = 回复（FUNC_MV.rec）+ 消耗（剧毒92 / 寄生种子73，标签见 weaken / hazard 轴）+ 钉子（FUNC_MV.hazard）三件套；轮转由 pivot 轴的再生力144（换下回复 1/3）支撑，属跨轴联动；对应 TEMPLATES[钉子受队] / TEMPLATES[毒钉受队] / TEMPLATES[吸血站场]。',
+        '弱点体系': [
+            {'threat': '破受（Psycho Wave 1025 / 清除浓雾432 兼破受，FUNC_MV.break）', '建议': '再生力144 轮转换挡'},
+            {'threat': '强化手推队（强化轴）', '建议': '黑雾114 / 清除之烟499 / 逼换 18·46（FUNC_MV 破强化）'},
+            {'threat': '对手剧毒92 消耗自身', '建议': '钢 / 毒耐药位（ABI_TAGS[17]/[855] 减伤毒）+ 治愈铃声215 / 芳香治疗312 队医位'}],
+        '依据': ["GLOSSARY.recover：回复半血；晨光234 / 光合作用235 / 月光236 随天气变化（原版口径）",
+                 "GLOSSARY.status_toxic / status_burn / status_frostbite（数值与能力减半）",
+                 "FUNC_MV.rec / wear / hazard / break（build_tool_html.py L3135-3146）",
+                 "abilities[144] 再生力 desc：'Heals 1/3 of max HP upon switching out'",
+                 "核心分类(分类.xlsx)：轮转肉盾 2 只 / 超级物盾 1 只；TEMPLATES[钉子受队]"],
+    },
+    {
+        'id': 'pivot', 'name': '轮转轴（游击 / 折返）',
+        '轴手判定': {'role': '折返手（急速折返 / 伏特替换 / 顺风手）',
+                     'ability_tags': ['恶作剧之心', '再生力'], 'moves': ['急速折返', '伏特替换']},
+        '受益者判定': {'ability_tags': ['飘浮', '隔空取物', '巨翼', '威吓'],
+                       'moves': ['顺风', '戏法空间'],
+                       'immune_types': ['地面'],
+                       'speed_or_power_rule': '折返换人保节奏（FUNC_MV.pivot 369/521）；再生力144 换下回复 1/3；顺风366 全队速度×2（4 回合时段）'},
+        '联动说明': '轮转 = 折返（369/521）+ 换人受益特性（再生力144）+ 换人惩罚风险（蹲守198 对手换入时×2）；顺风 / 空间是轮转轴的控速分支（GLOSSARY.tailwind）；对应 TEMPLATES[顺风游击]。',
+        '弱点体系': [
+            {'threat': '换人惩罚：蹲守198（对手换入时伤害×2）', '建议': '避免无意义折返，或先手压制后再轮转（ABI_TAGS[198]）'},
+            {'threat': '束缚 / 陷阱特性（踩影23 / 沙穴71 / 磁力42）阻止换人', '建议': '幽灵属性位（abilities[23] desc：幽灵免疫）+ 逃脱按键 / 换人招'},
+            {'threat': '钉子惩罚换入（钉轴）', '建议': '清除浓雾432 / 高速旋转229 先清场（FUNC_MV.removal）'}],
+        '依据': ["FUNC_MV.pivot = [369,521]（build_tool_html.py L3145）",
+                 "GLOSSARY.tailwind：全队速度×2、4 回合时段【v2.65 源码实证】",
+                 "abilities[144] 再生力 desc：'Heals 1/3 of max HP upon switching out'",
+                 "ABI_TAGS[198] 蹲守 out{mul:2,cond:对手换入时}；abilities[23] 踩影 / abilities[71] 沙穴 / abilities[42] 磁力 desc",
+                 "TEMPLATES[顺风游击]"],
+    },
+    {
+        'id': 'weaken', 'name': '削弱轴（威吓 / 降能力 / 异常）',
+        '轴手判定': {'role': '削弱手（威吓 / 降能力 / 异常状态铺场）',
+                     'ability_tags': ['威吓', '棉絮'],
+                     'moves': ['电磁波', '磷火', '剧毒', '岩石封锁', '毒液陷阱', '大蛇瞪眼']},
+        '受益者判定': {'ability_tags': ['毅力', '中毒激升', '魔法防守', '纯朴'],
+                       'moves': ['黑雾', '清除之烟'],
+                       'immune_types': [],
+                       'speed_or_power_rule': '威吓22 出场降攻 1 级；麻痹速度×0.5、烧伤物攻×0.5、冻伤特攻×0.5、剧毒伤害递增（GLOSSARY.status_*）'},
+        '联动说明': '削弱轴 = 异常状态（电磁波86 / 磷火261 / 剧毒92）+ 降能力（岩石封锁317 速度−1 / 毒液陷阱599 降攻特攻速）+ 威吓22；受益者多为吃异常的「毅力62 / 中毒激升137」或无视变化 / 非攻击伤害的「纯朴109 / 魔法防守98」；与受队轴叠加消耗。',
+        '弱点体系': [
+            {'threat': '薄雾场地（接地全队免疫异常，GLOSSARY.terrain_misty）', '建议': '改场地或改走降能力路线'},
+            {'threat': '魔法防守98（免疫异常与天气等非攻击伤害）', '建议': '改用降能力与直接输出压制'},
+            {'threat': '防威吓特性（不服输 / 自信过度153，被降反升）', '建议': '不依赖威吓循环，改为直接输出（GLOSSARY.intimidate_guard）'}],
+        '依据': ["GLOSSARY.status_para / status_burn / status_frostbite / status_toxic（数值与能力减半）【v2.65 源码实证】",
+                 "abilities[22] 威吓 desc：'Lowers foes' Atk by one stage on entry'；abilities[238] 棉絮 desc：受击降对手速度",
+                 "FUNC_MV.speed 含 电磁波86 / 岩石封锁317；MOVES_NOTES[92] 剧毒 / MOVES_NOTES[86] 电磁波",
+                 "GLOSSARY.intimidate_guard：防威吓（不服输 / 自信过度153 / 胆量）",
+                 "ABI_TAGS[62] 毅力 out{cond:异常状态}；ABI_TAGS[137] 中毒激升 out{cond:中毒}"],
+    },
+]
+
+# 15d. 轴库自检（唯一性 + 溯源可解析）→ 结果落 nn_data\axis_lib_check.json，探针亦复核
+def _axis_check(_axes):
+    _ids = [a['id'] for a in _axes]
+    _owner, _conf = {}, []
+    for a in _axes:
+        for t in a['轴手判定']['ability_tags'] + a['轴手判定']['moves']:
+            if t in _owner and _owner[t] != a['id']:
+                _conf.append({'tag': t, 'axes': [_owner[t], a['id']]})
+            _owner.setdefault(t, a['id'])
+    _shared = {}
+    for a in _axes:
+        for t in a['受益者判定']['ability_tags'] + a['受益者判定']['moves'] + a['受益者判定']['immune_types']:
+            _shared.setdefault(t, []).append(a['id'])
+    _gk = {g['key'] for g in GLOSSARY}
+    _tn = {t.get('name') for t in TEMPLATES}
+    _abids = {r[0] for r in abilities}
+    _bad = []
+    for a in _axes:
+        for s in a['依据']:
+            if not re.search(r'(克制表|GLOSSARY\.|ABI_TAGS\[|SYS_SET_MAP|abilities\[|FUNC_MV\.|MOVES_NOTES\[|TEMPLATES\[|gameData\.|核心分类)', s):
+                _bad.append({'axis': a['id'], 'why': '无来源 token', 'src': s})
+            for m2 in re.finditer(r'ABI_TAGS\[(\d+)\]', s):
+                if m2.group(1) not in ABI_TAGS: _bad.append({'axis': a['id'], 'why': 'ABI_TAGS 无此 id', 'src': m2.group(0)})
+            for m2 in re.finditer(r'abilities\[(\d+)\]', s):
+                if m2.group(1) not in _abids: _bad.append({'axis': a['id'], 'why': 'abilities 无此 id', 'src': m2.group(0)})
+            for m2 in re.finditer(r'GLOSSARY\.(\w+)', s):
+                if m2.group(1) not in _gk: _bad.append({'axis': a['id'], 'why': 'GLOSSARY 无此 key', 'src': m2.group(0)})
+            for m2 in re.finditer(r'FUNC_MV\.(\w+)', s):
+                if m2.group(1) not in FUNC_MV_DATA: _bad.append({'axis': a['id'], 'why': 'FUNC_MV 无此类别', 'src': m2.group(0)})
+            for m2 in re.finditer(r'TEMPLATES\[([^\]]+)\]', s):
+                if m2.group(1) not in _tn: _bad.append({'axis': a['id'], 'why': 'TEMPLATES 无此模板', 'src': m2.group(0)})
+            for m2 in re.finditer(r'MOVES_NOTES\[(\d+)\]', s):
+                if m2.group(1) not in MOVES_NOTES: _bad.append({'axis': a['id'], 'why': 'MOVES_NOTES 无此 id', 'src': m2.group(0)})
+            for m2 in re.finditer(r'gameData\.moves\[(\d+)\]', s):
+                if m2.group(1) not in _GD_MV: _bad.append({'axis': a['id'], 'why': 'gameData.moves 无此 id', 'src': m2.group(0)})
+    return {
+        'axes': len(_axes), 'ids': _ids,
+        'axis_id_unique': len(set(_ids)) == len(_ids), 'axis_id_dups': sorted({x for x in _ids if _ids.count(x) > 1}),
+        'setter_tag_conflicts': _conf, 'setter_tags_disjoint': len(_conf) == 0,
+        'beneficiary_tags_shared': {k: v for k, v in _shared.items() if len(v) > 1},
+        '依据来源无法解析': _bad, '依据可解析': len(_bad) == 0,
+        '名称无法解析': _unres, '名称全可解析': len(_unres) == 0,
+        '免疫档派生': _imm_audit,
+        'tacticRole_标注条数': sum(1 for v in TACTIC_ROLE.values() if v),
+        'synergyRole_标注条数': sum(1 for v in SYNERGY_ROLE.values() if v),
+    }
+
+
+# 15e. 受益者「免伤档」结构化派生（零编造）= 所列受益特性 ABI_TAGS.im 并集 ∪ 场地/类型规则豁免（_IMM_RULE，token 自检）
+#      + 轴内标签名可解析自检（特性名 / 招式名必须命中真实表；防「毒补」类口误）
+_IMM_RULE = {
+    'toxic': {'毒': 'GLOSSARY.terrain_toxic（毒 / 钢属性豁免剧毒场地回合末伤害）'},
+    'hazard': {'毒': 'GLOSSARY.hazard_toxicspikes（毒属性不可中毒菱）'},
+    'stall': {'毒': 'GLOSSARY.status_toxic（毒属性不会陷入中毒 / 剧毒）'},
+}
+_AB_BY = {}
+for _r in abilities:
+    _AB_BY.setdefault(_r[2], _r[0])
+for _zh, _ids in (ABI_ALIAS or {}).items():
+    for _i in (_ids if isinstance(_ids, list) else [_ids]):
+        _AB_BY.setdefault(_zh, str(_i))
+_MV_BY = {}
+for _r in moves.values():
+    _MV_BY.setdefault(_r[1], _r[0])
+_ABN = {_r[0]: _r[2] for _r in abilities}
+_unres, _imm_audit = [], {}
+for _a in AXES:
+    _bids = []
+    for _t in _a['轴手判定']['ability_tags'] + _a['受益者判定']['ability_tags']:
+        if not _AB_BY.get(_t):
+            _unres.append({'axis': _a['id'], 'kind': '特性名', 'name': _t})
+        elif _t in _a['受益者判定']['ability_tags']:
+            _bids.append(_AB_BY[_t])
+    for _t in _a['轴手判定']['moves'] + _a['受益者判定']['moves']:
+        if not _MV_BY.get(_t):
+            _unres.append({'axis': _a['id'], 'kind': '招式名', 'name': _t})
+    _by_ab = {}
+    for _i in _bids:
+        for _x in (ABI_TAGS.get(_i) or {}).get('im') or []:
+            _by_ab.setdefault(_x, []).append('%s(%s)' % (_ABN.get(_i, '?'), _i))
+    _rule = dict(_IMM_RULE.get(_a['id']) or {})
+    _all = [t for t in TYPE_ORDER if t in _by_ab or t in _rule]
+    _a['受益者判定']['immune_types'] = _all
+    _imm_audit[_a['id']] = {'派生 immune_types': _all, '特性 im 来源': _by_ab, '规则豁免来源': _rule}
+
+
+_AXLIB = BASE + r'\nn_data\axis_lib.json'
+_AXCHK = BASE + r'\nn_data\axis_lib_check.json'
+open(_AXLIB, 'w', encoding='utf-8').write(json.dumps(AXES, ensure_ascii=False, indent=1))
+_AXC = _axis_check(AXES)
+open(_AXCHK, 'w', encoding='utf-8').write(json.dumps(_AXC, ensure_ascii=False, indent=1))
+print('axis_lib: %d 轴 | id 唯一 %s | 轴手标签互斥 %s | 依据可解析 %s | 名称全可解析 %s | 受益者共享标签 %d 组' %
+      (_AXC['axes'], _AXC['axis_id_unique'], _AXC['setter_tags_disjoint'], _AXC['依据可解析'],
+       _AXC['名称全可解析'], len(_AXC['beneficiary_tags_shared'])))
+if not (_AXC['axis_id_unique'] and _AXC['setter_tags_disjoint'] and _AXC['依据可解析'] and _AXC['名称全可解析']):
+    print('!! 轴库自检未通过：', json.dumps(_AXC, ensure_ascii=False)[:1500])
+assert 12 <= len(AXES) <= 15, ('轴数越界', len(AXES))
+assert len({a['id'] for a in AXES}) == len(AXES), '轴 id 重复'
+assert _AXC['名称全可解析'], ('轴库标签名无法解析', _AXC['名称无法解析'])
+assert [a['id'] for a in AXES] and all(k in AXES[0] for k in ('轴手判定', '受益者判定', '联动说明', '弱点体系', '依据'))
+
 data = {
     'types': types,
     'matchup': matchup,
@@ -1597,6 +2137,8 @@ data = {
     'matchupSp': MATCHUP_SP,
     'usagePrior': USAGE_PRIOR,
     'usageMeta': USAGE_META,
+    'tacticRole': TACTIC_ROLE,
+    'synergyRole': SYNERGY_ROLE,
     'sprites': load_sprites(),
 }
 js = 'var ERDATA = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';'
@@ -1607,3 +2149,7 @@ print('新字段自检: mvDescZh', len(data['mvDescZh']), '| abiDescZh', len(dat
       '| sysSet', len(data['sysSet']), '| familyRoot', len(data['familyRoot']),
       '| glossary', len(data['glossary']),
       '| matchupSp', len(data['matchupSp']), '属性/', sum(len(v) for v in data['matchupSp'].values()), '格')
+print('v4.9 自检: tacticRole', len(data['tacticRole']), '(标注', sum(1 for v in data['tacticRole'].values() if v), ')',
+      '| synergyRole', len(data['synergyRole']), '(标注', sum(1 for v in data['synergyRole'].values() if v), ')',
+      '| moves 行末列', len(data['moves'][0]), '| abilities 行末列', len(data['abilities'][0]),
+      '| axis_lib', _AXC['axes'], '轴 →', _AXLIB)
