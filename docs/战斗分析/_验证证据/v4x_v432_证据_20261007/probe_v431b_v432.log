@@ -1,7 +1,0 @@
-﻿==== v4.3.1 ⑤ 定向复验 v2 ====
-PASS Z0-load | ok | typeof=function isArray=false retType=array src=function tplAll(){ var t=(ERDATA.templates||[]).slice(); if(t.length<18)t=t.concat(TPL_EXTRA.slice(0,Math.max(0,18 | 模板数=18
-PASS Z1-noEvioFn | tplItemNoEvio=true 的模板 15/18 个: ["雨天速攻","晴天速攻","雪天堡垒","电气场地速攻","精神场地特攻","青草场地回复","薄雾场地龙盾","强化清场轴","顺风游击","戏法空间","钉子受队","毒钉受队","强化接力","天气双核","场地控制"]
-PASS Z2-noteRendered | 渲染出「（不适用）」=1 个: ["戏法空间#10"] | 正常列奇石(带限定说明)=7 个: ["沙暴联防","青草场地回复","强化清场轴","钉子受队","毒钉受队"]
-total=3 PASS=3 FAIL=0
-逐模板=雨天速攻[noEvio=true,奇石=false,不适用=false] | 晴天速攻[noEvio=true,奇石=false,不适用=false] | 沙暴联防[noEvio=false,奇石=true,不适用=false] | 雪天堡垒[noEvio=true,奇石=false,不适用=false] | 电气场地速攻[noEvio=true,奇石=false,不适用=false] | 精神场地特攻[noEvio=true,奇石=false,不适用=false] | 青草场地回复[noEvio=true,奇石=true,不适用=false] | 薄雾场地龙盾[noEvio=true,奇石=false,不适用=false] | 强化清场轴[noEvio=true,奇石=true,不适用=false] | 顺风游击[noEvio=true,奇石=false,不适用=false] | 戏法空间[noEvio=true,奇石=true,不适用=true] | 钉子受队[noEvio=true,奇石=true,不适用=false] | 毒钉受队[noEvio=true,奇石=true,不适用=false] | 强化接力[noEvio=true,奇石=false,不适用=false] | 天气双核[noEvio=true,奇石=false,不适用=false] | 场地控制[noEvio=true,奇石=true,不适用=false] | 吸血站场[noEvio=false,奇石=true,不适用=false] | 双天气轮换[noEvio=false,奇石=false,不适用=false]
-SAMPLE[雨天速攻]=<div class="sec"><h3>核心组件（点击可跳转反查）</h3><div style="line-height:28px"><span clas

@@ -1,9 +1,0 @@
-{
- "chips": "一般/ | 格斗/ | 火/ | 冰/ | 电/ | 虫/",
- "clickchip": "clicked",
- "res": {
-  "hasDrawer": false,
-  "html": "<div class=\"kgroup\"><div class=\"k2\" style=\"margin-bottom:4px\"><b>进攻属性：</b> <span style=\"cursor:pointer\" onclick=\"mxInline('火',this,'atk')\" title=\"进攻视角：点这里看全图鉴按实际承受倍率分组（火 属性招式打谁有效）\"><span class=\"t t-火\">火</span></span> <span class=\"mini\" style=\"color:var(--sub)\">（点它 → 全图鉴按承受倍率分组）</span></div><div class=\"k2\"><b>2× 克制：</b> <span data-at=\"冰\" style=\"cursor:pointer\" onclick=\"mxInline('冰',this,'def')\" title=\"防守视角：列出拥有「冰」属性的宝可梦（点卡片跳详情看完整承受表）\"><span class=\"t t-冰\">冰</span></span> <span data-at=\"虫\" style=\"cursor:pointer\" onclick=\"mxInline('虫',this,'def')\" title=\"防守视角：列出拥有「虫」属性的宝可梦（点卡片跳详情看完整承受表）\"><span class=\"t t-虫\">虫</span></span> <span data-at=\"钢\" style=\"cursor:pointer\" onclick=\"mxInline('钢',this,'def'",
-  "len": 1775
- }
-}
