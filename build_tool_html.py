@@ -260,6 +260,14 @@ tr.mv.open + .mvdesc{display:table-row}
 /* 规格 v1.0：待实测参数徽标 / 机制口径折叠块 / 选招依据 */
 .badge-pend{background:#fff7e6; border:1px dashed #d97706; color:#b45309; font-size:11px}
 .badge-warnimm{background:#fce4ec; border:1px solid #dc2626; color:#b71c1c; font-size:11px}
+/* v4.10 机制覆盖层 UI：机制徽标 / 机制解读区块 / 可配合组合（就地展开，无弹窗） */
+.badge-mech{background:#e0f2fe; border:1px solid #0284c7; color:#075985; font-size:11px}
+.mechsec{border:1px solid #7dd3fc; background:#f0f9ff; border-radius:8px; padding:8px 10px}
+.mechsec h3{color:#075985}
+details.mechdet{border:1px dashed #7dd3fc; border-radius:8px; padding:2px 8px; margin:6px 0; background:#fff}
+details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#075985; min-height:44px; display:flex; align-items:center; gap:6px}
+.okmini{background:#e8f5e9; color:#1b5e20; border-radius:8px; padding:1px 6px; font-size:11px}
+.warnmini{background:#fff7e6; border:1px dashed #d97706; color:#b45309; border-radius:8px; padding:1px 6px; font-size:11px}
 .rulebox{border:1px solid var(--line); background:var(--card); border-radius:8px; padding:8px 10px; margin:8px 0; font-size:12px}
 .rulebox summary{cursor:pointer; font-weight:600; color:var(--accent)}
 .whylist{font-size:11px; color:var(--sub); line-height:1.8; margin-top:4px}
@@ -315,6 +323,8 @@ textarea.savebox{width:100%; min-height:90px; font-family:Consolas,monospace; fo
   tr.mv th,tr.mv td{padding:14px 8px}
   .whylist,.slotinfo,.ruleline,.tagline,.mcnm,.mcx,.mxmore,.poolrow,.split,.card .en,.savebox,.gl,
   .badge-pend,.badge-warnimm{font-size:12px}
+  .mechdet>summary{min-height:44px}
+  .mechsec table td,.mechsec table th{font-size:11px}
   .spcard{width:88px; height:88px}
   #toastBox{left:8px; right:8px; transform:none; bottom:12px}
   .toastmsg{max-width:100%}
@@ -3185,8 +3195,9 @@ function pickFuncs(s,role,side,used){
       if(learn.indexOf(id)<0)return;
       if(used&&used.indexOf(id)>-1)return;
       var m=MV[id];if(!m)return;
-      var w=funcWeight(s,role,cat),c=costOf(s,m,hasRec),sc=w*c.mul;
+      var w=funcWeight(s,role,cat),c=costOf(s,m,hasRec),mmMul=mechFuncMul(s,cat),sc=w*c.mul*mmMul;
       var why=['定位权重 +'+w];
+      if(mmMul!==1)why.push('机制加成（特性级，先制/干扰不受速度限制）×'+mmMul);
       if(cat==='weather'){
         var sy=WEATHER_MV[id];why.push((sy||'')+'天气/场地招');
         if(sy&&coreSys(s).indexOf(sy)<0){sc*=0.3;why.push('非本体系×0.3')}
@@ -3362,6 +3373,420 @@ function whyHtml(why){
   if(!why||!why.length)return '';
   return why.map(function(x){return esc(x)}).join(' × ').replace(/ × ⚠/g,'　⚠');
 }
+/* ==================== v4.10 机制覆盖层（C 线：引擎） ====================
+   契约（唯一真值源）：docs/战斗分析/_v410_机制知识库_规格_20261009.md
+   数据来源：ERDATA.mechLib（数据层 build_tool_data.py 由 nn_data/mech_lib_v410.json 构建期注入）。
+   本层消费 schema §2 的 mechs[]，按 §3 覆盖规则词汇表逐条实现 rewrite，按 §4 条件 DSL 判定 combo。
+   红线（§3/§7）：机制覆盖 > 通用评分；只做正向调整 / 前提改写 / why 标注；
+        **禁止硬剔除与负向逻辑**（warn 只提示、不否决）。
+   优雅降级：ERDATA.mechLib 缺失或为空 → 本层全部返回空 → v4.9 行为零影响。 */
+function mechAll(){try{var L=ERDATA&&ERDATA.mechLib,a=L&&L.mechs;return (a&&a.length)?a:[]}catch(e){return []}}
+function mechOn(){return mechAll().length>0}
+var _MECH_MEMO={};
+function mechMemo(k,fn){if(!(k in _MECH_MEMO))_MECH_MEMO[k]=fn();return _MECH_MEMO[k]}
+function _mechIdx(key){
+  return mechMemo('idx_'+key,function(){
+    var o={};mechAll().forEach(function(m){var arr=((m.match||{})[key]||[]);
+      for(var i=0;i<arr.length;i++){var k=''+arr[i];(o[k]=o[k]||[]).push(m)}});
+    return o;
+  });
+}
+function mechByMove(id){return (id===undefined||id===null)?[]:(_mechIdx('moves')[''+id]||[])}
+function mechByAbility(id){return (id===undefined||id===null)?[]:(_mechIdx('abilities')[''+id]||[])}
+function mechByItem(id){return (id===undefined||id===null)?[]:(_mechIdx('items')[''+id]||[])}
+function mechBySpecies(id){return (id===undefined||id===null)?[]:(_mechIdx('species')[''+id]||[])}
+/* §3 覆盖规则词汇表：rewrite → 中文机制名（本层实现全部 26 条，未列出的走 default 分支不报错） */
+var MECH_RW_ZH={imposter_anchor:'变身者',foul_play_atk:'欺诈',body_press_def:'扑击',gyro_ball_speed:'陀螺球',
+  hp_cond_power:'绝处逢生/抓狂',avalanche_after_hit:'雪崩',acrobatics_item:'杂技',counter_metal_burst:'双倍奉还/金属爆炸',
+  prankster_priority:'恶作剧之心',magic_guard_survival:'魔法防守',illusion_disguise:'幻觉',magnet_pull_trap:'磁力',
+  unburden_item:'轻身',gem_consumable:'属性宝石',terrain_seed:'场地种子',facade_status:'硬撑',endeavor_lowhp:'蛮干',
+  endure_reversal:'忍耐/替身',multiscale_sash:'多重鳞片/画皮/结实',regenerator_pivot:'再生力',no_guard_hit:'无防守',
+  unaware_ignore:'纯朴',mold_breaker_ignore:'破格',serene_grace_flinch:'天恩',toxic_heal_item:'毒疗',contact_status:'火焰之躯/静电/毒刺'};
+function mechRwZh(rw){return MECH_RW_ZH[rw]||'机制'}
+function mechAbiZh(id){var a=ABI[id];return a?(a[2]||a[1]||('#'+id)):('#'+id)}
+function mechMvZh(id){var m=MV[id];return m?(m[1]||('#'+id)):('#'+id)}
+/* 道具中文名解析（why 文案 / 徽标 / combo withZh 共用）：zh → en → 仅当道具表本身查无此项时才 #id。
+   安全网（F1）：数据层 zh 为空的道具（宝石类等）一律回落英文名，绝不外泄内部编号。 */
+function mechItemZh2(id){var it=itemById(id);return (it&&(it[2]||it[1]))||('#'+id)}
+function mechObjZh(kind,id){
+  if(kind==='species'){var sp=null;try{sp=ERDATA.species.filter(function(x){return (''+x.id)==(''+id)})[0]}catch(e){}
+    return sp?sp.zh:('#'+id)}
+  if(kind==='ability')return mechAbiZh(id);
+  if(kind==='move')return mechMvZh(id);
+  if(kind==='item')return mechItemZh2(id);
+  return '#'+id;
+}
+var MECH_TYPE_ZH={steel:'钢',water:'水',fire:'火',grass:'草',electric:'电',ice:'冰',dragon:'龙',dark:'恶',fairy:'妖精',
+  normal:'一般',fighting:'格斗',flying:'飞行',poison:'毒',ground:'地面',psychic:'超能力',bug:'虫',rock:'岩石',ghost:'幽灵'};
+var MECH_TERRAIN_ZH={electric:'电气场地',psychic:'精神场地',grassy:'青草场地',misty:'薄雾场地',toxic:'剧毒场地'};
+var MECH_WEATHER_ZH={sun:'晴',rain:'雨',sand:'沙',snow:'雪',hail:'雪'};
+var MECH_STATUS_ZH={burn:'灼伤',poison:'中毒',paralysis:'麻痹',sleep:'睡眠',frostbite:'冻伤',freeze:'冰冻'};
+/* 消耗性道具（杂技/轻身联动的关键前提）：宝石 332-349 / 场地种子 328-331 / 气势披带 287 等 */
+var MECH_CONSUM_ID={};
+[332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,328,329,330,331,287,313,314,317,241,246,284,78,76,79,125,129,130,131].forEach(function(i){MECH_CONSUM_ID[i]=1});
+function mechIsConsumable(id){
+  if(id===undefined||id===null||id===''||id===0||id==='0')return false;
+  var n=+id;if(!isFinite(n))return false;
+  if(MECH_CONSUM_ID[n])return true;
+  var it=itemById(n);return !!(it&&itemOneShot(it[2]));
+}
+/* 该宝可梦的推荐道具 id（机制前提判定用；懒缓存，避免逐招重算） */
+var _MECH_ITEMCTX={};
+function mechRecItemId(s,side,tag){
+  var k=''+s.id+'|'+(side||'')+'|'+(tag||'');
+  if(k in _MECH_ITEMCTX)return _MECH_ITEMCTX[k];
+  var id=null;
+  try{var l=itemDecide(s,side||coreSide(s),tag||'输出',coreItemCtxOf(s));
+    if(l&&l.length&&l[0].id!==undefined&&l[0].id!==null)id=l[0].id}catch(e){}
+  _MECH_ITEMCTX[k]=id;return id;
+}
+function mechHasConsumable(s){
+  var sides=['物理','特殊','双刀'],tags=['输出','肉盾'];
+  for(var i=0;i<sides.length;i++)for(var j=0;j<tags.length;j++){if(mechIsConsumable(mechRecItemId(s,sides[i],tags[j])))return true}
+  return false;
+}
+/* 低 HP 战术前提是否已备（气势披带/替身/忍耐） */
+function mechLowHpReady(s,ctx){
+  ctx=ctx||{};
+  if(ctx.lowHp||ctx.sash||ctx.sub||ctx.endure)return true;
+  var item=(ctx.item!==undefined&&ctx.item!==null)?(''+ctx.item):(''+mechRecItemId(s,coreSide(s),'输出'));
+  if(item==='287')return true;
+  var L=learnC(s);
+  if(L.indexOf(164)>-1)return true;   /* 替身 */
+  if(L.indexOf(203)>-1)return true;   /* 挺住（Endure） */
+  if(L.indexOf(117)>-1)return true;   /* 忍耐（Bide，规格 §3「忍耐」口径） */
+  return false;
+}
+/* 特性名 → id（物种表 abis/inns 存名） */
+function mechAbiId(n){var id=NM2ID[n];if(id===undefined||id===null)id=abiIdByZhOrEn(n);return (id===undefined||id===null)?null:(''+id)}
+function mechAbiIdList(s){
+  var out=[],seen={};
+  (s.abis||[]).concat(s.inns||[]).forEach(function(n){var id=mechAbiId(n);if(id&&!seen[id]){seen[id]=1;out.push(id)}});
+  return out;
+}
+function mechAbiHits(s){var out=[],seen={};mechAbiIdList(s).forEach(function(id){mechByAbility(id).forEach(function(m){if(!seen[m.id]){seen[m.id]=1;out.push(m)}})});return out}
+/* 特性池中是否存在某 rewrite 的机制条目（如无防守 → 双方必中前提改写） */
+function mechAbiRwHits(s,rw){var hit=false;mechAbiHits(s).forEach(function(m){if(m.rewrite===rw)hit=true});return hit}
+function mechSpHits(s){var out=[],seen={};mechBySpecies(s.id).forEach(function(m){if(!seen[m.id]){seen[m.id]=1;out.push(m)}});
+  mechAbiHits(s).forEach(function(m){if(!seen[m.id]){seen[m.id]=1;out.push(m)}});return out}
+/* §2 params 取值兼容：数据层用 power/base/doubled/maxPow/cap/noItemPow 等键，逐个按优先级读取 */
+function mechNum(p,keys,d){for(var i=0;i<keys.length;i++){var v=p?p[keys[i]]:undefined;if(v!==undefined&&v!==null&&v!==''&&isFinite(+v))return +v}return d}
+/* 招式级机制改写（§3 move 类 + 联动）——返回 {mul,pow,why[],warn,crossSide,noGuard,hit,mechIds[]}
+   pow=null → 沿用数据表威力；pow=数字 → 覆盖打分威力；mul 与打分链相乘（恒为正，只做正向/前提改写）；
+   crossSide=true → 允许跨侧纳入候选（自身数值不按本侧攻评：欺诈/扑击/陀螺球/反击型）；warn 只提示、不否决。 */
+function mechMvAdj(s,m,ctx){
+  var r={mul:1,pow:null,why:[],warn:null,crossSide:false,noGuard:false,hit:false,mechIds:[]};
+  if(!mechOn()||!s||!m)return r;
+  var hits=mechByMove(m[0]);if(!hits.length)return r;
+  ctx=ctx||{};
+  var itemId=(ctx.item===undefined||ctx.item===null||ctx.item==='')?null:(''+ctx.item);
+  var hasCons=!!(itemId&&mechIsConsumable(itemId));
+  var noItem=!itemId;   /* 未给定道具位 → 按「无道具」评估（杂技设计前提） */
+  hits.forEach(function(mc){
+    r.hit=true;if(r.mechIds.indexOf(mc.id)<0)r.mechIds.push(mc.id);
+    var p=mc.params||{};
+    switch(mc.rewrite){
+      case 'foul_play_atk':
+        r.pow=Math.round(mechNum(p,['power','pow'],95));r.crossSide=true;
+        r.why.push('按对方物攻');
+        r.why.push('机制覆盖：欺诈固定威力 '+r.pow+'（按对方物攻评估 → 低物攻使用者不受自身物攻惩罚）');
+        break;
+      case 'body_press_def':{
+        r.pow=Math.round(mechNum(p,['power','pow'],80));r.crossSide=true;
+        var dv=(s.base&&s.base[2])||0,dm=(dv>=120?1.25:(dv>=100?1.12:1));
+        r.mul*=dm;
+        r.why.push('按自身物防（防御 '+dv+' → ×'+dm+'）');
+        break;}
+      case 'gyro_ball_speed':{
+        var sd=(s.base&&s.base[5])||0;
+        r.pow=Math.min(mechNum(p,['cap'],150),Math.max(60,Math.round(6000/Math.max(40,sd))));
+        r.crossSide=true;
+        r.why.push('按相对速度（自身速度 '+sd+' → 折算威力 '+r.pow+'，低速增益）');
+        break;}
+      case 'hp_cond_power':{
+        var en=mechLowHpReady(s,ctx);
+        if(en){r.pow=Math.round(mechNum(p,['maxPow','hiPow'],110));
+          r.why.push('低 HP 策略前提已备（气势披带/替身/忍耐）→ 按高威力 '+r.pow+' 评');}
+        else{r.why.push('低 HP 策略前提（需气势披带/替身/忍耐联动；未备时按表列威力评，不否决）');
+          r.warn='绝处逢生/抓狂依赖低 HP 触发，未备触发手段（按前提招评，不否决）';}
+        break;}
+      case 'avalanche_after_hit':{
+        var sl=(s.base&&s.base[5])||0;
+        r.pow=Math.round(sl<90?mechNum(p,['doubled','hiPow'],140):mechNum(p,['base','pow'],70));
+        r.why.push('受击后×2'+(sl<90?'（低速先挨打触发）':'（需先手挨打触发的前提）'));
+        break;}
+      case 'acrobatics_item':{
+        if(noItem){
+          r.pow=Math.round(p.noItemPow||110);
+          r.why.push('无道具×2');
+          r.why.push('110（官方×2；ER desc 载 1.5×，待实测）');
+        }else if(hasCons){
+          r.pow=Math.round(p.noItemPow||110);
+          r.why.push('携带消耗性道具（宝石/场地种子）→ 消耗后杂技 110（轻身/杂技联动）');
+          r.why.push('110（官方×2；ER desc 载 1.5×，待实测）');
+        }else{
+          r.pow=Math.round(p.heldPow||55);
+          r.warn='携带道具时威力减半';
+          r.why.push('携带道具时威力减半（'+r.pow+'）');
+        }
+        break;}
+      case 'counter_metal_burst':{
+        r.pow=Math.round(mechNum(p,['power','pow'],70));r.crossSide=true;
+        r.why.push('反击型（威力随受到伤害，不按 0/1 表列威力评）');
+        break;}
+      case 'facade_status':{
+        var st=!!(ctx.status||ctx.burn||ctx.para||ctx.poison);
+        r.pow=Math.round(st?mechNum(p,['doubled'],140):mechNum(p,['base','pow'],70));
+        r.why.push('异常状态时威力×2（140）'+(st?'':'（需中毒/灼伤/麻痹/睡眠前提）'));
+        break;}
+      case 'endeavor_lowhp':{
+        r.pow=Math.round(mechNum(p,['power','pow'],60));r.crossSide=true;
+        r.why.push('削对方至 1 HP（气势披带/高速前提）');
+        break;}
+      case 'endure_reversal':
+        r.why.push('低 HP 战术前提（忍耐/替身 → 联动绝处逢生/抓狂/蛮干）');
+        break;
+      case 'no_guard_hit':
+        r.noGuard=true;
+        r.why.push('无防守：双方必中（解锁高威力低命中招）');
+        break;
+      default:
+        r.why.push('机制命中：'+mechRwZh(mc.rewrite)+'（'+mc.zh+'）');
+    }
+  });
+  if(r.hit)r.why.push('机制解读：命中机制条目 '+r.mechIds.length+' 条（机制覆盖优先于通用评分）');
+  return r;
+}
+/* 功能招机制加成（特性级，如恶作剧之心 → 变化招先制 +1，控速/强化/干扰不受速度限制） */
+function mechFuncMul(s,cat){
+  if(!mechOn()||!s)return 1;
+  var mul=1;
+  mechAbiHits(s).forEach(function(mc){
+    if(mc.rewrite==='prankster_priority'&&['control','hazard','boost','weather','rec'].indexOf(cat)>-1)mul*=1.2;
+  });
+  return mul;
+}
+/* 特性级机制解读（含未触发的前提 warn） */
+function mechAbiWhy(s){
+  var out=[];if(!mechOn()||!s)return out;
+  mechAbiHits(s).forEach(function(mc){
+    var o={id:mc.id,rewrite:mc.rewrite,zh:mechRwZh(mc.rewrite),why:'',warn:null,src:mc.src||''};
+    switch(mc.rewrite){
+      case 'prankster_priority':o.why='恶作剧之心：变化招先制 +1 → 控速/强化/干扰不受速度限制（戏法空间队受益）';break;
+      case 'magic_guard_survival':o.why='魔法防守：免间接伤害（钉子/天气/反弹）→ 生存前提改写，道具自由度高';break;
+      case 'illusion_disguise':o.why='幻觉：伪装成队尾宝可梦 → 误导/对策效用锚点（依赖队友形态）';break;
+      case 'magnet_pull_trap':o.why='磁力：困住钢系 → 钢系对策效用锚点（防换人）';break;
+      case 'unburden_item':
+        o.why='轻身：道具被消耗后速度翻倍 → 需携带消耗性道具（宝石/场地种子/气势披带）';
+        if(!mechHasConsumable(s))o.warn='轻身未触发：需携带消耗性道具（宝石/场地种子/气势披带）';
+        break;
+      case 'multiscale_sash':o.why='多重鳞片/画皮/结实：满血或一击减伤 → 生存锚点（与气势披带等效）';break;
+      case 'regenerator_pivot':o.why='再生力：换入回血 → 受队/轮转节奏锚点（每次换人回 1/3）';break;
+      case 'no_guard_hit':o.why='无防守：双方必中 → 解锁高威力低命中招';break;
+      case 'unaware_ignore':o.why='纯朴：无视对方能力强化 → 受队/清强化锚点';break;
+      case 'mold_breaker_ignore':o.why='破格：无视对方特性 → 对策锚点（破除免疫/天气依赖）';break;
+      case 'serene_grace_flinch':o.why='天恩：附加效果几率×2 → 干扰锚点（畏缩流）';break;
+      case 'toxic_heal_item':
+        o.why='毒疗：剧毒宝珠联动 → 每回合中毒转回复，站场锚点';
+        if(!abiMentions(s,/中毒时|异常状态时|陷入异常/))o.warn='毒疗联动需携带剧毒宝珠（每回合中毒 → 转回复）';
+        break;
+      case 'contact_status':o.why='火焰之躯/静电/毒刺：接触附加 → 站场消耗锚点';break;
+      case 'gem_consumable':o.why='属性宝石：本发增伤后消耗 → 联动杂技 110 / 轻身提速';break;
+      case 'terrain_seed':o.why='场地种子：场地激活时 +1 级对应能力并消耗 → 联动杂技 110 / 轻身提速';break;
+      default:o.why='机制命中：'+mechRwZh(mc.rewrite)+'（'+mc.zh+'）';
+    }
+    out.push(o);
+  });
+  return out;
+}
+/* 物种级剖面改写（§3 imposter_anchor）：百变怪 → 速度复制 + 道具三选（讲究围巾/气势披带/服务铃） */
+function mechSpProfile(s){
+  var r={imposter:false,why:[],items:[],mechs:[]};
+  if(!mechOn()||!s)return r;
+  mechSpHits(s).forEach(function(mc){
+    r.mechs.push(mc);
+    if(mc.rewrite==='imposter_anchor'){
+      r.imposter=true;
+      var p=mc.params||{};
+      r.items=((p.itemChoices&&p.itemChoices.length)?p.itemChoices:((p.items&&p.items.length)?p.items:[285,287,317])).map(function(x){return ''+x});
+      r.why.push('变身者：速度复制（复制对手的种族/招式基线）+ 道具三选（讲究围巾/气势披带/服务铃）');
+      r.why.push('种族值/技能池不作为主评分依据（仍展示，不参与主判据）');
+      r.why.push('讲究围巾＝复制速度后超速原主；气势披带＝保命（48 基础 HP 防秒，非提速）；服务铃＝配戏法空间');
+    }
+  });
+  return r;
+}
+/* ---------- §4 combo 条件 DSL 判定（逐键；未判定键记「前提」而非判负） ---------- */
+function mechCondJudge(cond,s){
+  cond=cond||{};
+  var fail=[],prem=[],pass=[];
+  if(!Object.keys(cond).length)return {ok:true,fail:[],prem:[],pass:['无附加条件']};
+  var L=s?learnC(s):null,recItem=s?mechRecItemId(s,coreSide(s),'输出'):null;
+  if(cond.ability!=null){var a=cond.ability||[];
+    if(s&&a.some(function(id){return mechAbiIdList(s).indexOf(''+id)>-1}))pass.push('自身特性 '+a.map(mechAbiZh).join('/'));
+    else fail.push('需自身具 '+a.map(mechAbiZh).join('/')+' 特性（当前特性池未含）');}
+  if(cond.move!=null){var mvs=cond.move||[];
+    if(L&&mvs.some(function(id){return L.indexOf(+id)>-1}))pass.push('可学 '+mvs.map(mechMvZh).join('/'));
+    else fail.push('需可学 '+mvs.map(mechMvZh).join('/'));}
+  if(cond.item!=null){var its=(cond.item||[]).map(String);
+    if(recItem!==null&&its.indexOf(''+recItem)>-1)pass.push('已备 '+its.map(mechItemZh2).join('/'));
+    else prem.push('需携带 '+its.map(mechItemZh2).join('/')+'（按推荐道具判定：'+(recItem===null?'无':mechItemZh2(recItem))+'）');}
+  if(cond.noItem===true){
+    if(recItem===null||recItem===0)pass.push('无道具位');
+    else fail.push('需无道具位（当前推荐道具 '+mechItemZh2(recItem)+'）');}
+  if(cond.consumableItem===true){
+    if(mechIsConsumable(recItem))pass.push('携带消耗性道具');
+    else if(recItem===null||recItem===0)prem.push('需携带消耗性道具（宝石/场地种子/气势披带）');
+    else fail.push('需携带消耗性道具（当前推荐道具 '+mechItemZh2(recItem)+' 非消耗型）');}
+  if(cond.terrain!=null){var tn=MECH_TERRAIN_ZH[cond.terrain]||cond.terrain;
+    if(s&&isSetter(s,tn))pass.push('自身可开 '+tn);else prem.push('需 '+tn+' 激活（自身/队友场地制造者或场地招式）');}
+  if(cond.weather!=null){var wn=MECH_WEATHER_ZH[cond.weather]||cond.weather;
+    if(s&&isSetter(s,wn))pass.push('自身可开 '+wn);else prem.push('需 '+wn+' 激活（自身/队友天气手）');}
+  if(cond.status!=null)prem.push('需处于'+((MECH_STATUS_ZH[cond.status])||cond.status)+'状态');
+  if(cond.lowHp===true){
+    if(mechLowHpReady(s,{}))pass.push('低 HP 战术前提已备');
+    else fail.push('需低 HP 触发手段（气势披带/替身/忍耐）');}
+  if(cond.teammateAbility!=null){var ta=cond.teammateAbility||[];
+    prem.push('需队友具 '+ta.map(mechAbiZh).join('/')+' 特性（按队伍构建判定）');}
+  if(cond.opponentType!=null){var ot=cond.opponentType||[];
+    prem.push('需针对 '+ot.map(function(t){return MECH_TYPE_ZH[t]||t}).join('/')+' 属性对手');}
+  return {ok:fail.length===0,fail:fail,prem:prem,pass:pass};
+}
+/* ---------- 个人池（存档）投影 ---------- */
+function mechPool(){
+  try{
+    var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:null;
+    if(!rows||!rows.length)return null;
+    var sp={},ab={},mv={},it={};
+    rows.forEach(function(r){
+      if(!r)return;
+      var sid=r['图鉴编号'];if(sid!==undefined&&sid!==null&&String(sid).trim()!=='')sp[String(sid).trim()]=1;
+      ['招式1','招式2','招式3','招式4(末招)'].forEach(function(f){
+        var n=String(r[f]||'').replace(/\(id=\d+\)$/,'').trim();if(!n)return;
+        var id=mvIdByZhOrEn(n);if(id!==null&&id!==undefined)mv[''+id]=1;});
+      var iname=String(r['道具']||'').trim();
+      if(iname){var iid=itemByZhOrEn(iname);if(iid!==null&&iid!==undefined)it[''+iid]=1}
+      var an=String(r['特性1']||'').trim();
+      if(an){var aid=mechAbiId(an);if(aid)ab[aid]=1}
+    });
+    return {sp:sp,ab:ab,mv:mv,it:it,n:rows.length};
+  }catch(e){return null}
+}
+function mechPoolHas(pool,kind,id){
+  if(!pool)return true;
+  var m={species:pool.sp,ability:pool.ab,move:pool.mv,item:pool.it}[kind];
+  if(!m)return true;
+  return !!m[''+id];
+}
+function mechObjMatch(mc,kind,id){
+  var key={move:'moves',ability:'abilities',item:'items',species:'species'}[kind]||kind;
+  var arr=((mc.match||{})[key]||[]).map(String);
+  return arr.indexOf(String(id))>-1;
+}
+function mechWithMatch(w,kind,id){
+  if(!w||w.kind!==kind)return false;
+  return (w.ids||[]).map(String).indexOf(String(id))>-1;
+}
+/* 组合联想器：按任意对象（kind+id）查 mechLib 的 combos —— 含「该对象自身机制条目触发的边」+
+   「以该对象为 with 对象的边」；逐条按 §4 DSL 判定条件；个人池投影（已解析存档则只显示拥有对象）。 */
+function comboAssocOf(obj,ctx){
+  ctx=ctx||{};
+  var res={list:[],pooled:false,note:'',count:0,shown:0};
+  if(!mechOn()||!obj)return res;
+  var kind=obj.kind,id=String(obj.id),pool=mechPool(),s=ctx.s||null;
+  res.pooled=!!pool;
+  res.note=pool?('已解析存档（'+pool.n+' 行）→ 仅显示你拥有的对象'):'未解析存档 → 显示全量';
+  var edges=[],seen={};
+  mechAll().forEach(function(mc){
+    var selfHit=mechObjMatch(mc,kind,id);
+    (mc.combos||[]).forEach(function(cb){
+      var w=cb.with||{},withHit=mechWithMatch(w,kind,id);
+      if(!selfHit&&!withHit)return;
+      if((w.ids||[]).map(String).indexOf('170')>-1)return;   /* §1 铁律：魔术师(170) 禁入任何 combo */
+      var key=[mc.id,JSON.stringify(w),cb.effect||''].join('|');
+      if(seen[key])return;seen[key]=1;
+      edges.push({mc:mc,cb:cb,selfHit:selfHit,withHit:withHit});
+    });
+  });
+  edges.forEach(function(e){
+    var cb=e.cb,w=cb.with||{},sp=(w.ids||[])[0];
+    var j=mechCondJudge(cb.cond,s);
+    var owned=mechPoolHas(pool,w.kind,sp);
+    res.count++;
+    res.list.push({mechId:e.mc.id,mechZh:e.mc.zh||mechRwZh(e.mc.rewrite),rw:e.mc.rewrite,
+      dir:(e.selfHit&&e.withHit?'both':(e.selfHit?'self':'with')),
+      withKind:w.kind,withIds:(w.ids||[]).slice(0),withZh:(w.ids||[]).map(function(x){return mechObjZh(w.kind,x)}).join('/'),
+      effect:cb.effect||'',narr:cb.narr||'',src:cb.src||'',note:cb.note||'',
+      condOk:j.ok,fail:j.fail,prem:j.prem,pass:j.pass,owned:owned,ok:(j.ok&&owned)});
+  });
+  res.list.sort(function(a,b){return (a.ok===b.ok)?0:(a.ok?-1:1)});
+  if(pool)res.list=res.list.filter(function(x){return x.owned});
+  res.shown=res.list.length;
+  return res;
+}
+/* 该物种的联想组合汇总（自身 + 特性池 + 当前配招） */
+function mechCombosFor(s,ctx){
+  ctx=ctx||{};
+  var objs=[{kind:'species',id:s.id}];
+  mechAbiIdList(s).forEach(function(id){objs.push({kind:'ability',id:id})});
+  (ctx.moves||[]).forEach(function(id){objs.push({kind:'move',id:id})});
+  var acc={list:[],pooled:false,note:'',shown:0,count:0},seen={};
+  objs.forEach(function(o){
+    var r=comboAssocOf(o,{s:s});
+    acc.pooled=r.pooled;acc.note=r.note;
+    r.list.forEach(function(x){var k=[x.mechId,x.withKind,(x.withIds||[]).join(',')].join('|');
+      if(!seen[k]){seen[k]=1;acc.list.push(x)}});
+  });
+  acc.list.sort(function(a,b){return (a.ok===b.ok)?0:(a.ok?-1:1)});
+  acc.list=acc.list.slice(0,10);
+  acc.shown=acc.list.length;acc.count=acc.shown;
+  return acc;
+}
+/* UI：机制徽标 / 机制解读区块（就地展开、无弹窗遮挡） */
+function mechChip(zh){return '<span class="badge badge-mech">机制解读：'+esc(zh)+'</span>'}
+function _mechZs(h){var zs=[];h.forEach(function(x){var z=mechRwZh(x.rewrite);if(zs.indexOf(z)<0)zs.push(z)});return zs.join('/')}
+function mechBadgeForMove(id){var h=mechByMove(id);return h.length?('<span class="badge badge-mech">机制解读：'+esc(_mechZs(h))+'</span> '):''}
+function mechBadgeForAbi(n){var id=mechAbiId(n);if(!id)return '';var h=mechByAbility(id);return h.length?('<span class="badge badge-mech">机制解读：'+esc(_mechZs(h))+'</span> '):''}
+function mechBadgeForItem(n){
+  /* UI 传的是道具显示名（ERDATA.items 的 zh；zh 为空时回落 en，见 mechItemZh2）——同时容忍直接传 id */
+  var id=itemByZhOrEn(n);
+  if((id===null||id===undefined)&&n!==undefined&&n!==null&&n!==''&&isFinite(+n)&&itemById(+n))id=''+n;
+  if(id===null||id===undefined)return '';
+  var h=mechByItem(id);return h.length?('<span class="badge badge-mech">机制解读：'+esc(_mechZs(h))+'</span> '):''}
+function mechCoreHtml(s,ctx){
+  if(!mechOn()||!s)return '';
+  var mp=mechSpProfile(s),abw=mechAbiWhy(s),co=mechCombosFor(s,ctx);
+  if(!mp.mechs.length&&!abw.length&&!co.list.length)return '';
+  var h='<div class="sec mechsec"><h3>🔧 机制解读 · 可配合组合</h3>';
+  if(mp.imposter){
+    h+='<div class="tip" style="background:#e0f2fe;border-color:#0284c7;color:#075985"><b>机制剖面改写 · 变身者</b>（机制覆盖 &gt; 通用评分）：'+mp.why.map(esc).join('<br>')+'</div>';
+    h+='<div style="font-size:12px;margin-top:4px"><b>道具三选：</b>'+mp.items.map(function(id){return '<span class="abi">'+esc(mechItemZh2(id))+'</span>'}).join(' ')+'</div>';
+    h+='<div style="font-size:11px;color:var(--sub);margin-top:2px">下方「定位判断 / 种族概要」仅作展示，不作为主评分依据（机制覆盖优先）。</div>';
+  }
+  if(abw.length){
+    h+='<div style="margin-top:6px">';
+    abw.forEach(function(a){h+='<div style="font-size:12px;margin:2px 0">'+mechChip(a.zh)+esc(a.why)+(a.warn?('　<span class="badge badge-warnimm">'+esc(a.warn)+'</span>'):'')+'</div>'});
+    h+='</div>';
+  }
+  h+='<details class="mechdet"'+(co.list.length?' open':'')+'><summary>可配合组合（'+co.shown+' 条）· '+esc(co.note)+'</summary>';
+  if(!co.list.length)h+='<div class="mini" style="color:var(--sub);padding:6px 0">暂无与该对象的可溯源组合。</div>';
+  else{
+    h+='<div class="scroll"><table><thead><tr><th>机制</th><th>配合对象</th><th>一句话效果</th><th>条件</th><th>溯源</th></tr></thead><tbody>';
+    co.list.forEach(function(x){
+      h+='<tr><td><b>'+esc(x.mechZh)+'</b></td><td>'+esc(x.withZh||'—')+
+        (x.dir==='with'?'<div style="font-size:10px;color:var(--sub)">（该对象为其配合件）</div>':'')+'</td>'+
+        '<td style="font-size:11px">'+esc(x.narr||x.effect||'')+'</td><td style="font-size:11px">'+
+        (x.condOk?'<span class="okmini">条件满足</span>':'<span class="warnmini">条件不满足</span>'+((x.fail||[]).length?('：'+esc(x.fail.join('；'))):''))+
+        ((x.prem||[]).length?('<div style="font-size:10px;color:var(--sub)">前提：'+esc(x.prem.join('；'))+'</div>'):'')+
+        ((x.pass||[]).length?('<div style="font-size:10px;color:var(--ok)">已满足：'+esc(x.pass.join('；'))+'</div>'):'')+
+        '</td><td style="font-size:11px">'+(x.src?('<a href="'+esc(x.src)+'" target="_blank" rel="noopener">溯源</a>'):'—')+
+        (x.note?('<div style="font-size:10px;color:var(--sub)">'+esc(x.note)+'</div>'):'')+'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='</details></div>';
+  return h;
+}
 /* ============ 分层配招引擎（规格 v1.0 B9） ============
   分层1 侧判定（v4.3：side 由 deriveBuilds/profileOf 的客观画像给出；双刀=破盾路线之一）
   分层2 候选池（侧过滤 + 攻击招 + lDesc 代价）
@@ -3438,17 +3863,24 @@ function pickAttacks(s,side,n,role){
   /* v4.x 体系化：配招打分同样接体系维度表（archOfSp）——空间队偏好陀螺球/重磅冲撞等低速受益招，
      晴/雨/沙/雪偏好各自受益招；权重表见 SYS_MV_ADJ，选招依据里逐条写明「体系加成 ×N（体系名）」 */
   var arch=archOfSp(s,side,role);
+  var _miMech=mechOn()?mechRecItemId(s,side,role||'输出'):null;
+  var _miNG=mechOn()?mechAbiRwHits(s,'no_guard_hit'):false;   /* §3 无防守（特性级）→ 双方必中前提改写 */
   learn.forEach(function(id){
     var m=MV[id];if(!m||m[4]==='变化')return;
-    /* 分层2：按侧过滤攻击招（双刀=双侧全开，不再被种族高侧单边过滤） */
-    if(side!=='双刀'&&m[4]!==(side==='物理'?'物理':'特殊'))return;
-    var pow=m[5]||0;if(pow<55)return;
+    /* v4.10 机制覆盖（> 通用评分）：命中 mechLib 条目的招式先做「威力覆盖 / 前提改写 / why 标注」，
+       再进侧过滤与威力门；未命中 → 与 v4.9 完全一致（mech.hit=false、mul=1、pow=null）。 */
+    var mech=mechMvAdj(s,m,{side:side,role:role||'输出',item:_miMech});
+    /* 分层2：按侧过滤攻击招（双刀=双侧全开，不再被种族高侧单边过滤）；
+       机制改写标 crossSide 者跨侧纳入（欺诈按对方物攻／扑击按自物防／陀螺球按相对速度／反击型） */
+    if(side!=='双刀'&&m[4]!==(side==='物理'?'物理':'特殊')&&!mech.crossSide)return;
+    var pow=(mech.pow!==null)?mech.pow:(m[5]||0);if(pow<55)return;
     var ty=effMvType(s,m,conv);
     var convHit=!!(conv&&m[3]===(conv.src||'一般'));
     var stab=(ty===s.t1||ty===s.t2)||(convHit&&ABI_ATE.stabConvert);
     /* B5 + v3.23：-ate 转换招输出倍率按特性取值（ateMulOf）——宏族 ×1.0（无 10% 加成）、三特例 ×1.1 */
     var ateMul=(convHit?ateMulOf(conv.id):1);
     var h=hitAdjOf(m),w=weatherAdjOf(s,m,learn,conv),a=abiAdjOf(s,side,ty,names,null,stab),c=costOf(s,m,hasRec);
+    if(mech.noGuard||_miNG)h={mul:1.05,why:'无防守：双方必中（解锁高威力低命中招）×1.05'};
     var cover=atkCover(s,id),covAdj=Math.min(1.5,1+0.05*cover.length),prio=m[8]||0;
     var sm=sysMvAdj(s,id,arch); /* 体系化招式权重（1=中性） */
     /* v4.5 原则层：招式类别（主攻/补盲/先制）× 职责四轴投影 → 类别权重（不写死角色→类别映射） */
@@ -3456,7 +3888,7 @@ function pickAttacks(s,side,n,role){
     var kind=(prio>0?'prio':(holesHit.length?'cover':'attack'));
     var pwv=mvDutyAxes(role||'输出',kind);
     /* 分层3：多维打分（各维度相乘；× 原则类别权重 0.85+0.30w ⇒ 同职责内按 P1 四轴动态微调） */
-    var sc=pow*(stab?1.6:1)*h.mul*(prio>0?1.3:1)*covAdj*w.mul*a.mul*c.mul*ateMul*sm.mul*(0.85+0.30*pwv.w);
+    var sc=pow*(stab?1.6:1)*h.mul*(prio>0?1.3:1)*covAdj*w.mul*a.mul*c.mul*ateMul*sm.mul*(0.85+0.30*pwv.w)*mech.mul;
     var why=['威力'+pow];
     if(sm.mul!==1)why.push('体系加成 '+sm.name+' ×'+sm.mul+'（'+arch+'）');
     if(stab)why.push('本系×1.6'+(convHit?('（-ate 属性转换：'+((conv.src&&conv.src!=='一般')?(conv.src+'→'+conv.type+' '):'')+'×'+ateMul+' + 本系 STAB，已按游戏源码核对）'):''));
@@ -3467,11 +3899,13 @@ function pickAttacks(s,side,n,role){
     if(a.why)why.push(a.why);
     c.tags.forEach(function(x){why.push(x)});
     if(a.warn)why.push('⚠'+a.warn);
+    /* v4.10 机制覆盖：why 注入机制行（严格对齐规格 §3/§5 文案，供探针验收）；warn 只提示、不否决 */
+    if(mech.hit){mech.why.forEach(function(x){why.push(x)});if(mech.warn)why.push('⚠'+mech.warn)}
     /* v4.5：统一「克制 X；代价 Y｜原则 P…」（与道具 46/46 同格式；每招必有原则标签） */
     why.push(mvWhyStd(kind,role||'输出',{id:id,tys:holesHit,cover:cover.length,prio:prio,
       conv:convHit,abi:!!(a&&a.why),prin:(stab?['P1']:(cover.length>=2?['P2']:[]))}));
-    cand.push({id:id,ty:ty,rawTy:m[3],pow:pow,stab:stab,prio:prio,cover:cover,kind:kind,score:sc,why:why,cost:c,
-      warn:a.warn,conv:convHit?conv:null});
+    cand.push({id:id,ty:ty,rawTy:m[3],pow:pow,powBase:(m[5]||0),stab:stab,prio:prio,cover:cover,kind:kind,score:sc,why:why,cost:c,
+      warn:a.warn,conv:convHit?conv:null,mech:(mech.hit?mech:null)});
   });
   cand.sort(function(a,b){return b.score-a.score});
   var out=[],covered={},usedTy={};
@@ -3886,7 +4320,21 @@ function itemDecide(s,side,roleTag,ctx){
   return out.slice(0,3);
 }
 function buildItem(s,side,roleTag,ctx){
-  return itemDecide(s,side,roleTag,ctx).map(function(e){return [e.zh,e.why]});
+  var list=itemDecide(s,side,roleTag,ctx).map(function(e){return [e.zh,e.why]});
+  /* v4.10 机制锚点（§3 imposter_anchor：道具三选 讲究围巾/气势披带/服务铃）——正向置顶，不剔除既有候选 */
+  try{
+    var mp=mechSpProfile(s);
+    if(mp.imposter&&mp.items.length){
+      var pre=[],have={};
+      mp.items.forEach(function(id){
+        var zh=mechItemZh2(id);if(!zh||zh.charAt(0)==='#')return;
+        pre.push([zh,'机制锚点（变身者·道具三选）：'+((+id===285)?'复制速度后超速原主':((+id===287)?'保命（48 基础 HP 防秒），非提速':'配戏法空间'))]);
+        have[zh]=1;
+      });
+      if(pre.length){list=list.filter(function(x){return !have[x[0]]});list=pre.concat(list)}
+    }
+  }catch(e){}
+  return list
 }
 function pickAbiFor(s,side,roleTag){
   var names=s.abis,out=[];
@@ -5938,9 +6386,9 @@ function needBuildHtml(sp,roleTag,itemTag,ctx){
       var nm=MV[id]?MV[id][1]:String(id);
       return '<span class="abi" onclick="event.stopPropagation();gotoMv('+jsl(nm)+')">'+esc(nm)+'</span>';}).join(' ')):'')+'</div>';
   h+='<div style="font-size:11px;margin:2px 0"><b>特性：</b>'+(b.abi||[]).slice(0,2).map(function(a){
-      return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(a.n)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(a.n)+'</span>';}).join(' ')+
+      return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(a.n)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(a.n)+'</span>'+mechBadgeForAbi(a.n);}).join(' ')+
     '　<b>道具：</b>'+(b.it||[]).slice(0,3).map(function(x,i){
-      return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>'))}).join(' ')+
+      return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>'))+mechBadgeForItem(x[0])}).join(' ')+
     '　<b>性格：</b>'+esc((b.nat||[]).map(function(n){return n[0]}).join(' / '))+'</div>';
   return h;
 }
@@ -5950,7 +6398,12 @@ function renderCore(s){
   var prof=coreRole(s),side=coreSide(s),weak=coreWeak(s),recs=findTeammates(s,side);
   var note=null;
   ERDATA.coreNotes.forEach(function(n){if(n.id==s.id)note=n});
-  var html='<div class="sec" style="margin-top:12px"><h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:13px;color:var(--sub)">'+esc(s.en)+' #'+s.id+'</span>'+
+  /* v4.10 机制徽标（命中 mechLib 的物种/特性级机制） */
+  var _mpB='';
+  if(mechOn()){var _mpp=mechSpProfile(s),_mw=mechAbiWhy(s);
+    if(_mpp.mechs.length)_mpB=mechChip(mechRwZh(_mpp.mechs[0].rewrite));
+    else if(_mw.length)_mpB=mechChip(_mw[0].zh);}
+  var html='<div class="sec" style="margin-top:12px"><h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:13px;color:var(--sub)">'+esc(s.en)+' #'+s.id+'</span>'+(_mpB?(' '+_mpB):'')+
     ' <button class="btn-mini" onclick="addToTeam(coreSel,null);renderCore(coreSel)" title="加入队伍构建">➕ 入队</button></h2>';
   html+='<div style="margin:4px 0">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div>';
   /* 人工分析（用户 分类.xlsx 命中） */
@@ -5979,6 +6432,8 @@ function renderCore(s){
     '　<span style="font-size:11px;color:var(--sub)">找队友时优先补这些</span></div></div>';
   /* 流派大卡片（v4.x B④）：大标题 + 一句话简介，点击展开详情（种族/强度/盲点/配招依据/本流派队友/机制口径） */
   var builds=deriveBuilds(s);
+  /* v4.10 机制解读 · 可配合组合（就地展开、无弹窗遮挡；ERDATA.mechLib 缺失时零影响） */
+  html+=mechCoreHtml(s,{moves:(((builds[0]||{}).mv||{}).main||[]).map(function(x){return x.id})});
   var in0c=coreIntensity(s);
   builds.forEach(function(bd,i){
     var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?bd.abi[0].n:'—';
@@ -6015,14 +6470,14 @@ function renderCore(s){
     /* 详情 ②：特性（可点击 → 特性反查） */
     html+='<div style="margin:4px 0"><b style="font-size:12px">推荐特性（点击跳特性反查）：</b>';
     bd.abi.slice(0,2).forEach(function(a){
-      html+='<span class="abi" onclick="gotoAbi('+jsl(a.n)+')" title="'+esc(a.why.join('；'))+'">'+esc(a.n)+'</span><span style="font-size:11px;color:var(--sub)"> '+(a.sc>0?('匹配'+a.sc):'')+'</span>　';
+      html+='<span class="abi" onclick="gotoAbi('+jsl(a.n)+')" title="'+esc(a.why.join('；'))+'">'+esc(a.n)+'</span>'+mechBadgeForAbi(a.n)+'<span style="font-size:11px;color:var(--sub)"> '+(a.sc>0?('匹配'+a.sc):'')+'</span>　';
     });
     html+='<span style="font-size:11px;color:var(--sub)">其余：'+bd.abi.slice(2).map(function(a){return '<span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(a.n)+'</span>'}).join(' / ')+'（当前默认生效=可选池第1个）</span></div>';
     /* 详情 ③：配招（招式名 → 招式反查详情；点评 → 词条标蓝） */
     html+='<div class="scroll"><table><thead><tr><th>槽</th><th>招式</th><th>属性</th><th>分类</th><th>威力</th><th>来源</th><th>定位</th><th>点评</th></tr></thead><tbody>';
     bd.mv.main.forEach(function(sl,j){
       var m=MV[sl.id];
-      html+='<tr><td>'+(j+1)+'</td><td><b class="abi" onclick="gotoMv('+jsl(m[1])+')">'+esc(m[1])+'</b></td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+mvSrc(s,sl.id)+'</td><td>'+esc(sl.tag)+'</td><td style="font-size:11px;color:var(--sub)">'+(ERDATA.movesNotes&&ERDATA.movesNotes[sl.id]?glossify(ERDATA.movesNotes[sl.id]):'')+'</td></tr>';
+      html+='<tr><td>'+(j+1)+'</td><td><b class="abi" onclick="gotoMv('+jsl(m[1])+')">'+esc(m[1])+'</b></td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+mvSrc(s,sl.id)+'</td><td>'+esc(sl.tag)+'</td><td style="font-size:11px;color:var(--sub)">'+mechBadgeForMove(sl.id)+(ERDATA.movesNotes&&ERDATA.movesNotes[sl.id]?glossify(ERDATA.movesNotes[sl.id]):'')+'</td></tr>';
     });
     html+='</tbody></table></div>';
     html+='<div style="font-size:12px;color:var(--sub);margin-top:4px">备选（点击看招式）：'+bd.mv.backup.map(function(id){return '<span class="abi" onclick="gotoMv('+jsl(MV[id]?MV[id][1]:String(id))+')">'+esc(MV[id]?MV[id][1]:id)+'</span>'}).join(' / ')+'</div>';
@@ -6058,7 +6513,7 @@ function renderCore(s){
     html+='<div class="ruleline">判定口径：'+esc(coreRuleBrief(s,bd))+'</div>';
     /* 详情 ④：性格 + 道具（道具可点击 → 招式/道具反查） */
     html+='<div style="margin-top:6px;font-size:13px"><b>性格：</b>'+bd.nat.map(function(n){return '<span class="abi">'+esc(n[0])+'</span><span style="font-size:11px;color:var(--sub)"> '+esc(n[1])+'</span>'}).join('　')+
-      '　　<b>道具：</b>'+bd.it.slice(0,3).map(function(x,i){return (i===0?'<b class="abi" style="border-color:var(--ok)" onclick="gotoItem('+jsl(x[0])+')" title="主推">⭐'+esc(x[0])+'</b>':'<span class="abi" style="opacity:.85" onclick="gotoItem('+jsl(x[0])+')">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>')+'<span style="font-size:11px;color:var(--sub)"> '+esc(x[1])+'</span>'}).join('　')+
+      '　　<b>道具：</b>'+bd.it.slice(0,3).map(function(x,i){return (i===0?'<b class="abi" style="border-color:var(--ok)" onclick="gotoItem('+jsl(x[0])+')" title="主推">⭐'+esc(x[0])+'</b>':'<span class="abi" style="opacity:.85" onclick="gotoItem('+jsl(x[0])+')">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>')+mechBadgeForItem(x[0])+'<span style="font-size:11px;color:var(--sub)"> '+esc(x[1])+'</span>'}).join('　')+
       (bd.it.length>3?('　<i style="font-size:11px;color:var(--sub)">（另有 '+(bd.it.length-3)+' 项备选）</i>'):'')+'</div>';
     /* 详情 ⑤：本流派队友 Top3（B⑤ 按流派区分） */
     html+='<div class="sec" style="margin:8px 0"><h3>本流派队友（'+esc(bd.side)+'向 / '+esc(bd.roleTag)+'）</h3>';

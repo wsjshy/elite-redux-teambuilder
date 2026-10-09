@@ -1,0 +1,275 @@
+v4.10 引擎层（C 线）F1 收尾断言输出 · 2026-10-10
+产物 SHA256 8984D5DF226B1B0B8DF095059D42ADF11C4783FD2812EE4CD9D9D2559E96617C（2538283 B，三处逐字节一致）
+改动：mechItemZh2 空 zh 回落 en（原 #id）+ mechBadgeForItem 注释校正
+指令：node probe410.js <html> <mech|nomech> [基线HTML]
+
+===== 构建日志 =====
+剥离内嵌 base64 精灵图：6.27 MB -> 1.90 MB
+EV-3 派生注入：nonFinalER=653 只 / finalOf=616 条（ER CanEvolve = kd∈{0,3,4}）
+v4.5 使用率先验注入：跳过（数据层 build_tool_data.py 已产出 ERDATA.usagePrior/usageMeta，coverage=747）
+内嵌 SPR_SHEET：1906 只（sheets_map.js 28.2 KB）
+内嵌 AXIS_LIB：15 条轴（axis_lib.json 26.5 KB）
+HTML bytes: 2538283
+written: D:\game\elite-redux\配招助手_ER.html
+
+===== mech 模式（真实 mechLib，含 3 条新增 F1 断言）=====
+HTML=D:\game\elite-redux\配招助手_ER.html  bytes=2188353  mode=mech
+mechLib=true  mechs=28
+
+=== 1 平语法 / 健壮性 ===
+  PASS  mechOn() 可调用
+  PASS  mechMvAdj(杂技/无道具) 无异常且结构完整  → {"mul":1,"pow":110,"hit":true}
+  PASS  mechMvAdj(欺诈) 无异常且结构完整  → {"mul":1,"pow":95,"hit":true}
+  PASS  mechMvAdj(扑击) 无异常且结构完整  → {"mul":1,"pow":80,"hit":true}
+  PASS  mechMvAdj(陀螺球) 无异常且结构完整  → {"mul":1,"pow":125,"hit":true}
+  PASS  mechMvAdj(雪崩) 无异常且结构完整  → {"mul":1,"pow":140,"hit":true}
+  PASS  mechMvAdj(硬撑) 无异常且结构完整  → {"mul":1,"pow":70,"hit":true}
+  PASS  mechMvAdj(蛮干) 无异常且结构完整  → {"mul":1,"pow":60,"hit":true}
+  PASS  mechMvAdj(m=undefined) 不抛
+  PASS  mechMvAdj(s=undefined) 不抛
+  PASS  comboAssocOf 无异常  → list=5
+  PASS  comboAssocOf(null) 返回空
+  PASS  comboAssocOf 复数条件判定完整
+  PASS  mechCombosFor 无异常
+  PASS  mechPool 无异常（无存档→null）  → null
+  PASS  mechCondJudge 全键无异常  → ok=false fail=3 prem=4 pass=3
+  PASS  三个徽标函数可调用
+
+=== 1b §3 覆盖度 / §4 DSL 覆盖面（对照真实 mechLib） ===
+  PASS  mechLib 条目数 = 28（冻结 meta.count）  → n=28 meta={"version":1,"count":28,"updated":"2026-10-09","schema":"v410-frozen"}
+  PASS  rewrite 种类 = 26（§3 全词汇）  → n=26
+  PASS  MECH_RW_ZH 覆盖全部 rewrite（无落 default 分支）  → 26/26 覆盖
+  PASS  每条 mech 的 match 非空  → empty=0
+  PASS  combo 总数 = 77  → n=77
+  PASS  数据层用到的 cond 键全部被 §4 DSL 实现  → 用到 consumableItem,terrain,ability,move,lowHp,item,opponentType,teammateAbility,status；未实现 无
+  PASS  每条 combo 均有 narr（不编造、取自 JSON）  → 缺 0
+  PASS  每条 combo 均有 src（可溯源）  → 缺 0
+  PASS  数据层未把魔术师(170)写入 combo（§1 铁律，护栏为防御性）  → 无
+  PASS  mechByMove/Ability/Item/Species 四个索引可用  → {"mv":1,"ab":1,"it":1,"sp":1}
+
+=== 3 P1 物种剖面改写（百变怪 132 / imposter_anchor） ===
+  PASS  百变怪 id=132 存在  → 百变怪 base=[96,48,48,48,48,48]
+  PASS  百变怪可学替身(164)/挺住(203)（低 HP 前提手段在池）  → 63,118,144,156,164,182,201,203,214,216,237,240,241,258,270,290,416
+  PASS  特性池含 150 变身者  → 158,98,150,311,429,7
+  PASS  mechSpProfile.imposter===true
+  PASS  道具三选 = 285/287/317  → 285,287,317
+  PASS  why 含「速度复制」  → 变身者：速度复制（复制对手的种族/招式基线）+ 道具三选（讲究围巾/气势披带/服
+  PASS  why 含「道具三选（讲究围巾/气势披带/服务铃）」
+  PASS  why 含「种族值/技能池不作为主评分依据」
+  PASS  why 含三选映射（讲究围巾＝…；气势披带＝…；服务铃＝…）
+  PASS  buildItem 前三个 = 讲究围巾|气势披带|逃脱按钮（服务铃）  → 讲究围巾|气势披带|逃脱按钮|生命宝珠
+  PASS  buildItem 机制锚点 why 可溯源  → 机制锚点（变身者·道具三选）：复制速度后超速原主
+  PASS  buildItem 未剔除既有候选  → len=6
+  PASS  renderCore(百变怪) 无异常  → len=438051
+  PASS  详情含「机制剖面改写 · 变身者」
+  PASS  详情含「道具三选」
+  PASS  详情含「速度复制」
+  PASS  详情含「仅作展示，不作为主评分依据」
+  PASS  详情含「可配合组合」区块
+  PASS  详情含「机制解读」徽标
+  PASS  h2 含物种机制徽标  → <div class="sec" style="margin-top:12px"><h2><span class="spbox spinl"><span class="spsp" data-id="132" style="background-image:url('assets/sheets/s0.webp');background-repeat:no-repeat;background-size
+  PASS  百变怪详情无内部编号残留
+
+=== 4 P1b §1 铁律（魔术师 170 禁入任何 combo）+ 联想器 ===
+  PASS  魔术师(170) 无任何推荐边  → list=0
+  PASS  变身者(150) 至少 3 条边  → list=3
+  PASS  含讲究围巾(285)/气势披带(287)/服务铃(317)三条叙事
+  PASS  三选口径：气势披带注明「保命，非提速」
+  PASS  讲究围巾叙事含「复制速度后快过原主」
+  PASS  每条边带 narr + src（可溯源）  → 111
+  PASS  每条边 dir/selfHit 语义正确
+  PASS  杂技(512) 联想含「宝石/种子」边  → list=5
+  PASS  杂技边条件 consumableItem 已判定  → [{"ok":false,"fail":["需携带消耗性道具（当前推荐道具 生命宝珠 非消耗型）"],"prem":[]},{"ok":false,"fail":["需携带消耗性道具（当前推荐道具 生命宝珠 非消耗型）"],"prem":[]},{"ok":false,"fail":["需自身具 轻装 特性（当前特性池未含）","需携带消耗性道具（当前推荐道具 生命宝珠 非消耗型）"],"prem":[]},{"ok":false,"fail":["需可学 杂技"],"prem":["需携带 飞行宝石（按推荐道具判定：生命宝珠）"]},{"ok":false,"fail":["需可学 杂技","需携带消耗性道具（当前推荐道具 生命宝珠 非消耗型）"],"prem":[]}]
+
+=== 5 §4 条件 DSL 判定 ===
+  PASS  ability:[150] → 命中  → {"ok":true,"fail":[],"prem":[],"pass":["自身特性 变身者"]}
+  PASS  ability:[84]（轻身，百变怪无）→ 不满足  → ["需自身具 轻装 特性（当前特性池未含）"]
+  PASS  move:[512]（百变怪学不会）→ 不满足  → ["需可学 杂技"]
+  PASS  terrain 记「前提」而非判负  → ["需 电气场地 激活（自身/队友场地制造者或场地招式）"]
+  PASS  opponentType 记前提且不判负  → ["需针对 钢 属性对手"]
+  PASS  teammateAbility 记前提且不判负
+  PASS  空条件 → 通过（无附加条件）
+  PASS  未知键不判负
+
+=== 6 P2 杂技（acrobatics_item：无道具 110 / 携带 55） ===
+  样例（物攻侧、学杂技）= 大针蜂#15 物攻110/特攻45  可选池 n=236
+  PASS  存在物攻侧杂技学习者样例
+  PASS  无道具位 → pow=110  → pow=110
+  PASS  why 含「无道具×2」  → ["无道具×2","110（官方×2；ER desc 载 1.5×，待实测）","机制解读：命中机制条目 1 条（机制覆盖优先于通用评分）"]
+  PASS  why 含口径「110（官方×2；ER desc 载 1.5×，待实测）」
+  PASS  无道具位 → 无 warn  → null
+  PASS  携带非消耗道具（生命宝珠301）→ pow=55  → pow=55
+  PASS  携带道具 warn=「携带道具时威力减半」  → 携带道具时威力减半
+  PASS  why 含「携带道具时威力减半」
+  PASS  携带宝石（电气宝石335）→ pow=110  → pow=110
+  PASS  why 含「携带消耗性道具（宝石/场地种子）→ 消耗后杂技 110」  → ["携带消耗性道具（宝石/场地种子）→ 消耗后杂技 110（轻身/杂技联动）","110（官方×2；ER desc 载 1.5×，待实测）","机制解读：命中机制条目 1 条（机制覆盖优先于通用评分）"]
+  PASS  携带场地种子（电气种子328）→ pow=110  → pow=110
+  PASS  携带气势披带287 → 视为消耗性 → 110  → pow=110
+  PASS  pickAttacks 纳入杂技且 pow 由机制改写  → 玛沙那#307 pow=55 powBase=75
+  PASS  杂技 why 注入机制行（打分链已消费）  → 威力55｜打击面6属性×1.30｜⚠飞行属性招可能被「空气动力」等免疫特性废掉（无明确对手 → 保守降权 ×0.7）｜携带道具时威力减半（55）｜机制解读：命中机制条目 1 条（机制覆盖优先于通用评分）｜⚠携带道具时威力减半｜克制 补盲打击面（冰/电/草）；代价 专打盲点，遇非弱点属性收益低｜原则 P1/P2（职责 输出：burst 主导
+  PASS  杂技 cand.mech 非空（机制面可见）
+
+=== 7 P3 欺诈（foul_play_atk：按对方物攻，不受自身物攻惩罚） ===
+  低物攻样例=图图犬#235 物攻20 / 高物攻样例=超级超梦X#1514 物攻190  池 n=225
+  PASS  存在欺诈学习者样例
+  PASS  pow=95（覆盖表列威力）  → pow=95
+  PASS  why 含「按对方物攻」  → ["按对方物攻","机制覆盖：欺诈固定威力 95（按对方物攻评估 → 低物攻使用者不受自身物攻惩罚）","机制解读：命中机制条目 1 条（机制覆盖优先于通用评分）"]
+  PASS  why 含「不受自身物攻惩罚」
+  PASS  mul===1（不做负向调整）  → mul=1
+  PASS  crossSide===true（低物攻侧也可跨侧纳入）
+  PASS  自身物攻高低对 why 无影响（同一条机制口径）  → low=3 high=3
+  PASS  自身物攻高低对 mul/pow 无影响
+  PASS  pickAttacks 纳入欺诈（低物攻侧亦可跨侧纳入）  → 凯西R#2511 物攻20 pow=95
+  PASS  欺诈 pow 只升不降（pow===95 且 powBase<=95）  → pow=95 powBase=95
+  PASS  欺诈 why 含「按对方物攻」  → 威力95｜本系×1.6｜打击面5属性×1.25｜⚠恶属性招可能被「正义之心/天才思想」等免疫特性废掉（本系主攻输出招，豁免无目标保守降权 ×0.7）｜按对方物攻｜机制覆盖：欺诈固定威力 95（按对方物攻评估 → 低物攻使用者不受自身物攻惩罚）｜机制解读：命中机制条目 1 条（机制覆盖优先于通用评分）
+
+=== 8 个人池投影（SAV_ROWS → combo 只显示拥有对象） ===
+  PASS  mechPool 解析成功（n=1）  → {"sp":{"132":1},"ab":{"150":1},"mv":{"164":1},"it":{"285":1},"n":1}
+  PASS  池含物种 132 / 道具 285 / 招式 164 / 特性 150  → {"sp":["132"],"it":["285"],"mv":["164"],"ab":["150"]}
+  PASS  pooled===true 且 note 说明  → 已解析存档（1 行）→ 仅显示你拥有的对象
+  PASS  只保留拥有对象（每条 owned=true）  → list=1
+  PASS  拥有的讲究围巾(285)保留  → [[285]]
+  PASS  未拥有的气势披带(287)/服务铃(317)被投影掉
+  PASS  无 combo 的对象池投影后仍为空
+  PASS  UI 显示「仅显示你拥有的对象」
+  PASS  清空存档 → 回到全量
+
+=== 9 机制徽标与 UI ===
+  PASS  mechBadgeForMove(512) 含机制解读+杂技  → <span class="badge badge-mech">机制解读：杂技</span>
+  PASS  mechBadgeForAbi(变身者) 含变身者  → <span class="badge badge-mech">机制解读：变身者</span>
+  PASS  mechBadgeForItem(飞行宝石) 含机制解读（item 级 mech 命中）  → <span class="badge badge-mech">机制解读：属性宝石</span>
+  PASS  mechBadgeForItem(339) 传 id 亦可解析（容忍 id）  → <span class="badge badge-mech">机制解读：属性宝石</span>
+  PASS  F1 数据层 339 中文名已补（预期 飞行宝石）  → ["339","Flying Gem","飞行宝石","Increases the\\n power of Flying\\n Type moves."]
+  PASS  F1 mechItemZh2 对道具表内各项均不回落 #id  → 全表 929 项无泄露
+  PASS  F1 空 zh 道具一律回落英文名（en）  → 空 zh 项数=762 全部回落 en
+  PASS  mechBadgeForItem(电气宝石) 自洽（未收录→空｜收录→机制解读）  → []
+  PASS  mechBadgeForItem(无关道具) 空
+  PASS  详情卡含配招依据机制行/机制区块（可达性）  → len=443115
+  PASS  抽样 60 只中「机制解读」徽标出现（mech 已进 UI）  → n=42
+
+=== 10 渲染探针（renderCore 批量，errors=0） ===
+  PASS  renderCore 批量（n=30）errors=0
+  PASS  drawCoreList 无异常
+  渲染面 dump bytes=456961（元素 43 个）
+
+=== 11 token 扫描（渲染面无内部编号） ===
+  PASS  渲染面内部编号 0 命中（用户要求保留的 WCONF/ABI_ATE/CONV_SRC 除外）
+  用户要求保留的符号（与 v4.9 基线一致、非本次引入）：WCONF.manualDurTurns,WCONF.abilityDurTurns,WCONF.rockTurnsAbility,WCONF.rockTurnsManual,WCONF.boost,WCONF.abilityBoost,WCONF.terrainBoost,WCONF.terrainDurTurns,WCONF.terrainExtenderTurns,WCONF.tailwindTurns,WCONF.autoTailwindTurns,WCONF.lightClayTurns,WCONF.trickroomTurns,WCONF.paraSpeed,WCONF.paraFullChance,WCONF.hazardRules,WCONF.defogRapidSpin,WCONF.frostbite,WCONF.toxicTerrain,ABI_ATE,CONV_SRC,WCONF.wxGrantOrder
+  PASS  机制面文本不含 mechLib/id 命名  → 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》） | 机制 | 机制相反，ER 属第三代内核但有现代改动 ⇒ 待实测） | 机制口径（参数 ↔ 当前值）：完整表在「核心配队」页统一展示（同一份内容不再三处重复）。 | 机制口
+
+=== 12 移动端 360px 六项（CSS 断言） ===
+  PASS  ① ≤640 断点存在  → @media(max-width:640px,@media(max-width:640px
+  PASS  ② 641–1024 断点存在  → @media(min-width:641px)and(max-width:1024px
+  PASS  ③ 惯性滚动 (-webkit-overflow-scrolling:touch)
+  PASS  ④ text-size-adjust 存在
+  PASS  ⑤ 44px 触控组 ≥ 6 处  → min-height:44px ×10
+  PASS  ⑥ 12px 字体下限（移动端把 11px 提到 12px）  → 28 处
+  PASS  tr.mv 移动端规则存在  → tr.mv{cursor:pointer} tr.mv:hover{background:#f0f4ff} tr.mv.open+.mvdesc{display:table-row
+  注：v4.6 报告所述「tr.mv 45px」在当前 CSS 中已不存在（45px 0 处）——历史口径，非本次引入（本次 CSS 新增行已逐行列出）
+  PASS  新增 .mechdet>summary 44px 触控
+  PASS  新增机制徽标样式存在
+  PASS  机制区块无 position:fixed（禁止弹窗遮挡）
+  PASS  机制详情为就地展开 details（非 modal）
+  --- CSS diff（基线 vs 本次）：新增行 10 ---
+    + /* v4.10 机制覆盖层 UI：机制徽标 / 机制解读区块 / 可配合组合（就地展开，无弹窗） */
+    + .badge-mech{background:#e0f2fe; border:1px solid #0284c7; color:#075985; font-size:11px}
+    + .mechsec{border:1px solid #7dd3fc; background:#f0f9ff; border-radius:8px; padding:8px 10px}
+    + .mechsec h3{color:#075985}
+    + details.mechdet{border:1px dashed #7dd3fc; border-radius:8px; padding:2px 8px; margin:6px 0; background:#fff}
+    + details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#075985; min-height:44px; display:flex; align-items:center; gap:6px}
+    + .okmini{background:#e8f5e9; color:#1b5e20; border-radius:8px; padding:1px 6px; font-size:11px}
+    + .warnmini{background:#fff7e6; border:1px dashed #d97706; color:#b45309; border-radius:8px; padding:1px 6px; font-size:11px}
+    + .mechdet>summary{min-height:44px}
+    + .mechsec table td,.mechsec table th{font-size:11px}
+  PASS  CSS 新增行不含 position:fixed / 固定宽 / z-index 弹窗
+
+===== 结果：127 PASS / 0 FAIL =====
+
+===== nomech 模式（ERDATA.mechLib 置空 → 降级）=====
+HTML=D:\game\elite-redux\配招助手_ER.html  bytes=2188353  mode=nomech
+mechLib=true  mechs=28
+
+=== 1 平语法 / 健壮性 ===
+  PASS  mechOn() 可调用
+  PASS  mechMvAdj(杂技/无道具) 无异常且结构完整  → {"mul":1,"pow":110,"hit":true}
+  PASS  mechMvAdj(欺诈) 无异常且结构完整  → {"mul":1,"pow":95,"hit":true}
+  PASS  mechMvAdj(扑击) 无异常且结构完整  → {"mul":1,"pow":80,"hit":true}
+  PASS  mechMvAdj(陀螺球) 无异常且结构完整  → {"mul":1,"pow":125,"hit":true}
+  PASS  mechMvAdj(雪崩) 无异常且结构完整  → {"mul":1,"pow":140,"hit":true}
+  PASS  mechMvAdj(硬撑) 无异常且结构完整  → {"mul":1,"pow":70,"hit":true}
+  PASS  mechMvAdj(蛮干) 无异常且结构完整  → {"mul":1,"pow":60,"hit":true}
+  PASS  mechMvAdj(m=undefined) 不抛
+  PASS  mechMvAdj(s=undefined) 不抛
+  PASS  comboAssocOf 无异常  → list=5
+  PASS  comboAssocOf(null) 返回空
+  PASS  comboAssocOf 复数条件判定完整
+  PASS  mechCombosFor 无异常
+  PASS  mechPool 无异常（无存档→null）  → null
+  PASS  mechCondJudge 全键无异常  → ok=false fail=3 prem=4 pass=3
+  PASS  三个徽标函数可调用
+
+=== 1b §3 覆盖度 / §4 DSL 覆盖面（对照真实 mechLib） ===
+  PASS  mechLib 条目数 = 28（冻结 meta.count）  → n=28 meta={"version":1,"count":28,"updated":"2026-10-09","schema":"v410-frozen"}
+  PASS  rewrite 种类 = 26（§3 全词汇）  → n=26
+  PASS  MECH_RW_ZH 覆盖全部 rewrite（无落 default 分支）  → 26/26 覆盖
+  PASS  每条 mech 的 match 非空  → empty=0
+  PASS  combo 总数 = 77  → n=77
+  PASS  数据层用到的 cond 键全部被 §4 DSL 实现  → 用到 consumableItem,terrain,ability,move,lowHp,item,opponentType,teammateAbility,status；未实现 无
+  PASS  每条 combo 均有 narr（不编造、取自 JSON）  → 缺 0
+  PASS  每条 combo 均有 src（可溯源）  → 缺 0
+  PASS  数据层未把魔术师(170)写入 combo（§1 铁律，护栏为防御性）  → 无
+  PASS  mechByMove/Ability/Item/Species 四个索引可用  → {"mv":1,"ab":1,"it":1,"sp":1}
+
+=== 2 优雅降级（ERDATA.mechLib 缺失/为空 → 零影响） ===
+  PASS  模拟后 mechAll() 为空  → len=0
+  PASS  mechOn()===false
+  PASS  mechMvAdj 中性（mul=1/pow=null/hit=false/why=[]）  → {"mul":1,"pow":null,"why":[],"warn":null,"crossSide":false,"noGuard":false,"hit":false,"mechIds":[]}
+  PASS  mechFuncMul===1
+  PASS  mechAbiWhy() 空
+  PASS  mechSpProfile 未命中（imposter=false/mechs=[]）
+  PASS  mechCombosFor() 空
+  PASS  mechCoreHtml() 空串
+  PASS  buildItem 无「机制锚点」
+  PASS  mechBadgeForMove(512) 空
+  PASS  mechBadgeForAbi(变身者) 空
+  PASS  mechBadgeForItem(电气宝石) 空
+  PASS  renderCore 不含机制区块  → len=432408
+  PASS  pickAttacks 正常（无 mech 行）  → n=4
+
+=== 10 渲染探针（renderCore 批量，errors=0） ===
+  PASS  renderCore 批量（n=30）errors=0
+  PASS  drawCoreList 无异常
+  渲染面 dump bytes=452743（元素 43 个）
+
+=== 11 token 扫描（渲染面无内部编号） ===
+  PASS  渲染面内部编号 0 命中（用户要求保留的 WCONF/ABI_ATE/CONV_SRC 除外）
+  用户要求保留的符号（与 v4.9 基线一致、非本次引入）：WCONF.manualDurTurns,WCONF.abilityDurTurns,WCONF.rockTurnsAbility,WCONF.rockTurnsManual,WCONF.boost,WCONF.abilityBoost,WCONF.terrainBoost,WCONF.terrainDurTurns,WCONF.terrainExtenderTurns,WCONF.tailwindTurns,WCONF.autoTailwindTurns,WCONF.lightClayTurns,WCONF.trickroomTurns,WCONF.paraSpeed,WCONF.paraFullChance,WCONF.hazardRules,WCONF.defogRapidSpin,WCONF.frostbite,WCONF.toxicTerrain,ABI_ATE,CONV_SRC,WCONF.wxGrantOrder
+  PASS  机制面文本不含 mechLib/id 命名  → 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》） | 机制 | 机制相反，ER 属第三代内核但有现代改动 ⇒ 待实测） | 机制口径（参数 ↔ 当前值）：完整表在「核心配队」页统一展示（同一份内容不再三处重复）。 | 机制口
+
+=== 12 移动端 360px 六项（CSS 断言） ===
+  PASS  ① ≤640 断点存在  → @media(max-width:640px,@media(max-width:640px
+  PASS  ② 641–1024 断点存在  → @media(min-width:641px)and(max-width:1024px
+  PASS  ③ 惯性滚动 (-webkit-overflow-scrolling:touch)
+  PASS  ④ text-size-adjust 存在
+  PASS  ⑤ 44px 触控组 ≥ 6 处  → min-height:44px ×10
+  PASS  ⑥ 12px 字体下限（移动端把 11px 提到 12px）  → 28 处
+  PASS  tr.mv 移动端规则存在  → tr.mv{cursor:pointer} tr.mv:hover{background:#f0f4ff} tr.mv.open+.mvdesc{display:table-row
+  注：v4.6 报告所述「tr.mv 45px」在当前 CSS 中已不存在（45px 0 处）——历史口径，非本次引入（本次 CSS 新增行已逐行列出）
+  PASS  新增 .mechdet>summary 44px 触控
+  PASS  新增机制徽标样式存在
+  PASS  机制区块无 position:fixed（禁止弹窗遮挡）
+  PASS  机制详情为就地展开 details（非 modal）  → nomech：机制区块不渲染，本项不适用（见第 2 组「mechCoreHtml() 空串」）
+  --- CSS diff（基线 vs 本次）：新增行 10 ---
+    + /* v4.10 机制覆盖层 UI：机制徽标 / 机制解读区块 / 可配合组合（就地展开，无弹窗） */
+    + .badge-mech{background:#e0f2fe; border:1px solid #0284c7; color:#075985; font-size:11px}
+    + .mechsec{border:1px solid #7dd3fc; background:#f0f9ff; border-radius:8px; padding:8px 10px}
+    + .mechsec h3{color:#075985}
+    + details.mechdet{border:1px dashed #7dd3fc; border-radius:8px; padding:2px 8px; margin:6px 0; background:#fff}
+    + details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#075985; min-height:44px; display:flex; align-items:center; gap:6px}
+    + .okmini{background:#e8f5e9; color:#1b5e20; border-radius:8px; padding:1px 6px; font-size:11px}
+    + .warnmini{background:#fff7e6; border:1px dashed #d97706; color:#b45309; border-radius:8px; padding:1px 6px; font-size:11px}
+    + .mechdet>summary{min-height:44px}
+    + .mechsec table td,.mechsec table th{font-size:11px}
+  PASS  CSS 新增行不含 position:fixed / 固定宽 / z-index 弹窗
+
+===== 结果：57 PASS / 0 FAIL =====

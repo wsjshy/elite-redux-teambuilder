@@ -9,6 +9,13 @@
          且 228 条漂移经 PIL 逐像素比对为“像素完全一致”。
   --head 提供时额外断言：sprites 与 v4.9 产物逐字节相同（同环境确定性）。
 输出：每条 PASS/FAIL + 实际值；有 FAIL 时退出码 1。
+
+维护记录（2026-10-10，v4.10 D 线）：§1 顶层 schema 期望由「+2 新键」更新为「+3 新键
+（tacticRole / synergyRole / mechLib）」——v4.10 规格 §2 强制新增顶层键 mechLib（28 机制）。
+同时，因 F1 修复（items 中 339 Flying Gem / 352 Heavy-Duty Boots 补 zh 显示名），§1 差异键
+允许集由 {moves,abilities,sprites} 扩为 {moves,abilities,sprites,items}，并新增 items 专项
+紧断言锁定该差异「恰为 339/352、且仅 zh 列变化、其余列与条目零改动」，避免盲目放行掩盖回归。
+以上均为探针口径维护（期望滞后），非产物改动；其余断言不变。
 """
 import json
 import re
@@ -53,15 +60,32 @@ print('v4.9 data.js %d B | v4.6.4 备份 %d B | 同环境 HEAD 基线 %s' % (
     len(tN.encode('utf-8')), len(tP.encode('utf-8')),
     ('%d B' % len(open(HEAD, encoding='utf-8').read().encode('utf-8'))) if HEAD else '(未提供)'))
 
-print('\n=== 1. 顶层 schema：仅 +2 新键 ===')
-ck('顶层键数', len(D), len(O) + 2)
-ck('新增键恰为 tacticRole/synergyRole', sorted(set(D) - set(O)), ['synergyRole', 'tacticRole'])
+print('\n=== 1. 顶层 schema：相对 v4.6.4 仅 +3 新键（tacticRole/synergyRole/mechLib） ===')
+ck('顶层键数', len(D), len(O) + 3)
+ck('新增键恰为 tacticRole/synergyRole/mechLib', sorted(set(D) - set(O)), ['mechLib', 'synergyRole', 'tacticRole'])
 ck('无既有键丢失', sorted(set(O) - set(D)), [])
-_eq = [k for k in O if k not in ('moves', 'abilities', 'sprites')
+_eq = [k for k in O if k not in ('moves', 'abilities', 'sprites', 'items')
        and json.dumps(D[k], ensure_ascii=False, sort_keys=True) != json.dumps(O[k], ensure_ascii=False, sort_keys=True)]
-ck('其余 18 既有键逐键逐值全等', _eq, [])
+ck('其余 17 既有键逐键逐值全等（items 见下专项）', _eq, [])
 _d = [k for k in O if json.dumps(D[k], ensure_ascii=False, sort_keys=True) != json.dumps(O[k], ensure_ascii=False, sort_keys=True)]
-ck('全部差异键 ⊆ {moves,abilities,sprites}（新键除外）', sorted(set(_d) - {'moves', 'abilities', 'sprites'}), [])
+ck('全部差异键 ⊆ {moves,abilities,sprites,items}（新键除外）', sorted(set(_d) - {'moves', 'abilities', 'sprites', 'items'}), [])
+# items 专项（F1 修复登记 2026-10-10）：339/352 补 zh 显示名 → 仅第 3 列（zh）变化，其余列与条目零改动
+_rowsN = {str(r[0]): r for r in D['items']}
+_rowsP = {str(r[0]): r for r in O['items']}
+_zh = []
+_oth = []
+for _i, _r in _rowsP.items():
+    _n = _rowsN.get(_i)
+    if _n is None or len(_n) != len(_r):
+        _oth.append(_i)
+        continue
+    for _c in range(len(_r)):
+        if _n[_c] != _r[_c]:
+            (_zh if _c == 2 else _oth).append(_i)
+ck('items 差异条目恰为 339/352（F1 补名）', sorted(set(_zh)), ['339', '352'])
+ck('items 差异仅 zh 列（其余列 / 新增 / 缺失零改动）', sorted(set(_oth)), [])
+_z = lambda k: str((_rowsN.get(k) or ['', '', ''])[2]) if len(_rowsN.get(k) or []) > 2 else ''
+ck('items 补名后 339/352 zh 非空', [bool(_z('339').strip()), bool(_z('352').strip())], [True, True])
 
 print('\n=== 2. 计数零回归（v4.6.4 基线）===')
 cnt = lambda o: {'types': len(o['types']), 'matchup': len(o['matchup']), 'matchupRowLen': sorted({len(r) for r in o['matchup']}),

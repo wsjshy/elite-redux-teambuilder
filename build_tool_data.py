@@ -106,10 +106,16 @@ assert len(types) == 21, ('types 非 21', len(types))
 items = []
 ITEM_ZH_EXTRA = {'Electric Seed': '电气种子', 'Psychic Seed': '精神种子', 'Grassy Seed': '青草种子',
                  'Misty Seed': '薄雾种子', 'Electric Gem': '电气宝石', 'Psychic Gem': '精神宝石'}
+# F1 修复（v4.10）：道具表历史缺中文名（929 条中 766 条 zh 为空，历史既有缺口，不在本轮范围），
+# mechLib「配合对象」列与 premise 文案对空 zh 会回落到内部编号（#339 / #352）。此处按**道具 id**
+# 补 2 条 mechLib 实际引用的缺口；上面按英文名的 ITEM_ZH_EXTRA 保持原样。
+ITEM_ZH_EXTRA_ID = {339: '飞行宝石', 352: '厚底靴'}
 for r in csv.reader(open(BASE + r'\道具表_完整.csv', encoding='utf-8-sig')):
     if r[0] == '道具id':
         continue
     zh = r[2] or ITEM_ZH_EXTRA.get(r[1], '')
+    if not zh and r[0].strip().isdigit():
+        zh = ITEM_ZH_EXTRA_ID.get(int(r[0]), '')
     items.append([r[0], r[1], zh, r[3]])
 
 # 6. 特性表（合并 v0.3 + v0.5 两图鉴中文名：v0.3 有 1030 条含闪电之躯/毛茸茸，v0.5 有 791 条含 ER 特有中文名）
@@ -2116,6 +2122,170 @@ assert len({a['id'] for a in AXES}) == len(AXES), '轴 id 重复'
 assert _AXC['名称全可解析'], ('轴库标签名无法解析', _AXC['名称无法解析'])
 assert [a['id'] for a in AXES] and all(k in AXES[0] for k in ('轴手判定', '受益者判定', '联动说明', '弱点体系', '依据'))
 
+
+# 15f. v4.10 机制知识库（mechLib）——A 线内容产物在构建期读取并嵌入 ERDATA 顶层键
+#   契约（引擎层 C 消费，字段名冻结；规格 docs\战斗分析\_v410_机制知识库_规格_20261009.md §2）：
+#     ERDATA.mechLib = {'meta': {version,count,updated,schema}, 'mechs': [ … ]}
+#     每条 mech = {id, zh, en, kind, match, cat, rewrite, params, premise, impact, combos[], basis, src}
+#     combos[] 每条 = {with:{kind,ids[]}, cond:{…§4 DSL…}, effect, narr, src, note?}
+#   纪律（规格 §2/§3/§4/§5 铁律；任一项不过 → 抛错中止构建，禁静默放行）：
+#     ① meta.count == 条目数；② id 全库唯一；③ rewrite ∈ 覆盖词汇表（§3，26 项）；
+#     ④ match 至少一个非空键，且 id 按**各自集合**核对存在（moves/abilities/items/species 四者 ID 空间独立）；
+#     ⑤ 每条 combo 必带 with/cond/narr/src；with.kind 枚举内、with.ids 可在对应集合解析；
+#     ⑥ cond 键 ∈ DSL 白名单（§4），cond 内 id 引用与枚举值合法；
+#     ⑦ 魔术师(Magician id=170) 禁入任何 combo；⑧「变身者+气势披带」叙事须为「保命」口径（非提速）。
+#   注：内容产物 nn_data\mech_lib_v410.json 为**只读输入**，本函数不写任何 nn_data 文件（参照 axis_lib 先例的
+#       「读取 → 校验 → 嵌入 → 汇总打印」，但校验结果只打印、不落盘）。
+_MECH_PATH = BASE + r'\nn_data\mech_lib_v410.json'
+_MECH_REWRITE_VOCAB = frozenset((
+    'imposter_anchor', 'foul_play_atk', 'body_press_def', 'gyro_ball_speed', 'hp_cond_power',
+    'avalanche_after_hit', 'acrobatics_item', 'counter_metal_burst', 'prankster_priority',
+    'magic_guard_survival', 'illusion_disguise', 'magnet_pull_trap', 'unburden_item',
+    'gem_consumable', 'terrain_seed', 'facade_status', 'endeavor_lowhp', 'endure_reversal',
+    'multiscale_sash', 'regenerator_pivot', 'no_guard_hit', 'unaware_ignore', 'mold_breaker_ignore',
+    'serene_grace_flinch', 'toxic_heal_item', 'contact_status',
+))
+_MECH_CATS = frozenset(('eval_rewrite', 'power_cond', 'item_link', 'priority', 'weather_terrain', 'teammate'))
+_MECH_MATCH_KEYS = ('moves', 'abilities', 'items', 'species')          # match 的四个键（复数）
+_MECH_ENTITY_KINDS = ('move', 'ability', 'item', 'species')            # kind / with.kind（单数）
+_MECH_KIND2MATCH = {'move': 'moves', 'ability': 'abilities', 'item': 'items', 'species': 'species'}
+_MECH_COND_KEYS = frozenset((
+    'noItem', 'consumableItem', 'item', 'ability', 'move', 'terrain', 'weather',
+    'status', 'lowHp', 'teammateAbility', 'opponentType'))
+_MECH_COND_IDSPACE = {'item': 'items', 'ability': 'abilities', 'move': 'moves', 'teammateAbility': 'abilities'}
+_MECH_COND_BOOL = ('noItem', 'consumableItem', 'lowHp')                # 条件值为 true
+_MECH_TERRAINS = frozenset(('electric', 'psychic', 'misty', 'grassy'))
+_MECH_WEATHERS = frozenset(('sun', 'rain', 'sand', 'snow'))
+_MECH_STATUSES = frozenset(('burn', 'poison', 'paralysis', 'sleep'))
+_MECH_OPP_TYPES = frozenset((
+    'normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground',
+    'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'))
+_MECH_FORBIDDEN_ABI = ('170',)                                        # 魔术师 Magician：规格 §1/§5 禁入任何 combo
+_MECH_IDSPACE = {                                                      # 四个独立 ID 空间（字符串化核对）
+    'moves': set(moves.keys()),
+    'abilities': {r[0] for r in abilities},
+    'items': {r[0] for r in items},
+    'species': set(species.keys()),
+}
+
+
+def build_mech_lib():
+    """读取 nn_data\mech_lib_v410.json → 校验（§2 schema + §3 词汇 + §4 DSL + 铁律）→ 返回 mechLib 对象。
+    任一项校验不过即 raise（禁静默放行）。只读输入，不写 nn_data。"""
+    if not os.path.exists(_MECH_PATH):
+        raise AssertionError('mechLib 内容产物缺失：%s' % _MECH_PATH)
+    raw = json.load(open(_MECH_PATH, encoding='utf-8'))
+
+    def _bad(msg, ctx=None):
+        raise AssertionError('mechLib 校验失败：%s%s' %
+                             (msg, (' | ' + json.dumps(ctx, ensure_ascii=False)) if ctx else ''))
+
+    def _want_ids(ids, space, ctx, label):
+        if not isinstance(ids, list) or not ids:
+            _bad('%s 非非空列表' % label, ctx)
+        for _i in ids:
+            if str(_i) not in _MECH_IDSPACE[space]:
+                _bad('%s 在 %s 空间不存在：%r' % (label, space, _i), ctx)
+
+    lib = raw.get('mechLib')
+    if not isinstance(lib, dict):
+        _bad('mech_lib_v410.json 顶层缺 mechLib 对象')
+    meta = lib.get('meta') or {}
+    mechs = lib.get('mechs')
+    if not isinstance(mechs, list) or not mechs:
+        _bad('mechs 非非空列表')
+    if meta.get('count') != len(mechs):                                 # ① 条目数 == meta.count
+        _bad('meta.count(%r) != 实际条目数(%d)' % (meta.get('count'), len(mechs)))
+    _ids = [m.get('id') for m in mechs]
+    if any(not _i for _i in _ids) or len(set(_ids)) != len(_ids):       # ② id 全库唯一
+        _bad('id 缺失或重复', sorted({x for x in _ids if _ids.count(x) > 1}))
+
+    n_combo = 0
+    for m in mechs:
+        _mid = m['id']
+        for _k in ('id', 'zh', 'en', 'kind', 'match', 'cat', 'rewrite', 'premise', 'impact', 'combos', 'basis', 'src'):
+            if _k not in m:
+                _bad('缺字段 %s' % _k, {'id': _mid})
+        if 'params' in m and not isinstance(m['params'], dict):
+            _bad('params 非对象', {'id': _mid})
+        for _k in ('zh', 'en', 'premise'):
+            if not (isinstance(m[_k], str) and m[_k].strip()):
+                _bad('%s 为空' % _k, {'id': _mid})
+        if not isinstance(m['impact'], dict) or not m['impact']:
+            _bad('impact 非对象或空', {'id': _mid})
+        if m['kind'] not in _MECH_ENTITY_KINDS:
+            _bad('kind 非法：%r' % m['kind'], {'id': _mid})
+        if m['cat'] not in _MECH_CATS:
+            _bad('cat 非法（六分类之外）：%r' % m['cat'], {'id': _mid})
+        if m['rewrite'] not in _MECH_REWRITE_VOCAB:                     # ③ rewrite ∈ §3 词汇表
+            _bad('rewrite 不在 §3 词汇表：%r' % m['rewrite'], {'id': _mid})
+        _match = m['match']
+        if not isinstance(_match, dict) or not _match:
+            _bad('match 非对象或空', {'id': _mid})
+        for _k in _match:
+            if _k not in _MECH_MATCH_KEYS:
+                _bad('match 非法键：%r' % _k, {'id': _mid})
+        if not any(_match.get(_k) for _k in _MECH_MATCH_KEYS):
+            _bad('match 至少一个非空键（moves/abilities/items/species）', {'id': _mid})
+        for _k in _MECH_MATCH_KEYS:                                     # ④ match id 按各自集合核对
+            if _match.get(_k):
+                _want_ids(_match[_k], _k, {'id': _mid}, 'match.%s' % _k)
+        if not (isinstance(m['basis'], str) and m['basis'].strip()):
+            _bad('basis 为空', {'id': _mid})
+        if not (isinstance(m['src'], str) and m['src'].startswith('http')):
+            _bad('src 非法（须为 URL）', {'id': _mid})
+        if not isinstance(m['combos'], list) or not m['combos']:
+            _bad('combos 非非空列表', {'id': _mid})
+        for _ci, _c in enumerate(m['combos']):                          # ⑤ 每条 combo 必带 with/cond/narr/src
+            _ctx = {'id': _mid, 'combo': _ci}
+            for _k in ('with', 'cond', 'narr', 'src'):
+                if _k not in _c:
+                    _bad('combo 缺字段 %s' % _k, _ctx)
+            _w = _c['with']
+            if not isinstance(_w, dict) or _w.get('kind') not in _MECH_ENTITY_KINDS:
+                _bad('with.kind 非法：%r' % (_w.get('kind') if isinstance(_w, dict) else _w), _ctx)
+            _want_ids(_w.get('ids'), _MECH_KIND2MATCH[_w['kind']], _ctx, 'with.ids')
+            if _w['kind'] == 'ability':                                 # ⑦ 魔术师(170) 禁入任何 combo
+                for _i in _w['ids']:
+                    if str(_i) in _MECH_FORBIDDEN_ABI:
+                        _bad('禁入组合：魔术师(%s) 出现在 with.ids' % _i, _ctx)
+            _cond = _c['cond']
+            if not isinstance(_cond, dict) or not _cond:
+                _bad('cond 非对象或空', _ctx)
+            for _ck, _cv in _cond.items():                              # ⑥ cond DSL 白名单 + 值合法
+                if _ck not in _MECH_COND_KEYS:
+                    _bad('cond 非法键：%r' % _ck, _ctx)
+                if _ck in _MECH_COND_IDSPACE:
+                    _want_ids(_cv, _MECH_COND_IDSPACE[_ck], _ctx, 'cond.%s' % _ck)
+                elif _ck in _MECH_COND_BOOL:
+                    if _cv is not True:
+                        _bad('cond.%s 应为 true，实际 %r' % (_ck, _cv), _ctx)
+                elif _ck == 'terrain' and _cv not in _MECH_TERRAINS:
+                    _bad('cond.terrain 非法：%r' % _cv, _ctx)
+                elif _ck == 'weather' and _cv not in _MECH_WEATHERS:
+                    _bad('cond.weather 非法：%r' % _cv, _ctx)
+                elif _ck == 'status' and _cv not in _MECH_STATUSES:
+                    _bad('cond.status 非法：%r' % _cv, _ctx)
+                elif _ck == 'opponentType' and (not isinstance(_cv, list) or not _cv or any(
+                        (not isinstance(x, str)) or (x.lower() not in _MECH_OPP_TYPES) for x in _cv)):
+                    _bad('cond.opponentType 非法：%r' % _cv, _ctx)
+            if not (isinstance(_c['narr'], str) and _c['narr'].strip()):
+                _bad('narr 为空', _ctx)
+            if not (isinstance(_c['src'], str) and _c['src'].startswith('http')):
+                _bad('combo.src 非法（须为 URL）', _ctx)
+            n_combo += 1
+        if m['rewrite'] == 'imposter_anchor':                           # ⑧ 变身者口径铁律
+            for _c in m['combos']:
+                if _c['with'].get('kind') == 'item' and '287' in [str(x) for x in _c['with']['ids']]:
+                    if '保命' not in ((_c.get('effect') or '') + (_c.get('narr') or '')):
+                        _bad('变身者+气势披带(287) 叙事须为「保命」口径', {'id': _mid})
+    print('mechLib: %d 条机制 | %d 条 combo | rewrite 词汇表 %d 项 | 校验(条目数/词汇/ID空间/组合必填/铁律) 全通过 | %s'
+          % (len(mechs), n_combo, len(_MECH_REWRITE_VOCAB), _MECH_PATH))
+    return lib
+
+
+MECH_LIB = build_mech_lib()
+
 data = {
     'types': types,
     'matchup': matchup,
@@ -2139,6 +2309,7 @@ data = {
     'usageMeta': USAGE_META,
     'tacticRole': TACTIC_ROLE,
     'synergyRole': SYNERGY_ROLE,
+    'mechLib': MECH_LIB,
     'sprites': load_sprites(),
 }
 js = 'var ERDATA = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';'
@@ -2153,3 +2324,6 @@ print('v4.9 自检: tacticRole', len(data['tacticRole']), '(标注', sum(1 for v
       '| synergyRole', len(data['synergyRole']), '(标注', sum(1 for v in data['synergyRole'].values() if v), ')',
       '| moves 行末列', len(data['moves'][0]), '| abilities 行末列', len(data['abilities'][0]),
       '| axis_lib', _AXC['axes'], '轴 →', _AXLIB)
+print('v4.10 自检: mechLib', len(data['mechLib']['mechs']), '条机制 |',
+      sum(len(m['combos']) for m in data['mechLib']['mechs']), '条 combo | meta.count',
+      data['mechLib']['meta']['count'], '| schema', data['mechLib']['meta']['schema'])
