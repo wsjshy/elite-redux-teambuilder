@@ -1,6 +1,9 @@
 /* ============================================================================
    v4.10 机制知识库 · 独立回归 + 新机制探针（D 线验收）
    规格：docs/战斗分析/_v410_机制知识库_规格_20261009.md §6
+   v4.11 校准（2026-10-10，口径：改版数据为准）：①道具三选 317→308（「服务铃」=繁中译名，ER 数据口径=脱壳忍者壳；
+     317=Eject Button=逃脱按钮，挨招换下，与 308 Shed Shell 无失败换下是两个不同道具）；②杂技 112.5/75（ER 威力 75×1.5，
+     官方 55×2=110 登记为口径差）；③蛮干 ER desc「自身 HP 低于对方时增力」（官方削至同血登记为口径差）。
    方法：Node VM + fake DOM 打桩，加载**最终产物** 配招助手_ER.html 的内嵌脚本
         （D:\game\elite-redux\_chk_script_1.js，由 _extract_script.js 抽出），
         在真实引擎上跑 P1/P2/P3 + 组合联想器三关 + 详情区块 + 优雅降级 + 移动端 + token。
@@ -75,17 +78,17 @@ chk('mechLib 已内嵌且非空（数据层嵌入 data.js 顶层键 mechLib）',
 hdr('§A P1 百变怪 · 变身者剖面改写');
 const mp = sandbox.mechSpProfile(ditto);
 chk('A1 mechSpProfile(ditto).imposter === true', mp.imposter === true, JSON.stringify(mp.mechs.map(m => m.id)));
-chk('A2 道具三选 id 集 = 讲究围巾285/气势披带287/服务铃317', mp.items.join() === '285,287,317', JSON.stringify(mp.items));
+chk('A2 道具三选 id 集 = 讲究围巾285/气势披带287/脱壳忍者壳308', mp.items.join() === '285,287,308', JSON.stringify(mp.items));
 chk('A3 why 含「变身者」「速度复制」「道具三选」', /变身者/.test(mp.why.join(' ')) && /速度复制/.test(mp.why.join(' ')) && /道具三选/.test(mp.why.join(' ')), mp.why[0]);
-chk('A4 why 含「服务铃」（规格 §5 口径名）', /服务铃/.test(mp.why.join(' ')), (mp.why.find(x => /服务铃/.test(x)) || '').slice(0, 60));
+chk('A4 why 含「脱壳忍者壳」且已无「服务铃」（ER 数据口径；繁中译名已校准替换）', /脱壳忍者壳/.test(mp.why.join(' ')) && !/服务铃/.test(mp.why.join(' ')), (mp.why.find(x => /脱壳忍者壳/.test(x)) || '').slice(0, 80));
 chk('A5 why 明示「种族值/技能池不作为主评分依据」（仍展示）', /不作为主评分依据/.test(mp.why.join(' ')) && /仍展示/.test(mp.why.join(' ')), mp.why[1]);
 chk('A6 评估剖面不再按种族值/技能池作主判据（渲染面显式声明）', dittoHtml.indexOf('不作为主评分依据（机制覆盖优先）') > -1, '');
 chk('A7 详情渲染面出现机制剖面改写横幅「机制剖面改写 · 变身者」', dittoHtml.indexOf('机制剖面改写 · 变身者') > -1 && /机制覆盖 &gt; 通用评分/.test(dittoHtml), '');
-chk('A8 详情渲染面出现「道具三选」及三项显示名（讲究围巾/气势披带/逃脱按钮）', dittoHtml.indexOf('道具三选') > -1 && dittoHtml.indexOf('讲究围巾') > -1 && dittoHtml.indexOf('气势披带') > -1 && dittoHtml.indexOf('逃脱按钮') > -1, '');
+chk('A8 详情渲染面出现「道具三选」及三项显示名（讲究围巾/气势披带/脱壳忍者壳）', dittoHtml.indexOf('道具三选') > -1 && dittoHtml.indexOf('讲究围巾') > -1 && dittoHtml.indexOf('气势披带') > -1 && dittoHtml.indexOf('脱壳忍者壳') > -1 && String((E.items.filter(x => String(x[0]) === '308')[0] || [])[2]) === '脱壳忍者壳', 'ERDATA.items[308].zh=' + String((E.items.filter(x => String(x[0]) === '308')[0] || [])[2]));
 chk('A9 「种族值低」不作为否决/主判据（渲染面零出现）', dittoHtml.indexOf('种族值低') < 0, '');
 chk('A10 种族值仍展示（定位判断行含种族 物攻48/特攻48/速度48）', /种族 物攻48\/特攻48\/速度48/.test(dittoHtml), '');
 const bi = sandbox.buildItem(ditto, '物理', '输出', null);
-chk('A11 道具决策置顶三条机制锚点（变身者·道具三选）', bi.slice(0, 3).every(x => /机制锚点（变身者·道具三选）/.test(String(x[1]))) && bi.slice(0, 3).map(x => x[0]).join() === '讲究围巾,气势披带,逃脱按钮', bi.slice(0, 3).map(x => x[0] + '/').join(''));
+chk('A11 道具决策置顶三条机制锚点（变身者·道具三选）', bi.slice(0, 3).every(x => /机制锚点（变身者·道具三选）/.test(String(x[1]))) && bi.slice(0, 3).map(x => x[0]).join() === '讲究围巾,气势披带,脱壳忍者壳', bi.slice(0, 3).map(x => x[0] + '/').join(''));
 const abw = sandbox.mechAbiWhy(ditto);
 chk('A12 mechAbiWhy(ditto) 命中 变身者（特性级机制解读）', abw.some(a => a.rewrite === 'imposter_anchor'), JSON.stringify(abw.map(a => a.zh)));
 
@@ -95,14 +98,14 @@ chk('A12 mechAbiWhy(ditto) 命中 变身者（特性级机制解读）', abw.som
 hdr('§B P2 杂技 · 威力条件与消耗联动');
 chk('B1 MV[512] 就位（杂技/飞行/物理/75）', MV[512] && MV[512][1] === '杂技' && MV[512][3] === '飞行' && MV[512][5] === 75, JSON.stringify(MV[512] && MV[512].slice(0, 6)));
 const a0 = sandbox.mechMvAdj(ditto, MV[512], {});
-chk('B2 无道具位 → 威力 110 + why 含「无道具×2」', a0.pow === 110 && /无道具×2/.test(a0.why.join(' ')) && a0.warn === null, 'pow=' + a0.pow + ' why=' + JSON.stringify(a0.why));
-chk('B3 why 明示口径差「110（官方×2；ER desc 载 1.5×，待实测）」', a0.why.some(x => /110（官方×2；ER desc 载 1\.5×，待实测）/.test(x)), '');
+chk('B2 无道具位 → 威力 112.5 + why 含「无道具×1.5」「ER 改版口径」', a0.pow === 112.5 && /无道具×1\.5/.test(a0.why.join(' ')) && /ER 改版口径/.test(a0.why.join(' ')) && a0.warn === null, 'pow=' + a0.pow + ' why=' + JSON.stringify(a0.why));
+chk('B3 why 明示口径差「112.5（ER 改版口径 75×1.5；官方 55×2=110，差异登记待实测）」', a0.why.some(x => /112\.5（ER 改版口径 75×1\.5；官方 55×2=110，差异登记待实测）/.test(x)), '');
 const a285 = sandbox.mechMvAdj(ditto, MV[512], { item: 285 });
-chk('B4 携带道具（讲究围巾285）→ 威力 55 + warn「携带道具时威力减半」', a285.pow === 55 && a285.warn === '携带道具时威力减半' && /携带道具时威力减半/.test(a285.why.join(' ')), 'pow=' + a285.pow + ' warn=' + a285.warn);
+chk('B4 携带常驻道具（讲究围巾285）→ 威力 75 + warn「携带常驻道具时无加成（按表列威力 75）」', a285.pow === 75 && a285.warn === '携带常驻道具时无加成（按表列威力 75）' && /携带常驻道具时无加成/.test(a285.why.join(' ')), 'pow=' + a285.pow + ' warn=' + a285.warn);
 const a339 = sandbox.mechMvAdj(ditto, MV[512], { item: 339 });
-chk('B5 携带消耗性道具（飞行宝石339）→ 110 + 消耗联动标注', a339.pow === 110 && /消耗后杂技 110/.test(a339.why.join(' ')) && a339.why.some(x => /官方×2；ER desc 载 1\.5×/.test(x)), 'pow=' + a339.pow);
+chk('B5 携带消耗性道具（飞行宝石339）→ 112.5 + 消耗联动标注', a339.pow === 112.5 && /消耗后杂技按 112\.5/.test(a339.why.join(' ')) && a339.why.some(x => /ER 改版口径 75×1\.5/.test(x)), 'pow=' + a339.pow);
 const a331 = sandbox.mechMvAdj(ditto, MV[512], { item: 331 });
-chk('B6 携带场地种子（青草种子331）→ 110 + 消耗联动标注', a331.pow === 110 && /消耗后杂技 110/.test(a331.why.join(' ')), 'pow=' + a331.pow);
+chk('B6 携带场地种子（青草种子331）→ 112.5 + 消耗联动标注', a331.pow === 112.5 && /消耗后杂技按 112\.5/.test(a331.why.join(' ')), 'pow=' + a331.pow);
 chk('B7 消耗性道具判定：宝石339/种子328-331 真、常驻285 假、披带287 真、按钮317 真',
   sandbox.mechIsConsumable(339) && sandbox.mechIsConsumable(328) && sandbox.mechIsConsumable(329) && sandbox.mechIsConsumable(330) && sandbox.mechIsConsumable(331) && !sandbox.mechIsConsumable(285) && sandbox.mechIsConsumable(287) && sandbox.mechIsConsumable(317),
   [339, 328, 329, 330, 331, 285, 287, 317].map(i => i + ':' + sandbox.mechIsConsumable(i)).join(' '));
@@ -112,7 +115,7 @@ chk('B7 消耗性道具判定：宝石339/种子328-331 真、常驻285 假、�
   learners.forEach(s => {
     let out = null; try { out = sandbox.pickAttacks(s, '物理', 4, '输出'); } catch (e) { anomalies.push(s.zh + ':throw'); return; }
     out.filter(c => c.id === 512).forEach(c => {
-      const ok = c.mech && /无道具×2|携带道具时威力减半|消耗后杂技 110/.test(c.why.join(' ')) && (c.pow === 110 || c.pow === 55);
+      const ok = c.mech && /无道具×1\.5|携带常驻道具时无加成|消耗后杂技按 112\.5/.test(c.why.join(' ')) && (c.pow === 112.5 || c.pow === 75);
       if (ok) withMech++; else anomalies.push(s.zh + ':pow=' + c.pow + ',mech=' + !!c.mech);
     });
   });
@@ -202,9 +205,9 @@ chk('D8 效果叙事：所有展示 combo 的 narr 非空、src 非空（' + tot
 chk('D9 narr 与 JSON 一致（杂技+飞行宝石 = 规格示例句）', (function(){
   const cb = sandbox.mechAll().filter(m => m.id === 'acrobatics')[0];
   const c = (cb.combos || []).filter(x => x.with && x.with.ids && x.with.ids.indexOf(339) > -1)[0];
-  return c && c.narr === '飞行宝石起手爆发，消耗后杂技全程 110';
+  return c && c.narr === '飞行宝石起手爆发，消耗后杂技全程 112.5';
 })(), (function(){ const cb = sandbox.mechAll().filter(m => m.id === 'acrobatics')[0]; const c = (cb.combos || []).filter(x => x.with && x.with.ids && x.with.ids.indexOf(339) > -1)[0]; return c ? c.narr : 'n/a'; })());
-chk('D10 narr 出现在渲染面（mechCoreHtml(moves=[512]) 含该叙事）', (function(){ const h = sandbox.mechCoreHtml(ditto, { moves: [512] }); return h.indexOf('飞行宝石起手爆发，消耗后杂技全程 110') > -1; })(), '');
+chk('D10 narr 出现在渲染面（mechCoreHtml(moves=[512]) 含该叙事）', (function(){ const h = sandbox.mechCoreHtml(ditto, { moves: [512] }); return h.indexOf('飞行宝石起手爆发，消耗后杂技全程 112.5') > -1; })(), '');
 
 /* =========================================================
    §E  组合库契约（规格 §2 / §4）

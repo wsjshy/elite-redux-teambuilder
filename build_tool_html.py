@@ -1,17 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""生成 ER 配招助手单页 HTML（内嵌 ERDATA 数据，离线可用，响应式 PC/手机）
+"""生成 ER 配招助手单页 HTML（v4.11 起：ERDATA 拆包为外部 data.js，页面按 CDN 前缀择优加载）
 新增：招式多条件筛选 / 队伍构建器(联防+覆盖) / 特性反查 / 战术模板 / 存档CSV导入分析
 
 精灵图（v4.6.2 合图）：assets/sheets/s<idx>.webp（1024×1024，64px 格 16×16，每张 256 只）
         + sheets_map.js 的 SPR_SHEET 坐标（构建期内嵌进 HTML）；渲染为 div + background-position，
         尺寸无关定位（background-size:1600% / position 百分比）→ 随容器 CSS 缩放。
         旧 assets/sprites/sp<id>.png（1906 张）保留为源与回退；缺图 → 空占位（不请求网络、不破版）。
-依赖：配招工具_data.js（数据源，本脚本只读）；assets/sheets/（由 build_sprites_sheet.py 生成）"""
+依赖：配招工具_data.js（数据源，本脚本只读）；assets/sheets/（由 build_sprites_sheet.py 生成）
+
+v4.11 拆包 / CDN 择优（只改「谁去取」不改「取到什么」）：
+  · 产物两份同目录：配招助手_ER.html（正文，~0.5MB）+ data.js（ERDATA 字面量，~1.9MB）。
+  · HTML 内两个 bootstrap 脚本块（哨兵 __ER_LOADER__ / __ER_LOADER_FB__）：非 file: 协议主源走
+    gcore.jsdelivr 镜像（CDN_PREFIX），detect 失败由回退块改写同域相对路径；file: 一律相对路径。
+  · data.js 与内嵌时代逐字同源：仍是 data_js 字符串本体（含派生 ERDATA.nonFinalER/finalOf 等）。"""
 import os
 import re
 
 BASE = r'D:\game\elite-redux'
+
+# ---- v4.11 CDN 镜像前缀（gcore.jsdelivr.net：大陆实测 ~118KB/s，github.io 直连 ~46KB/s）----
+# 形态：<CDN_PREFIX> + <同目录相对路径>，例如 CDN_PREFIX+'data.js'、CDN_PREFIX+'assets/sheets/s0.webp'。
+# 镜像源 = GitHub 仓 wsjshy/elite-redux-teambuilder 的 gh-pages 分支（部署三件套同目录结构）。
+CDN_PREFIX = 'https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/'
+
 data_js = open(BASE + r'\配招工具_data.js', encoding='utf-8').read()
 
 # ---- 剥离 data.js 内嵌的 base64 精灵图（只在本生成器内存中剥离，不改动 data.js 文件本体）----
@@ -593,8 +605,37 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
   <div id="ruleBoxCore"></div>
 </section>
 </main>
+<script>/*__ER_LOADER__*/
+/* ===== v4.11 数据加载器（bootstrap）=====
+   ERDATA 已拆包到同目录 data.js。取用序（同步，document.write 注入 parser-blocking 脚本）：
+     非 file: → 主源 CDN_PREFIX（gcore.jsdelivr 镜像）data.js；
+     失败      → 紧随其后的回退块改写同域相对路径 data.js；
+     file:     → 直接相对路径 data.js（本地双击不受影响，不触网取 CDN）。
+   该块必须独立于应用代码块：document.write 写入的脚本在本块结束后才被解析执行。 */
+(function(){
+  var GC='__ER_CDN_PREFIX__';
+  var F=true;
+  try{
+    var L=window.location||{}, p=L.protocol||'';
+    if(!p&&L.href)p=(String(L.href).indexOf('file:')===0)?'file:':'';
+    F=(p==='file:');
+  }catch(e){F=true}
+  window.__ER_FILE=F;
+  window.__ER_ASSET_BASE=F?'':GC;   /* 同域资产（sheets 精灵图）主源前缀，消费点见 sprOf() */
+  if(typeof ERDATA==='undefined'){
+    document.write('<scr'+'ipt src="'+(F?'':GC)+'data.js"><\/scr'+'ipt>');
+  }
+})();
+</script>
+<script>/*__ER_LOADER_FB__*/
+/* ===== v4.11 回退块（同域相对路径）=====
+   主源 404 / 网络失败 / 内容不可用 ⇒ ERDATA 仍 undefined ⇒ 改写同域相对路径 data.js。
+   独立成块的唯一原因：document.write 注入的脚本于「写入它的脚本块」结束后才执行，同块内判定不可靠。 */
+if(typeof ERDATA==='undefined'&&!window.__ER_FILE){
+  document.write('<scr'+'ipt src="data.js"><\/scr'+'ipt>');
+}
+</script>
 <script>
-__ERDATA__
 __SPRSHEET__
 __AXISLIB__
 /* ============ 工具函数 ============ */
@@ -1432,11 +1473,16 @@ if(document.addEventListener)document.addEventListener('keydown',function(ev){if
 function closeSp(){spDrawer.classList.remove('open')}
 /* 精灵图（v4.6.2 合图 Sprite Sheet）：SPR_SHEET[id] = [sheetIdx, col, row]（由 sheets_map.js 构建期内嵌）。
    sprOf(id) 返回背景样式声明（sheet 背景图 + 尺寸无关定位：background-size 1600%（16 格）/ position 百分比）
-   → 同一份标记在任意容器尺寸下正确缩放；id 缺失/无映射 → 返回空串，调用侧渲染 .spmiss 空占位（不发请求、不破版）。 */
+   → 同一份标记在任意容器尺寸下正确缩放；id 缺失/无映射 → 返回空串，调用侧渲染 .spmiss 空占位（不发请求、不破版）。
+   v4.11：资源前缀走 erAssetBase()（非 file: = CDN 镜像；file: / 无加载器 = '' 相对路径，逐字沿用旧格式）。 */
+function erAssetBase(){
+  try{ if(typeof window!=='undefined'&&window&&typeof window.__ER_ASSET_BASE==='string')return window.__ER_ASSET_BASE; }catch(e){}
+  return '';
+}
 function sprOf(id){
   var c=(window.SPR_SHEET||{})[String(id)];
   if(!c)return '';
-  return "background-image:url('assets/sheets/s"+c[0]+".webp');background-repeat:no-repeat;background-size:1600% 1600%;background-position:"+sppct(c[1])+" "+sppct(c[2]);
+  return "background-image:url('"+erAssetBase()+"assets/sheets/s"+c[0]+".webp');background-repeat:no-repeat;background-size:1600% 1600%;background-position:"+sppct(c[1])+" "+sppct(c[2]);
 }
 function sppct(k){return (Math.round(k*100/15*10000)/10000)+'%'}
 function sprEl(tag,id,cls){
@@ -3399,8 +3445,8 @@ function mechBySpecies(id){return (id===undefined||id===null)?[]:(_mechIdx('spec
 var MECH_RW_ZH={imposter_anchor:'变身者',foul_play_atk:'欺诈',body_press_def:'扑击',gyro_ball_speed:'陀螺球',
   hp_cond_power:'绝处逢生/抓狂',avalanche_after_hit:'雪崩',acrobatics_item:'杂技',counter_metal_burst:'双倍奉还/金属爆炸',
   prankster_priority:'恶作剧之心',magic_guard_survival:'魔法防守',illusion_disguise:'幻觉',magnet_pull_trap:'磁力',
-  unburden_item:'轻身',gem_consumable:'属性宝石',terrain_seed:'场地种子',facade_status:'硬撑',endeavor_lowhp:'蛮干',
-  endure_reversal:'忍耐/替身',multiscale_sash:'多重鳞片/画皮/结实',regenerator_pivot:'再生力',no_guard_hit:'无防守',
+  unburden_item:'轻装',gem_consumable:'属性宝石',terrain_seed:'场地种子',facade_status:'硬撑',endeavor_lowhp:'蛮干',
+  endure_reversal:'挺住/替身',multiscale_sash:'多重鳞片/画皮/结实',regenerator_pivot:'再生力',no_guard_hit:'无防守',
   unaware_ignore:'纯朴',mold_breaker_ignore:'破格',serene_grace_flinch:'天恩',toxic_heal_item:'毒疗',contact_status:'火焰之躯/静电/毒刺'};
 function mechRwZh(rw){return MECH_RW_ZH[rw]||'机制'}
 function mechAbiZh(id){var a=ABI[id];return a?(a[2]||a[1]||('#'+id)):('#'+id)}
@@ -3421,7 +3467,7 @@ var MECH_TYPE_ZH={steel:'钢',water:'水',fire:'火',grass:'草',electric:'电',
 var MECH_TERRAIN_ZH={electric:'电气场地',psychic:'精神场地',grassy:'青草场地',misty:'薄雾场地',toxic:'剧毒场地'};
 var MECH_WEATHER_ZH={sun:'晴',rain:'雨',sand:'沙',snow:'雪',hail:'雪'};
 var MECH_STATUS_ZH={burn:'灼伤',poison:'中毒',paralysis:'麻痹',sleep:'睡眠',frostbite:'冻伤',freeze:'冰冻'};
-/* 消耗性道具（杂技/轻身联动的关键前提）：宝石 332-349 / 场地种子 328-331 / 气势披带 287 等 */
+/* 消耗性道具（杂技/轻装联动的关键前提）：宝石 332-349 / 场地种子 328-331 / 气势披带 287 等 */
 var MECH_CONSUM_ID={};
 [332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,328,329,330,331,287,313,314,317,241,246,284,78,76,79,125,129,130,131].forEach(function(i){MECH_CONSUM_ID[i]=1});
 function mechIsConsumable(id){
@@ -3445,7 +3491,7 @@ function mechHasConsumable(s){
   for(var i=0;i<sides.length;i++)for(var j=0;j<tags.length;j++){if(mechIsConsumable(mechRecItemId(s,sides[i],tags[j])))return true}
   return false;
 }
-/* 低 HP 战术前提是否已备（气势披带/替身/忍耐） */
+/* 低 HP 战术前提是否已备（气势披带287/替身164/挺住203/忍耐117） */
 function mechLowHpReady(s,ctx){
   ctx=ctx||{};
   if(ctx.lowHp||ctx.sash||ctx.sub||ctx.endure)return true;
@@ -3506,8 +3552,8 @@ function mechMvAdj(s,m,ctx){
       case 'hp_cond_power':{
         var en=mechLowHpReady(s,ctx);
         if(en){r.pow=Math.round(mechNum(p,['maxPow','hiPow'],110));
-          r.why.push('低 HP 策略前提已备（气势披带/替身/忍耐）→ 按高威力 '+r.pow+' 评');}
-        else{r.why.push('低 HP 策略前提（需气势披带/替身/忍耐联动；未备时按表列威力评，不否决）');
+          r.why.push('低 HP 策略前提已备（气势披带/替身/挺住/忍耐）→ 按高威力 '+r.pow+' 评');}
+        else{r.why.push('低 HP 策略前提（需气势披带/替身/挺住/忍耐联动；未备时按表列威力评，不否决）');
           r.warn='绝处逢生/抓狂依赖低 HP 触发，未备触发手段（按前提招评，不否决）';}
         break;}
       case 'avalanche_after_hit':{
@@ -3516,18 +3562,20 @@ function mechMvAdj(s,m,ctx){
         r.why.push('受击后×2'+(sl<90?'（低速先挨打触发）':'（需先手挨打触发的前提）'));
         break;}
       case 'acrobatics_item':{
+        var acrNo=(p.noItemPow!==undefined&&p.noItemPow!==null)?Number(p.noItemPow):112.5;
+        var acrHeld=(p.heldPow!==undefined&&p.heldPow!==null)?Number(p.heldPow):75;
         if(noItem){
-          r.pow=Math.round(p.noItemPow||110);
-          r.why.push('无道具×2');
-          r.why.push('110（官方×2；ER desc 载 1.5×，待实测）');
+          r.pow=acrNo;
+          r.why.push('无道具×1.5（ER 改版口径：75 → '+r.pow+'）');
+          r.why.push(r.pow+'（ER 改版口径 75×1.5；官方 55×2=110，差异登记待实测）');
         }else if(hasCons){
-          r.pow=Math.round(p.noItemPow||110);
-          r.why.push('携带消耗性道具（宝石/场地种子）→ 消耗后杂技 110（轻身/杂技联动）');
-          r.why.push('110（官方×2；ER desc 载 1.5×，待实测）');
+          r.pow=acrNo;
+          r.why.push('携带消耗性道具（宝石/场地种子）→ 消耗后杂技按 '+r.pow+'（ER 改版口径；轻装/杂技联动）');
+          r.why.push(r.pow+'（ER 改版口径 75×1.5；官方 55×2=110，差异登记待实测）');
         }else{
-          r.pow=Math.round(p.heldPow||55);
-          r.warn='携带道具时威力减半';
-          r.why.push('携带道具时威力减半（'+r.pow+'）');
+          r.pow=acrHeld;
+          r.warn='携带常驻道具时无加成（按表列威力 75）';
+          r.why.push('携带常驻道具时无加成（'+r.pow+'，ER 改版口径：ER desc 仅在无道具时×1.5）');
         }
         break;}
       case 'counter_metal_burst':{
@@ -3541,10 +3589,11 @@ function mechMvAdj(s,m,ctx){
         break;}
       case 'endeavor_lowhp':{
         r.pow=Math.round(mechNum(p,['power','pow'],60));r.crossSide=true;
-        r.why.push('削对方至 1 HP（气势披带/高速前提）');
+        r.why.push('ER desc 口径：自身 HP 低于对方时增力（需气势披带/替身/挺住压血前提）');
+        r.why.push('官方口径为削对方至同血（保底 1），差异登记待实测');
         break;}
       case 'endure_reversal':
-        r.why.push('低 HP 战术前提（忍耐/替身 → 联动绝处逢生/抓狂/蛮干）');
+        r.why.push('低 HP 战术前提（挺住/替身 → 联动绝处逢生/抓狂/蛮干）');
         break;
       case 'no_guard_hit':
         r.noGuard=true;
@@ -3577,8 +3626,8 @@ function mechAbiWhy(s){
       case 'illusion_disguise':o.why='幻觉：伪装成队尾宝可梦 → 误导/对策效用锚点（依赖队友形态）';break;
       case 'magnet_pull_trap':o.why='磁力：困住钢系 → 钢系对策效用锚点（防换人）';break;
       case 'unburden_item':
-        o.why='轻身：道具被消耗后速度翻倍 → 需携带消耗性道具（宝石/场地种子/气势披带）';
-        if(!mechHasConsumable(s))o.warn='轻身未触发：需携带消耗性道具（宝石/场地种子/气势披带）';
+        o.why='轻装：道具被消耗后速度翻倍 → 需携带消耗性道具（宝石/场地种子/气势披带）';
+        if(!mechHasConsumable(s))o.warn='轻装未触发：需携带消耗性道具（宝石/场地种子/气势披带）';
         break;
       case 'multiscale_sash':o.why='多重鳞片/画皮/结实：满血或一击减伤 → 生存锚点（与气势披带等效）';break;
       case 'regenerator_pivot':o.why='再生力：换入回血 → 受队/轮转节奏锚点（每次换人回 1/3）';break;
@@ -3591,15 +3640,15 @@ function mechAbiWhy(s){
         if(!abiMentions(s,/中毒时|异常状态时|陷入异常/))o.warn='毒疗联动需携带剧毒宝珠（每回合中毒 → 转回复）';
         break;
       case 'contact_status':o.why='火焰之躯/静电/毒刺：接触附加 → 站场消耗锚点';break;
-      case 'gem_consumable':o.why='属性宝石：本发增伤后消耗 → 联动杂技 110 / 轻身提速';break;
-      case 'terrain_seed':o.why='场地种子：场地激活时 +1 级对应能力并消耗 → 联动杂技 110 / 轻身提速';break;
+      case 'gem_consumable':o.why='属性宝石：本发增伤后消耗 → 联动杂技 112.5 / 轻装提速';break;
+      case 'terrain_seed':o.why='场地种子：场地激活时 +1 级对应能力并消耗 → 联动杂技 112.5 / 轻装提速';break;
       default:o.why='机制命中：'+mechRwZh(mc.rewrite)+'（'+mc.zh+'）';
     }
     out.push(o);
   });
   return out;
 }
-/* 物种级剖面改写（§3 imposter_anchor）：百变怪 → 速度复制 + 道具三选（讲究围巾/气势披带/服务铃） */
+/* 物种级剖面改写（§3 imposter_anchor）：百变怪 → 速度复制 + 道具三选（讲究围巾/气势披带/脱壳忍者壳） */
 function mechSpProfile(s){
   var r={imposter:false,why:[],items:[],mechs:[]};
   if(!mechOn()||!s)return r;
@@ -3608,10 +3657,10 @@ function mechSpProfile(s){
     if(mc.rewrite==='imposter_anchor'){
       r.imposter=true;
       var p=mc.params||{};
-      r.items=((p.itemChoices&&p.itemChoices.length)?p.itemChoices:((p.items&&p.items.length)?p.items:[285,287,317])).map(function(x){return ''+x});
-      r.why.push('变身者：速度复制（复制对手的种族/招式基线）+ 道具三选（讲究围巾/气势披带/服务铃）');
+      r.items=((p.itemChoices&&p.itemChoices.length)?p.itemChoices:((p.items&&p.items.length)?p.items:[285,287,308])).map(function(x){return ''+x});
+      r.why.push('变身者：速度复制（复制对手的种族/招式基线）+ 道具三选（讲究围巾/气势披带/脱壳忍者壳）');
       r.why.push('种族值/技能池不作为主评分依据（仍展示，不参与主判据）');
-      r.why.push('讲究围巾＝复制速度后超速原主；气势披带＝保命（48 基础 HP 防秒，非提速）；服务铃＝配戏法空间');
+      r.why.push('讲究围巾＝复制速度后超速原主；气势披带＝保命（48 基础 HP 防秒，非提速）；脱壳忍者壳＝换下不受困（配戏法空间脱身续节奏）');
     }
   });
   return r;
@@ -3645,7 +3694,7 @@ function mechCondJudge(cond,s){
   if(cond.status!=null)prem.push('需处于'+((MECH_STATUS_ZH[cond.status])||cond.status)+'状态');
   if(cond.lowHp===true){
     if(mechLowHpReady(s,{}))pass.push('低 HP 战术前提已备');
-    else fail.push('需低 HP 触发手段（气势披带/替身/忍耐）');}
+    else fail.push('需低 HP 触发手段（气势披带/替身/挺住/忍耐）');}
   if(cond.teammateAbility!=null){var ta=cond.teammateAbility||[];
     prem.push('需队友具 '+ta.map(mechAbiZh).join('/')+' 特性（按队伍构建判定）');}
   if(cond.opponentType!=null){var ot=cond.opponentType||[];
@@ -4321,7 +4370,7 @@ function itemDecide(s,side,roleTag,ctx){
 }
 function buildItem(s,side,roleTag,ctx){
   var list=itemDecide(s,side,roleTag,ctx).map(function(e){return [e.zh,e.why]});
-  /* v4.10 机制锚点（§3 imposter_anchor：道具三选 讲究围巾/气势披带/服务铃）——正向置顶，不剔除既有候选 */
+  /* v4.10 机制锚点（§3 imposter_anchor：道具三选 讲究围巾/气势披带/脱壳忍者壳）——正向置顶，不剔除既有候选 */
   try{
     var mp=mechSpProfile(s);
     if(mp.imposter&&mp.items.length){
@@ -6674,9 +6723,36 @@ function initRuleBoxes(){
     '<br>v4.x：'+esc(v4ContractNote())+'；词条解释（天气/场地/钉子/强化/异常/先制/蓄力/属性转换/冻伤/麻痹等）在正文中以虚线下划线标出，悬停看释义、点击开「词条卡片」（居中轻量 modal，带遮罩与关闭）。'+
     '<br>场地：'+terrainNums()+'；顺风 '+WCONF.tailwindTurns+' 回合 / 空间 '+WCONF.trickroomTurns+' 回合'+pendBadge()+WCONF.trickroomPrio+'</div></details>';
 }
+/* ===== v4.11 精灵图主源探活与回退 =====
+   CSS background-image 无 onerror，故用一次性 Image 探针（s0.webp，8 张合图之一）：
+   主源（CDN 镜像）取不到 ⇒ 置 __ER_ASSET_BASE='' 并把已渲染精灵图逐元素重写为同域相对路径。
+   无前缀（file: / 未设）或环境无 Image（Node VM）⇒ 直接返回，零副作用。 */
+function sprRescan(){
+  try{
+    var els=(document.querySelectorAll?document.querySelectorAll('.spsp,.mcspr,.spmid'):[]),i,e,id,st;
+    for(i=0;els&&i<els.length;i++){
+      e=els[i]; if(!e||!e.getAttribute)continue;
+      id=e.getAttribute('data-id'); if(id===null||id===undefined)continue;
+      st=sprOf(id);
+      if(e.setAttribute)e.setAttribute('style',st);
+      if(st){e.className=String(e.className||'').replace(/\s*spmiss/g,'')}
+      else if(String(e.className||'').indexOf('spmiss')<0){e.className=String(e.className||'')+' spmiss'}
+    }
+  }catch(err){}
+}
+function sprProbe(){
+  try{
+    if(typeof Image==='undefined')return;
+    var b=erAssetBase(); if(!b)return;
+    var im=new Image();
+    im.onerror=function(){window.__ER_ASSET_BASE='';sprRescan()};
+    im.src=b+'assets/sheets/s0.webp';
+  }catch(err){}
+}
 initRuleBoxes();
 renderTpl();
 renderMyPool();
+sprProbe();
 </script>
 </body>
 </html>
@@ -6713,8 +6789,19 @@ except Exception as _ea:
     print('[warn] 轴知识库不可用（%s）→ 回退空数组：多方案框架仅呈现规模/风格变体' % _ea)
     axis_js = 'var AXIS_LIB=[];'
 
-final = TEMPLATE.replace('__ERDATA__', data_js).replace('__SPRSHEET__', sheet_js).replace('__AXISLIB__', axis_js)
+# ---- v4.11 拆包：两份产物同目录落盘 ----
+#   · 配招助手_ER.html：正文（CSS + 加载器块 + SPR_SHEET/AXIS_LIB + 应用代码），不再内嵌 ERDATA 字面量；
+#   · data.js          ：ERDATA 字面量本体（含 EV-3 nonFinalER/finalOf 等派生追加），逐字同源。
+# __ER_CDN_PREFIX__ → CDN_PREFIX：加载器块的镜像前缀由本处常量单一注入（避免两处硬编码漂移）。
+final = (TEMPLATE.replace('__ER_CDN_PREFIX__', CDN_PREFIX)
+                 .replace('__SPRSHEET__', sheet_js)
+                 .replace('__AXISLIB__', axis_js))
 out = BASE + r'\配招助手_ER.html'
 open(out, 'w', encoding='utf-8').write(final)
 print('HTML bytes:', os.path.getsize(out))
 print('written:', out)
+
+data_out = BASE + r'\data.js'
+open(data_out, 'w', encoding='utf-8').write(data_js)
+print('data.js bytes:', os.path.getsize(data_out))
+print('written:', data_out)

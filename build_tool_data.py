@@ -110,13 +110,28 @@ ITEM_ZH_EXTRA = {'Electric Seed': '电气种子', 'Psychic Seed': '精神种子'
 # mechLib「配合对象」列与 premise 文案对空 zh 会回落到内部编号（#339 / #352）。此处按**道具 id**
 # 补 2 条 mechLib 实际引用的缺口；上面按英文名的 ITEM_ZH_EXTRA 保持原样。
 ITEM_ZH_EXTRA_ID = {339: '飞行宝石', 352: '厚底靴'}
+# v4.11 道具中文补译：ER-source\item_zh_cn.json 覆盖 762 条历史缺失中文名的道具
+# （官方简中译名 508 + Mega 石按项目物种简中名派生 221 + 关键道具/ER 自创 33；逐条分类与
+#  口径见 docs\研究资料\_v411道具中文补译_记录_20261010.md 与 ER-source\item_zh_cn.json）。
+# 仅作**解析链末位兜底**：CSV 中文名 → ITEM_ZH_EXTRA(英文名) → ITEM_ZH_EXTRA_ID(id)
+# → ITEM_ZH_CN(id)，既有优先级与行为不变；文件缺失时自动跳过。
+try:
+    with open(BASE + r'\ER-source\item_zh_cn.json', encoding='utf-8') as _f:
+        ITEM_ZH_CN = json.load(_f)
+except Exception as _e:
+    print('警告: ER-source\\item_zh_cn.json 读取失败，道具中文补译（v4.11）已跳过:', _e)
+    ITEM_ZH_CN = {}
+print('itemZhCn:', len(ITEM_ZH_CN))
 for r in csv.reader(open(BASE + r'\道具表_完整.csv', encoding='utf-8-sig')):
     if r[0] == '道具id':
         continue
     zh = r[2] or ITEM_ZH_EXTRA.get(r[1], '')
     if not zh and r[0].strip().isdigit():
         zh = ITEM_ZH_EXTRA_ID.get(int(r[0]), '')
+    if not zh:
+        zh = ITEM_ZH_CN.get(str(r[0]).strip(), '')
     items.append([r[0], r[1], zh, r[3]])
+print('items:', len(items), '| zh 空:', sum(1 for _it in items if not _it[2]))
 
 # 6. 特性表（合并 v0.3 + v0.5 两图鉴中文名：v0.3 有 1030 条含闪电之躯/毛茸茸，v0.5 有 791 条含 ER 特有中文名）
 GD = json.load(open(BASE + r'\ER-source\gameDataV2.65beta.json', encoding='utf-8'))
