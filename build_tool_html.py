@@ -231,6 +231,10 @@ tr.mv.open + .mvdesc{display:table-row}
 .btn{border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px}
 .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
 .btn-mini{border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:10px; cursor:pointer; font-size:12px; vertical-align:middle}
+/* v4.8 G2：目标队伍规模选择器（触控目标 ≥44px，PC/平板/手机一致） */
+.tgtsel{border:1px solid var(--line); background:var(--card); padding:7px 8px; border-radius:8px; font-size:13px; min-height:44px; cursor:pointer; vertical-align:middle}
+.scalebar{background:#f1f8ff; border-left:3px solid #64b5f6; border-radius:4px; padding:8px 10px; margin:6px 0; font-size:12px}
+.fillrow{border-left:3px solid #90caf9; background:#f7fbff; border-radius:4px; padding:6px 8px; margin:6px 0}
 .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
 .mini{font-size:12px}
 .badge{display:inline-block; border-radius:10px; padding:1px 8px; font-size:12px; margin-right:4px}
@@ -4557,6 +4561,23 @@ var NEED_CFG={SPEED_HIGH:100,SPEED_LOW:60,BULK_HIGH:300,BULK_MID:270,MIXED_OK:70
   MULTI_ROLE_BONUS:3,STOP_PRIORITY:1,MAX_TEAM:6,
   MULTI_MAX:2 /* 单只最多「顺带满足」的额外需求数——07 §4.5.3 未设上限；加此上限以保持 07 期望的 4~6 只队伍，
                  避免一只全能宝可梦一次清零十余条需求导致队伍缩到 2~3 只（实现口径已在交付报告登记） */};
+/* ============ v4.8（G2/G3）：目标队伍规模 = 产品级参数（默认 6 / 2 = v4.7 现行为） ============
+   依据《引擎规模行为核查_报告》（M4，只读核查）：引擎自身推荐 5.33 人（18 核心实测、无 3 人以下），
+   评测口径「3.60」为池构造（删人/随机样本占 95.6%）+ min-size 过滤 + 均值型指标规模偏置的假象；
+   反事实：多功能合并上限 =0 → 18/18 恰好 6 只 → 引擎**有能力**稳定满编。
+   本轮把两个硬编码常量提升为产品级参数并接入 UI「目标队伍规模」选择：
+     · target   ：目标队伍规模 3~6（默认 6）；调小 = **上限收紧**（正向引导，不是硬剔除——候选池仍全量可见）
+     · multiMax ：多功能合并上限（默认 2）；目标 ≤4 时自动降为 1（合并更弱 → 队伍不塌到目标人数之下）
+     · 补位     ：需求驱动结果不足 target 时，方案卡可手动「继续补位」（按广义正向分取最优，
+                  标注「补位（非需求驱动）」）；候选池从不枯竭，补位是正向追加而非放宽否决。
+   回退：TEAM_CFG.target=6、multiMax=2、PLAN_FILL 空 → 与 v4.7 行为逐字节一致（RULE_SHIFT 零改动）。 */
+var TEAM_CFG={target:NEED_CFG.MAX_TEAM,multiMax:NEED_CFG.MULTI_MAX,TARGET_MIN:3,TARGET_MAX:NEED_CFG.MAX_TEAM,MULTI_BASE:NEED_CFG.MULTI_MAX};
+var PLAN_FILL={};   /* coreId → 「继续补位」点击数（按核心记忆，重渲染不丢） */
+function teamTarget(){return TEAM_CFG.target}
+function teamMultiMax(){return TEAM_CFG.multiMax}
+/* 目标规模 → 多功能合并上限（可解释规则：目标越小 → 合并越弱 → 队伍不塌到目标之下；默认 6 → 2 不变） */
+function multiMaxForTarget(v){v=parseInt(v,10)||TEAM_CFG.TARGET_MAX;return v>=5?TEAM_CFG.MULTI_BASE:Math.max(1,TEAM_CFG.MULTI_BASE-1)}
+function planFillOf(coreId){return Math.max(0,PLAN_FILL[''+coreId]||0)}
 /* NEED_EXAMPLES —— 07 §2「需求示例参考」（原 SLOT_TABLE 更名后的降级形态）
    定位（v4.3）：只记录「历史上常见于该体系的需求候选词」，仅作
      ① 冷启动的默认需求来源 ② 用户未指定核心时的兜底 ③ 打分时的体系常见度先验。
@@ -4751,7 +4772,14 @@ var NEED_KINDS={
      n.forEach(function(x){var tg=abiTagOf(x);if(tg&&tg.im&&tg.im.length)hit.push(x)});
      if(hit.length)return '免疫特性：'+hit.join('/');
      return ''},
-   dims:[['D11',2],['D6',1]]}
+   dims:[['D11',2],['D6',1]]},
+ /* v4.8（G2）：补位专用需求「非需求驱动」——gate 恒真（任何可用物种都在池内），
+   dims = 广义正向价值（不针对某条需求），用于「继续补位」时按综合分取最优。
+   ⚠️ 不参与 needList 动态生成（不占需求清单），只被 buildTeamByNeeds(opts.fill) 消费。 */
+ fill:{kind:'fill',label:function(){return '补位（非需求驱动）'},role:'在需求驱动方案之外继续补强：按广义正向维度综合分取最优（不看需求匹配）',
+   why:function(){return '用户手动继续补位：候选池从不枯竭，按正向维度综合分排序追加'},
+   gate:function(t,cx){return '可补位（广义正向维度综合分排序；不受需求匹配约束）'},
+   dims:[['D6',2],['D4',2],['D2',2],['D11',1],['D8',1],['D9',1],['D14',1],['D1',1]]}
 };
 function mvPick(L,ids){for(var i=0;i<ids.length;i++){if(L.indexOf(ids[i])>-1)return ids[i]}return ids[0]}
 function isAbilSetAny(s){return isSetterAny(s)}   /* v4.3：统一委托 isSetterAny（单一真值源） */
@@ -5050,7 +5078,8 @@ function teamFamKey(s){
    流程：体系/画像识别 → needList（**动态**生成需求清单，条数与类型随核心变化）
         → 按优先级逐条需求、全图鉴正向评分（零硬门）取最优填充者
         → 多功能加分（R07-27：一只满足 k 条 open 需求 score += (k-1)×MULTI_ROLE_BONUS，并把已满足条目移出）
-        → 满 6 只 / 需求清零 / 剩余最高优先级 < STOP_PRIORITY → 停（允许 <6 紧凑队，R07-28）
+        → 达目标规模（teamTarget()，默认 6）/ 需求清零 → 停（允许 <目标 只紧凑队，R07-28）；
+          优先级护栏：仅当出现 0 优先级需求时才按 priority 截断（G4 登记，当前不可达）
    ⚠️ 引擎不得以「Σ需求数 == 6」做校验或补齐（07 §2 降级说明）。 */
 function needList(core,cx){
   cx=cx||{};
@@ -5137,7 +5166,7 @@ function poolForNeed(core,cx0,need,team,used){
       names:(t.abis||[]).concat(t.inns||[]),conv:convOf(t)});
     loc.need=(cx0.needHoles||(cx0.need||[]));
     var r=needScore(t,need,loc);if(!r)return;
-    var kRaw=countSatisfied(t,open,loc),k=Math.min(kRaw,1+NEED_CFG.MULTI_MAX);
+    var kRaw=countSatisfied(t,open,loc),k=Math.min(kRaw,1+teamMultiMax());   /* v4.8 G3：合并上限=产品级参数（默认 2=现行为） */
     /* v4.3.1/4.3.2：奇石权衡通过形态加分 + why（配装含「进化奇石」；权衡上下文 = 核心体系/是否空间队/核心侧） */
     var ev=evioAdv(t,coreSys(core),coreIsSpace(core),coreSide(core));
     if(ev){r.dims=r.dims.concat([{id:'EV',dim:'进化奇石',w:1,pts:EVIO.PTS,txt:ev.why}]);
@@ -5151,6 +5180,8 @@ function poolForNeed(core,cx0,need,team,used){
 /* buildTeamByNeeds(core,opts)：需求驱动 → 完整队伍方案（体系总览 + 需求清单 + 成员） */
 function buildTeamByNeeds(core,opts){
   opts=opts||{};
+  /* v4.8 G2/G3：目标规模与多功能合并上限 = 产品级参数（默认 6 / 2 = v4.7 现行为） */
+  var tgt=teamTarget(),mm=teamMultiMax(),fillsWanted=Math.max(0,parseInt(opts.fill,10)||0);
   var sy=sysForCore(core),sysKey=sy.sysKey,prof=profileOf(core);
   var holes=coverHoles(core).slice(0,6);
   var base=cx0Of(core,sysKey,holes);
@@ -5158,10 +5189,14 @@ function buildTeamByNeeds(core,opts){
   var team=[{s:core,core:true,need:null,score:null,dims:[],multi:0,gate:'核心',links:[]}];
   var used={},fam={};used[''+core.id]=1;fam[teamFamKey(core)]=1;
   var pools={},stopReason='',guard=0;
-  while(team.length<NEED_CFG.MAX_TEAM&&guard++<24){
+  while(team.length<tgt&&guard++<24){
     var open=needs.filter(function(n){return n.status==='open'});
     if(!open.length){stopReason='STOP_ALL_NEEDS_MET';break}
     var need=open[0];
+    /* v4.8 G4 登记（《引擎规模行为核查_报告》§2.4 / G4）：STOP_PRIORITY=1 时本分支在状态空间
+       **不可达**（需求最小优先级恒为 1，priority<1 永不成立；18 核心实测命中 0 次）。
+       处理结论：有引用（常量 / 本分支 / UI 文案）→ **登记不清理**；保留作护栏——
+       未来若引入 0 优先级需求（如「可选补强」类）本分支即生效，按优先级截断。 */
     if(need.priority<NEED_CFG.STOP_PRIORITY){stopReason='STOP_BELOW_PRIORITY';break}
     var ctx=base;ctx.openNeeds=open;ctx.used=used;ctx.need=teamNeed({team:team});
     var pool=poolForNeed(core,ctx,need,team,used);
@@ -5177,7 +5212,7 @@ function buildTeamByNeeds(core,opts){
     var met=[];
     open.forEach(function(nd){
       if(nd===need)return;
-      if(met.length>=NEED_CFG.MULTI_MAX)return;              /* 上限：见 NEED_CFG.MULTI_MAX 说明 */
+      if(met.length>=mm)return;                              /* v4.8 G3：上限 = 产品级参数 teamMultiMax()（默认 2） */
       if(needSatisfied(pick.s,nd,pick.loc))met.push(nd);
     });
     need.status='satisfied';need.satisfiedBy=[pick.s.zh||pick.s.name];
@@ -5192,7 +5227,26 @@ function buildTeamByNeeds(core,opts){
     team.push(member);
     used[''+pick.s.id]=1;fam[teamFamKey(pick.s)]=1;
   }
-  if(team.length>=NEED_CFG.MAX_TEAM)stopReason='STOP_SIZE_LIMIT';
+  /* ===== v4.8 G2：手动「继续补位」（非需求驱动）=====
+     需求驱动结果不足目标规模、且用户点过「继续补位」时，按广义正向分（NEED_KINDS.fill）
+     逐只追加最优未用成员；每只标注 fill:true + need.label='补位（非需求驱动）'，
+     **不改动**任何需求的 satisfied 状态（补位与需求闭合互不干扰；候选池从不枯竭）。 */
+  var fillCands=[],fillN=0;
+  if(fillsWanted>0&&team.length<tgt){
+    var fctx=base;fctx.used=used;fctx.need=teamNeed({team:team});
+    fctx.openNeeds=[{id:'FILL',kind:'fill',arg:null,label:'补位（非需求驱动）',priority:0,def:NEED_KINDS.fill}];
+    for(var fi=0;fi<fillsWanted&&team.length<tgt;fi++){
+      var fneed={id:'FILL',kind:'fill',arg:null,label:'补位（非需求驱动）',priority:0,def:NEED_KINDS.fill};
+      var fpool=poolForNeed(core,fctx,fneed,team,used).filter(function(x){return !fam[teamFamKey(x.s)]});
+      if(!fillCands.length)fillCands=fpool.slice(0,8);
+      var fp=fpool[0];if(!fp)break;
+      team.push({s:fp.s,core:false,fill:true,need:fneed,score:fp.score,base:fp.base,multi:fp.multi,
+        dims:fp.dims,gate:fp.gate,met:[],links:[]});
+      used[''+fp.s.id]=1;fam[teamFamKey(fp.s)]=1;
+    }
+    fillN=team.filter(function(m){return m.fill}).length;
+  }
+  if(team.length>=tgt)stopReason='STOP_SIZE_LIMIT';
   /* 联动（四源合成：体系受益 / 补盲 / 联防 / 接力） */
   team.forEach(function(m){
     if(m.core){m.links=[];return}
@@ -5200,16 +5254,17 @@ function buildTeamByNeeds(core,opts){
   });
   var openLeft=needs.filter(function(n){return n.status==='open'||n.status==='unmatched'||n.status==='blocked'});
   var sat=needs.filter(function(n){return n.status==='satisfied'}).length;
-  var audit={filled:team.length,total:needs.length,satisfied:sat,
+  var audit={filled:team.length,total:needs.length,satisfied:sat,fills:fillN,
     needCoverage:needs.length?Math.round(sat*100/needs.length):100,
     openNeeds:openLeft.map(function(n){return n.label+(n.note?'（'+n.note+'）':'')}),
     warnings:[]};
-  if(team.length>=NEED_CFG.MAX_TEAM&&openLeft.length)
-    audit.warnings.push('已满 6 只但仍有 '+openLeft.length+' 条需求未满足（仍输出，不自动补齐）');
-  if(team.length<NEED_CFG.MAX_TEAM&&!openLeft.length)
-    audit.warnings.push('需求已清零 → 输出 '+team.length+' 只紧凑队伍（不再为凑满 6 只而加人）');
+  if(team.length>=tgt&&openLeft.length)
+    audit.warnings.push('已达目标规模 '+tgt+' 只但仍有 '+openLeft.length+' 条需求未满足（仍输出，不自动补齐）');
+  if(team.length<tgt&&!openLeft.length)
+    audit.warnings.push('需求已清零 → 输出 '+team.length+' 只紧凑队伍（不自动补齐；可用「继续补位」手动追加非需求驱动候选）');
   return {core:core,prof:prof,sysKey:sysKey,sys:sy,refName:sy.refName,arch:sy.arch,
     needs:needs,team:team,pools:pools,audit:audit,stopReason:stopReason,
+    target:tgt,multiMax:mm,fills:fillN,fillCands:fillCands,   /* v4.8 G2/G3：规模参数与补位候选一并回传 */
     overview:teamOverview({core:core,prof:prof,sysKey:sysKey,team:team,needs:needs})};
 }
 /* 兼容别名（旧调用点/旧脚本）：buildTeam(s,opts) → 需求驱动版 */
@@ -5241,7 +5296,7 @@ function linksFor(s,plan,need,sysKey){
   if(learnHasName(s,'接棒',L)&&hasAny(L,FUNC_MV.boost))out.push({k:'pass',txt:'可自强化后接棒传递'});
   else if(hasAny(L,FUNC_MV.rec))out.push({k:'rec',txt:'提供回复/续航'});
   else if(hasAny(L,FUNC_MV.pivot))out.push({k:'pivot',txt:'轮转保节奏'});
-  if(need)out.push({k:'need',txt:'满足需求「'+need.label+'」：'+(need.gateWhy||'')});
+  if(need)out.push({k:'need',txt:(need.kind==='fill'?'补位（非需求驱动）· ':'满足需求「'+need.label+'」：')+(need.gateWhy||'')});
   return out;
 }
 /* 体系总览（怎么启动 / 怎么受益 / 怎么轮转）——按需求与成员动态生成 */
@@ -5342,12 +5397,61 @@ function itemTagOfCore(plan,s){
   var t=roleTagOfCore(plan,s);
   return (t==='输出')?'输出':t;
 }
-/* 停止原因（内部枚举 → 玩家可读文案；枚举值本身仍是引擎契约，UI 不外露） */
-function stopReasonZh(r){return ({STOP_ALL_NEEDS_MET:'需求已清零',STOP_BELOW_PRIORITY:'剩余需求优先级过低',STOP_SIZE_LIMIT:'已满 6 只'})[String(r||'')]||'—'}
+/* 停止原因（内部枚举 → 玩家可读文案；枚举值本身仍是引擎契约，UI 不外露）
+   v4.8 G3：目标规模可配（3~6）→ 文案不再写死「6 只」 */
+function stopReasonZh(r){return ({STOP_ALL_NEEDS_MET:'需求已清零',STOP_BELOW_PRIORITY:'剩余需求优先级过低',STOP_SIZE_LIMIT:'已达目标规模'})[String(r||'')]||'—'}
+/* ===== v4.8（G2/G3）：目标规模切换 / 继续补位 / 局部重渲染 =====
+   设计（正向引导，非硬剔除）：目标规模 = 上限（默认 6）；补位 = 用户主动追加（候选池从不枯竭）；
+   重渲染只替换本核心的方案块（#teamPlan_<id>）——两段式互斥视图、其它 Tab 与输入状态均不受影响。 */
+function planTargetHtml(coreId,plan){
+  var tgt=plan.target||teamTarget(),n=plan.team.length,opts='';
+  for(var v=TEAM_CFG.TARGET_MIN;v<=TEAM_CFG.TARGET_MAX;v++)
+    opts+='<option value="'+v+'"'+(v===tgt?' selected':'')+'>'+v+' 只'+(v===TEAM_CFG.TARGET_MAX?'（默认）':'')+'</option>';
+  var h='<div class="scalebar"><b>目标队伍规模</b>：<select class="tgtsel" onchange="setPlanTarget('+coreId+',this.value)" title="可选 3/4/5/6，默认 6；调小 = 上限收紧">'+opts+'</select> '+
+    '<span style="color:var(--sub)">当前 '+n+' / 目标 '+tgt+' 只 · 多功能合并上限 ×'+(plan.multiMax||teamMultiMax())+'</span>';
+  if(n<tgt){
+    h+=' <button class="btn-mini" onclick="planFillMore('+coreId+')">➕ 继续补位</button>'+
+      ' <span style="color:var(--sub)">补位 = 在需求驱动结果之外按广义正向分追加（候选池从不枯竭，逐只标注「补位（非需求驱动）」）</span>';
+  }else{
+    h+=' <span class="badge" style="background:#e8f5e9">已达目标规模 '+tgt+' 只</span>'+
+      (n>=TEAM_CFG.TARGET_MAX?' <span style="color:var(--sub)">（已是上限 6 只；如需更少可把目标调小）</span>':'');
+  }
+  h+='</div>';
+  return h;
+}
+function setPlanTarget(coreId,v){
+  v=parseInt(String(v).replace(/[^0-9]/g,''),10);
+  if(!(v>=TEAM_CFG.TARGET_MIN&&v<=TEAM_CFG.TARGET_MAX))v=TEAM_CFG.TARGET_MAX;
+  TEAM_CFG.target=v;TEAM_CFG.multiMax=multiMaxForTarget(v);
+  PLAN_FILL[''+coreId]=0;   /* 改目标规模 → 补位计数归零（避免残留次数超出新目标） */
+  reRenderPlan(coreId);
+  toast('目标队伍规模 '+v+' 只（多功能合并上限 ×'+TEAM_CFG.multiMax+'）');
+}
+function planFillMore(coreId){
+  var k=''+coreId,cur=planFillOf(k),s=spId2Obj(coreId),p=null;
+  PLAN_FILL[k]=cur+1;
+  try{p=buildTeamByNeeds(s,{fill:planFillOf(k)})}catch(e){p=null}
+  if(p&&p.fills>cur){
+    var last=p.team[p.team.length-1]||{};
+    toast('已补位 '+p.fills+' 只（非需求驱动）：'+((last.s&&last.s.zh)||''));
+  }else{
+    PLAN_FILL[k]=cur;   /* 未生效（已达目标规模）→ 计数回退 */
+    toast('已达目标规模 '+teamTarget()+' 只（上限 6）——如需更少可把目标调小，或换核心重新构建');
+  }
+  reRenderPlan(coreId);
+}
+function reRenderPlan(coreId){
+  var s=spId2Obj(coreId);if(!s)return;
+  var h=renderNeedPlan(s);
+  var nodes=document.querySelectorAll('[id="teamPlan_'+coreId+'"]'),arr=[];
+  for(var i=0;i<nodes.length;i++)arr.push(nodes[i]);
+  if(arr.length){for(var j=0;j<arr.length;j++){try{arr[j].outerHTML=h}catch(e){}}}
+  else{var o=$('coreOut');if(o)o.innerHTML=h}
+}
 function renderNeedPlan(s){
   var plan=null;
-  try{plan=buildTeamByNeeds(s)}catch(e){return '<div class="sec"><h3>队伍构建方案</h3><div class="tip">方案生成失败：'+esc(''+e)+'</div></div>'}
-  var h='<div class="sec" id="teamPlan"><h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
+  try{plan=buildTeamByNeeds(s,{fill:planFillOf(s.id)})}catch(e){return '<div class="sec"><h3>队伍构建方案</h3><div class="tip">方案生成失败：'+esc(''+e)+'</div></div>'}
+  var h='<div class="sec" id="teamPlan_'+s.id+'"><h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
   h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
     '· <b>怎么启动：</b>'+esc(plan.overview.start)+'<br>'+
     '· <b>怎么受益：</b>'+esc(plan.overview.benefit)+'<br>'+
@@ -5360,11 +5464,14 @@ function renderNeedPlan(s){
       esc(wt?wt.s.zh:'—')+(wt?('（'+(wt.gate||'')+'）'):'')+' 作为 '+esc(plan.sysKey)+' 体系手；'+
       '核心自身非设置手，配招功能槽不放天气招（把手位留给队友，核心专注输出/联防）。</div>';
   }
+  h+=planTargetHtml(s.id,plan);   /* v4.8 G2/G3：目标规模选择 + 继续补位（默认 6 只 = 与既有行为一致） */
   h+='<details class="inline"><summary>📐 构建口径（需求驱动 · 动态推导）—— 展开看评分与终止规则</summary><div style="margin-top:4px">'+
     '<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
     '逐条需求在全图鉴做正向评分，选最优填充者；一只满足多条需求 = 多功能加分 <b>+(k−1)×'+NEED_CFG.MULTI_ROLE_BONUS+'</b>；'+
-    '满 '+NEED_CFG.MAX_TEAM+' 只 / 需求清零 / 剩余最高优先级 &lt; '+NEED_CFG.STOP_PRIORITY+' → 立即停手（允许 &lt;'+NEED_CFG.MAX_TEAM+' 只紧凑队，不自动补齐）。'+
-    '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。</div></details>';
+    '达目标规模 '+teamTarget()+' 只 / 需求清零 → 立即停手（允许 &lt;'+teamTarget()+' 只紧凑队，不自动补齐）。'+
+    '目标规模与多功能合并上限（当前 ×'+teamMultiMax()+'）均为可配参数：目标调小 = 上限收紧，合并上限随之降低，队伍不会塌到目标之下。'+
+    '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。'+
+    '（停手规则补充：仅当出现 0 优先级需求时才按优先级截断，当前尚无此类需求。）</div></details>';
   var pr=plan.prof;
   var _sb=(pr.side==='特殊'?pr.atk.sp:pr.atk.ph)||pr.atk.sp||pr.atk.ph;
   h+='<div class="tip"><b>核心画像</b>（四画像推导）：'+esc(pr.role)+' · '+esc(pr.side)+'向 · 力度 '+pr.power+'（本系最高 '+esc(_sb?MV[_sb.id][1]+'('+_sb.pow+')':'—')+'）'+
@@ -5414,18 +5521,27 @@ function renderNeedPlan(s){
   });
   h+='</div>';
   PLAN_POOLS[puid]=ppool;
-  /* ② 队伍成员（完整方案：配招/特性/道具/性格/职责/联动） */
-  h+='<div class="sec" style="margin:8px 0"><h3>队伍方案（'+plan.team.length+' 只'+(plan.team.length<NEED_CFG.MAX_TEAM?'（需求已清零，紧凑队）':'')+'）</h3>';
+  /* ② 队伍成员（完整方案：配招/特性/道具/性格/职责/联动）
+     v4.8 G2：补位成员（fill:true）= 用户手动追加的「非需求驱动」成员，独立标注（浅蓝行 + 徽标 + 补位依据） */
+  h+='<div class="sec" style="margin:8px 0"><h3>队伍方案（'+plan.team.length+' 只 / 目标 '+plan.target+' 只'+
+    (plan.fills?('，含手动补位 '+plan.fills+' 只（非需求驱动）'):'')+
+    ((plan.team.length<plan.target&&!plan.fills)?'（需求已清零，紧凑队）':'')+'）</h3>';
   plan.team.forEach(function(m,ix){
     var L=m.links||[];
-    h+='<div class="slotbody"><div class="slothead">'+sprImg(m.s.id,'spinl')+'<b>'+esc(m.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+m.s.id+'</span>'+
-      (m.core?' <span class="badge">核心</span>':'')+(m.need?' <span class="badge">'+esc(m.need.label)+'</span>':'')+
+    h+='<div class="slotbody'+(m.fill?' fillrow':'')+'"><div class="slothead">'+sprImg(m.s.id,'spinl')+'<b>'+esc(m.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+m.s.id+'</span>'+
+      (m.core?' <span class="badge">核心</span>':'')+
+      (m.fill?' <span class="badge" style="background:#e3f2fd">补位（非需求驱动）</span>':(m.need?' <span class="badge">'+esc(m.need.label)+'</span>':''))+
       (m.score!=null?(' <span class="badge">'+esc(String(Math.round(m.score*10)/10))+' 分</span>'):'')+
       (m.multi>1?(' <span class="badge">多功能 ×'+m.multi+'</span>'):'')+
       ' <button class="btn-mini" onclick="event.stopPropagation();addToTeam(spId2Obj('+m.s.id+'),null)">➕ 入队</button>'+
       ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+m.s.id+')">🎯 设为核心</button></div>';
     if(L.length)h+='<div style="font-size:11px;margin:2px 0">↔ '+L.map(function(x){return esc(x.txt)}).join('；')+'</div>';
-    h+=needBuildHtml(m.s,m.core?roleTagOfCore(plan,m.s):roleTagOfNeed(m.need),m.core?itemTagOfCore(plan,m.s):itemTagOfNeed(m.need),{sys:plan.sysKey,need:m.need&&m.need.kind});
+    if(m.fill)h+='<div style="font-size:11px;color:var(--sub);margin:2px 0">补位依据（广义正向分，非需求匹配）：'+esc(m.gate||'')+
+      ((m.dims||[]).length?('；'+m.dims.slice(0,4).map(function(d){return esc(d.dim+' '+d.txt)}).join(' ｜ ')):'')+'</div>';
+    /* 补位成员按自身画像出装（roleTag/itemTag 由 profileOf 推导，避免与需求驱动成员的标签混同） */
+    var rt=m.core?roleTagOfCore(plan,m.s):(m.fill?roleTagOfProf(profileOf(m.s)):roleTagOfNeed(m.need));
+    var it=(m.core?itemTagOfCore(plan,m.s):(m.fill?coreItemTagOf(profileOf(m.s),m.s,plan.sysKey):itemTagOfNeed(m.need)));
+    h+=needBuildHtml(m.s,rt,it,{sys:plan.sysKey,need:m.need&&m.need.kind});
     h+='</div>';
   });
   h+='</div>';
@@ -5442,10 +5558,9 @@ function renderNeedPlan(s){
         '回退开关 RULE_SHIFT_ENABLED。</span></div>';
     }
   }catch(eRC){}
-  h+='<div class="tip" style="font-size:11px">体检：需求覆盖 '+au.needCoverage+'%（已满足 '+au.satisfied+'/'+au.total+'）· 队伍 '+au.filled+' 只 · 停止原因 '+esc(stopReasonZh(plan.stopReason))+
+  h+='<div class="tip" style="font-size:11px">体检：需求覆盖 '+au.needCoverage+'%（已满足 '+au.satisfied+'/'+au.total+'）· 队伍 '+au.filled+' 只（目标 '+plan.target+' 只'+(au.fills?('，其中补位 '+au.fills+' 只'):'')+'）· 停止原因 '+esc(stopReasonZh(plan.stopReason))+
     (au.openNeeds.length?('<br>未满足需求：'+au.openNeeds.map(esc).join('；')):'')+
     (au.warnings.length?('<br>告警：'+au.warnings.map(esc).join('<br>告警：')):'')+'</div>';
-  h+='</div>';
   /* v432-1：权衡否决可见（低样式折叠块，不占主推荐位） */
   try{
     var vs=evioVetoSummary(s);
@@ -5463,6 +5578,7 @@ function renderNeedPlan(s){
       h+='</details>';
     }
   }catch(eV){}
+  h+='</div>';   /* v4.8：方案块收口 —— #teamPlan_<id> 覆盖整卡（含奇石权衡折叠块），目标规模切换时就地重渲染 */
   return h;
 }
 /* 成员/候选的配招建议块（招式/特性/道具可点击跳转） */

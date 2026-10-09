@@ -1,0 +1,2276 @@
+{
+ "meta": {
+  "task": "M4 引擎规模行为核查（只读；零 HTML/引擎改动）",
+  "date": "2026-10-09",
+  "engine_source": "D:\\game\\elite-redux\\配招助手_ER.html（memory 提取内嵌 <script>，未落盘中间文件）",
+  "engine_build": "v4.7（RULE_SHIFT_ENABLED=true）",
+  "engine_script_bytes": 2036708,
+  "note": "本 JSON 由 _m4_size_probe.js（引擎实测）+ _m4_dataset_stats.py（G4 池分解）产出，全部只读运行。"
+ },
+ "engine_measured": {
+  "need_cfg": {
+   "SPEED_HIGH": 100,
+   "SPEED_LOW": 60,
+   "BULK_HIGH": 300,
+   "BULK_MID": 270,
+   "MIXED_OK": 70,
+   "POWER_OK": 95,
+   "MULTI_ROLE_BONUS": 3,
+   "STOP_PRIORITY": 1,
+   "MAX_TEAM": 6,
+   "MULTI_MAX": 2
+  },
+  "species": 1906,
+  "final_pool": 1300,
+  "n_cores": 18,
+  "baseline_agg": {
+   "n": 18,
+   "mean": 5.333,
+   "hist": {
+    "4": 2,
+    "5": 8,
+    "6": 8
+   },
+   "stops": {
+    "STOP_SIZE_LIMIT": 8,
+    "STOP_ALL_NEEDS_MET": 10
+   }
+  },
+  "counterfactual_inmemory": {
+   "STOP_PRIORITY=2": {
+    "n": 18,
+    "mean": 5,
+    "hist": {
+     "4": 5,
+     "5": 8,
+     "6": 5
+    },
+    "stops": {
+     "STOP_BELOW_PRIORITY": 6,
+     "STOP_SIZE_LIMIT": 5,
+     "STOP_ALL_NEEDS_MET": 7
+    }
+   },
+   "STOP_PRIORITY=3": {
+    "n": 18,
+    "mean": 4.5,
+    "hist": {
+     "3": 1,
+     "4": 9,
+     "5": 6,
+     "6": 2
+    },
+    "stops": {
+     "STOP_BELOW_PRIORITY": 12,
+     "STOP_SIZE_LIMIT": 2,
+     "STOP_ALL_NEEDS_MET": 4
+    }
+   },
+   "MULTI_MAX=0": {
+    "n": 18,
+    "mean": 6,
+    "hist": {
+     "6": 18
+    },
+    "stops": {
+     "STOP_SIZE_LIMIT": 18
+    }
+   },
+   "MULTI_MAX=4": {
+    "n": 18,
+    "mean": 3.833,
+    "hist": {
+     "3": 5,
+     "4": 11,
+     "5": 2
+    },
+    "stops": {
+     "STOP_ALL_NEEDS_MET": 18
+    }
+   },
+   "MULTI_MAX=0@STOP1": {
+    "n": 18,
+    "mean": 6,
+    "hist": {
+     "6": 18
+    },
+    "stops": {
+     "STOP_SIZE_LIMIT": 18
+    }
+   }
+  },
+  "need_kind_stat": {
+   "wxsrc": {
+    "open": 0,
+    "satisfied": 2,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 2
+   },
+   "cover(一般)": {
+    "open": 0,
+    "satisfied": 15,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 15
+   },
+   "cover(钢)": {
+    "open": 0,
+    "satisfied": 2,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 2
+   },
+   "sub": {
+    "open": 0,
+    "satisfied": 5,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 5
+   },
+   "wxabuse": {
+    "open": 0,
+    "satisfied": 6,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 6
+   },
+   "cover(恶)": {
+    "open": 0,
+    "satisfied": 3,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 3
+   },
+   "cover(岩石)": {
+    "open": 0,
+    "satisfied": 2,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 2
+   },
+   "clear": {
+    "open": 1,
+    "satisfied": 11,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 12
+   },
+   "wallp": {
+    "open": 0,
+    "satisfied": 18,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 18
+   },
+   "walls": {
+    "open": 0,
+    "satisfied": 18,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 18
+   },
+   "wxreset": {
+    "open": 0,
+    "satisfied": 6,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 6
+   },
+   "pass": {
+    "open": 0,
+    "satisfied": 5,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 5
+   },
+   "speed": {
+    "open": 0,
+    "satisfied": 18,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 18
+   },
+   "haz": {
+    "open": 0,
+    "satisfied": 12,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 12
+   },
+   "anti": {
+    "open": 1,
+    "satisfied": 17,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 18
+   },
+   "cover(地面)": {
+    "open": 0,
+    "satisfied": 5,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 5
+   },
+   "cover(幽灵)": {
+    "open": 0,
+    "satisfied": 6,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 6
+   },
+   "out": {
+    "open": 0,
+    "satisfied": 6,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 6
+   },
+   "cover(火)": {
+    "open": 0,
+    "satisfied": 7,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 7
+   },
+   "cover(格斗)": {
+    "open": 0,
+    "satisfied": 3,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 3
+   },
+   "cover(电)": {
+    "open": 0,
+    "satisfied": 8,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 8
+   },
+   "cover(飞行)": {
+    "open": 0,
+    "satisfied": 8,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 8
+   },
+   "wear": {
+    "open": 0,
+    "satisfied": 6,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 6
+   },
+   "cover(冰)": {
+    "open": 0,
+    "satisfied": 3,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 3
+   },
+   "cover(毒)": {
+    "open": 0,
+    "satisfied": 5,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 5
+   },
+   "trset": {
+    "open": 0,
+    "satisfied": 3,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 3
+   },
+   "truse": {
+    "open": 0,
+    "satisfied": 3,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 3
+   },
+   "cover(超能力)": {
+    "open": 0,
+    "satisfied": 1,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 1
+   },
+   "brk": {
+    "open": 0,
+    "satisfied": 1,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 1
+   },
+   "pivot": {
+    "open": 0,
+    "satisfied": 1,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 1
+   },
+   "cover(龙)": {
+    "open": 0,
+    "satisfied": 2,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 2
+   },
+   "rec": {
+    "open": 0,
+    "satisfied": 1,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 1
+   },
+   "cover(虫)": {
+    "open": 0,
+    "satisfied": 1,
+    "unmatched": 0,
+    "blocked": 0,
+    "n": 1
+   }
+  },
+  "per_core": [
+   {
+    "id": 3,
+    "zh": "妙蛙花",
+    "role": "强化核心",
+    "sysKey": "晴",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 15,
+    "st": {
+     "satisfied": 15,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 2,
+    "byMulti": 8,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "妙蛙花",
+      "id": "3",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "向日花怪",
+      "id": "192",
+      "kind": "wxsrc",
+      "multi": 3,
+      "score": 38.11
+     },
+     {
+      "zh": "超级班基拉斯",
+      "id": "1521",
+      "kind": "cover",
+      "multi": 3,
+      "score": 41.8
+     },
+     {
+      "zh": "卡璞・鳍鳍",
+      "id": "788",
+      "kind": "clear",
+      "multi": 3,
+      "score": 27.53
+     },
+     {
+      "zh": "时拉比",
+      "id": "251",
+      "kind": "pass",
+      "multi": 3,
+      "score": 23.46
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "anti",
+      "multi": 1,
+      "score": 26.01
+     }
+    ],
+    "poolMax": 937,
+    "poolMin": 133,
+    "poolAvg": 520,
+    "firstNeedPool": 937,
+    "firstNeedPoolFiltered": 935,
+    "poolBy": {
+     "wxsrc:": {
+      "list": 935,
+      "all": 937
+     },
+     "cover:一般": {
+      "list": 786,
+      "all": 786
+     },
+     "clear:": {
+      "list": 359,
+      "all": 359
+     },
+     "pass:": {
+      "list": 133,
+      "all": 133
+     },
+     "anti:": {
+      "list": 386,
+      "all": 386
+     }
+    },
+    "needLabels": [
+     "wxsrc:5:satisfied",
+     "cover(一般):4:satisfied",
+     "cover(钢):4:satisfied",
+     "sub:4:satisfied",
+     "wxabuse:4:satisfied",
+     "cover(恶):3:satisfied",
+     "cover(岩石):3:satisfied",
+     "clear:3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "wxreset:3:satisfied",
+     "pass:2:satisfied",
+     "speed:2:satisfied",
+     "haz:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 18,
+    "zh": "大比鸟",
+    "role": "速攻核心",
+    "sysKey": "",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 10,
+    "st": {
+     "satisfied": 10,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 0,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "大比鸟",
+      "id": "18",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "超级以欧路普",
+      "id": "2203",
+      "kind": "wallp",
+      "multi": 3,
+      "score": 31.04
+     },
+     {
+      "zh": "超级烈咬陆鲨",
+      "id": "1542",
+      "kind": "cover",
+      "multi": 3,
+      "score": 41.8
+     },
+     {
+      "zh": "超级黏美龙",
+      "id": "2228",
+      "kind": "anti",
+      "multi": 1,
+      "score": 19.8
+     }
+    ],
+    "poolMax": 1242,
+    "poolMin": 322,
+    "poolAvg": 683,
+    "firstNeedPool": 1242,
+    "firstNeedPoolFiltered": 1241,
+    "poolBy": {
+     "cover:地面": {
+      "list": 1241,
+      "all": 1242
+     },
+     "wallp:": {
+      "list": 322,
+      "all": 322
+     },
+     "cover:一般": {
+      "list": 784,
+      "all": 785
+     },
+     "anti:": {
+      "list": 381,
+      "all": 383
+     }
+    },
+    "needLabels": [
+     "cover(地面):4:satisfied",
+     "cover(幽灵):4:satisfied",
+     "out:4:satisfied",
+     "wallp:4:satisfied",
+     "cover(一般):3:satisfied",
+     "cover(火):3:satisfied",
+     "speed:3:satisfied",
+     "walls:3:satisfied",
+     "haz:3:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 38,
+    "zh": "九尾",
+    "role": "速攻核心",
+    "sysKey": "晴",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 13,
+    "st": {
+     "satisfied": 12,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 1
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 6,
+    "needCoverage": 92,
+    "openNeeds": [
+     "除钉位（清场）"
+    ],
+    "members": [
+     {
+      "zh": "九尾",
+      "id": "38",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "阿尔宙斯-格斗",
+      "id": "1650",
+      "kind": "wallp",
+      "multi": 3,
+      "score": 40.49
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "speed",
+      "multi": 3,
+      "score": 40.01
+     },
+     {
+      "zh": "超级黏美龙",
+      "id": "2228",
+      "kind": "walls",
+      "multi": 1,
+      "score": 28.8
+     },
+     {
+      "zh": "无极草儿",
+      "id": "1068",
+      "kind": "haz",
+      "multi": 1,
+      "score": 24.98
+     }
+    ],
+    "poolMax": 785,
+    "poolMin": 314,
+    "poolAvg": 507,
+    "firstNeedPool": 785,
+    "firstNeedPoolFiltered": 785,
+    "poolBy": {
+     "cover:一般": {
+      "list": 785,
+      "all": 785
+     },
+     "wallp:": {
+      "list": 321,
+      "all": 321
+     },
+     "speed:": {
+      "list": 661,
+      "all": 679
+     },
+     "walls:": {
+      "list": 297,
+      "all": 314
+     },
+     "haz:": {
+      "list": 421,
+      "all": 438
+     }
+    },
+    "needLabels": [
+     "cover(一般):4:satisfied",
+     "cover(格斗):4:satisfied",
+     "out:4:satisfied",
+     "wallp:4:satisfied",
+     "cover(电):3:satisfied",
+     "cover(飞行):3:satisfied",
+     "speed:3:satisfied",
+     "walls:3:satisfied",
+     "haz:3:satisfied",
+     "wxabuse:3:satisfied",
+     "wxreset:3:satisfied",
+     "clear:2:open",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 113,
+    "zh": "吉利蛋",
+    "role": "受队核心",
+    "sysKey": "",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 11,
+    "st": {
+     "satisfied": 11,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 0,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "吉利蛋",
+      "id": "113",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "超级死灵暴龙Y",
+      "id": "2161",
+      "kind": "cover",
+      "multi": 3,
+      "score": 42.4
+     },
+     {
+      "zh": "超级玉米蛾",
+      "id": "2172",
+      "kind": "wear",
+      "multi": 3,
+      "score": 30.46
+     },
+     {
+      "zh": "无极草儿",
+      "id": "1068",
+      "kind": "haz",
+      "multi": 1,
+      "score": 24.98
+     },
+     {
+      "zh": "雷公",
+      "id": "243",
+      "kind": "speed",
+      "multi": 1,
+      "score": 28.77
+     }
+    ],
+    "poolMax": 939,
+    "poolMin": 319,
+    "poolAvg": 633,
+    "firstNeedPool": 939,
+    "firstNeedPoolFiltered": 939,
+    "poolBy": {
+     "cover:幽灵": {
+      "list": 939,
+      "all": 939
+     },
+     "cover:一般": {
+      "list": 786,
+      "all": 786
+     },
+     "wear:": {
+      "list": 319,
+      "all": 319
+     },
+     "haz:": {
+      "list": 439,
+      "all": 439
+     },
+     "speed:": {
+      "list": 680,
+      "all": 680
+     }
+    },
+    "needLabels": [
+     "cover(幽灵):4:satisfied",
+     "cover(一般):4:satisfied",
+     "wear:4:satisfied",
+     "haz:4:satisfied",
+     "clear:4:satisfied",
+     "cover(火):3:satisfied",
+     "cover(冰):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 145,
+    "zh": "闪电鸟",
+    "role": "速攻核心",
+    "sysKey": "雨",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 13,
+    "st": {
+     "satisfied": 13,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 7,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "闪电鸟",
+      "id": "145",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "帕路奇亚-起源形态",
+      "id": "1843",
+      "kind": "speed",
+      "multi": 3,
+      "score": 34.67
+     },
+     {
+      "zh": "无极草儿",
+      "id": "1068",
+      "kind": "haz",
+      "multi": 1,
+      "score": 24.98
+     },
+     {
+      "zh": "卡璞・鸣鸣",
+      "id": "785",
+      "kind": "clear",
+      "multi": 2,
+      "score": 21.53
+     }
+    ],
+    "poolMax": 1242,
+    "poolMin": 358,
+    "poolAvg": 701,
+    "firstNeedPool": 1242,
+    "firstNeedPoolFiltered": 1241,
+    "poolBy": {
+     "cover:地面": {
+      "list": 1241,
+      "all": 1242
+     },
+     "cover:一般": {
+      "list": 784,
+      "all": 785
+     },
+     "speed:": {
+      "list": 678,
+      "all": 679
+     },
+     "haz:": {
+      "list": 439,
+      "all": 439
+     },
+     "clear:": {
+      "list": 358,
+      "all": 358
+     }
+    },
+    "needLabels": [
+     "cover(地面):4:satisfied",
+     "cover(一般):4:satisfied",
+     "wallp:4:satisfied",
+     "cover(火):3:satisfied",
+     "cover(毒):3:satisfied",
+     "speed:3:satisfied",
+     "walls:3:satisfied",
+     "haz:3:satisfied",
+     "wxabuse:3:satisfied",
+     "wxreset:3:satisfied",
+     "out:2:satisfied",
+     "clear:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 199,
+    "zh": "呆呆王",
+    "role": "强化核心",
+    "sysKey": "",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 14,
+    "st": {
+     "satisfied": 13,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 1
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 7,
+    "needCoverage": 93,
+    "openNeeds": [
+     "状态/异常吸收位"
+    ],
+    "members": [
+     {
+      "zh": "呆呆王",
+      "id": "199",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 51.01
+     },
+     {
+      "zh": "卡璞・鳍鳍",
+      "id": "788",
+      "kind": "clear",
+      "multi": 3,
+      "score": 27.53
+     },
+     {
+      "zh": "超级土台龟",
+      "id": "2115",
+      "kind": "trset",
+      "multi": 2,
+      "score": 39.19
+     },
+     {
+      "zh": "时拉比",
+      "id": "251",
+      "kind": "pass",
+      "multi": 1,
+      "score": 17.46
+     }
+    ],
+    "poolMax": 1162,
+    "poolMin": 134,
+    "poolAvg": 566,
+    "firstNeedPool": 786,
+    "firstNeedPoolFiltered": 786,
+    "poolBy": {
+     "cover:一般": {
+      "list": 786,
+      "all": 786
+     },
+     "cover:毒": {
+      "list": 1161,
+      "all": 1162
+     },
+     "clear:": {
+      "list": 358,
+      "all": 358
+     },
+     "trset:": {
+      "list": 388,
+      "all": 389
+     },
+     "pass:": {
+      "list": 134,
+      "all": 134
+     }
+    },
+    "needLabels": [
+     "cover(一般):4:satisfied",
+     "cover(飞行):4:satisfied",
+     "sub:4:satisfied",
+     "cover(地面):3:satisfied",
+     "cover(毒):3:satisfied",
+     "clear:3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "trset:3:satisfied",
+     "truse:3:satisfied",
+     "pass:2:satisfied",
+     "speed:2:satisfied",
+     "haz:2:satisfied",
+     "anti:1:open"
+    ]
+   },
+   {
+    "id": 248,
+    "zh": "班基拉斯",
+    "role": "强化核心",
+    "sysKey": "沙",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 13,
+    "st": {
+     "satisfied": 13,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 2,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "班基拉斯",
+      "id": "248",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "无极草儿",
+      "id": "1068",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.98
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "卡璞・鳍鳍",
+      "id": "788",
+      "kind": "clear",
+      "multi": 3,
+      "score": 27.53
+     },
+     {
+      "zh": "时拉比",
+      "id": "251",
+      "kind": "pass",
+      "multi": 1,
+      "score": 17.46
+     },
+     {
+      "zh": "超级黏美龙",
+      "id": "2228",
+      "kind": "anti",
+      "multi": 1,
+      "score": 19.8
+     }
+    ],
+    "poolMax": 1233,
+    "poolMin": 134,
+    "poolAvg": 646,
+    "firstNeedPool": 1119,
+    "firstNeedPoolFiltered": 1118,
+    "poolBy": {
+     "cover:超能力": {
+      "list": 1118,
+      "all": 1119
+     },
+     "cover:岩石": {
+      "list": 1232,
+      "all": 1233
+     },
+     "clear:": {
+      "list": 359,
+      "all": 359
+     },
+     "pass:": {
+      "list": 134,
+      "all": 134
+     },
+     "anti:": {
+      "list": 385,
+      "all": 385
+     }
+    },
+    "needLabels": [
+     "cover(超能力):4:satisfied",
+     "cover(冰):4:satisfied",
+     "sub:4:satisfied",
+     "cover(电):3:satisfied",
+     "cover(岩石):3:satisfied",
+     "clear:3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "wxabuse:3:satisfied",
+     "wxreset:3:satisfied",
+     "pass:2:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 249,
+    "zh": "洛奇亚",
+    "role": "肉盾核心",
+    "sysKey": "",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 11,
+    "st": {
+     "satisfied": 11,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "洛奇亚",
+      "id": "249",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "无极草儿",
+      "id": "1068",
+      "kind": "haz",
+      "multi": 3,
+      "score": 30.98
+     },
+     {
+      "zh": "阿尔宙斯-地面",
+      "id": "1653",
+      "kind": "walls",
+      "multi": 3,
+      "score": 40.49
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "anti",
+      "multi": 1,
+      "score": 26.01
+     }
+    ],
+    "poolMax": 785,
+    "poolMin": 313,
+    "poolAvg": 480,
+    "firstNeedPool": 785,
+    "firstNeedPoolFiltered": 785,
+    "poolBy": {
+     "cover:一般": {
+      "list": 785,
+      "all": 785
+     },
+     "haz:": {
+      "list": 439,
+      "all": 439
+     },
+     "walls:": {
+      "list": 313,
+      "all": 313
+     },
+     "anti:": {
+      "list": 367,
+      "all": 383
+     }
+    },
+    "needLabels": [
+     "cover(一般):4:satisfied",
+     "cover(飞行):4:satisfied",
+     "haz:4:satisfied",
+     "cover(地面):3:satisfied",
+     "cover(毒):3:satisfied",
+     "brk:3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "pivot:3:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 250,
+    "zh": "凤王",
+    "role": "强化核心",
+    "sysKey": "",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 11,
+    "st": {
+     "satisfied": 11,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "凤王",
+      "id": "250",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "阿尔宙斯-格斗",
+      "id": "1650",
+      "kind": "walls",
+      "multi": 3,
+      "score": 34.49
+     },
+     {
+      "zh": "时拉比",
+      "id": "251",
+      "kind": "pass",
+      "multi": 1,
+      "score": 17.46
+     }
+    ],
+    "poolMax": 785,
+    "poolMin": 134,
+    "poolAvg": 483,
+    "firstNeedPool": 699,
+    "firstNeedPoolFiltered": 699,
+    "poolBy": {
+     "cover:龙": {
+      "list": 699,
+      "all": 699
+     },
+     "cover:一般": {
+      "list": 785,
+      "all": 785
+     },
+     "walls:": {
+      "list": 314,
+      "all": 314
+     },
+     "pass:": {
+      "list": 134,
+      "all": 134
+     }
+    },
+    "needLabels": [
+     "cover(龙):4:satisfied",
+     "cover(一般):4:satisfied",
+     "sub:4:satisfied",
+     "cover(电):3:satisfied",
+     "cover(飞行):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "pass:2:satisfied",
+     "speed:2:satisfied",
+     "haz:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 324,
+    "zh": "煤炭龟",
+    "role": "强化核心",
+    "sysKey": "晴",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 13,
+    "st": {
+     "satisfied": 13,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 2,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "煤炭龟",
+      "id": "324",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "阿尔宙斯-格斗",
+      "id": "1650",
+      "kind": "wallp",
+      "multi": 3,
+      "score": 40.49
+     },
+     {
+      "zh": "时拉比",
+      "id": "251",
+      "kind": "pass",
+      "multi": 1,
+      "score": 17.46
+     },
+     {
+      "zh": "超级黏美龙",
+      "id": "2228",
+      "kind": "anti",
+      "multi": 1,
+      "score": 19.8
+     }
+    ],
+    "poolMax": 1229,
+    "poolMin": 134,
+    "poolAvg": 570,
+    "firstNeedPool": 785,
+    "firstNeedPoolFiltered": 785,
+    "poolBy": {
+     "cover:一般": {
+      "list": 785,
+      "all": 785
+     },
+     "cover:飞行": {
+      "list": 1229,
+      "all": 1229
+     },
+     "wallp:": {
+      "list": 320,
+      "all": 320
+     },
+     "pass:": {
+      "list": 134,
+      "all": 134
+     },
+     "anti:": {
+      "list": 366,
+      "all": 382
+     }
+    },
+    "needLabels": [
+     "cover(一般):4:satisfied",
+     "cover(格斗):4:satisfied",
+     "sub:4:satisfied",
+     "cover(电):3:satisfied",
+     "cover(飞行):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "wxabuse:3:satisfied",
+     "wxreset:3:satisfied",
+     "pass:2:satisfied",
+     "speed:2:satisfied",
+     "haz:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 411,
+    "zh": "护城龙",
+    "role": "受队核心",
+    "sysKey": "",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 11,
+    "st": {
+     "satisfied": 11,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 0,
+    "byMulti": 7,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "护城龙",
+      "id": "411",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "超级黏美龙",
+      "id": "2228",
+      "kind": "wear",
+      "multi": 3,
+      "score": 32.8
+     },
+     {
+      "zh": "卡璞・鸣鸣",
+      "id": "785",
+      "kind": "cover",
+      "multi": 3,
+      "score": 43.53
+     },
+     {
+      "zh": "帕路奇亚-起源形态",
+      "id": "1843",
+      "kind": "cover",
+      "multi": 2,
+      "score": 36.67
+     }
+    ],
+    "poolMax": 1163,
+    "poolMin": 319,
+    "poolAvg": 887,
+    "firstNeedPool": 1163,
+    "firstNeedPoolFiltered": 1163,
+    "poolBy": {
+     "cover:毒": {
+      "list": 1163,
+      "all": 1163
+     },
+     "wear:": {
+      "list": 319,
+      "all": 319
+     },
+     "cover:恶": {
+      "list": 1128,
+      "all": 1128
+     },
+     "cover:幽灵": {
+      "list": 938,
+      "all": 938
+     }
+    },
+    "needLabels": [
+     "cover(毒):4:satisfied",
+     "cover(电):4:satisfied",
+     "wear:4:satisfied",
+     "rec:4:satisfied",
+     "clear:4:satisfied",
+     "cover(恶):3:satisfied",
+     "cover(幽灵):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 441,
+    "zh": "聒噪鸟",
+    "role": "速攻核心",
+    "sysKey": "",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 10,
+    "st": {
+     "satisfied": 10,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 0,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "聒噪鸟",
+      "id": "441",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "超级以欧路普",
+      "id": "2203",
+      "kind": "wallp",
+      "multi": 3,
+      "score": 31.04
+     },
+     {
+      "zh": "超级烈咬陆鲨",
+      "id": "1542",
+      "kind": "cover",
+      "multi": 3,
+      "score": 41.8
+     },
+     {
+      "zh": "超级黏美龙",
+      "id": "2228",
+      "kind": "anti",
+      "multi": 1,
+      "score": 19.8
+     }
+    ],
+    "poolMax": 1243,
+    "poolMin": 322,
+    "poolAvg": 684,
+    "firstNeedPool": 1243,
+    "firstNeedPoolFiltered": 1243,
+    "poolBy": {
+     "cover:地面": {
+      "list": 1243,
+      "all": 1243
+     },
+     "wallp:": {
+      "list": 322,
+      "all": 322
+     },
+     "cover:一般": {
+      "list": 786,
+      "all": 786
+     },
+     "anti:": {
+      "list": 383,
+      "all": 384
+     }
+    },
+    "needLabels": [
+     "cover(地面):4:satisfied",
+     "cover(幽灵):4:satisfied",
+     "out:4:satisfied",
+     "wallp:4:satisfied",
+     "cover(一般):3:satisfied",
+     "cover(火):3:satisfied",
+     "speed:3:satisfied",
+     "walls:3:satisfied",
+     "haz:3:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 486,
+    "zh": "雷吉奇卡斯",
+    "role": "受队核心",
+    "sysKey": "",
+    "filled": 6,
+    "stopReason": "STOP_SIZE_LIMIT",
+    "needsTotal": 13,
+    "st": {
+     "satisfied": 13,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 0,
+    "byMulti": 8,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "雷吉奇卡斯",
+      "id": "486",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "超级死灵暴龙Y",
+      "id": "2161",
+      "kind": "cover",
+      "multi": 3,
+      "score": 42.4
+     },
+     {
+      "zh": "超级黏美龙",
+      "id": "2228",
+      "kind": "wear",
+      "multi": 3,
+      "score": 32.8
+     },
+     {
+      "zh": "无极草儿",
+      "id": "1068",
+      "kind": "haz",
+      "multi": 2,
+      "score": 27.98
+     },
+     {
+      "zh": "超级土台龟",
+      "id": "2115",
+      "kind": "trset",
+      "multi": 2,
+      "score": 39.19
+     }
+    ],
+    "poolMax": 938,
+    "poolMin": 319,
+    "poolAvg": 574,
+    "firstNeedPool": 938,
+    "firstNeedPoolFiltered": 938,
+    "poolBy": {
+     "cover:幽灵": {
+      "list": 938,
+      "all": 938
+     },
+     "cover:一般": {
+      "list": 785,
+      "all": 785
+     },
+     "wear:": {
+      "list": 319,
+      "all": 319
+     },
+     "haz:": {
+      "list": 439,
+      "all": 439
+     },
+     "trset:": {
+      "list": 389,
+      "all": 389
+     }
+    },
+    "needLabels": [
+     "cover(幽灵):4:satisfied",
+     "cover(一般):4:satisfied",
+     "wear:4:satisfied",
+     "haz:4:satisfied",
+     "clear:4:satisfied",
+     "trset:4:satisfied",
+     "cover(火):3:satisfied",
+     "cover(冰):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "truse:3:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 598,
+    "zh": "坚果哑铃",
+    "role": "受队核心",
+    "sysKey": "",
+    "filled": 4,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 9,
+    "st": {
+     "satisfied": 9,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 5,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "坚果哑铃",
+      "id": "598",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "帕路奇亚-起源形态",
+      "id": "1843",
+      "kind": "cover",
+      "multi": 3,
+      "score": 39.67
+     },
+     {
+      "zh": "卡璞・鳍鳍",
+      "id": "788",
+      "kind": "clear",
+      "multi": 3,
+      "score": 27.53
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "speed",
+      "multi": 2,
+      "score": 37.01
+     }
+    ],
+    "poolMax": 1163,
+    "poolMin": 359,
+    "poolAvg": 734,
+    "firstNeedPool": 1163,
+    "firstNeedPoolFiltered": 1163,
+    "poolBy": {
+     "cover:毒": {
+      "list": 1163,
+      "all": 1163
+     },
+     "clear:": {
+      "list": 359,
+      "all": 359
+     },
+     "speed:": {
+      "list": 679,
+      "all": 680
+     }
+    },
+    "needLabels": [
+     "cover(毒):4:satisfied",
+     "cover(恶):4:satisfied",
+     "wear:4:satisfied",
+     "clear:4:satisfied",
+     "cover(幽灵):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 640,
+    "zh": "毕力吉翁",
+    "role": "速攻核心",
+    "sysKey": "",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 11,
+    "st": {
+     "satisfied": 11,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 0,
+    "byMulti": 7,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "毕力吉翁",
+      "id": "640",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 40.24
+     },
+     {
+      "zh": "超级以欧路普",
+      "id": "2203",
+      "kind": "wallp",
+      "multi": 3,
+      "score": 31.04
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 2,
+      "score": 46.01
+     },
+     {
+      "zh": "阿尔宙斯-格斗",
+      "id": "1650",
+      "kind": "walls",
+      "multi": 3,
+      "score": 30.49
+     }
+    ],
+    "poolMax": 785,
+    "poolMin": 313,
+    "poolAvg": 530,
+    "firstNeedPool": 785,
+    "firstNeedPoolFiltered": 785,
+    "poolBy": {
+     "cover:一般": {
+      "list": 785,
+      "all": 785
+     },
+     "wallp:": {
+      "list": 321,
+      "all": 321
+     },
+     "cover:龙": {
+      "list": 699,
+      "all": 699
+     },
+     "walls:": {
+      "list": 312,
+      "all": 313
+     }
+    },
+    "needLabels": [
+     "cover(一般):4:satisfied",
+     "cover(格斗):4:satisfied",
+     "out:4:satisfied",
+     "wallp:4:satisfied",
+     "cover(钢):3:satisfied",
+     "cover(龙):3:satisfied",
+     "speed:3:satisfied",
+     "walls:3:satisfied",
+     "haz:3:satisfied",
+     "clear:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 980,
+    "zh": "土王",
+    "role": "受队核心",
+    "sysKey": "",
+    "filled": 4,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 10,
+    "st": {
+     "satisfied": 10,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 6,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "土王",
+      "id": "980",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "超级沙漠蜻蜓",
+      "id": "2106",
+      "kind": "cover",
+      "multi": 3,
+      "score": 42.4
+     },
+     {
+      "zh": "阿尔宙斯-钢",
+      "id": "1657",
+      "kind": "wallp",
+      "multi": 3,
+      "score": 34.49
+     }
+    ],
+    "poolMax": 1093,
+    "poolMin": 322,
+    "poolAvg": 734,
+    "firstNeedPool": 1093,
+    "firstNeedPoolFiltered": 1092,
+    "poolBy": {
+     "cover:电": {
+      "list": 1092,
+      "all": 1093
+     },
+     "cover:一般": {
+      "list": 786,
+      "all": 786
+     },
+     "wallp:": {
+      "list": 321,
+      "all": 322
+     }
+    },
+    "needLabels": [
+     "cover(电):4:satisfied",
+     "cover(一般):4:satisfied",
+     "wear:4:satisfied",
+     "clear:4:satisfied",
+     "cover(火):3:satisfied",
+     "cover(飞行):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 1536,
+    "zh": "超级冰鬼护",
+    "role": "速攻核心",
+    "sysKey": "雪",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 12,
+    "st": {
+     "satisfied": 12,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 7,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "超级冰鬼护",
+      "id": "1536",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "超级暴雪王",
+      "id": "1544",
+      "kind": "wxsrc",
+      "multi": 3,
+      "score": 36.7
+     },
+     {
+      "zh": "波尔凯尼恩",
+      "id": "721",
+      "kind": "cover",
+      "multi": 3,
+      "score": 50.24
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "speed",
+      "multi": 3,
+      "score": 40.01
+     },
+     {
+      "zh": "阿尔宙斯-幽灵",
+      "id": "1656",
+      "kind": "walls",
+      "multi": 2,
+      "score": 33.49
+     }
+    ],
+    "poolMax": 937,
+    "poolMin": 314,
+    "poolAvg": 679,
+    "firstNeedPool": 937,
+    "firstNeedPoolFiltered": 936,
+    "poolBy": {
+     "wxsrc:": {
+      "list": 936,
+      "all": 937
+     },
+     "cover:一般": {
+      "list": 784,
+      "all": 785
+     },
+     "speed:": {
+      "list": 681,
+      "all": 681
+     },
+     "walls:": {
+      "list": 313,
+      "all": 314
+     }
+    },
+    "needLabels": [
+     "wxsrc:5:satisfied",
+     "cover(一般):4:satisfied",
+     "cover(电):4:satisfied",
+     "wallp:4:satisfied",
+     "wxabuse:4:satisfied",
+     "cover(虫):3:satisfied",
+     "cover(飞行):3:satisfied",
+     "speed:3:satisfied",
+     "walls:3:satisfied",
+     "wxreset:3:satisfied",
+     "out:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   },
+   {
+    "id": 2232,
+    "zh": "超级土王",
+    "role": "受队核心",
+    "sysKey": "",
+    "filled": 5,
+    "stopReason": "STOP_ALL_NEEDS_MET",
+    "needsTotal": 12,
+    "st": {
+     "satisfied": 12,
+     "unmatched": 0,
+     "blocked": 0,
+     "open": 0
+    },
+    "minPriority": 1,
+    "byCore": 1,
+    "byMulti": 7,
+    "needCoverage": 100,
+    "openNeeds": [],
+    "members": [
+     {
+      "zh": "超级土王",
+      "id": "2232",
+      "kind": "CORE",
+      "multi": 0,
+      "score": null
+     },
+     {
+      "zh": "光电伞蜥",
+      "id": "695",
+      "kind": "cover",
+      "multi": 3,
+      "score": 45.01
+     },
+     {
+      "zh": "超级沙漠蜻蜓",
+      "id": "2106",
+      "kind": "cover",
+      "multi": 3,
+      "score": 42.4
+     },
+     {
+      "zh": "超级土台龟",
+      "id": "2115",
+      "kind": "trset",
+      "multi": 3,
+      "score": 42.19
+     },
+     {
+      "zh": "卡璞・鸣鸣",
+      "id": "785",
+      "kind": "speed",
+      "multi": 2,
+      "score": 31.53
+     }
+    ],
+    "poolMax": 1093,
+    "poolMin": 389,
+    "poolAvg": 737,
+    "firstNeedPool": 1093,
+    "firstNeedPoolFiltered": 1092,
+    "poolBy": {
+     "cover:电": {
+      "list": 1092,
+      "all": 1093
+     },
+     "cover:一般": {
+      "list": 786,
+      "all": 786
+     },
+     "trset:": {
+      "list": 389,
+      "all": 389
+     },
+     "speed:": {
+      "list": 676,
+      "all": 678
+     }
+    },
+    "needLabels": [
+     "cover(电):4:satisfied",
+     "cover(一般):4:satisfied",
+     "wear:4:satisfied",
+     "clear:4:satisfied",
+     "trset:4:satisfied",
+     "cover(火):3:satisfied",
+     "cover(飞行):3:satisfied",
+     "wallp:3:satisfied",
+     "walls:3:satisfied",
+     "truse:3:satisfied",
+     "speed:2:satisfied",
+     "anti:1:satisfied"
+    ]
+   }
+  ]
+ },
+ "g4_pool_decomposition": {
+  "strict_file": "D:\\game\\elite-redux\\nn_data\\dataset_engine_g4_strict.jsonl",
+  "strict_rows": 3962,
+  "strict_keys": [
+   "bucket",
+   "bucket_name",
+   "core",
+   "engine_meanMemberScore",
+   "engine_meanMemberScoreAssigned",
+   "games",
+   "games_even",
+   "games_odd",
+   "k",
+   "mode",
+   "sim_version",
+   "size",
+   "team",
+   "team_ids",
+   "win_even",
+   "win_odd",
+   "win_rate"
+  ],
+  "strict_sample": {
+   "team": "s2020356",
+   "bucket": 0,
+   "bucket_name": "train",
+   "core": "171",
+   "team_ids": [
+    "171",
+    "721",
+    "695",
+    "2228",
+    "1068"
+   ],
+   "size": 5,
+   "mode": "B",
+   "win_rate": 0.7727,
+   "games": 44,
+   "win_odd": 0.7083333333333334,
+   "win_even": 0.85,
+   "games_odd": 24,
+   "games_even": 20,
+   "engine_meanMemberScore": 34.25467,
+   "engine_meanMemberScoreAssigned": 34.25467,
+   "k": 11,
+   "sim_version": "v3-bline"
+  },
+  "split_keys": [
+   "meta",
+   "candidates",
+   "summary",
+   "bucket_names",
+   "species2bucket",
+   "row_bucket",
+   "isolation_proof",
+   "bucket_stats",
+   "comparison",
+   "g4_export",
+   "species2split"
+  ],
+  "split_n_meta": 9,
+  "split_n_candidates": 2,
+  "split_n_summary": 11,
+  "split_n_bucket_names": 3,
+  "split_n_species2bucket": 1300,
+  "split_n_row_bucket": 3962,
+  "split_n_isolation_proof": 11,
+  "split_n_bucket_stats": 3,
+  "split_n_comparison": 4,
+  "split_n_g4_export": 4,
+  "split_n_species2split": 1300,
+  "all": {
+   "n": 3962,
+   "size_hist": {
+    "3": 822,
+    "4": 1086,
+    "5": 1170,
+    "6": 884
+   },
+   "size_mean": 4.5341,
+   "size_pct": {
+    "3": 20.7,
+    "4": 27.4,
+    "5": 29.5,
+    "6": 22.3
+   },
+   "winrate_mean": 0.4923
+  },
+  "by_mode": {
+   "A": {
+    "n": 175,
+    "size_hist": {
+     "4": 1,
+     "5": 47,
+     "6": 127
+    },
+    "size_mean": 5.72,
+    "size_pct": {
+     "4": 0.6,
+     "5": 26.9,
+     "6": 72.6
+    },
+    "winrate_mean": 0.7907
+   },
+   "B": {
+    "n": 1556,
+    "size_hist": {
+     "3": 294,
+     "4": 730,
+     "5": 532
+    },
+    "size_mean": 4.153,
+    "size_pct": {
+     "3": 18.9,
+     "4": 46.9,
+     "5": 34.2
+    },
+    "winrate_mean": 0.5288
+   },
+   "C": {
+    "n": 1109,
+    "size_hist": {
+     "4": 37,
+     "5": 423,
+     "6": 649
+    },
+    "size_mean": 5.5518,
+    "size_pct": {
+     "4": 3.3,
+     "5": 38.1,
+     "6": 58.5
+    },
+    "winrate_mean": 0.6527
+   },
+   "D": {
+    "n": 1122,
+    "size_hist": {
+     "3": 528,
+     "4": 318,
+     "5": 168,
+     "6": 108
+    },
+    "size_mean": 3.8717,
+    "size_pct": {
+     "3": 47.1,
+     "4": 28.3,
+     "5": 15.0,
+     "6": 9.6
+    },
+    "winrate_mean": 0.2367
+   }
+  },
+  "winrate_by_size": {
+   "3": 0.1696,
+   "4": 0.4169,
+   "5": 0.5895,
+   "6": 0.7562
+  },
+  "winrate_by_size_n": {
+   "3": 822,
+   "4": 1086,
+   "5": 1170,
+   "6": 884
+  }
+ },
+ "g4_provenance": {
+  "pool_builder": "nn_data\\gen_engine_samples.py（mode A=引擎原方案 / B=删 1-2 人 / C=换 1-2 人 / D=随机组队 k∈[2,5]；见该文件 L172-199）",
+  "pool_filter": "nn_data\\g4_pool_build.py（--min-size 3 过滤 size<3；按 team_ids 去重）",
+  "strict_dataset": "nn_data\\dataset_engine_g4_strict.jsonl（3962 行）",
+  "g4_3p60_origin": "nn_data\\g4_spotcheck.json → scorers.engine_E.topk_mean_size = 3.6（K=10 的池内 top-10 平均规模）",
+  "g4_spotcheck_size_counts_test": {
+   "3": 588,
+   "4": 431,
+   "5": 383,
+   "6": 226
+  },
+  "g4_spotcheck_rho_engine_vs_size": -0.2714,
+  "g4_spotcheck_rho_win_vs_size": 0.7232,
+  "engine_js_snapshot": "nn_data\\_engine\\engine.js（2,335,947 B, 2026-10-08 21:31）；g4_probe_fidelity.json 记录：8 核心 cached_size 与 fresh(HTML) 规模**逐一相同**（5,6,5,4,5,6,5,5），仅成员 id 不同（v4.7 前后选人顺序变化）"
+ }
+}
