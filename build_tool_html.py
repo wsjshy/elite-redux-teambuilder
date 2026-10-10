@@ -82,7 +82,10 @@ print('EV-3 派生注入：nonFinalER=%d 只 / finalOf=%d 条（ER CanEvolve = k
 # gameData evolutions[].in 是 **species 数组下标**（非 id）→ 先转 id；kd 分类：
 #   kd∈{0,3,4} 普通进化（prev/next）；kd==1 Mega/Redux 石（mega）；kd==2 原始回归（prim）；
 #   kd==5 招式进化（form，如烈空坐）；via=道具名（rs 去 ITEM_ 前缀）。
-# 反向 base：Mega/prim/form 形态自身可回链基础形态（baseOf）。注入 ERDATA.familyGraph。
+# 反向 base：Mega/prim/form 形态自身可回链基础形态（baseOf）。
+# ★ v4.13e：familyGraph **内联进 HTML**（经 __FAMGRAPH__ 占位注入，不追加进 data.js）——
+#   jsdelivr CDN 按路径缓存且忽略 query，data.js 分支缓存无法可靠刷新；HTML 带版本参数每次拉新，
+#   内联数据随 HTML 走，彻底绕开 CDN 缓存（data.js 保持 v4.13 原始内容，CDN 旧缓存无害）。
 def _sid2(_idx):
     """evolutions[].in = species 数组下标（非 id）→ 转物种 id"""
     try:
@@ -114,8 +117,8 @@ for _i, _n in FAM_GRAPH.items():
     for _k in ('mega', 'prim', 'form'):
         for _r in _n[_k]:
             FAM_GRAPH.setdefault(_r['id'], _FG0())['base'].append({'id': _i, 'kd': _r['kd'], 'via': _r['via']})
-data_js += ('\nERDATA.familyGraph=' + _json.dumps(FAM_GRAPH, separators=(',', ':')) + ';')
-print('EV 家族图注入：familyGraph 节点 %d（prev/next/mega/prim/form/base）' % len(FAM_GRAPH))
+_FAM_JSON = 'if(typeof ERDATA!==\'undefined\'){ERDATA.familyGraph=' + _json.dumps(FAM_GRAPH, separators=(',', ':')) + ';}'
+print('EV 家族图：familyGraph 节点 %d → 内联注入 HTML（__FAMGRAPH__）' % len(FAM_GRAPH))
 
 # ============ v4.5：威胁库「使用率先验」（只读 nn_data/chaos，注入内嵌 ERDATA） ============
 # 源：Smogon chaos 2026-09（rating 0）raw.usage —— **原版（PS）使用率**，非 ER 使用率（ER 无对战统计 = 已知缺口）。
@@ -796,6 +799,7 @@ if(typeof ERDATA==='undefined'&&!window.__ER_FILE){
   document.write('<scr'+'ipt src="data.js?v=__DATA_VER__"><\/scr'+'ipt>');
 }
 </script>
+<script>__FAMGRAPH__</script>
 <script>
 __SPRSHEET__
 __AXISLIB__
@@ -7916,7 +7920,8 @@ except Exception as _ea:
 # __ER_CDN_PREFIX__ → CDN_PREFIX：加载器块的镜像前缀由本处常量单一注入（避免两处硬编码漂移）。
 final = (TEMPLATE.replace('__ER_CDN_PREFIX__', CDN_PREFIX)
                  .replace('__SPRSHEET__', sheet_js)
-                 .replace('__AXISLIB__', axis_js))
+                 .replace('__AXISLIB__', axis_js)
+                 .replace('__FAMGRAPH__', _FAM_JSON))
 import hashlib as _hl
 _DATA_VER = _hl.sha256(data_js.encode('utf-8')).hexdigest()[:8]  # v4.13b：data.js 内容哈希 → CDN 缓存版本戳（内容变则 URL 变，规避 jsdelivr 强缓存）
 final = final.replace('__DATA_VER__', _DATA_VER)
