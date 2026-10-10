@@ -22,7 +22,7 @@ D:\game\elite-redux\
 ├── build_tool_html.py               ← ★配招助手 HTML 生成器 v3.24（7 Tab + 存档联动 + **特性修正三口径评估** + **模板推荐/体检/天敌/流程** + **核心配队(定位细分/强度倍率/**多流派配招引擎**/性格/道具/队友/简评)** + **队伍体检报告** + **人工分析44条置顶** + **内嵌 JS 存档解析器(v4.1 移植，选 .sav 即解析免命令行)** + **清爽 UI v3.9** + **核心配队多维筛选 v3.10** + **推荐仅最终形态 v3.11** + **非最终形态开关 v3.12** + **打击面贪心 + 双刀输出 + 交集属性筛选 + 流派卡盲点检查 v3.13** + **精灵图相对路径 v3.15** + **引擎升级规格 v1.0 B 节 v3.17：分层1-5 配招引擎(侧判定/候选池/多维打分/覆盖贪心/盲点+双刀补盲+选招依据) + WCONF/ABI_ATE 天气场地参数化(含待实测徽标) + 机制口径折叠块 + -ate 属性转换 + lDesc 代价标签 + 除钉 229/432 + 2502 护栏 + B1 勾选不丢天性** + **v3.18 收尾 3 补丁：特性名解析统一(abiIdByZhOrEn 加 abiAlias 回退，4 处既有路径全通) + abiAdjOf 无对手保守降权 ×0.7 + 21×21 克制表 UI 逐格复核(0 差异)** + **v3.19 两裁决：本系(含 -ate 转换后本系)主攻招豁免无目标 ×0.7(非本系补盲招维持 ×0.7、有目标真免疫本系仍 ×0.5) + cap 语义确认** + **v3.20 D 节修复(独立黑盒复验)：D1 简评/流派标题纯文本化(禁在 esc 消费端拼 tlabel) + D2 导入前清空队伍(不再满 6 静默丢弃) + D3 徽标严格只挂 WCONF_PEND 14 项(删 +50%/+20% 误挂、补表内 7 行欠挂) + D4 僵直关键词补全(9 招)+蓄力独立标签(4 招)** + **v3.21 考古修正(依据 _源码考古_20261006.md)：WCONF.terrainBoost 1.5→1.3(源码 battle_config.h「B_TERRAIN_TYPE_BOOST=GEN_8」取 1.3 分支，仍留待实测徽标并标注「源码 1.3」) + 撒菱 2 层 3/16→1/6(源码 (5-层)×2；3/16 系 Psypoke 讹误) + WCONF_PEND 14→11 项(paraSpeed/paraFullChance/ABI_ATE.multiplier 转源码实证去徽标；defogRapidSpin 收窄为 defogEvasion 子项；ABI_ATE.stabConvert 保留并注「旧版源码无此机制」) + fracTxt() 分数显示(1/6 不再打印浮点串) + 除钉范围行转实证(仅 432 保留降闪避徽标)** + **v3.22 用户三项裁定(2026-10-06)：剧毒场地毒招 +30% 定稿(用户游戏内确认，去徽标) + 隐形岩次序 bug 从引擎移除(WCONF.hazardBugNote 整键删除 + UI 风险文案删除，引擎不做任何次序判定/降权) + 清除浓雾降闪避 1 级定稿(补 walls:foeOnly，除钉行全定稿去徽标)；WCONF_PEND 11→8 项；断言 183**) + **v3.23 「以 2.65+ 源码为准」落地（依据 _源码考古_v265_20261006.md：官方仓 eliteredux-source upcoming 分支在线抓取，Pin A=7d85acd5@2026-03-28 = v2.65 时代 / Pin B=910945b9@2026-10-06 = 最新）：①ABI_ATE.multiplier 1.1→1.0（ATE_ABILITY 宏只有 onMoveType+onStab，无 onOffensiveMultiplier）+ 新增 specialBoost{96 Normalize/280 Crystallize/659 Superconductor ×1.1} + ateMulOf(id) + pickAttacks 打分 *ateMul（原 ×1.05 已废）+ convOf 返回 id；②天气增伤取消分源单档 ×1.5（abilityBoost 0.2→0.5；TryChangeBattleWeather 只写 TEMPORARY 槽，viaAbility 不参与倍率，源码无「特性 20%」档）；③天气回合 5→8、岩石 8→12（WEATHER_DURATION 8/EXTENDED 12，手动与特性同档；UI 注「v2.65 实证 8，changelog 记 5」）；④terrainBoost ×1.3 与 terrainExtenderTurns 11→12 转定稿去徽标（B_TERRAIN_TYPE_BOOST=GEN_8）；⑤麻痹 ÷2+25% 定稿保持，冻伤 hailChanceMult ×3 转待实测（两 pin 均未找到，仅 Cryomancy×5）；⑥顺风 tailwindTurns 4 定稿（常量 3 + 当回合不递减 ⇒ 实际 4 时段，autoTailwindTurns 3→4）、戏法空间保留徽标（文案 5 vs 推算 6）、先制 -7 数据表实证；⑦WCONF_PEND 8→5 项（trickroomTurns/frostbite.hailChanceMult/lightClayTurns/toxicTerrain×2）；口径表脚注补 v2.65+ 考古段（Pin SHA/8·12/单档 1.5/-ate ×1.0）；断言 201**) + **v3.24 conv 来源属性 src 语义修正（依据数据层 A 登记的残留问题 + _源码考古_v265 §2）：新增引擎侧 CONV_SRC {280:{conv:'冰',src:'岩石'},659:{conv:'电',src:'钢'}} + convOf 返回 src（CONV_SRC 命中优先于数据层 abiTags.conv，否则 280 会退回 src='一般' 复现「一般→冰」错判）+ effMvType/convHit 门槛改 m[3]===(conv.src||'一般') + 新增 convSrcLabel（一般属性招/岩石系招）+ pickAttacks why 记「岩石→冰 ×1.1 + 本系 STAB」+ renderCore 数值卡「岩石系招转为 冰」+ 口径表 -ate 行补「来源属性 src」；数据层 2026-10-07 00:24 已补 280/659 目标属性（无 src 字段，abiTags.conv 7→9 条）；断言 216**） → 配招助手_ER.html + 同目录 data.js（v4.11 拆包：数据外置，HTML gzip 182KB），精灵图外置 assets\sheets（非 file: 下 gcore CDN 择优加载失败回退）)
 ├── parse_er_save.py                 ← v3.1 旧版（逻辑段驱动，保留作对照）
 ├── parse_er_save_v2_backup.py       ← v2 旧版备份（已弃用）
-├── box_override.json                ← 人工箱号修正模板（特殊区15条用）
+├── box_override.json                ← 可选人工箱号修正（特殊区默认段内顺序标注，此文件可覆盖指定箱号）
 ├── 存档解析v4_20261006.csv/.json    ← v4.1 最新产物（431条，53列）
 ├── 存档解析_20261006.csv/.json      ← v3.1 旧产物（19列，历史对照）
 ├── 配招助手_ER.html                 ← ★★v3 配队配招工具（7 Tab + 特性/天性整体聚合评估；双击即用，**v4.11 起数据外置同目录 data.js + 精灵图走 assets\sheets 合图相对路径（非 file: 下 gcore 择优加载失败回退）**）
@@ -79,10 +79,11 @@ D:\game\elite-redux\
 ├── ER2.65简汉化\
 │   ├── ERv2.65-beta2-debug汉化版.sav ← 当前主存档（131088B）
 │   ├── ERv2.65-beta2-debug汉化版.gba ← ROM（标题 POKEMON EMER / 码 BPEE）
-│   ├── ER2.65beta版图鉴v0.3.xlsm     ← 汉化图鉴：编号列=gameData id（可信）；含中/英名映射
+│   ├── ER2.65beta版图鉴v0.3.xlsm     ← 汉化图鉴（仅特性表+属性克制 Sheet1；编号列=gameData id）
 │   └── *_baseline_*.sav / *_after_candy.sav / *_after_stomp.sav ← 测试档（自动排除）
 ├── elite redux 2.5 debug.sav/.gba   ← ER2.5 旧版存档/ROM（结构同源，可交叉验证）
-├── 特性.xlsx / 图鉴.xlsx / ER2.5正式版图鉴v0.5.xlsm ← 参考表（脚本不依赖）
+├── 特性.xlsx / 图鉴.xlsx / ER2.5正式版图鉴v0.5.xlsm ← 参考表（脚本不依赖；图鉴.xlsx 搬迁时丢失，勿依赖）
+├── 存档解析v4_YYYYMMDD.csv/.json    ← ★解析器最新产物（431条，44列；特殊区按段内顺序标注）
 ```
 
 ## 3. 存档格式核心结论（v4.1 实证修订版，三档互证+10 截图+2 换招实验）
@@ -122,9 +123,11 @@ D:\game\elite-redux\
   4招 自我再生/守住/大地神力/毒千针(105/182/616/895)；护城龙= Bastiodon(411) 4招 守住/十万马力/铁头/尖刺防守
   (182/630/442/596)、道具凸凸头盔(312)；花舞鸟 4招 超能华尔兹/火之舞/巫术疾走/极速摇摆(980/552/982/981)。
 - **权威数据源**：`gameDataV2.65beta.json`（NextDex 官方 forwardfeed/ER-nextdex，raw URL 见 Skill）；
-  物种 id = 存档物种字段 = xlsm '原始数据'编号列（三者一致）。NextDex 仓库 `static/js/load_save.js` 为标准绿宝石
+  物种 id = 存档物种字段 = 图鉴编号列（三者一致）。NextDex 仓库 `static/js/load_save.js` 为标准绿宝石
   盒子解包器（ER 改版布局不同，仅参照位语义）；`src/moves.ts` 为图鉴解析器。
-  中文名：物种/特性/招式 取自 xlsm（编号列=gameData id；招式中文在 r[3]；xlsm 未收录的补 ABI_ZH_EXTRA，如 834=毒沼制造者）。
+  中文名：**物种/招式 取自根目录 `招式表_宝可梦基础.csv`/`招式表_招式数值.csv`（与 build_tool_data.py 网页数据同源；
+  图鉴.xlsx 搬迁丢失后不再依赖 xlsm 物种/招式表）**；特性取自 xlsm 特性表（v0.3 1030 条），
+  xlsm 未收录的补 ABI_ZH_EXTRA（如 834=毒沼制造者）。v0.3/v0.5 xlsm 实测均只有「特性」表+克制矩阵，无物种/招式中文表。
 
 ## 4. 锚点表（解析器自检）
 
@@ -139,10 +142,11 @@ python parse_er_save_v4.py                       # 自动发现主存档+权威�
 python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ```
 
-输出：CSV(utf-8-sig, 53列) + JSON(summary+records)。特殊区箱号人工指定 → `box_override.json`。
-依赖：gameDataV2.65beta.json（ER-source\ 下）；xlsm 缺失时中文名回退英文。
+输出：CSV(utf-8-sig, 53列) + JSON(summary+records)。特殊区（SA/SB）默认按**代码段内顺序**标注
+（特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
+依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式）+ xlsm 特性表，缺失时回退英文。
 
-## 6. 当前状态（2026-10-06）
+## 6. 当前状态（2026-10-10）
 
 - ✅ v4.1 完成并验证：431 条（队伍6/电脑425/特殊区15/散落1），5 锚点全过。
 - ✅ **4 招式完整解码**（换招实验+10 截图铁证）：队伍 6 只 + 护城龙 + 花舞鸟 + 远古巨蜓 + 化石翼龙
@@ -531,7 +535,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   1. ~~加密块(+0x22..0x2E 13B)未解密：天性/特性选中项的存档来源。天性当前由能力反推画像（+10%/-10%/1.0，土王淘气 ✓）；特性选中项 2 样本=abis[0]，多样本验证或加密块破译后定论。~~ → **2026-10-10 定稿**：特性选中项 = word8 **bit30-31**（官方解码器 load_save.js:143-151，实档 6/6 命中）；天性字段 = word8 **bit10-14**（E5，实档 party0=8=Impish=淘气 ✓）。
   2. ~~+0x0A bit9-5 分组N（招式3相关，随招式变化但不影响 id 计算）语义待定；+0x12..0x13 疑似第5招式位（6 只全为合法 gameData 招式 id：442 铁头/482 污泥波/290 秘密力量/186 天使之吻）语义待定。~~ → **2026-10-10 定稿（E1/E2）**：`+0x0A` bit9-5 **非独立字段** = `(friendship&0x0F)<<1 | move3_bit10`；`+0x12..+0x13` **非招式** = language(3)+metLevel(7)+isShiny(2)+maxShiny(2)+abilityNum(2)。招式3 掩码应取 0x3F（解析器缺陷登记，只登记未实施）。
   3. ~~+0x48..0x4B 队伍尾部 u32 待定；PID/加密块 key（load_save.js: key=OTID^personality 参照）待对照。~~ → **2026-10-10 定稿（E3）**：`+0x48..+0x4B` = **下一条记录 personality**（非本记录字段）；`key=OTID^PID` 属加密子结构，**ER 明文不用**（load_save.js:124-125/173-174/300-301，实档 5/5 配对命中）。
-  4. **特殊区 15 条（疑似对战盒）性质与字段布局待游戏内确认**（当前 4 招/物种/EXP/等级/道具已通用解码）→ **字段布局 2026-10-10 定稿**（盒子 52 B 完全同构、步长恒 52、签名 D5D6FF×5 15/15）；**仅「性质/箱号归属」保留待游戏内确认**（§28 缩减清单 1 项：记箱号格位写 box_override.json 或改对战队伍后 .sav diff）。
+  4. **特殊区 15 条（疑似对战盒）性质与字段布局待游戏内确认**（当前 4 招/物种/EXP/等级/道具已通用解码）→ **字段布局 2026-10-10 定稿**（盒子 52 B 完全同构、步长恒 52、签名 D5D6FF×5 15/15）→ **箱号归属 2026-10-10 用户裁定「不重要，有就行了」**：解析器改为**代码段内顺序标注**（特殊区A 第1-6条 / 特殊区B 第1-9条），不再标"待锚"、不依赖人工 override（box_override.json 保留可选覆盖）。
   5. ~~盒子能力为公式基准（IV=0 无天性修正，受 ±10% 影响）；盒子 +0x30..0x33 槽属性非 PP。~~ → **2026-10-10 定稿（E5）**：盒记录无 IV/PP/level（level 由 EXP 反算）；`+0x30..+0x33` = 下一条盒记录 personality；**天性修正建议引入**（档内 word8 bit10-14，预期消除 ±10% 差项——建议改进，只登记未实施）。
   6. ~~道具描述覆盖 701/929（约 75%），未覆盖多为 ER 新增道具/邮件/钥匙类；如需补全可查 additional 数据或游戏内文本。招式 3 的分组N、+0x12 第5招如需精确语义可用换招实验定位。~~ → **2026-10-10 定稿（E6）**：gameData items 929 条 0/929 有 desc（字段仅 name/NAME/id）；additional 173 B 0 处 desc；CSV 746 行全非空 / 701 唯一 id = **701/929 = 75.5%**，缺口 228 条。换招实验不再需要（E1/E2 已源码定稿）。
   7. **可选特性勾选交互（已实现 2026-10-06）**：槽位内 abis 池逐个可点选（单选，再次点击取消，✕ 清除）；勾选后该成员防守剖面、

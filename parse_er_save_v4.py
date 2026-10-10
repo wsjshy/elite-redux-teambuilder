@@ -160,34 +160,40 @@ def load_gamedata(base_dir, sav=None):
     return None, None, None, None, None
 
 def load_zh(path):
-    """从 xlsm 提取中文名: (物种id->zh, 特性id->zh, 招式id->zh)"""
-    import openpyxl
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    """中文名：(物种id->zh, 特性id->zh, 招式id->zh)
+    物种/招式：优先读根目录 CSV 表（与 build_tool_data.py 网页数据同源，搬迁后图鉴.xlsx 已不在）；
+    特性：读 xlsm 特性表（v0.3/v0.5 任一）；表/文件缺失时跳过不崩溃。
+    """
+    import openpyxl, csv
     dex_zh, abi_zh, mov_zh = {}, {}, {}
-    ws = wb['原始数据']
-    for r in ws.iter_rows(values_only=True):
-        if r[1] is None: continue
-        try:
-            iid = int(r[1]); en = str(r[2]); zh = str(r[3])
-        except Exception:
-            continue
-        if iid > 0: dex_zh[iid] = (en, zh)
-    ws = wb['特性']
-    for r in ws.iter_rows(values_only=True):
-        if r[0] is None: continue
-        try:
-            iid = int(r[0])
-        except Exception:
-            continue
-        abi_zh[iid] = (str(r[2]), str(r[3]) if r[3] else '')
-    ws = wb['招式']
-    for r in ws.iter_rows(values_only=True):
-        if r[0] is None: continue
-        try:
-            iid = int(r[0])
-        except Exception:
-            continue
-        mov_zh[iid] = (str(r[2]), str(r[3]) if r[3] else '')
+    base = os.path.dirname(os.path.abspath(__file__))
+    sp_csv = os.path.join(base, '招式表_宝可梦基础.csv')   # 0编号 1中文 2英文
+    if os.path.exists(sp_csv):
+        for r in csv.reader(open(sp_csv, encoding='utf-8-sig')):
+            if r and r[0].strip() and r[0].strip() != '宝可梦编号':
+                try:
+                    iid = int(r[0].strip())
+                except Exception:
+                    continue
+                dex_zh[iid] = (r[2], r[1] or r[2])
+    mv_csv = os.path.join(base, '招式表_招式数值.csv')     # 0编号 1中文 2英文
+    if os.path.exists(mv_csv):
+        for r in csv.reader(open(mv_csv, encoding='utf-8-sig')):
+            if r and r[0].strip() and r[0].strip() != '招式编号':
+                try:
+                    iid = int(r[0].strip())
+                except Exception:
+                    continue
+                mov_zh[iid] = (r[2], r[1] or r[2])
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    if '特性' in wb.sheetnames:
+        for r in wb['特性'].iter_rows(values_only=True):
+            if r[0] is None: continue
+            try:
+                iid = int(r[0])
+            except Exception:
+                continue
+            abi_zh[iid] = (str(r[2]), str(r[3]) if r[3] else '')
     wb.close()
     return dex_zh, abi_zh, mov_zh
 
@@ -368,14 +374,23 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             build_row(f'BOX{box}', f'第{slot}格', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
         g1_idx += 1
 
-    # 特殊区 A/B
-    for off, spec, tag, lid, rel in groups['SA'] + groups['SB']:
+    # 特殊区 A/B（对战盒/特殊槽位；游戏界面箱号无法从存档结构直接映射，按代码段内顺序标注，
+    # 箱号归属用户已认可重要性低；box_override.json 可人工指定箱号）
+    sa_grp, sb_grp = groups['SA'], groups['SB']
+    for i, (off, spec, tag, lid, rel) in enumerate(sa_grp):
         f = rec_fields(data, off)
         ov = (override or {}).get(f'0x{off:X}')
         if ov:
-            build_row(ov.get('box', tag), ov.get('slot', f'第{rel // 52 + 1}格'), off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+            build_row(ov.get('box', '特殊区A'), ov.get('slot', f'第{i+1}条'), off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
         else:
-            build_row('特殊区(待锚)', tag, off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+            build_row('特殊区A', f'第{i+1}条', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+    for i, (off, spec, tag, lid, rel) in enumerate(sb_grp):
+        f = rec_fields(data, off)
+        ov = (override or {}).get(f'0x{off:X}')
+        if ov:
+            build_row(ov.get('box', '特殊区B'), ov.get('slot', f'第{i+1}条'), off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+        else:
+            build_row('特殊区B', f'第{i+1}条', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
 
     # G2 箱子20-26
     g2_idx = 0
@@ -424,7 +439,7 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
         '解析器': 'v4.1 (4招完整解码)',
         '权威数据': GDATA_NAME,
         '总记录': len(rows), '队伍': len(party), '电脑区': len(rows) - len(party),
-        '特殊区(待锚)': len(special), '段轮换K': K,
+        '特殊区A/B(段内顺序)': len(special), '段轮换K': K,
         '锚点验证': {'通过': [c for c, _ in anchors_ok], '失败': [f'{c}: {m}' for c, m in anchors_fail]},
         '说明': ('4招式槽: +0x04=招式1, +0x08=招式2(+招式3 mod32 高位), +0x0A=招式3 id>>5(低位), +0x0E=招式4(末招); '
                  '道具=+0x10&0x1FF; 能力=队伍+0x3A..0x47 7×u16直读(含特防); PP=+0x30..0x33; '
@@ -474,14 +489,28 @@ def auto_discover(here):
     savs.sort(key=key)
     sav = savs[0] if savs else None
     xlsm = None
+    cand = []
     for root in roots:
-        for pat in ('*图鉴*.xlsm', '*图鉴*.xlsx', '*.xlsm'):
-            hits = glob.glob(os.path.join(root, pat))
-            if hits:
-                xlsm = max(hits, key=os.path.getmtime)
-                break
-        if xlsm:
-            break
+        if not os.path.isdir(root):
+            continue
+        for r2, _, files in os.walk(root):
+            for f in files:
+                if f.lower().endswith(('.xlsm', '.xlsx')) and ('图鉴' in f or 'dex' in f.lower()):
+                    cand.append(os.path.join(r2, f))
+    if not cand:
+        for root in roots:
+            if not os.path.isdir(root):
+                continue
+            for r2, _, files in os.walk(root):
+                for f in files:
+                    if f.lower().endswith('.xlsm'):
+                        cand.append(os.path.join(r2, f))
+    if cand:
+        def xkey(p):
+            b = os.path.basename(p).lower()
+            return (0 if '2.65' in b else 1, -os.path.getmtime(p))
+        cand.sort(key=xkey)
+        xlsm = cand[0]
     return sav, xlsm
 
 if __name__ == '__main__':
