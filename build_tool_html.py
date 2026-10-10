@@ -78,6 +78,45 @@ data_js += ('\nERDATA.nonFinalER=' + _json.dumps(NONFINAL_ER, separators=(',', '
             + '\nERDATA.finalOf=' + _json.dumps(FINAL_OF, separators=(',', ':')) + ';')
 print('EV-3 派生注入：nonFinalER=%d 只 / finalOf=%d 条（ER CanEvolve = kd∈{0,3,4}）' % (len(NONFINAL_ER), len(FINAL_OF)))
 
+# ============ v4.13：家族进化图（普通进化 / Mega / 原始回归 / 招式形态 / 地区型联动） ============
+# gameData evolutions[].in 是 **species 数组下标**（非 id）→ 先转 id；kd 分类：
+#   kd∈{0,3,4} 普通进化（prev/next）；kd==1 Mega/Redux 石（mega）；kd==2 原始回归（prim）；
+#   kd==5 招式进化（form，如烈空坐）；via=道具名（rs 去 ITEM_ 前缀）。
+# 反向 base：Mega/prim/form 形态自身可回链基础形态（baseOf）。注入 ERDATA.familyGraph。
+def _sid2(_idx):
+    """evolutions[].in = species 数组下标（非 id）→ 转物种 id"""
+    try:
+        _o = _gd['species'][int(_idx)]
+    except Exception:
+        return None
+    return str(_o.get('id')) if _o else None
+_FG0 = lambda: {'prev': [], 'next': [], 'mega': [], 'prim': [], 'form': [], 'base': []}
+FAM_GRAPH = {}
+for _i, _s in _gsp.items():
+    _me = str(_s.get('id'))
+    _n = FAM_GRAPH.setdefault(_me, _FG0())
+    for _e in (_s.get('evolutions') or []):
+        _kd = int((_e or {}).get('kd', -1))
+        _t = _sid2(_e.get('in'))
+        if not _t or _t == _me:
+            continue
+        _via = str((_e or {}).get('rs') or '').replace('ITEM_', '')
+        if _kd in (0, 3, 4):
+            _n['next'].append({'id': _t, 'kd': _kd, 'via': _via})
+            FAM_GRAPH.setdefault(_t, _FG0())['prev'].append({'id': _me, 'kd': _kd, 'via': ''})
+        elif _kd == 1:
+            _n['mega'].append({'id': _t, 'kd': _kd, 'via': _via})
+        elif _kd == 2:
+            _n['prim'].append({'id': _t, 'kd': _kd, 'via': _via})
+        elif _kd == 5:
+            _n['form'].append({'id': _t, 'kd': _kd, 'via': _via})
+for _i, _n in FAM_GRAPH.items():
+    for _k in ('mega', 'prim', 'form'):
+        for _r in _n[_k]:
+            FAM_GRAPH.setdefault(_r['id'], _FG0())['base'].append({'id': _i, 'kd': _r['kd'], 'via': _r['via']})
+data_js += ('\nERDATA.familyGraph=' + _json.dumps(FAM_GRAPH, separators=(',', ':')) + ';')
+print('EV 家族图注入：familyGraph 节点 %d（prev/next/mega/prim/form/base）' % len(FAM_GRAPH))
+
 # ============ v4.5：威胁库「使用率先验」（只读 nn_data/chaos，注入内嵌 ERDATA） ============
 # 源：Smogon chaos 2026-09（rating 0）raw.usage —— **原版（PS）使用率**，非 ER 使用率（ER 无对战统计 = 已知缺口）。
 # 格式加权：gen3ou ×1.0（引擎同代：ER 为第三代内核）+ gen9nationaldex ×0.5（物种覆盖：含 Mega/后世代）。
@@ -482,6 +521,17 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .acc>summary::before{content:"\25B8"; color:var(--sub); font-weight:400}
 .acc[open]>summary::before{content:"\25BE"}
 .accbd{padding:2px 0 9px; font-size:13px; line-height:1.9}
+/* v4.13 进化链 */
+.famrow{display:flex; align-items:flex-start; gap:8px; margin:5px 0; flex-wrap:wrap}
+.famlab{flex:0 0 84px; font-size:12px; color:var(--sub); padding-top:6px; white-space:nowrap}
+.famchips{display:flex; gap:6px; flex-wrap:wrap; flex:1}
+.evochip{display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border:1px solid var(--line); border-radius:8px;
+  background:var(--card); cursor:pointer; font-size:12px; min-height:38px}
+.evochip:hover{border-color:var(--accent)}
+.evochip.chipmega{border-color:#b39ddb; background:#f3e5f5}
+.evochip .evonm{line-height:1.2}
+.evochip .evovia{font-style:normal; font-size:10px; color:var(--sub); display:block}
+@media(max-width:640px){.famlab{flex-basis:64px; font-size:11px}}
 .bktabs{display:flex; align-items:center; gap:6px; height:48px; overflow-x:auto; margin:6px 0 8px;
   padding:0 2px; position:sticky; top:0; z-index:60; background:var(--bg);
   box-shadow:0 1px 0 var(--line); -webkit-overflow-scrolling:touch}
@@ -1251,6 +1301,8 @@ function closeGl(){var m=$('glModal');if(m)m.classList.remove('open')}
 function famKeyHeur(s){
   var zh=String(s.zh||'').replace(/[（(][^）)]*[）)]/g,'');
   zh=zh.replace(/^(超级|原始|究极)/,'').replace(/[-\s]*(灵兽|化身)形态$/,'').replace(/[-\s·]*(plus|PLUS)$/,'').replace(/[XYR]$/,'').replace(/[-\s]*(Mega|Redux)\s*[XYR]?$/i,'').trim();
+  /* v4.13：地区型归并（阿罗拉/伽勒尔/帕底亚/洗翠/古代/未来/悖谬等后缀）→ 地区形态与基础形态同族关联 */
+  zh=zh.replace(/[-\s]*(阿罗拉|伽勒尔|帕底亚|洗翠|阿罗兰|古代|未来|悖谬|黄昏|拂晓|结晶)$/,'').trim();
   if(zh)return zh;
   var en=String(s.en||'').replace(/[^A-Za-z]/g,'').replace(/(Mega|Redux)[XYR]?$/i,'').toUpperCase();
   return en||('#'+s.id);
@@ -1385,6 +1437,47 @@ function mxCard(s,right,tip){
     sprRaw(s.id)+'<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(right===undefined?'':''+right)+'</div></div>';
 }
 function openSpById(id){var s=speciesById(id);if(s)openSp(s)}
+/* v4.13：进化链 / 相关形态渲染（ERDATA.familyGraph + 名称同根地区型；退化/进化链递归展开含分支） */
+function famChainHtml(s){
+  var g=(ERDATA.familyGraph||{})[''+s.id];if(!g)return '';
+  var rows=[];
+  function chipOf(r,cls){
+    var o=speciesById(r.id);if(!o)return '';
+    return '<span class="evochip'+(cls?' '+cls:'')+'" onclick="closeSp();openSpById(\''+r.id+'\')" title="查看 '+esc(o.zh)+'">'+
+      sprImg(r.id)+'<span class="evonm">'+esc(o.zh)+'</span>'+
+      (r.via?'<i class="evovia">'+esc(r.via)+'</i>':'')+'</span>';
+  }
+  /* 递归展开：退化链（prev 一直向前）/ 进化链（next 一直向后），含分支（伊布式），去重 */
+  function walk(k,id,seen,out,deep){
+    if(deep>6)return;
+    var ng=(ERDATA.familyGraph||{})[''+id];if(!ng||!ng[k]||!ng[k].length)return;
+    ng[k].forEach(function(r){
+      if(seen[r.id])return;seen[r.id]=1;out.push(r);
+      walk(k,r.id,seen,out,deep+1);
+    });
+  }
+  var pv=[],seenP={};walk('prev',s.id,seenP,pv,0);
+  var nx=[],seenN={};walk('next',s.id,seenN,nx,0);
+  if(pv.length)rows.push(['⬅ 退化',pv.map(function(r){return chipOf(r)})]);
+  if(nx.length)rows.push(['进化 ➡',nx.map(function(r){return chipOf(r)})]);
+  if(g.base&&g.base.length)rows.push(['基础形态',g.base.map(function(r){return chipOf(r)})]);
+  if(g.mega&&g.mega.length)rows.push(['⚡ Mega/Redux',g.mega.map(function(r){return chipOf(r,'chipmega')})]);
+  if(g.prim&&g.prim.length)rows.push(['🌋 原始回归',g.prim.map(function(r){return chipOf(r,'chipmega')})]);
+  if(g.form&&g.form.length)rows.push(['🌀 招式形态',g.form.map(function(r){return chipOf(r,'chipmega')})]);
+  /* 地区型 / 同名其它形态：中文名首段同根（如 雷丘 vs 雷丘（阿罗拉）/ 冰九尾），排除已列出的形态 */
+  var seen={};['prev','next','mega','prim','form','base'].forEach(function(kk){if(g[kk])g[kk].forEach(function(r){seen[r.id]=1})});
+  pv.forEach(function(r){seen[r.id]=1});nx.forEach(function(r){seen[r.id]=1});
+  seen[''+s.id]=1;
+  var pk=famKeyHeur(s),alts=[];
+  ERDATA.species.forEach(function(o){
+    if(seen[''+o.id])return;
+    try{if(famKeyHeur(o)===pk&&o.id!==s.id)alts.push(o)}catch(eA){}
+  });
+  if(alts.length)rows.push(['🔁 其它形态',alts.map(function(o){return chipOf({id:o.id})})]);
+  if(!rows.length)return '';
+  return '<div class="sec"><h3>进化链 / 相关形态 <span style="font-weight:400;font-size:11px">（点击任意形态跳转）</span></h3>'+
+    rows.map(function(r){return '<div class="famrow"><span class="famlab">'+r[0]+'</span><div class="famchips">'+r[1].join('')+'</div></div>'}).join('')+'</div>';
+}
 /* 进攻视角面板：按实际承受倍率分组（×1 默认折叠） */
 function mxPanelAtk(at,showNeutral,all){
   var R=mxRowsOf(at),h='';
@@ -1637,6 +1730,7 @@ function openSp(s){
     html+='<div class="barstat"><span class="lb">'+n+'</span><div class="tr"><div class="fl" style="width:'+pct+'%;background:hsl('+(210-i*20)+',70%,55%)"></div></div><span class="tk">'+base[i]+'</span></div>';
   });
   html+='</div>';
+  html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
   html+='<div class="sec"><h3>特性（n 选 1，点击看描述）</h3>';
   s.abis.forEach(function(n){
     var id=abiIdByZhOrEn(n);
@@ -6474,6 +6568,7 @@ function poolForNeed(core,cx0,need,team,used){
   var out=[],open=(cx0.openNeeds&&cx0.openNeeds.length?cx0.openNeeds:[need]);
   finalPool().forEach(function(t){
     if(!isValidSp(t))return;                       /* B7 id 2502 护栏 */
+    if(optMegaOnly&&hasMegaForm(t))return; /* v4.13：队友推荐同口径——可 Mega 的非 Mega 形态默认不进队伍方案（开关可关） */
     if(''+t.id===''+core.id)return;
     if(used&&used[''+t.id])return;
     var L=learnC(t);
