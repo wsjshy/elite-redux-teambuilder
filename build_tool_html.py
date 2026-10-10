@@ -1468,11 +1468,33 @@ function famChainHtml(s){
   var seen={};['prev','next','mega','prim','form','base'].forEach(function(kk){if(g[kk])g[kk].forEach(function(r){seen[r.id]=1})});
   pv.forEach(function(r){seen[r.id]=1});nx.forEach(function(r){seen[r.id]=1});
   seen[''+s.id]=1;
-  var pk=famKeyHeur(s),alts=[];
+  /* v4.13d：家族聚合——同 famKeyHeur 族集合的全部形态统一归并（含 Redux 变体与同族其它成员的 Mega）：
+     族内 base 非空 = 形态变体（kd==1 Mega/Redux、kd==2 原始回归、kd==5 招式形态）；其余 = 地区型/变体旁系 */
+  var pk=famKeyHeur(s),fam=[];
   ERDATA.species.forEach(function(o){
     if(seen[''+o.id])return;
-    try{if(famKeyHeur(o)===pk&&o.id!==s.id)alts.push(o)}catch(eA){}
+    try{if(famKeyHeur(o)===pk&&o.id!==s.id)fam.push(o)}catch(eA){}
   });
+  var megas=[],prims=[],forms=[],alts=[];
+  fam.forEach(function(o){
+    var og=(ERDATA.familyGraph||{})[''+o.id];
+    if(!og||!og.base||!og.base.length){alts.push(o);return}
+    var b=og.base[0];
+    if(b.kd===1)megas.push(o);
+    else if(b.kd===2)prims.push(o);
+    else if(b.kd===5)forms.push(o);
+    else alts.push(o);
+  });
+  /* 当前形态自己的 mega/prim/form（真进化记录）先并入族内聚合，避免重复 */
+  var gMega=(g.mega||[]).map(function(r){return r.id});
+  megas=megas.filter(function(o){return gMega.indexOf(o.id)<0});
+  var gPrim=(g.prim||[]).map(function(r){return r.id});
+  prims=prims.filter(function(o){return gPrim.indexOf(o.id)<0});
+  var gForm=(g.form||[]).map(function(r){return r.id});
+  forms=forms.filter(function(o){return gForm.indexOf(o.id)<0});
+  if(megas.length)rows.push(['⚡ Mega/Redux',megas.map(function(o){return chipOf({id:o.id},'chipmega')})]);
+  if(prims.length)rows.push(['🌋 原始回归',prims.map(function(o){return chipOf({id:o.id},'chipmega')})]);
+  if(forms.length)rows.push(['🌀 招式形态',forms.map(function(o){return chipOf({id:o.id},'chipmega')})]);
   if(alts.length)rows.push(['🔁 其它形态',alts.map(function(o){return chipOf({id:o.id})})]);
   if(!rows.length)return '';
   return '<div class="sec"><h3>进化链 / 相关形态 <span style="font-weight:400;font-size:11px">（点击任意形态跳转）</span></h3>'+
