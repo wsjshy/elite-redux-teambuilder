@@ -161,6 +161,8 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - **JS 解析器键名修正**（build_tool_html.py 模板：`主特性(当前生效)`/`天性1-3(固定)` 等含括号键加引号，修 vm 语法错）+ `tools\_chk_js_v42.js` 同步新键名与 MV 注入；
   - **重跑验证**：Python 431 条 5 锚点全过、四特性全中文（残留 1=洛托姆R-岩 Slime Mold 英文兜底）；node 实测 431 条 5 锚点 K=3 全过、护城龙=战斗盔甲(idx0)/不屈之盾/坚不可摧/原始铠甲/防150、队伍 6 只性格/选中索引/天性/4 招中文全对；
   - **线上部署修复（重要教训）**：此前线上停留在 v4.10 时代——**GitHub Pages 部署连续 4 次失败**（`pages build and deployment` failure，最后成功 fd12087e 为 10-10 10:48），根因 = **gh-pages 分支 `ER-source/nextdex` 残留 git 子模块 gitlink（160000）且无 .gitmodules 定义** → Pages 构建报 `No url found for submodule path 'ER-source/nextdex' in .gitmodules`（exit 128）。修复：`git rm --cached ER-source/nextdex` 提交推送（cb85a5e）；**另注意部署文件提取必须用 Python 二进制 `git show master:<file>`（禁止 PS 重定向 `>`，会引入 UTF-16/BOM/编码破坏）**。修复后线上 index.html=583742B 含「四特性体系」渲染，浏览器实测护城龙 特性(3选1)/天性(固定3·全部拥有)/四特性说明 全显示、console 0 error。
+- ✅ **v4.13 Mega 形态优先开关（2026-10-11）**：ER 可永久 Mega → 新增 `coreMega` 开关（默认开），推荐/候选/补位建议三入口过滤「可 Mega 的非 Mega 形态」（`hasMegaForm` 由 ERDATA.familyRoot 的 root 值派生，排除自映射），详情页 L1 显示「⚡ 可 Mega 形态」提示（建议直接用 Mega 形态、开关可恢复）。验证：搜班基拉斯默认仅 超级班基拉斯/超级班基拉斯R（普通被过滤），关开关 4 形态全现、详情提示显示、console 0 error；master 209e2a0 → gh-pages 3990e44。
+- ✅ **特性/天性详情弹层化（2026-10-11）**：chip 点击直接弹轻量 modal（`abiModal`：规范中文名+英文+#编号+类型+完整描述+战斗意义+机制词条），清除就地展开 accbd 与「原文较长/查看完整详情」调试文字；chip 显示名统一为 ABI 表规范中文（游戏内真名：铁棘→铁刺、坚不可摧→顽固、原始铠甲→根源盔甲，与游戏截图 OCR 一致）；master 7f54e03 → gh-pages a6d018f。
 - ✅ v4.1 完成并验证：431 条（队伍6/电脑425/特殊区15/散落1），5 锚点全过。
 - ✅ **4 招式完整解码**（换招实验+10 截图铁证）：队伍 6 只 + 护城龙 + 花舞鸟 + 远古巨蜓 + 化石翼龙
   的 4 招/PP/道具/能力 7 项与游戏截图**完全一致**；全量 66 条有效记录 4 招 id 未知数 = 0。
