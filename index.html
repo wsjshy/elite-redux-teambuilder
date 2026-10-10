@@ -314,9 +314,18 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
   background:var(--card); cursor:pointer; font-size:12px; min-height:38px}
 .evochip:hover{border-color:var(--accent)}
 .evochip.chipmega{border-color:#b39ddb; background:#f3e5f5}
+.evochip.chipcur{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:#e8f0fe}
 .evochip .evonm{line-height:1.2}
 .evochip .evovia{font-style:normal; font-size:10px; color:var(--sub); display:block}
-@media(max-width:640px){.famlab{flex-basis:64px; font-size:11px}}
+.evoroute{display:flex; align-items:flex-start; gap:8px; margin:7px 0; flex-wrap:wrap}
+.evoroute .famlab{padding-top:10px}
+.evoline{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; margin:3px 0}
+.evocell{display:inline-flex; align-items:center; gap:4px}
+.evoarrow{color:var(--sub); font-size:14px; padding:0 1px; opacity:.7}
+.evopends{display:inline-flex; gap:4px; margin-left:2px; vertical-align:middle}
+.evopends .evochip{min-height:0; padding:3px 6px; font-size:11px}
+.evopends .evochip .evonm{font-size:11px}
+@media(max-width:640px){.famlab{flex-basis:64px; font-size:11px}.evoroute .famlab{flex-basis:52px}}
 .bktabs{display:flex; align-items:center; gap:6px; height:48px; overflow-x:auto; margin:6px 0 8px;
   padding:0 2px; position:sticky; top:0; z-index:60; background:var(--bg);
   box-shadow:0 1px 0 var(--line); -webkit-overflow-scrolling:touch}
@@ -1223,68 +1232,97 @@ function mxCard(s,right,tip){
     sprRaw(s.id)+'<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(right===undefined?'':''+right)+'</div></div>';
 }
 function openSpById(id){var s=speciesById(id);if(s)openSp(s)}
-/* v4.13：进化链 / 相关形态渲染（ERDATA.familyGraph + 名称同根地区型；退化/进化链递归展开含分支） */
+/* v4.13f：进化链 / 相关形态 = 家族进化树（用户：所有相关形态全部带上、按进化路线分行清晰展示）
+   实现：① 家族闭包（普通进化边 + famKey 同名形态[地区型/Redux/Mega]迭代收敛）
+   ② 按地区路线分组（标准/阿罗拉/伽勒尔/帕底亚/洗翠/Redux…）
+   ③ 组内从「无退化」起点 DFS 每条进化路径一行，Mega/原始/招式形态作为挂件跟随节点 */
 function famChainHtml(s){
-  var g=(ERDATA.familyGraph||{})[''+s.id];if(!g)return '';
-  var rows=[];
+  var FG=ERDATA.familyGraph||{};var g=FG[''+s.id];if(!g)return '';
+  /* famKey 同根索引（页面一次构建） */
+  if(!window.__famIndex){
+    var _idx={};ERDATA.species.forEach(function(o){var k=famKeyHeur(o);(_idx[k]=_idx[k]||[]).push(o)});
+    window.__famIndex=_idx;
+  }
+  var famIndex=window.__famIndex;
   function chipOf(r,cls){
     var o=speciesById(r.id);if(!o)return '';
-    return '<span class="evochip'+(cls?' '+cls:'')+'" onclick="closeSp();openSpById(\''+r.id+'\')" title="查看 '+esc(o.zh)+'">'+
+    var cur=((''+r.id)===''+s.id)?' chipcur':'';
+    return '<span class="evochip'+(cls?' '+cls:'')+cur+'" onclick="closeSp();openSpById(\''+r.id+'\')" title="查看 '+esc(o.zh)+'">'+
       sprImg(r.id)+'<span class="evonm">'+esc(o.zh)+'</span>'+
       (r.via?'<i class="evovia">'+esc(r.via)+'</i>':'')+'</span>';
   }
-  /* 递归展开：退化链（prev 一直向前）/ 进化链（next 一直向后），含分支（伊布式），去重 */
-  function walk(k,id,seen,out,deep){
-    if(deep>6)return;
-    var ng=(ERDATA.familyGraph||{})[''+id];if(!ng||!ng[k]||!ng[k].length)return;
-    ng[k].forEach(function(r){
-      if(seen[r.id])return;seen[r.id]=1;out.push(r);
-      walk(k,r.id,seen,out,deep+1);
-    });
+  /* 地区路线标签 */
+  var RGN=[['阿罗拉','Alolan'],['伽勒尔','Galarian'],['帕底亚','Paldean'],['洗翠','Hisuian'],['古代','Ancient'],['未来','Future'],['悖谬','Paradox'],['黄昏','Dusk'],['拂晓','Dawn'],['结晶','Crystal']];
+  function regionTag(id){
+    var o=speciesById(id);if(!o)return '标准';
+    var zh=String(o.zh||''),en=String(o.en||'');
+    for(var i=0;i<RGN.length;i++){if(zh.indexOf(RGN[i][0])>-1||en.indexOf(RGN[i][1])>-1)return RGN[i][0]}
+    if(/R$/.test(zh))return 'Redux';
+    return '标准';
   }
-  var pv=[],seenP={};walk('prev',s.id,seenP,pv,0);
-  var nx=[],seenN={};walk('next',s.id,seenN,nx,0);
-  if(pv.length)rows.push(['⬅ 退化',pv.map(function(r){return chipOf(r)})]);
-  if(nx.length)rows.push(['进化 ➡',nx.map(function(r){return chipOf(r)})]);
-  if(g.base&&g.base.length)rows.push(['基础形态',g.base.map(function(r){return chipOf(r)})]);
-  if(g.mega&&g.mega.length)rows.push(['⚡ Mega/Redux',g.mega.map(function(r){return chipOf(r,'chipmega')})]);
-  if(g.prim&&g.prim.length)rows.push(['🌋 原始回归',g.prim.map(function(r){return chipOf(r,'chipmega')})]);
-  if(g.form&&g.form.length)rows.push(['🌀 招式形态',g.form.map(function(r){return chipOf(r,'chipmega')})]);
-  /* 地区型 / 同名其它形态：中文名首段同根（如 雷丘 vs 雷丘（阿罗拉）/ 冰九尾），排除已列出的形态 */
-  var seen={};['prev','next','mega','prim','form','base'].forEach(function(kk){if(g[kk])g[kk].forEach(function(r){seen[r.id]=1})});
-  pv.forEach(function(r){seen[r.id]=1});nx.forEach(function(r){seen[r.id]=1});
-  seen[''+s.id]=1;
-  /* v4.13d：家族聚合——同 famKeyHeur 族集合的全部形态统一归并（含 Redux 变体与同族其它成员的 Mega）：
-     族内 base 非空 = 形态变体（kd==1 Mega/Redux、kd==2 原始回归、kd==5 招式形态）；其余 = 地区型/变体旁系 */
-  var pk=famKeyHeur(s),fam=[];
-  ERDATA.species.forEach(function(o){
-    if(seen[''+o.id])return;
-    try{if(famKeyHeur(o)===pk&&o.id!==s.id)fam.push(o)}catch(eA){}
+  function effRegion(id){var gx=FG[''+id];if(gx&&gx.base&&gx.base.length)return effRegion(gx.base[0].id);return regionTag(id)}
+  /* ① 家族闭包 */
+  var C={};C[''+s.id]=1;var q=[s.id],guard=0;
+  while(q.length&&guard<12){
+    var id=q.shift(),gx=FG[''+id];
+    if(gx){['next','prev'].forEach(function(k){var a=(gx[k]||[]);for(var j=0;j<a.length;j++){if(!C[''+a[j].id]){C[''+a[j].id]=1;q.push(a[j].id)}}})}
+    var spx=speciesById(id),key=spx?famKeyHeur(spx):'';
+    if(key){var arr=famIndex[key]||[];for(var j2=0;j2<arr.length;j2++){var o=arr[j2];if(!C[''+o.id]){C[''+o.id]=1;q.push(o.id)}}}
+    guard++;
+  }
+  /* 挂件：节点自己的 mega/prim/form + Redux 形态额外带同 famKey 家族标准成员的形态记录
+     （v4.13d 聚合：暴鲤龙R 无 Mega 记录，但同族 130 的 Mega X/Y 归并过来；地区型[阿罗拉等]不误挂标准 Mega） */
+  function pendFor(id){
+    var pend=[],gx=FG[''+id];
+    function add(r){if(r&&pend.indexOf(r.id)<0)pend.push(r)}
+    ((gx&&gx.mega)||[]).forEach(add);((gx&&gx.prim)||[]).forEach(add);((gx&&gx.form)||[]).forEach(add);
+    var spx=speciesById(id),key=spx?famKeyHeur(spx):'';
+    if(effRegion(id)==='Redux'){
+      (famIndex[key]||[]).forEach(function(o){
+        if(o.id===id||effRegion(o.id)!=='标准')return;
+        var og=FG[''+o.id];if(!og)return;
+        ((og.mega)||[]).forEach(add);((og.prim)||[]).forEach(add);((og.form)||[]).forEach(add);
+      });
+    }
+    return pend;
+  }
+  /* ② 分组：普通形态（base 空）为节点，挂件形态不计入 */
+  var groups={};
+  for(var x in C){
+    var sp=speciesById(x);if(!sp||!C[x])continue;
+    var gx=FG[x];if(gx&&gx.base&&gx.base.length)continue;
+    var rg=effRegion(x);
+    var gr=groups[rg]||(groups[rg]={nodes:{},order:[]});
+    if(!gr.nodes[x]){gr.nodes[x]=1;gr.order.push(x)}
+  }
+  var html='',rgKeys=Object.keys(groups);
+  rgKeys.sort(function(a,b){if(a==='标准')return -1;if(b==='标准')return 1;return a<b?-1:1});
+  rgKeys.forEach(function(rg){
+    var gr=groups[rg];
+    var starts=gr.order.filter(function(id){var gx=FG[''+id];return !(gx&&gx.prev&&gx.prev.length)});
+    if(!starts.length)starts=gr.order;
+    var lines=[];
+    function dfs(id,path){
+      path=path.concat(id);
+      var gx=FG[''+id],kids=[];
+      if(gx&&gx.next)for(var j=0;j<gx.next.length;j++){var r=gx.next[j];if(gr.nodes[''+r.id]&&path.indexOf(r.id)<0)kids.push(r.id)}
+      if(!kids.length){lines.push(path);return}
+      for(var k2=0;k2<kids.length;k2++)dfs(kids[k2],path.slice());
+    }
+    for(var i2=0;i2<starts.length;i2++)dfs(starts[i2],[]);
+    if(!lines.length)lines=[gr.order];
+    var lineHtml=lines.map(function(path){
+      return '<div class="evoline">'+path.map(function(id,i){
+        var pend=pendFor(id);
+        var cell='<span class="evocell">'+chipOf({id:id})+
+          (pend.length?'<span class="evopends">'+pend.map(function(p){return chipOf(p,'chipmega')}).join('')+'</span>':'')+'</span>';
+        return (i===0?cell:'<span class="evoarrow">→</span>'+cell);
+      }).join('')+'</div>';
+    }).join('');
+    html+='<div class="evoroute"><span class="famlab">'+esc(rg)+'形态</span>'+lineHtml+'</div>';
   });
-  var megas=[],prims=[],forms=[],alts=[];
-  fam.forEach(function(o){
-    var og=(ERDATA.familyGraph||{})[''+o.id];
-    if(!og||!og.base||!og.base.length){alts.push(o);return}
-    var b=og.base[0];
-    if(b.kd===1)megas.push(o);
-    else if(b.kd===2)prims.push(o);
-    else if(b.kd===5)forms.push(o);
-    else alts.push(o);
-  });
-  /* 当前形态自己的 mega/prim/form（真进化记录）先并入族内聚合，避免重复 */
-  var gMega=(g.mega||[]).map(function(r){return r.id});
-  megas=megas.filter(function(o){return gMega.indexOf(o.id)<0});
-  var gPrim=(g.prim||[]).map(function(r){return r.id});
-  prims=prims.filter(function(o){return gPrim.indexOf(o.id)<0});
-  var gForm=(g.form||[]).map(function(r){return r.id});
-  forms=forms.filter(function(o){return gForm.indexOf(o.id)<0});
-  if(megas.length)rows.push(['⚡ Mega/Redux',megas.map(function(o){return chipOf({id:o.id},'chipmega')})]);
-  if(prims.length)rows.push(['🌋 原始回归',prims.map(function(o){return chipOf({id:o.id},'chipmega')})]);
-  if(forms.length)rows.push(['🌀 招式形态',forms.map(function(o){return chipOf({id:o.id},'chipmega')})]);
-  if(alts.length)rows.push(['🔁 其它形态',alts.map(function(o){return chipOf({id:o.id})})]);
-  if(!rows.length)return '';
-  return '<div class="sec"><h3>进化链 / 相关形态 <span style="font-weight:400;font-size:11px">（点击任意形态跳转）</span></h3>'+
-    rows.map(function(r){return '<div class="famrow"><span class="famlab">'+r[0]+'</span><div class="famchips">'+r[1].join('')+'</div></div>'}).join('')+'</div>';
+  if(!html)return '';
+  return '<div class="sec"><h3>进化链 / 相关形态 <span style="font-weight:400;font-size:11px">（点击任意形态跳转 · 当前形态高亮）</span></h3>'+html+'</div>';
 }
 /* 进攻视角面板：按实际承受倍率分组（×1 默认折叠） */
 function mxPanelAtk(at,showNeutral,all){
