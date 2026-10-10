@@ -1,0 +1,109 @@
+﻿mechAll=52  mechOn=true
+MECH_EVAL_ON=true  SMOGON_PRIOR_ENABLED=true  SMOGON_PRIOR_W=0.35
+
+=== §0 前置：mechLib v412 / 词汇表 40 项 / 开关存在 ===
+  PASS  0-1 mechLib 已内嵌且 52 条（v4.12 契约增长 28→52）  → mechs=52
+  PASS  0-2 MECH_RW_ZH 含全部 14 项新增 rewrite 中文名  → ok:weather_speed ok:weather_offense ok:weather_recovery ok:dry_skin_weather ok:type_immunity_absorb ok:water_bubble_shell ok:water_veil_guard ok:intimidate_weaken ok:anti_intimidate ok:multiscale_sash ok:sheer_force_boost ok:scrappy_ghost ok:light_metal_weight ok:huge_power_phys ok:magician_steal
+  PASS  0-3 词汇表规模 ≥ 40（26 既有 + 14 新增）  → keys=40
+  PASS  0-4 MECH_EVAL_ON / SMOGON_PRIOR_ENABLED 默认 true、权重 0.35  → 
+
+=== §A ① weather_speed（叶绿素 34 / 拨沙 146 / 拨雪 202） ===
+  PASS  A1 命中测试物种（叶绿素/拨沙/拨雪）  → 妙蛙花/火暴兽/帝王拿波
+  PASS  A2 晴天队：速度评估 = 基础×1.5（ER 口径；官方 ×2）  → base=80 → sunny=120（×1.50）
+  PASS  A3 无该体系：速度评估不改写（前提未改，仍表列值）  → dry=80
+  PASS  A4 D2 速度维度输出含机制评估改写标注  → 速度 120 高速（+5） ·晴天气（叶绿素）速度 ×1.5（ER 口径 → 速度维度改写）；ER ×1.5 / 官方 ×2（差异登记）（机制评估改写：基础速度 80×1.5）
+  PASS  A5 D2 无体系时保持原口径文案（零影响）  → 速度 80 中速（+1）
+  PASS  A6 mechEvalOf.spdMul=1.5 且 why 含 ER 口径/官方差异  → 晴天气（叶绿素）速度 ×1.5（ER 口径 → 速度维度改写）；ER ×1.5 / 官方 ×2（差异登记）
+  PASS  A7 拨沙 146：沙暴速度 ×1.5  → base=100
+  PASS  A8 拨雪 202：冰雹速度 ×1.5  → base=60
+
+=== §B ① weather_offense（太阳之力 94 / 沙之力 159）+ weather_recovery（雨盘 44 / 冰体 115） ===
+  PASS  B1 命中测试物种  → 向日花怪/庞岩怪/水伊布/帝牙海狮
+  PASS  B2 太阳之力 94：晴天最高攻击项 ×1.5（ER 口径）  → hi=特殊 atkMul={"物理":1,"特殊":1.5}
+  PASS  B3 mechAtkBestOf 力度改写 = round(最高项×1.5)  → base=105 → 158
+  PASS  B4 D4 力度维度含机制改写 + ER/官方差异登记  → 力度 158 极高（+5） ·晴天气（太阳之力）最高攻击项 ×1.5（ER 口径 → 攻击维度改写）；ER 最高攻项 ×1.5 且无掉血 / 官方 特攻 ×1.5 且每回合掉 1/8 HP（差异登记）（机制评估改写：基础力度 105→158）
+  PASS  B5 D4 无体系时保持原口径（零影响）  → 力度 105 达标（+1）
+  PASS  B6 沙之力 159：沙暴最高攻击项 ×1.5 + 官方差异登记  → 1.5
+  PASS  B7 雨盘 44：雨天每回合 1/8 回复 → 续航维度改写（ER 1/8 / 官方 1/16；无回复招也计入）  → healFrac=0.125 pt7=2 txt=机制每回合回复 12.5% 最大 HP雨天气（雨盘）每回合回复 1/8 最大 HP（ER 口径 → 续航维度改写）；ER 1/8 / 官方 1/16（差异登记）（+2）
+  PASS  B8 冰体 115：冰雹每回合 1/8 回复  → healFrac=0.125
+
+=== §C ① dry_skin_weather（干燥皮肤 87） ===
+  PASS  C1 命中测试物种（干燥皮肤 87）  → 巨沼怪
+  PASS  C2 对水免疫：defImm 含水 + defCellTrio(水).inn = 0（防御匹配真实改写）  → inn=0
+  PASS  C3 对火降权：defDown 含火 + 生效口径 opt ×1.25（不扣分、inn 不动）  → opt=0.625
+  PASS  C4 雨天回血：healFrac=0.125（雨回合回血）  → healFrac=0.125
+  PASS  C5 why 登记 ER desc 未量化 + 官方 1/4·1.25·1/8·1/8（差异登记）  → 干燥皮肤：对水免疫（inn 改写）；火伤 ×1.25（对火降权，写入生效口径 opt、不扣分）；雨天每回合回复 1/8——ER desc 仅记「Water/Rain heals. Fire/Sun hurts.」未量化；官方 水免回 1/4
+  PASS  C6 晴天掉血：负向前提只登记（why 标注），不改写评估数值  → healFrac=0
+
+=== §D ① type_immunity_absorb（引水114/引火18/蓄水11/食草157/避雷针31/电力引擎78） ===
+  PASS  D1 六个属性吸收特性均命中测试物种  → 114:宝石海星 18:九尾 11:蚊香泳士 157:玛力露丽 31:雷伊布 78:电击魔兽
+  PASS  D2 蓄水 11：**对水免疫**入防御匹配（defCellTrio(水).inn=0）＝真实生效；受击回血只作前提登记（healFrac 不写、不过评）  → inn=0 healFrac=0
+  PASS  D3 引火 18：对火免疫 inn=0（真实生效）＋「自身火招威力 ×1.5」作受击触发前提登记（不写 mvTypeMul，避免对未受击对局过评）  → inn=0 fireMul=undefined
+  PASS  D4 引水 114：对水免疫 inn=0＋命中后最高攻项 +1 作前提登记＋ER/官方差异登记（基础力度不变）  → hi=特殊 atkMul=1
+  PASS  D5 食草 157：对草免疫 inn=0＋命中后 +1 作前提登记＋追加草招转移登记  → hi=特殊
+  PASS  D6 避雷针 31：对电免疫 inn=0＋命中后最高攻项 +1 作前提登记（ER；官方特攻+1）  → hi=特殊
+  PASS  D7 电气引擎 78：对电免疫 inn=0（真实生效）＋速度+1 只作前提登记（spdMul 不改写）  → inn=0 spdMul=1
+  PASS  D8 水泡 199：水招 ×2 且受火减半（ER 与官方一致）  → waterMul=2 火 inn=0.125
+  PASS  D9 水幕 41：免灼伤 + ER 特有登场水流环（1/16 → 续航维度）  → healFrac=0.0625 pt7=4
+
+=== §E ① 威吓/反威吓/满血减伤/全力攻击/胆量/轻金属/巨力/魔术师 ===
+  PASS  E1 命中测试物种  → 22:大嘴雀 553:风速狗 231:花岩怪 125:尼多后 113:袋兽 135:巨钳螳螂 37:玛力露丽 74:吼叫尾 170:钥圈儿
+  PASS  E2 威吓 22：physWane=1（防御/站场增益）→ D11 免疫/减伤维度加分  → pt11=2 威吓：换入降对方物攻（物理承受减伤）（+2）
+  PASS  E3 警卫犬 553（反威吓按 id 分档）：被威吓攻击 +1（×1.5）  → hi=物理
+  PASS  E4 反威吓（非 553 档）：免疫威吓 → 对抗威吓评估（vsIntim≥1、无攻击改写）  → {"物理":1,"特殊":1}
+  PASS  E5 幻影防守 231：复用 multiscale_sash 满血减伤语义（defFlat=0.5 → D11；不误当作类型抵抗）  → pt11=2
+  PASS  E6 副效果识别：move 数据无结构化标志 → desc 文本正则可识别  → #3 连环巴掌 pct=10 kw=confus
+  PASS  E7 全力攻击 125：带副效果招 ×1.3（招式级实现）  → mul=1.3 全力攻击：带追加效果的招式威力 ×1.3（副效果不触发；ER 与官方一致）
+  PASS  E8 胆量 113：一般/格斗招可命中幽灵（破除免疫）+ 免疫威吓  → mul=1.1 胆量：一般系招可命中幽灵（破除幽灵免疫，攻击评估改写）
+  PASS  E9 轻金属 135：速度 ×1.3（ER 特有）+ 体重减半（防御维度）  → base=65
+  PASS  E10 大力士 37：物攻 ×2（ER 与官方一致）→ 攻击评估改写；按 id 分档只走 37 支（不进 74 特攻支）  → phyMul=2 mechAtkMul=2 pool=[37]
+  PASS  E11 瑜伽之力 74：ER **特攻** ×2（官方物攻 ×2，差异登记）→ 攻击维度改写（按 id 分档）  → pool=[37,74] spaMul=2 分档支=37+74 并集
+  PASS  E12 魔术师 170：道具位评估改写 + why（非接触招式后偷取 / 官方自身无道具+命中）  → /P1；道具位评估改写：魔术师：自身无道具时命中即偷取对手道具 → 道具位评估改写（可空道具位触发前提；ER desc「非接触招式后偷取」/ 官方「自身无道具 + 攻击招式命中」）
+
+=== §F ① 机制覆盖通用评分（abiAdjOf 接入点）与零影响回归 ===
+  PASS  F1 大力士 37 本系物攻：abiAdjOf.mul 由通用 ×1.2 覆盖为 ×2（机制覆盖 > 通用评分）  → mul=2
+  PASS  F2 存在「无任何机制命中」的物种（回归基线样本）  → 喷火龙
+  PASS  F3 非机制物种：mechEvalOf 全中性（零影响）  → {"spd":1,"atk":{"物理":1,"特殊":1},"hf":1}
+  PASS  F4 非机制物种：defCellTrio 与基础属性倍率一致（未改写）  → inn=0.5
+
+=== §G 优雅降级：mechLib 缺失 / MECH_EVAL_ON=false ===
+  PASS  G1 mechLib 缺失 → mechOn()=false  → 
+  PASS  G2 mechLib 缺失 → mechSpdOf 返回表列速度（零影响）  → v=80
+  PASS  G3 mechLib 缺失 → mechEvalOf 全中性  → 
+  PASS  G4 MECH_EVAL_ON=false → 评分改写层全关（mechSpdOf 返回表列速度）  → v=80
+  PASS  G5 MECH_EVAL_ON=false → why 标注层仍在（mechAbiWhy 非空）  → n=1
+
+=== §H ② SMOGON_PRIOR：注入 120 物种 + 软消费 + 开关回退 ===
+  PASS  H1 ERDATA.smogonPrior 已注入且 species 数 = 120  → n=120
+  PASS  H2 smogonOn()=true（开关 true 且数据在）  → 
+  PASS  H3 职责分界文案：smogonPrior 管配招/道具/队友、usagePrior 管物种常见度  → 原版（Smogon/PS）惯例 ≠ ER 使用率（ER 无对战统计=已知缺口）；smogonPrior 管配招/道具/队友先验，usagePrior 管物种常见度次排序，二者职责分开
+  PASS  H4 smogonPriorOf(248) 存在（班基拉斯，先验物种样例）  → 班基拉斯
+  PASS  H5 moves/items/teammates 三路取数可用  → mv=157:67.89 it=273:57.28 mates=6
+  PASS  H6 道具先验：软优先权重 ≤ SMOGON_PRIOR_W×0.30（并列微排序，不动机制主导）  → bonus=0.0601 / 上限=0.1050
+  PASS  H7 配招先验：常见招小权重加成 ≤ SMOGON_PRIOR_W×0.10  → bonus=0.0238
+  PASS  H8 队友先验：smogonMateIds 映射到 ER 物种 id，且 smogonMateHtml 含诚实标注  → mates=6
+  PASS  H9 非先验物种（如 132 百变怪）零影响  → 
+  PASS  H10 SMOGON_PRIOR_ENABLED=false → 全部消费函数返回空/原行为（逐字节回退 v4.11）  → 
+  PASS  H11 道具推荐首位存在且 why 可溯源（软优先只微调、不改候选集）  → 讲究围巾 sc=1.865
+  PASS  H12 开关关/开：道具榜首一致（机制覆盖主导，先验仅并列微排序）  → on=讲究围巾 off=讲究围巾
+
+=== §I ③ 体系模板（axis_lib「体系模板」15 轴 × 6 位） ===
+  PASS  I1 AXIS_LIB 内嵌 15 条轴  → n=15
+  PASS  I2 15 条轴均含「体系模板」字段  → n=15
+  PASS  I3 每轴六位全齐（体系核心/打手位/补盲位/联防位/撒钉清钉轮转位/功能位）  → 15×6 全齐
+  PASS  I4 axisTplOf("rain") 可取模板；缺失轴 → null（优雅降级）  → 
+  PASS  I5 axisTemplateOf 生成六位（每位 1 候选，含补位标注位）  → 体系核心:巨沼怪 | 打手位:盖欧卡-原始回归(补位) | 补盲位:电灯怪(补位) | 联防位:超级班基拉斯R(补位) | 撒钉清钉轮转位:水箭龟(补位) | 功能位:风速狗(补位)
+  PASS  I6 L2 axbar 渲染：含「体系模板」+ 六位名 + 生成口径  → len=3086
+  PASS  I7 字段缺失优雅降级：不存在的轴 → axisTplHtml 返回空串  → 
+
+=== §J 机制块渲染与非回归抽查 ===
+  PASS  J1 机制块渲染包含 14 项新增 why（巨力）本文  → len=4180
+  PASS  J2 mechAbiWhy 对干燥皮肤给出 ER/官方差异登记 why  → 干燥皮肤：水招免疫并回血（对水免疫，入防御匹配 inn）；火伤 ×1.25（对火降权，只写生效口径 opt、不扣分）——雨天回血 / 晴天掉血；ER desc 仅记「Water/Rain heals. Fire/Sun 
+
+=== §K 回归护栏：v48 G2b 队规模快照（4~6 只） ===
+  PASS  K1 队规模与 v48 G2b 快照逐只一致（机制评估改写不过评）  → 妙蛙花=6 煤炭龟=6 土王=4 坚果哑铃=4 护城龙=5
+  PASS  K2 关掉机制评估改写层后队规模不变（改写层对该快照零影响）  → 妙蛙花/煤炭龟/土王/坚果哑铃/护城龙
+
+================ v4.12 引擎层自检探针汇总 ================
+PASS=79  FAIL=0
+全部通过

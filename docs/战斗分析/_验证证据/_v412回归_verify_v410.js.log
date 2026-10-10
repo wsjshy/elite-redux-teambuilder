@@ -1,0 +1,123 @@
+﻿mechAll=52  mechOn=true
+产物指纹(SHA256)以 D 线报告登记为准；本探针只消费 _chk_script_1.js（由 _extract_script.js 从最终 HTML 抽出）
+
+=== 0 前置：百变怪对象与 mechLib 就位 ===
+  PASS  P1 对象 百变怪 id="132"（数据中文名命中）  → id=132 en=Ditto
+  PASS  百变怪特性池含 变身者（150）  → ["恶作剧之心","魔法防守","变身者"]
+  FAIL  mechLib 已内嵌且非空（数据层嵌入 data.js 顶层键 mechLib）  → mechs=52
+
+=== §A P1 百变怪 · 变身者剖面改写 ===
+  PASS  A1 mechSpProfile(ditto).imposter === true  → ["imposter","prankster","magic_guard"]
+  PASS  A2 道具三选 id 集 = 讲究围巾285/气势披带287/脱壳忍者壳308  → ["285","287","308"]
+  PASS  A3 why 含「变身者」「速度复制」「道具三选」  → 变身者：速度复制（复制对手的种族/招式基线）+ 道具三选（讲究围巾/气势披带/脱壳忍者壳）
+  PASS  A4 why 含「脱壳忍者壳」且已无「服务铃」（ER 数据口径；繁中译名已校准替换）  → 变身者：速度复制（复制对手的种族/招式基线）+ 道具三选（讲究围巾/气势披带/脱壳忍者壳）
+  PASS  A5 why 明示「种族值/技能池不作为主评分依据」（仍展示）  → 种族值/技能池不作为主评分依据（仍展示，不参与主判据）
+  PASS  A6 评估剖面不再按种族值/技能池作主判据（渲染面显式声明）  → 
+  PASS  A7 详情渲染面出现机制剖面改写横幅「机制剖面改写 · 变身者」  → 
+  PASS  A8 详情渲染面出现「道具三选」及三项显示名（讲究围巾/气势披带/脱壳忍者壳）  → ERDATA.items[308].zh=脱壳忍者壳
+  PASS  A9 「种族值低」不作为否决/主判据（渲染面零出现）  → 
+  PASS  A10 种族值仍展示（定位判断行含种族 物攻48/特攻48/速度48）  → 
+  PASS  A11 道具决策置顶三条机制锚点（变身者·道具三选）  → 讲究围巾/气势披带/脱壳忍者壳/
+  PASS  A12 mechAbiWhy(ditto) 命中 变身者（特性级机制解读）  → ["恶作剧之心","魔法防守","变身者"]
+
+=== §B P2 杂技 · 威力条件与消耗联动 ===
+  PASS  B1 MV[512] 就位（杂技/飞行/物理/75）  → ["512","杂技","Acrobatics","飞行","物理",75]
+  PASS  B2 无道具位 → 威力 112.5 + why 含「无道具×1.5」「ER 改版口径」  → pow=112.5 why=["无道具×1.5（ER 改版口径：75 → 112.5）","112.5（ER 改版口径 75×1.5；官方 55×2=110，差异登记待实测）","机制解读：命中机制条目 1 条（机制覆盖优先于通用评分）"]
+  PASS  B3 why 明示口径差「112.5（ER 改版口径 75×1.5；官方 55×2=110，差异登记待实测）」  → 
+  PASS  B4 携带常驻道具（讲究围巾285）→ 威力 75 + warn「携带常驻道具时无加成（按表列威力 75）」  → pow=75 warn=携带常驻道具时无加成（按表列威力 75）
+  PASS  B5 携带消耗性道具（飞行宝石339）→ 112.5 + 消耗联动标注  → pow=112.5
+  PASS  B6 携带场地种子（青草种子331）→ 112.5 + 消耗联动标注  → pow=112.5
+  PASS  B7 消耗性道具判定：宝石339/种子328-331 真、常驻285 假、披带287 真、按钮317 真  → 339:true 328:true 329:true 330:true 331:true 285:false 287:true 317:true
+  PASS  B8 E2E 杂技学习者候选池：出现机制标注的 512 候选 ≥1（实测 38 只）且无异常候选  → learners=328 anomalies=[]
+  PASS  B9 招式机制徽标 mechBadgeForMove(512) 含「机制解读：杂技」  → <span class="badge badge-mech">机制解读：杂技</span>
+
+=== §C P3 欺诈 · 按对方物攻，不受自身低物攻惩罚 ===
+  PASS  C1 欺诈固定威力 95 + crossSide（跨侧纳入，不按本侧攻评）  → pow=95 crossSide=true
+  PASS  C2 why 含「按对方物攻」+ 明示低物攻使用者不受惩罚  → ["按对方物攻","机制覆盖：欺诈固定威力 95（按对方物攻评估 → 低物攻使用者不受自身物攻惩罚）","机制解读：命中机制条目 1 条（机制覆盖优先于通用评分）"]
+  PASS  C3 E2E 全部 492 候选（225 只学习者 × 双侧）威力恒 95 且 why 含「按对方物攻」  → anomalies=[]
+  PASS  C4 crossSide 生效：492 跨侧进入「特殊」侧候选（150 例 >0）  → specialSideHits=150
+  PASS  C5 低物攻使用者（鬼斯 物攻35，学欺诈）：加宽候选池下 492 以 95 入选且 why 含「按对方物攻」  → hits=2 pow=95,95
+
+=== §D 组合联想器 · 三关 ===
+  FAIL  D1 条件过滤：同页既有「条件满足」边，也有「条件不满足」边（fail 非空）  → ok=10 fail=0 (condOk=true 10)
+  PASS  D2 条件满足边标注（condOk=true → 渲染「条件满足」）  → count=10
+  FAIL  D3 条件不满足边标注（渲染「条件不满足：<原因>」）  → count=0
+  PASS  D4 排序：满足条件（ok=true）边全部排在未满足之前  → [true,true,true,true,true,true,true,true,true,true]
+  PASS  D5 未解析存档（SAV_ROWS 空）→ pooled=false + note 含「未解析存档」+ 显示全量  → pooled=false shown=5/5 note=未解析存档 → 显示全量
+  PASS  D6 已解析存档（mock 只含 132）→ pooled=true + note 含「已解析存档」+ 未拥有的 item339 边被过滤  → pooled=true count=5 shown=0 note=已解析存档（1 行）→ 仅显示你拥有的对象
+  PASS  D7 池内含「讲究围巾」→ item285 的边保留（owned=true，只显示池内）  → shown=1 owned=true
+  PASS  D8 效果叙事：所有展示 combo 的 narr 非空、src 非空（5 条）  → narrEmpty=0 srcEmpty=0
+  PASS  D9 narr 与 JSON 一致（杂技+飞行宝石 = 规格示例句）  → 飞行宝石起手爆发，消耗后杂技全程 112.5
+  FAIL  D10 narr 出现在渲染面（mechCoreHtml(moves=[512]) 含该叙事）  → 
+
+=== §E 组合库契约（mechLib schema） ===
+  FAIL  E1 机制条目数 = 28  → mechs=52
+  FAIL  E2 combo 总数 = 77  → combos=156
+  PASS  E3 全部 combo narr 非空（结构化生成不编造）  → empty=0
+  PASS  E4 全部 combo src 非空且为 http(s)（铁律：每条可溯源）  → empty=0
+  PASS  E5 全部 mech basis 非空 + 顶层 src 非空  → basis=0 src=0
+  PASS  E6 无 combo 引用 魔术师170（§1 铁律：禁入任何 combo）  → hits=0
+  PASS  E7 rewrite 全在 §3 词汇表内（26 条）  → rogue=0 vocab=40
+  PASS  E8 cat 全在六分类内  → rogue=0
+  PASS  E9 每条 combo 的 with.kind/ids 合规  → bad=0
+  PASS  E10 每条 mech match 至少一非空键  → bad=0
+
+=== §F 详情页「机制解读 · 可配合组合」区块 ===
+  PASS  F1 详情渲染面存在机制区块（<div class="sec mechsec"> + 标题）  → 
+  PASS  F2 组合折叠块存在（<details class="mechdet"> + 「可配合组合（N 条）」）  → 可配合组合（10 条）· 未解析存档 → 显示全量
+  PASS  F3 每条 combo 均有可展开溯源链接（溯源数 10 = 区块 combo 数 10）  → src=10 combos=10
+  PASS  F4 溯源链接均指向 http(s) 真实 URL  → 
+  PASS  F5 特性机制徽标 mechBadgeForAbi(变身者) 含「机制解读：变身者」  → 
+  PASS  F6 详情渲染面出现机制徽标（badge-mech ≥1）  → count=14
+  PASS  F7 mechCoreHtml 非空且结构完整  → len=5814
+  PASS  F8 详情机制区块按需出现（引擎判据为「有内容」的物种 → 渲染 mechsec）：抽检 40/1825，缺渲染 0  → []
+  PASS  F9 机制无内容物种不渲染 mechsec（保持 v4.9 结构，无泄漏）：抽检 40/81，误挂 0  → []
+
+=== §G 优雅降级（就地置 ERDATA.mechLib={mechs:[]} + 清 _MECH_MEMO） ===
+  PASS  G1 mechOn() === false（缺 mechLib → 机制层整体退出）  → mechOn=false
+  PASS  G2 mechByMove(512) 为空（清 memo 后不残留命中）  → len=0
+  PASS  G3 置空后重渲染无崩溃  → len=440777
+  PASS  G4 降级后无机制区块/徽标残留（mechsec / badge-mech / 机制解读 全空）  → mechsec=false badge=false
+  PASS  G5 v4.9 渲染行为不变：8 只 × 6 断言 = 48 条全 PASS（无崩溃/无机制残留）  → pass=48/48 renderFail=[]
+  PASS  G6 降级下核心数据契 contract 保持（deriveBuilds/WCONF 不变）  → pass=50/50
+  PASS  G7 恢复 mechLib 后机制层可复现（mechOn()===true 且 512 命中还原）  → mechOn=true m512=1
+
+=== §H 移动端 360px CSS 断言 ===
+  PASS  H1 无内联 style 固定宽度 >360px（360px 不引入横向滚动）  → bad=0 []
+  PASS  H2 移动端断点 @media (max-width:640px) 在位  → count=2
+  PASS  H3 -webkit-text-size-adjust:100% 在位  → 
+  PASS  H4 触控目标 min-height:44px ≥5 处  → count=16
+  PASS  H5 返回栏 .corebackbar flex-wrap:wrap（窄屏换行，无固定宽）  → 
+  PASS  H6 机制区块就地展开（details.mechdet，非浮层/抽屉；mech 区无 position:fixed）  → 
+  PASS  H7 机制组合表格置于 .scroll 且 CSS 有 overflow-x:auto（窄屏表内滚动）  → 
+  PASS  H8 机制折叠块触控高度 .mechdet>summary min-height:44px  → 
+
+=== §I token 扫描（玩家可见渲染面） ===
+  PASS  I1 渲染面无内部标记「<production>」  → count=0
+  PASS  I1 渲染面无内部标记「undefined」  → count=0
+  PASS  I1 渲染面无内部标记「[object Object]」  → count=0
+  PASS  I1 渲染面无内部标记「NaN」  → count=0
+  PASS  I1 渲染面无内部标记「mech_lib」  → count=0
+  PASS  I1 渲染面无内部标记「build_tool」  → count=0
+  PASS  I1 渲染面无内部标记「nn_data」  → count=0
+  PASS  I1 渲染面无内部标记「imposter_anchor」  → count=0
+  PASS  I1 渲染面无内部标记「rewrite」  → count=0
+  PASS  I2 机制引用的道具显示名完整（无 "#id" 回退）且渲染面无内部编号  → 引用道具=20 回退道具=[] 渲染面#id=[]
+  NOTE  杂技页（大针蜂）机制区块 "#id" 实测：[]；prem 文案路径命中=false
+  PASS  I3 内嵌脚本全文无「<production>」  → count=0
+  PASS  I3 内嵌脚本全文无「production」  → count=0
+  PASS  I3 内嵌脚本全文无「种族值低」  → count=0
+  NOTE  内嵌脚本注释层含内部文件名引用：build_tool?×9、nn_data×13、mech_lib_v410×1（仅 view-source 可见，渲染面 0；与 v4.9 axis_lib 注释同惯例）。
+
+================ v4.10 回归与探针 汇总 ================
+PASS=80  FAIL=6
+FAIL 清单：
+  - mechLib 已内嵌且非空（数据层嵌入 data.js 顶层键 mechLib）  → mechs=52
+  - D1 条件过滤：同页既有「条件满足」边，也有「条件不满足」边（fail 非空）  → ok=10 fail=0 (condOk=true 10)
+  - D3 条件不满足边标注（渲染「条件不满足：<原因>」）  → count=0
+  - D10 narr 出现在渲染面（mechCoreHtml(moves=[512]) 含该叙事）  → 
+  - E1 机制条目数 = 28  → mechs=52
+  - E2 combo 总数 = 77  → combos=156
+NOTE 2 条：
+  · 杂技页（大针蜂）机制区块 "#id" 实测：[]；prem 文案路径命中=false
+  · 内嵌脚本注释层含内部文件名引用：build_tool?×9、nn_data×13、mech_lib_v410×1（仅 view-source 可见，渲染面 0；与 v4.9 axis_lib 注释同惯例）。

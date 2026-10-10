@@ -1,0 +1,66 @@
+﻿
+=== A 拆包：ERDATA 外置 ===
+  PASS  index/配招助手_ER.html 不再内嵌 ERDATA 字面量（无 "var ERDATA = {"）  → 命中 0 次
+  FAIL  HTML 体积显著缩小（< 拆包前 2,552,588 B 的 1/4）  → 650919 B（拆包前 2552588 B，降幅 74.50%）
+  PASS  data.js 与 HTML 同目录存在且为数据体量（> 1 MB）  → 2347755 B
+  PASS  HTML 顶部/尾部无残留内联数据（shield：ERDATA.nonFinalER 字面量只在 data.js）  → 
+  PASS  HTML 仍为 3 个 <script> 块（loader / loader-FB / 应用代码）  → count=3
+
+=== B 加载器：主源 + 回退 两块 bootstrap ===
+  PASS  主源加载器块存在（哨兵 __ER_LOADER__）  → offset=35544
+  PASS  回退加载器块存在（哨兵 __ER_LOADER_FB__）  → offset=36408
+  PASS  加载器内含 CDN 前缀常量（gcore.jsdelivr gh@gh-pages）  → 常量命中=1 处（前缀常量 1 + 探针/注释）
+  PASS  加载器含 ERDATA 预定义跳过（typeof ERDATA==='undefined'）  → 
+  PASS  加载器用 document.write 同步注入（非 async/defer，非 fetch）  → 
+  PASS  JS 字符串内 </script> 已转义为 <\/script>（HTML 解析器不截断）  → 转义命中=2 处，裸 </scr 命中=0 处
+  PASS  加载器不引用 assets/sprites（旧目录零引用护栏）  → 
+
+=== C 分支模拟：file: / https: / 失败回退 / 已定义跳过 ===
+  PASS  file: → 直接相对路径 data.js（不触网取 CDN）  → ["<script src=\"data.js\"></script>"]
+  PASS  file: → __ER_FILE=true 且 __ER_ASSET_BASE=""（资产走相对路径）  → FILE=true BASE=""
+  PASS  仅有 location.href 且以 file: 开头 → 判为本地（相对路径）  → ["<script src=\"data.js\"></script>"]
+  PASS  https: → 主源 = CDN 前缀 + data.js  → ["<script src=\"https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/data.js\"></script>"]
+  PASS  https: → __ER_FILE=false 且 __ER_ASSET_BASE=CDN 前缀  → BASE=https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/
+  PASS  主源写入后 ERDATA 仍未定义（模拟 404/网络失败）  → 
+  PASS  主源失败 → 回退块改写同域相对路径 data.js  → ["<script src=\"https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/data.js\"></script>","<script src=\"data.js\"></script>"]
+  PASS  主源成功（ERDATA 已就绪）→ 回退块零改写（不重复下载）  → writes=1
+  PASS  ERDATA 预定义 → 块 1 完全跳过加载（VM/V4 抽取场景同构）  → writes=0
+  PASS  file: 下回退块不二次写入（__ER_FILE=true 门控）  → writes=0
+
+=== D data.js：语法 / 执行 / ERDATA 可用性 / 抽取前置拼接 ===
+  PASS  data.js node --check 通过  → ok
+  PASS  data.js 在 VM 中可执行（无运行期错误）  → 
+  PASS  ERDATA 就绪  → object
+  FAIL  ERDATA.mechLib 可用（v4.10 机制库 mechs 非空 + meta 自洽）  → mechs=52 meta.count=52 schema=v412
+  PASS  ERDATA.items 可用（929 条，zh 非空）  → items=929
+  PASS  ERDATA.species / types / moves 可用（数据同源护栏）  → species=1906 types=21 moves=1032
+  PASS  派生字段在 data.js 内（nonFinalER / finalOf 随拆包一并外置）  → nonFinalER=653 finalOf=616
+  PASS  _chk_script_1.js 以 data.js 内容开头（VM 内 ERDATA 先于应用代码）  → chk=2543536 B
+  PASS  _chk_script_1.js 含应用代码（sheet 引号 + SPR_SHEET 消费）  → 
+
+=== E sheets 精灵图前缀：erAssetBase/sprOf/sprProbe ===
+  PASS  erAssetBase / sprOf / sprRescan / sprProbe 四函数齐备  → 172/275/580/262
+  PASS  sprOf 走 erAssetBase() 拼前缀（非硬编码 assets/sheets）  → 
+  PASS  无前缀（VM/file:）→ url('assets/sheets/s1.webp')，逐字沿用旧格式  → background-image:url('assets/sheets/s1.webp');background-repeat:no-repeat;background-size:1600% 1600%;background-position:33.3333% 46.6667%
+  PASS  CDN 前缀 → url('<gcore>assets/sheets/s1.webp')  → background-image:url('https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/assets/sheets/s1.webp');background-repeat:no-repeat;background-size:1600% 1600%;background-position:33.3333% 46.6667%
+  PASS  缺映射 id → 空串（.spmiss 空占位，不发请求，旧行为不回归）  → 
+  PASS  无 Image 环境（Node VM）→ sprProbe 零副作用零异常  → 
+  PASS  sprProbe 探针 src = CDN 前缀 + assets/sheets/s0.webp  → https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/assets/sheets/s0.webp
+  PASS  探针 onerror → 前缀清空 + 重扫（主源失败回退同域相对路径）  → BASE=""
+
+=== F gzip 体积报告（python gzip level 9） ===
+  · 配招助手_ER.html 650919 217060 643363 216536
+  · data.js 2347755 547420 2347752 547417
+  PASS  python gzip 取数成功（HTML + data.js 各一行）  → 配招助手_ER.html,data.js
+  PASS  HTML gzip 降幅 ≥ 50%（对比拆包前 660230 B gzip）  → LF gzip=216536 B（拆包前 660230 B，降幅 67.2%）
+
+================ v4.11 CDN 优化探针 汇总 ================
+PASS=39  FAIL=2
+NOTE 4 条：
+  · HTML：650919 B → gzip(LF) 216536 B / gzip(CRLF) 217060 B（拆包前 2,552,588 B / gzip 660,230 B）
+  · 目标「~100KB gzip 量级」实测未达：残余 0.53 MB 主体为应用 JS（~400KB）+ 内嵌 SPR_SHEET(28.9KB)/AXIS_LIB(27.1KB)，本轮红线只允许拆 ERDATA；如需再降须另立拆包项（sheets_map/axis_lib 外置，会改部署集）。
+  · data.js：2347755 B → gzip(LF) 547417 B / gzip(CRLF) 547420 B
+  · 单次首屏传输预算（gzip）：HTML 216536 B（github.io）+ data.js 547417 B（gcore 镜像）≈ 763953 B，与拆包前 660,230 B 同量级；差异在**来源**（最大一块 data.js 由 gcore ~118KB/s 承载而非 github.io ~46KB/s）与精灵图 8 张 webp 同走 gcore。
+FAIL 明细：
+  × HTML 体积显著缩小（< 拆包前 2,552,588 B 的 1/4）  → 650919 B（拆包前 2552588 B，降幅 74.50%）
+  × ERDATA.mechLib 可用（v4.10 机制库 mechs 非空 + meta 自洽）  → mechs=52 meta.count=52 schema=v412

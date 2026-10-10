@@ -1,0 +1,112 @@
+﻿产物：配招助手_ER.html=509942B  内嵌脚本=2543536B
+
+=== A 详情页三层结构（L1 / L2 / L3 容器） ===
+  PASS  A0 探针前置：妙蛙花(#3) 可取到  → id=3 妙蛙花
+  PASS  A0b renderCore 渲染无异常且非空  → <div class="sec l1card"><h2 class="l1hd"><span class="spbox 
+  PASS  A1 L1 基础信息层容器存在（.sec.l1card）  → 
+  PASS  A2 L1 含种族值六维条形图（6 × .barstat）与总值  → barstat=6
+  PASS  A3 L1 含属性(天性) chip 与 特性 chip（.chip）  → chips=5
+  PASS  A4 L2 玩法层容器存在且流派卡数 = deriveBuilds 条数  → panels=2 cards=3/2
+  PASS  A4b verify_v4 B④ 字面护栏：首卡 <details class="big rec" open> + summary 内 class="bigsub"  → 
+  PASS  A4c verify_v4 B⑤ 字面护栏：「本流派队友」+「向 / 」在位  → 本流派队友（特殊向 / 强化 优先，按流派侧向分流）
+  PASS  A5 L3 引擎细节层容器存在（details.acc.eng + 引擎视角标题）  → 
+  PASS  A6 三层顺序：L1 在 L2 之前、L2 在 L3 之前（信息架构未错位）  → 
+  PASS  A7 每张流派卡固定 8 字段序号（2–9 全覆盖，①在 summary 内）  → fno2=2 fno9=2
+
+=== B L2 流派 tab 切换（一次一卡） ===
+  PASS  B1 tablist/tab 语义存在且 tab 数 = 流派数  → tabs=2/2
+  PASS  B2 aria-selected 仅第 1 个为 true（默认选中推荐流派）  → 
+  PASS  B3 一次一卡：非首卡 tabpanel 带 .bkoff（默认只有 1 张可见）  → off=1 on=1
+  PASS  B4 切换逻辑在源码中就位（switchBuild / bkSel / bkTabKey）  → 
+  PASS  B5 切换只改显示与 aria、不重建页面（switchBuild 用 .bkp + classList + open/aria-selected）  → 
+  PASS  B6 tab 键盘导航（方向键/Home/End）在源码中就位  → 
+  PASS  B7 tabpanel 与 tab 关联（aria-controls / aria-labelledby）  → 
+
+=== C 就地展开（accordion / details），无全屏弹窗遮挡 ===
+  PASS  C1 就地 accordion 存在（details.acc ≥ 1）  → n=3
+  PASS  C2 L1 特性 chip 就地展开（onclick 调 abiInline）  → 
+  PASS  C3 L1 属性克制攻/防两视角（onclick 调 l1AtkDef）  → 
+  PASS  C4 攻/防两视角实现就位（进攻视角读 ERDATA.matchup / 防守视角读 defCellTrio）  → 
+  PASS  C5 展开面板为就地内联（.accbd 就地容器），非固定定位浮层  → 
+  PASS  C6 长文（>40 字）走轻量弹层且弹层可关闭（l1Modal / closeL1Modal / 遮罩点击关闭）  → 
+  PASS  C7 词条标蓝（glossary）在 L1 特性详情中接线（glossify 调用）  → 
+  PASS  C8 触控热区：.chip / .acc>summary / .evtap / .tap44 均 min-height:44px（≥44px 达标）  → 
+  PASS  C9 prefers-reduced-motion 关闭动效（既有 + 新增规则并存）  → n=2
+
+=== D 努力值（EV）分配：数组串 + 文本摘要 + 条形图 + 模板名 ===
+  PASS  D1 每个流派卡含「努力值分配」字段（fno=6）  → n=2/2
+  PASS  D2 含 6 位数组串（HP/攻/防/特攻/特防/速，形如 0/252/4/0/0/252）  → 4/0/0/252/0/252
+  PASS  D3 含文本摘要（如 252HP/252攻/4防）  → 数组（HP/攻/防/特攻/特防/速）4/0/0/252/0/252　·　4HP / 252特攻 / 252速　·　模板：速攻
+  PASS  D4 含横向条形图（.evsegs + 6 段 .evseg，主/副/余量三级配色类）  → segs=12/12
+  PASS  D4b 条形图真渲染非空壳（.evsegs 定高 14px；每卡 6 段、宽度合计≈100%、主投段≥40%、主投/副投/余量三类段齐备）  → CSS定高=true segs=12/12 每卡和=100.0/100.0 主投=49.6/49.6 非零段/卡=3/3 offsetHeight=N/A(无布局引擎)
+  PASS  D5 含模板名一行 + 点条形图展开模板说明（evWhy / aria-expanded / hidden 详情）  → 
+  PASS  D6 bd.ev 结构完整（template 非空 / alloc 长度 6 / summary 非空），逐条流派成立  → 速攻[4/0/0/252/0/252] | 速攻[4/0/0/252/0/252]
+  NOTE  模板覆盖：速攻=有 耐久=有 空间低速=有（全库流派样本 3823 条）
+  PASS  D7a 速攻模板：252 速度 + 252 主输出 + 4 余量(HP)  → 晴增伤清场=4/0/0/252/0/252
+  PASS  D7b 耐久模板：252 HP + 252 主防（物防/特防动态取，另一防 4）  → 顺风稳健联防消耗=252/0/4/0/252/0
+  PASS  D7c 空间低速模板：252 HP + 252 主输出 + 4 余量，速度 0（仅建议）  → 空间主力输出压制=252/0/4/252/0/0
+  PASS  D7d 空间低速模板附「速度归零仅为建议」提示（服务铃可提速）  → 
+  PASS  D8 努力值为纯展示派生：不进入 mkBuild/评分（deriveBuilds 只挂 b.ev，未改 any 评分字段）  → 
+
+=== E 队友：主推 2–3 + 备选 3–5；存档池投影「你拥有 / 未拥有」 ===
+  PASS  E1 主推区横滑（.mateline）+ 主推文案标记  → n=2/2
+  PASS  E2 备选区网格（.mategrid）+ 备选文案标记  → 
+  PASS  E3 主推与备选视觉区分（.mate.main 绿色边框 + 文案双通道）  → 
+  PASS  E4 B5：未导入存档（SAV_ROWS 空）→ 不显示任何「你拥有 / 未拥有」标记  → pool=null → 零标记
+  PASS  E4b B5 计数口径：未导入存档时「你拥有」出现次数 = 0（「未拥有」同为 0）  → own=0 no=0
+  NOTE  E5 mock 存档行数=2 ids=485/643（队友档 6 条）
+  PASS  E5 已导入存档 → 池内队友标「你拥有 ✓」、池外队友标「未拥有」（双态并存）  → own=4 no=16
+  PASS  E6 存档池投影复用既有 mechPool / mechPoolHas（未新增数据层字段）  → 
+
+=== F L3 引擎视角默认折叠；被折叠内容仍可溯源（隐藏 ≠ 丢弃） ===
+  PASS  F1 引擎视角 details 默认无 open（默认收起）  → 
+  PASS  F2 折叠区仍保留引擎结论（选招依据 / 判定口径）  → 
+  PASS  F3 折叠区保留种族 / 强度概要（种族六维 + 强度 + 本系最高威力 + 耐久）  → 
+  PASS  F4 折叠区保留天气 / 场地数值卡（读 WCONF）  → 
+  PASS  F5 折叠区保留需求驱动队友完整推导（renderPlanSet）  → 
+  PASS  F6 折叠区保留体系补盲队友 + 队友口径说明  → 
+  PASS  F7 冗余项「耐久口径」未删除（降级进 L3，可展开）  → 
+  PASS  F8 breakingRoute 已落回流派对象（F-1 修复：不再恒 undefined）  → 强化 | 强化
+  PASS  F9 玩家层 ①②④⑧ 无百分比 / 倍率式子（①玩法一句话）  → 这是一条「晴强化清场」玩法：以特殊输出抢节奏，核心手段是「日光束」，自带回复所以更耐打。
+  PASS  F10 玩家层 ②设计亮点 无百分比 / 倍率式子  → 本系最高 飞叶风暴(130)　力度 100体系 晴（队友提供窗口）强化路径：可学强化招（攻/特攻双倍型优先）机制溯源（1 条）天气提速（叶绿素/拨沙/拨雪）　机制溯源
+  PASS  F11 玩家层 ④特性理由 无百分比式子  → 推荐特性 + 理由叶绿素机制解读：天气提速（叶绿素/拨沙/拨雪） 负责晴体系；关键耐性叶绿体其余可选：粉彩护幕（当前默认生效 = 可选池第 1 个）
+  PASS  F12 玩家层 ⑧队友 无百分比 / 倍率式子  → 队友（主推 + 备选）本流派队友（特殊向 / 强化 优先，按流派侧向分流）主推（按本流派契合排序）席多蓝恩主推火 钢晴体系受益（晴）；出场开晴（干旱）莱希拉姆主推龙 火晴体系受益（
+  PASS  F13 冗余唯一性：「机制口径」四字不进 coreOut（唯一归属 #ruleBoxCore）  → 
+  PASS  F15 v4.11 F1：L2 ⑦ 道具可见区不含引擎「原则 P」代号 / 「代价」/ 「｜」（已改玩家话术）  → ⑦段=7道具（主推 + 备选）⭐生命宝珠 1.3 倍伤害（每回合自伤 1/10）　弱点保险 备选 被弱点命中时攻/特攻 +2（强化轴核心）；注意：需要先被打到弱点，被动　讲究眼镜 备选 特攻×1.5（锁招）　8
+  PASS  F15c 全库（11481 条道具行）⑦ 玩家话术无引擎代号泄漏（原则 P / 克制 / 代价 / ｜）  → rows=11481
+  PASS  F15b L2 ⑦ 道具可见区为玩家话术（命中道具池玩家向说明，如「被弱点命中时攻/特攻 +2」）  → 
+  PASS  F16 v4.11 F1 只降级不删除：道具引擎原文折进 L3，且 coreOut 仍含 克制 / 代价 / 原则 P（verify_v4 VP1 护栏）  → 
+  FAIL  F14 溯源锚文本不混用：本层用「机制溯源」，mechCoreHtml 的「溯源」保持原样  → bare=3 mine=2
+
+=== G 移动端（<768 竖版单列）与既有断点协调 ===
+  PASS  G1 新增 768px 竖版断点存在  → 
+  PASS  G2 既有 640px 断点未被破坏（与 641–1024 断点共存）  → 640=2
+  PASS  G3 tab 横滑 + sticky，高度 ≤48px（不遮内容）  → 
+  PASS  G4 队友主推横滑（.mateline overflow-x:auto）+ 备选网格（.mategrid grid-template-columns）  → 
+  PASS  G5 条形图三段式（主投饱和 / 副投次饱和 / 余量浅色）配色类齐备  → 
+  PASS  G6 触控目标 min-height:44px 全局 ≥5 处  → n=16
+  PASS  G7 无内联固定宽度 >360px（390px 竖版不产生横向滚动）  → 
+  PASS  G8 -webkit-text-size-adjust 仍在位（既有移动端基线未回退）  → 
+
+=== H 回归护栏：既有断言关键串在 coreOut 仍在位 ===
+  PASS  H·推荐流派 在位  → 
+  PASS  H·定位判断 在位  → 
+  PASS  H·弱点（天性口径） 在位  → 
+  PASS  H·选招依据 在位  → 
+  PASS  H·盲点 在位  → 
+  PASS  H·晴/雨增伤 ×1.5 在位  → 
+  PASS  H·戏法空间 5 回合徽标 在位  → 
+  PASS  H·除钉 229/432 在位  → 
+  PASS  H·无内部标记泄漏（undefined / NaN / [object Object] / build_tool / nn_data）  → 
+  PASS  H·玩家可见文本无 HTML 标签字面残留  → 妙蛙花 Venusaur #3 机制解读：天气提速（叶绿素/拨沙/拨雪） ➕ 入队草 ▾毒 ▾特性：叶绿体 ▾粉彩护幕 
+  PASS  H·机制解读（.sec.mechsec + badge-mech）在 L3 内仍在位（百变怪样本）  → dittoHtml=448424B  mechsec=1
+  NOTE  妙蛙花 coreOut 无 mechsec：mechCoreHtml 对该物种零组合（与 verify_v410 F8「当且仅当」一致）
+
+================ v4.11 三层 UI 结构探针 汇总 ================
+PASS=82  FAIL=1
+FAIL 清单：
+  - F14 溯源锚文本不混用：本层用「机制溯源」，mechCoreHtml 的「溯源」保持原样  → bare=3 mine=2
+NOTE：
+  · 模板覆盖：速攻=有 耐久=有 空间低速=有（全库流派样本 3823 条）
+  · E5 mock 存档行数=2 ids=485/643（队友档 6 条）
+  · 妙蛙花 coreOut 无 mechsec：mechCoreHtml 对该物种零组合（与 verify_v410 F8「当且仅当」一致）

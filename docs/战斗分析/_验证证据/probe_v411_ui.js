@@ -281,10 +281,30 @@ chk('F15b L2 ⑦ 道具可见区为玩家话术（命中道具池玩家向说明
   })(), '');
 chk('F16 v4.11 F1 只降级不删除：道具引擎原文折进 L3，且 coreOut 仍含 克制 / 代价 / 原则 P（verify_v4 VP1 护栏）',
   /道具 why（引擎原文）/.test(H) && /克制 /.test(H) && /代价 /.test(H) && /原则 P\d/.test(H), '');
-chk('F14 溯源锚文本不混用：本层用「机制溯源」，mechCoreHtml 的「溯源」保持原样',
-  !/target="_blank" rel="noopener">溯源<\/a>/.test(H) &&
-  ((H.match(/>溯源<\/a>/g) || []).length === 0 || /<a href="https?:\/\/[^"]*">溯源<\/a>/.test(H)),
-  'bare=' + (H.match(/>溯源<\/a>/g) || []).length + ' mine=' + (H.match(/>机制溯源<\/a>/g) || []).length);
+/* v4.12 收尾校准（2026-10-10，D 线）：原断言 cond1 直接禁止 `/target="_blank" rel="noopener">溯源<\/a>/`，
+   而这正是 v4.10 机制组合表（mechCoreHtml 溯源列，_chk_script_1.js:3655）的**设计形态**，与断言名
+   「mechCoreHtml 的『溯源』保持原样」自相矛盾 —— v4.11 目录下妙蛙花可见组合无 src（锚数 0）→ 断言对
+   空集真空通过；v4.12 新增组合（叶绿素×生长 / 叶绿素×日照，带 Smogon https 外链）首次产出 3 个锚 →
+   过约束被数据增长暴露（产物侧锚形态未变）。
+   校准口径（真实意图）：① **允许并要求**机制组合表「溯源」锚保持 v4.10 形态（可读文案 + https 外链 +
+   target/rel）——即「机制溯源保留」不丢；② 本层锚文案统一「机制溯源」，全页溯源族锚文案零第三类
+   （防混用 / 防夹内部编号）；③ 玩家面零内部编号 / 调试标记泄漏：(id=N)、道具#N、机制#N、(#N)、S=N、
+   sid=N、[object Object]、undefined、NaN。
+   基线取证（2 样本：妙蛙花#3 / 百变怪#132）：① 严格形态全合规；② 第三类文案=0；③ 11 种泄漏模式 0/11。
+   注意 `#N`（全国图鉴号，妙蛙花页 614 处）是**合法玩家面数据**，不得整体禁。 */
+const _f14Anch = H.match(/<a\b[^>]*>[^<]*<\/a>/g) || [];
+const _f14Strict = /^<a href="https:\/\/[^"]+" target="_blank" rel="noopener">溯源<\/a>$/;
+const _f14Bare = _f14Anch.filter(function (a) { return />溯源<\/a>$/.test(a); });
+const _f14Fam = _f14Anch.map(function (a) { return (a.match(/>([^<]*)<\/a>$/) || [])[1] || ''; }).filter(function (t) { return t.indexOf('溯源') > -1; });
+const _f14Third = _f14Fam.filter(function (t) { return t !== '溯源' && t !== '机制溯源'; });
+const _f14Leak = [/(?:\(|（)\s*id\s*=\s*\d+\s*(?:\)|）)/, /\bid\s*=\s*\d+/, /\bS=\d+/, /\bsid\s*=\s*\d+/i,
+  /\[object Object\]/, /undefined/, /NaN/, /道具\s*#\d+/, /机制\s*#\d+/, /\(#\d+\)/, /（#\d+）/];
+const _f14LeakHit = _f14Leak.filter(function (re) { return re.test(vis(H)); });
+chk('F14 溯源锚文本规范（v4.12 校准）：① 机制组合表「溯源」锚保留 v4.10 形态（https 外链 + 可读文案）；② 本层锚文案统一「机制溯源」+ 全页溯源族零第三类文案（不混用）；③ 玩家面零内部编号 / 调试标记泄漏',
+  _f14Bare.every(function (a) { return _f14Strict.test(a); }) && _f14Third.length === 0 && _f14LeakHit.length === 0,
+  'bare 溯源=' + _f14Bare.length + '（严格形态合规=' + _f14Bare.every(function (a) { return _f14Strict.test(a); }) +
+  '，样例 ' + (_f14Bare[0] || 'n/a') + '） 机制溯源=' + (_f14Fam.length - _f14Bare.length) +
+  ' 第三类文案=' + JSON.stringify(_f14Third) + ' 泄漏模式命中=' + _f14LeakHit.length + '/' + _f14Leak.length);
 
 /* ============================ G. 移动端 / 响应式 ============================ */
 hdr('G 移动端（<768 竖版单列）与既有断点协调');

@@ -157,6 +157,23 @@ else:
     print('v4.5 使用率先验注入（回退路径）：源 %s / ER 命中 %d 只 / 归一化上限 %.4f' %
           ('+'.join([x['format'] for x in _usrc]) or '无', _ucov, _umax))
 
+# ---- v4.12 引擎层：Smogon 先验注入（② 软先验；与 nonFinalER/finalOf 同范式：由本文件给 ERDATA 补派生键）----
+#   源 nn_data/smogon_prior_2026-09.json（顶层 {meta,species}，120 物种）。
+#   现状（已核对）：数据层 配招工具_data.js **已**嵌入 ERDATA.smogonPrior（同源同序列化、JSON 逐字节一致）⇒ 本注入为幂等兜底（覆盖同值、不改数据层）。
+#   消费受引擎侧 SMOGON_PRIOR_ENABLED 门控；缺失 → 不注入 ⇒ smogonOn()=false ⇒ 零影响（优雅降级）。
+try:
+    _sg_path = BASE + r'\nn_data\smogon_prior_2026-09.json'
+    _sg = _json.loads(open(_sg_path, encoding='utf-8').read())
+    _sgn = len((_sg or {}).get('species') or {})
+    if _sgn:
+        data_js += ('\nERDATA.smogonPrior=' + _json.dumps(_sg, ensure_ascii=False, separators=(',', ':')) + ';')
+        print('v4.12 Smogon 先验注入：物种 %d 只（smogon_prior_2026-09.json %.1f KB）；消费受 SMOGON_PRIOR_ENABLED 门控'
+              % (_sgn, os.path.getsize(_sg_path) / 1024.0))
+    else:
+        print('[warn] smogon_prior_2026-09.json 无 species → 不注入（引擎侧先验关闭）')
+except Exception as _sge:
+    print('[warn] Smogon 先验不可用（%s）→ 不注入（引擎侧先验关闭）' % _sge)
+
 TEMPLATE = r'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1045,6 +1062,17 @@ function abiAdjOf(s,side,ty,names,targetNames,isStab){
       }
     }
   }
+  /* v4.12 机制评估改写层（① 攻击维度真实生效）：机制口径 ≠ 通用 out 标签 ×1.2 —— 取 max 覆盖
+     （如 大力士 37 → ×2、太阳之力 晴天 → ×1.5、水泡 水系招 → ×2）；mechLib 缺失/开关关 → 零影响。 */
+  try{
+    var _mm=mechAtkMulOf(s,side,ty);
+    if(_mm.mul>1){
+      if(_mm.mul>best.mul)best.mul=_mm.mul;
+      var _mw=(_mm.why||[]).join('；');
+      if(_mw)best.why=(best.why?best.why+'；':'')+_mw+'［机制覆盖通用评分 ×'+_mm.mul+'］';
+      best.mechMul=_mm.mul;
+    }
+  }catch(e){}
   return best;
 }
 /* ============ Tab 切换 ============ */
@@ -2066,6 +2094,17 @@ function defCellTrio(s,at){
       }
     }
   }
+  /* v4.12 机制评估改写层（防御匹配接入）：属性免疫吸收（引水114/引火18/蓄水11/食草157/避雷针31/电力引擎78）、
+     干燥皮肤87 水免、水泡199 火减半 —— **只正向改写**：免疫→ inn/opt 置 0（更优），减半→ ×0.5（更优）；
+     干燥皮肤火 ×1.25 降权只写生效口径 opt（不扣分、不动 inn，遵循「只正向调整」纪律）。mechLib 缺失/开关关 → 零影响。 */
+  try{
+    if(mechRwOn()){
+      var ma=mechDefAdjOf(s,at);
+      if(ma.imm){if(inn>0)inn=0;if(opt>0)opt=0}
+      else if(ma.hf){inn=inn*0.5;opt=opt*0.5}
+      if(ma.down>1&&opt>0)opt=opt*ma.down;
+    }
+  }catch(e){}
   return {base:base,inn:inn,opt:opt,pick:pick};
 }
 /* 特性徽章 HTML（免疫/半伤/加属性/特殊备注） */
@@ -3509,13 +3548,17 @@ function whyHtml(why){
   if(!why||!why.length)return '';
   return why.map(function(x){return esc(x)}).join(' × ').replace(/ × ⚠/g,'　⚠');
 }
-/* ==================== v4.10 机制覆盖层（C 线：引擎） ====================
+/* ==================== v4.10 机制覆盖层（C 线：引擎）· v4.12 扩展 ====================
    契约（唯一真值源）：docs/战斗分析/_v410_机制知识库_规格_20261009.md
-   数据来源：ERDATA.mechLib（数据层 build_tool_data.py 由 nn_data/mech_lib_v410.json 构建期注入）。
+   数据来源：ERDATA.mechLib（数据层 build_tool_data.py 由 nn_data/mech_lib_v412.json 构建期注入）。
+   v4.12（2026-10-10）：数据层词汇表 26 → 40 项（新增 14 项 rewrite，mechs 28 → 52、combos → 156）。
+      本轮把「why 标注层」（v4.10/v4.11）与新增的**评分改写层**（mechEvalOf，见 §v4.12 机制评估改写）
+      分离：前者仍只写 why，后者把机制口径换算成评估数值，接入既有评分接入点
+      （abiAdjOf / DIM_IMPL D2·D3·D4·D7·D11 / defCellTrio / itemScored / buildItem）。
    本层消费 schema §2 的 mechs[]，按 §3 覆盖规则词汇表逐条实现 rewrite，按 §4 条件 DSL 判定 combo。
    红线（§3/§7）：机制覆盖 > 通用评分；只做正向调整 / 前提改写 / why 标注；
         **禁止硬剔除与负向逻辑**（warn 只提示、不否决）。
-   优雅降级：ERDATA.mechLib 缺失或为空 → 本层全部返回空 → v4.9 行为零影响。 */
+   优雅降级：ERDATA.mechLib 缺失或为空 → 本层全部返回空/中性值 → v4.11 行为零影响。 */
 function mechAll(){try{var L=ERDATA&&ERDATA.mechLib,a=L&&L.mechs;return (a&&a.length)?a:[]}catch(e){return []}}
 function mechOn(){return mechAll().length>0}
 var _MECH_MEMO={};
@@ -3531,13 +3574,18 @@ function mechByMove(id){return (id===undefined||id===null)?[]:(_mechIdx('moves')
 function mechByAbility(id){return (id===undefined||id===null)?[]:(_mechIdx('abilities')[''+id]||[])}
 function mechByItem(id){return (id===undefined||id===null)?[]:(_mechIdx('items')[''+id]||[])}
 function mechBySpecies(id){return (id===undefined||id===null)?[]:(_mechIdx('species')[''+id]||[])}
-/* §3 覆盖规则词汇表：rewrite → 中文机制名（本层实现全部 26 条，未列出的走 default 分支不报错） */
+/* §3 覆盖规则词汇表：rewrite → 中文机制名（v4.12 实现全部 40 条，未列出的走 default 分支不报错） */
 var MECH_RW_ZH={imposter_anchor:'变身者',foul_play_atk:'欺诈',body_press_def:'扑击',gyro_ball_speed:'陀螺球',
   hp_cond_power:'绝处逢生/抓狂',avalanche_after_hit:'雪崩',acrobatics_item:'杂技',counter_metal_burst:'双倍奉还/金属爆炸',
   prankster_priority:'恶作剧之心',magic_guard_survival:'魔法防守',illusion_disguise:'幻觉',magnet_pull_trap:'磁力',
   unburden_item:'轻装',gem_consumable:'属性宝石',terrain_seed:'场地种子',facade_status:'硬撑',endeavor_lowhp:'蛮干',
-  endure_reversal:'挺住/替身',multiscale_sash:'多重鳞片/画皮/结实',regenerator_pivot:'再生力',no_guard_hit:'无防守',
-  unaware_ignore:'纯朴',mold_breaker_ignore:'破格',serene_grace_flinch:'天恩',toxic_heal_item:'毒疗',contact_status:'火焰之躯/静电/毒刺'};
+  endure_reversal:'挺住/替身',multiscale_sash:'多重鳞片/画皮/结实/幻影防守',regenerator_pivot:'再生力',no_guard_hit:'无防守',
+  unaware_ignore:'纯朴',mold_breaker_ignore:'破格',serene_grace_flinch:'天恩',toxic_heal_item:'毒疗',contact_status:'火焰之躯/静电/毒刺',
+  /* ---- v4.12 新增 14 项（nn_data/mech_lib_v412.json；词汇表合计 40 项）---- */
+  weather_speed:'天气提速（叶绿素/拨沙/拨雪）',weather_offense:'天气强攻（太阳之力/沙之力）',weather_recovery:'天气回复（雨盘/冰体）',
+  dry_skin_weather:'干燥皮肤',type_immunity_absorb:'属性免疫吸收',water_bubble_shell:'水泡',water_veil_guard:'水幕',
+  intimidate_weaken:'威吓',anti_intimidate:'反威吓',sheer_force_boost:'全力攻击',scrappy_ghost:'胆量',
+  light_metal_weight:'轻金属',huge_power_phys:'巨力',magician_steal:'魔术师'};
 function mechRwZh(rw){return MECH_RW_ZH[rw]||'机制'}
 function mechAbiZh(id){var a=ABI[id];return a?(a[2]||a[1]||('#'+id)):('#'+id)}
 function mechMvZh(id){var m=MV[id];return m?(m[1]||('#'+id)):('#'+id)}
@@ -3719,7 +3767,7 @@ function mechAbiWhy(s){
         o.why='轻装：道具被消耗后速度翻倍 → 需携带消耗性道具（宝石/场地种子/气势披带）';
         if(!mechHasConsumable(s))o.warn='轻装未触发：需携带消耗性道具（宝石/场地种子/气势披带）';
         break;
-      case 'multiscale_sash':o.why='多重鳞片/画皮/结实：满血或一击减伤 → 生存锚点（与气势披带等效）';break;
+      case 'multiscale_sash':o.why='多重鳞片/画皮/结实：满血或一击减伤 → 生存锚点（与气势披带等效）'+'；幻影防守 231 复用本词汇（满 HP 受击减半，ER 与官方一致）';break;
       case 'regenerator_pivot':o.why='再生力：换入回血 → 受队/轮转节奏锚点（每次换人回 1/3）';break;
       case 'no_guard_hit':o.why='无防守：双方必中 → 解锁高威力低命中招';break;
       case 'unaware_ignore':o.why='纯朴：无视对方能力强化 → 受队/清强化锚点';break;
@@ -3732,11 +3780,437 @@ function mechAbiWhy(s){
       case 'contact_status':o.why='火焰之躯/静电/毒刺：接触附加 → 站场消耗锚点';break;
       case 'gem_consumable':o.why='属性宝石：本发增伤后消耗 → 联动杂技 112.5 / 轻装提速';break;
       case 'terrain_seed':o.why='场地种子：场地激活时 +1 级对应能力并消耗 → 联动杂技 112.5 / 轻装提速';break;
+      /* ---- v4.12 新增 14 项：why 层（ER 口径 / 官方差异逐条登记，数字取自 nn_data/mech_lib_v412.json 各条 params/basis）---- */
+      case 'weather_speed':{
+        var _wa=mechMcAbiFor(s,mc),_ww=MECH_WX_ABI[_wa]||'晴';
+        o.why='天气提速：'+(MECH_WX_NAME[_ww]||_ww)+'天气下速度 ×'+mechNum2(mc,'speedMul',1.5)+'（ER 口径）→ 先手权/输出回合折算；ER 口径：速度 ×1.5（ER desc 原文），官方 ×2'+(_wa===146?'，且拨沙 146 官方另免疫沙暴伤害':'')+'（差异登记）';
+        break;}
+      case 'weather_offense':{
+        var _oa=mechMcAbiFor(s,mc),_ow=MECH_WX_ABI[_oa]||'晴',_om=mechNum2(mc,'atkMul',1.5);
+        o.why='天气强攻：'+(MECH_WX_NAME[_ow]||_ow)+'天气下最高攻击项 ×'+_om+'（ER 口径，覆盖通用输出标签 ×1.2）→ 攻击维度改写；ER 口径：最高攻击项 ×'+_om+(_oa===94?'（且无掉血）':'（地面·岩石·钢招）')+'，官方 '+(_oa===94?'特攻 ×1.5 且每回合掉 1/8 HP':'地面·岩石·钢招 ×1.3 且免疫沙暴')+'（差异登记）';
+        break;}
+      case 'weather_recovery':{
+        var _ra=mechMcAbiFor(s,mc),_rw=MECH_WX_ABI[_ra]||'雨',_rf=mechNum2(mc,'healFrac',0.125);
+        o.why='天气回复：'+(MECH_WX_NAME[_rw]||_rw)+'天气下每回合回复 1/8 最大 HP（ER 口径，站场耐久增益；healFrac='+_rf+'）；ER 1/8 / 官方 1/16（差异登记）';
+        break;}
+      case 'dry_skin_weather':
+        o.why='干燥皮肤：水招免疫并回血（对水免疫，入防御匹配 inn）；火伤 ×1.25（对火降权，只写生效口径 opt、不扣分）——雨天回血 / 晴天掉血；ER desc 仅记「Water/Rain heals. Fire/Sun hurts.」未量化，官方 水免回 1/4·火 ×1.25·雨回 1/8·晴掉 1/8（差异登记）';
+        break;
+      case 'type_immunity_absorb':{
+        var _ia=mechMcAbiFor(s,mc),_it=MECH_ABSORB_TY[_ia]||'';
+        o.why=(_it?('对 '+_it+' 属性招式免疫'):'属性招式免疫')+'（防御匹配改写：入 inn）＋受 '+(_it||'该')+' 招命中后最高攻击项 +1（ER 口径，按 ×1.5 折算前提增益；只作前提登记、不计入基础力度）｜'
+          +(_ia===18?'引火：受火招命中后自身火招威力 ×1.5（ER 与官方一致；前提登记）':(_ia===11?'蓄水：受水招命中后回复 25% 最大 HP（ER 与官方一致；前提登记）':(_ia===78?'电气引擎：受电招命中后速度 +1（ER 与官方一致，按 ×1.1 折算前提增益）':'ER 最高攻击项 +1（ER 口径）')))
+          +'｜ER 口径差：'+( _ia===114?'引水 最高攻击项 +1 / 官方 特攻 +1 且仅转移单体':(_ia===157?'食草 ER 追加草招转移（Redirects Grass moves）/ 官方 攻击 +1 且不转移':(_ia===31?'避雷针 最高攻击项 +1 / 官方 特攻 +1':'与官方一致')))
+          +'（差异登记）';
+        break;}
+      case 'water_bubble_shell':o.why='水泡：水招威力 ×2；受火招伤害减半；免疫灼伤（ER 与官方一致）';break;
+      case 'water_veil_guard':o.why='水幕：免疫灼伤（官方一致）；**ER 特有**：登场自动施放「水流环」→ 每回合回复 1/16 最大 HP（ER 特有效果、无外部来源，差异登记）';break;
+      case 'intimidate_weaken':o.why='威吓：换入时降对方物攻 1 级 → 我方物理承受减伤（防御/站场增益；ER 与官方一致）';break;
+      case 'anti_intimidate':{
+        var _nal=mechMcAbiList(s,mc),_na=(_nal.indexOf(553)>-1?553:_nal[0]);
+        o.why=(_na===553?('警卫犬（553）：被威吓时攻击 +1（按 ×1.5 折算）→ 对抗威吓评估改写（ER 与官方一致）')
+          :('反威吓：免疫威吓 → 对抗威吓评估（免受对方威吓降攻；ER 与官方一致；ER Inner Focus 追加 Focus Blast 必中）'));
+        if(_nal.length>1)o.why+='；特性池另含 '+_nal.filter(function(x){return x!==_na}).map(mechAbiZh).join('、')+'（多档并集评估，取 max）';
+        break;}
+      case 'sheer_force_boost':o.why='全力攻击：带追加效果的招式威力 ×1.3 且追加效果不触发（ER 与官方一致）→ 招式级实现（副效果按 ER desc 文本识别，见交付报告「实现深度登记」）';break;
+      case 'scrappy_ghost':o.why='胆量：一般/格斗招可命中幽灵（破除幽灵免疫）+ 免疫威吓（ER 与官方一致；ER 另记免疫 Scare）';break;
+      case 'light_metal_weight':o.why='轻金属：体重减半（减轻体重类招式伤害：打草结447/踢倒67/重磅冲撞484 → 防御维度评估改写）+ 速度 ×1.3；ER desc 追加速度 ×1.3 为 ER 特有（官方仅体重减半，差异登记）';break;
+      case 'huge_power_phys':{
+        var _hal=mechMcAbiList(s,mc);
+        if(_hal.indexOf(74)>-1&&_hal.indexOf(37)>-1){
+          o.why='大力士（37）物攻 ×2 ／ 瑜伽之力（74）ER 特攻 ×2（官方 物攻 ×2，差异登记）—— 特性池同含两项，按并集评估（各取 max、不叠加）→ 攻击维度改写';
+        }else{
+          o.why=(_hal.indexOf(74)>-1?'瑜伽之力（74）：ER 特攻 ×2（官方 物攻 ×2，差异登记）→ 攻击维度改写（特攻向）':'大力士（37）：物攻 ×2（ER 与官方一致）→ 攻击维度改写（物攻向）');
+        }
+        break;}
+      case 'magician_steal':o.why='魔术师：命中偷取对手道具 → 道具位评估改写；ER desc 记「非接触招式后偷取」/ 官方「自身无道具 + 攻击招式命中」（差异登记）；铁律 id=170 仅出现在 cond，绝不入 with.ids';break;
       default:o.why='机制命中：'+mechRwZh(mc.rewrite)+'（'+mc.zh+'）';
     }
     out.push(o);
   });
   return out;
+}
+/* ==================== v4.12 机制评估改写层（评分接入；mechLib 缺失 → 零影响） ====================
+   与 v4.10/v4.11 的「why 标注层」并列：本层把机制口径换算成**评估数值**，接入既有评分接入点：
+     · abiAdjOf（招式级攻击维度）：mechAtkMulOf —— 巨力 / 天气强攻 / 属性吸收增益 / 水泡 / 引火
+     · DIM_IMPL D2·D3（速度维度）：mechSpdOf —— 天气提速（叶绿素/拨沙/拨雪） / 轻金属
+     · DIM_IMPL D4（力度维度）：mechAtkBestOf —— 巨力（37 物攻×2 / 74 ER 特攻×2） / 天气强攻 / 吸收增益
+     · DIM_IMPL D7（回复维度）：mechEvalOf().healFrac —— 天气回复（雨盘/冰体） / 水幕（ER 特有水流环）
+     · DIM_IMPL D11（免疫/减伤特性维度）：威吓 / 反威吓 / 满血减伤 / 体重减半
+     · defCellTrio（防御匹配）：mechDefAdjOf —— 属性免疫吸收 / 水泡火减半 / 干燥皮肤（火降权只写 opt，不扣分）
+     · pickAttacks（招式级）：mechAbiMvAdj —— 全力攻击（副效果招 ×1.3） / 胆量（一般·格斗）
+     · itemScored（道具位）：magician_steal 锚点 + Smogon 先验软排序（② 见下文 SMOGON_PRIOR_*）
+   纪律：只正向调整 / 前提改写 / why 标注（warn 不否决）；mechOn()=false 或 MECH_EVAL_ON=false → 全返回中性。
+   口径来源：nn_data/mech_lib_v412.json 各条 params + basis（ER 口径 / 官方差异逐条登记于 why 与 mechWhys）。 */
+var MECH_EVAL_ON=true;   /* 一键回退：false → 评分改写层全关（why 标注层仍在）→ 该层零影响 */
+var MECH_WX_NAME={sun:'晴',rain:'雨',sand:'沙暴',snow:'冰雹',hail:'冰雹',晴:'晴',雨:'雨',沙:'沙暴',沙暴:'沙暴',雪:'冰雹',冰雹:'冰雹'};
+var MECH_WX_KEY={sun:'晴',rain:'雨',sand:'沙',snow:'雪',hail:'雪',晴:'晴',雨:'雨',沙:'沙',沙暴:'沙',雪:'雪',冰雹:'雪'};
+/* rewrite 天气键：按 ability id 分档（weather_speed/offense/recovery 三组） */
+var MECH_WX_ABI={34:'晴',94:'晴',44:'雨',87:'雨',146:'沙',159:'沙',202:'雪',115:'雪'};
+/* type_immunity_absorb：ability id → 免疫属性 */
+var MECH_ABSORB_TY={114:'水',18:'火',11:'水',157:'草',31:'电',78:'电'};
+function mechMcAbi(mc){var a=(mc&&mc.match&&mc.match.abilities)||[];return (a&&a.length)?(+a[0]):-1}
+/* v4.12：多特性合并条目（巨力 37/74、反威吓 39/12/20/553）必须按**物种实际持有**的特性分档，
+   match.abilities[0] 不足（会恒取 37/39）。返回 物种特性池 ∩ match.abilities 的首个 id；无交集回退 [0]。 */
+function mechMcAbiFor(s,mc){
+  var ma=((mc&&mc.match&&mc.match.abilities)||[]).map(function(x){return ''+x});
+  if(!ma.length)return -1;
+  var have=[];try{have=mechAbiIdList(s)}catch(e){have=[]}
+  for(var i=0;i<have.length;i++){if(ma.indexOf(''+have[i])>-1)return +have[i]}
+  return +ma[0];
+}
+/* 合并条目在物种特性池里可能**命中多项**（吼叫尾池同含 大力士37 与 瑜伽之力74；风速狗 553、其他 39），
+   此时逐项取并集评估：每个命中 id 各跑一次分档，数值一律取 max（不叠加相乘），why 逐条列出。
+   该口径与既有 abiTags/mechAbiWhy 的「池内即有」一致，避免多特性条目只走 [0] 分支（另一分支形同死码）。 */
+function mechMcAbiList(s,mc){
+  var ma=((mc&&mc.match&&mc.match.abilities)||[]).map(function(x){return ''+x});
+  if(!ma.length)return [-1];
+  var have=[];try{have=mechAbiIdList(s)}catch(e){have=[]}
+  var out=[];
+  for(var i=0;i<have.length;i++){if(ma.indexOf(''+have[i])>-1)out.push(+have[i])}
+  return out.length?out:[+ma[0]];
+}
+function mechNum2(mc,key,d){return mechNum((mc&&mc.params)||{},[key],d)}
+function mechRwOn(){return !!(MECH_EVAL_ON&&mechOn())}
+function mechEvalNeutral(){return {atkMul:{'物理':1,'特殊':1},mvTypeMul:{},spdMul:1,healFrac:0,defFlat:1,
+  defImm:[],defHf:[],defDown:[],vsIntim:0,physWane:0,weightHalf:0,sheerMul:0,scrappy:0,
+  itemAudit:[],whys:[],atkWhys:[],spdWhys:[],recWhys:[],defWhys:[],hits:[]}}
+/* 上下文天气集合：ctx.sysKey（团队体系）/ ctx.weather(s)（个体天气）——中英文与轴名均可 */
+function mechCtxWeathers(ctx){
+  ctx=ctx||{};var out=[];
+  function push(w){if(w===undefined||w===null||w==='')return;var k=MECH_WX_KEY[w]||w;if(k&&out.indexOf(k)<0)out.push(k)}
+  var ws=ctx.weathers||ctx.weather;if(ws){if(ws instanceof Array)ws.forEach(push);else push(ws)}
+  push(ctx.sysKey);push(ctx.weatherKey);
+  return out;
+}
+function mechCtxHasWx(ctx,w){return mechCtxWeathers(ctx).indexOf(w)>-1}
+/* 副效果识别（全力攻击前提）：move 行 12 列无结构化副效果标志（末位 [] 实测为空），
+   → 以 ER desc / 英文 desc（字段 10 / 9）文本正则识别；识别不到则退化为「能力级 why + 分组」处理。
+   实现深度登记见交付报告（「sheer_force_boost 实现深度」）。 */
+var _MV_SEC={};
+var MV_SEC_RE=/(\d+(?:\.\d+)?)\s*%[^.]{0,48}?(chance|flinch|burn|paralyz|poison|frostbite|freeze|sleep|confus|drench|lower|drop|decrease|raise|boost|stat)/i;
+function mvSecEffect(m){
+  if(!m)return null;var k=''+m[0];if(k in _MV_SEC)return _MV_SEC[k];
+  var d=String(m[10]||'')+' '+String(m[9]||''),r=MV_SEC_RE.exec(d);
+  return _MV_SEC[k]=r?{pct:parseFloat(r[1]),kw:String(r[2]||'').toLowerCase(),from:'desc'}:null;
+}
+var _MEV_MEMO={};
+function mechEvalOf(s,ctx){
+  if(!mechRwOn()||!s)return mechEvalNeutral();
+  ctx=ctx||{};
+  var side=ctx.side||coreSide(s);
+  var k=''+s.id+'|'+side+'|'+mechCtxWeathers(ctx).join(',');
+  if(k in _MEV_MEMO)return _MEV_MEMO[k];
+  var r=mechEvalNeutral(),hi=(bstI(s,1)>=bstI(s,3)?'物理':'特殊');
+  function A(t){r.whys.push(t);r.atkWhys.push(t)}
+  function P(t){r.whys.push(t);r.spdWhys.push(t)}
+  function R(t){r.whys.push(t);r.recWhys.push(t)}
+  function D(t){r.whys.push(t);r.defWhys.push(t)}
+  var hits=[];try{hits=mechAbiHits(s)}catch(e){hits=[]}
+  hits.forEach(function(mc){
+    var abl=mechMcAbiList(s,mc);
+    r.hits.push({id:mc.id,rewrite:mc.rewrite,zh:mc.zh,abil:abl[0],abils:abl});
+    for(var _ai=0;_ai<abl.length;_ai++){
+    var abil=abl[_ai],abzh=((abil>=0)?mechAbiZh(abil):(mc.zh||''));
+    switch(mc.rewrite){
+      case 'weather_speed':{
+        var w=MECH_WX_ABI[abil]||'晴',mul=mechNum2(mc,'speedMul',1.5);
+        if(mechCtxHasWx(ctx,w)){
+          if(r.spdMul<mul)r.spdMul=mul;
+          P((MECH_WX_NAME[w]||w)+'天气（'+abzh+'）速度 ×'+mul+'（ER 口径 → 速度维度改写）；ER ×'+mul+' / 官方 ×2（差异登记）');
+        }else P(abzh+'：速度 ×'+mul+' 需 '+(MECH_WX_NAME[w]||w)+'天在场（当前无该体系 → 按表列速度评估，前提未改）');
+        break;}
+      case 'weather_offense':{
+        var w2=MECH_WX_ABI[abil]||'晴',m2=mechNum2(mc,'atkMul',1.5);
+        if(mechCtxHasWx(ctx,w2)){
+          if(r.atkMul[hi]<m2)r.atkMul[hi]=m2;
+          A((MECH_WX_NAME[w2]||w2)+'天气（'+abzh+'）最高攻击项 ×'+m2+'（ER 口径 → 攻击维度改写）；ER 最高攻项 ×'+m2+(abil===94?' 且无掉血':'')+' / 官方 '+(abil===94?'特攻 ×1.5 且每回合掉 1/8 HP':'地面·岩石·钢招 ×1.3 且免疫沙暴')+'（差异登记）');
+        }else A(abzh+'：最高攻击项 ×'+m2+' 需 '+(MECH_WX_NAME[w2]||w2)+'天在场（当前无该体系，前提未改）');
+        break;}
+      case 'weather_recovery':{
+        var w3=MECH_WX_ABI[abil]||'雨',f3=mechNum2(mc,'healFrac',0.125);
+        if(mechCtxHasWx(ctx,w3)){
+          if(r.healFrac<f3)r.healFrac=f3;
+          R((MECH_WX_NAME[w3]||w3)+'天气（'+abzh+'）每回合回复 1/8 最大 HP（ER 口径 → 续航维度改写）；ER 1/8 / 官方 1/16（差异登记）');
+        }else R(abzh+'：每回合 1/8 回复需 '+(MECH_WX_NAME[w3]||w3)+'天在场（当前无该体系）');
+        break;}
+      case 'dry_skin_weather':{
+        if(r.defImm.indexOf('水')<0)r.defImm.push('水');
+        if(r.defDown.indexOf('火')<0)r.defDown.push('火');
+        var f5=mechNum2(mc,'rainHealFrac',0.125);
+        if(mechCtxHasWx(ctx,'雨')&&r.healFrac<f5)r.healFrac=f5;
+        D('干燥皮肤：对水免疫（inn 改写）；火伤 ×1.25（对火降权，写入生效口径 opt、不扣分）'+(mechCtxHasWx(ctx,'雨')?'；雨天每回合回复 1/8':'')+(mechCtxHasWx(ctx,'晴')?'；晴天每回合掉 1/8（负向前提，登记不否决）':'')+'——ER desc 仅记「Water/Rain heals. Fire/Sun hurts.」未量化；官方 水免回 1/4·火 ×1.25·雨回 1/8·晴掉 1/8（差异登记）');
+        break;}
+      case 'type_immunity_absorb':{
+        var M=MECH_ABSORB_TY[abil];
+        if(M){
+          if(r.defImm.indexOf(M)<0)r.defImm.push(M);
+          /* v4.12 口径（纪律：只正向/前提改写）：**永久**的「对 X 属性免疫」计入防御匹配（inn 改写）；
+             「受 X 命中后」的攻击项/速度/回血增益属**受击触发的前提增益**，只作前提登记（why），
+             不写入 atkMul/spdMul/healFrac —— 否则对「未被该属性命中」的对局系统性过评
+             （曾致 v48 G2b 队规模 5→6，见引擎层交付报告「回归与偏差」）。 */
+          if(abil===18){
+            var fm=mechNum2(mc,'fireMul',1.5);
+            A('引火：对火免疫（inn 改写）；自身火招威力 ×'+fm+'（ER 与官方一致；受火招命中后触发 → 前提增益，不计入基础力度）');
+          }else if(abil===11){
+            D('蓄水：对水免疫（inn 改写）+ 受水招命中后回复 25% 最大 HP（ER 与官方一致；前提增益，不计入续航评估）');
+          }else if(abil===78){
+            P('电气引擎：对电免疫（inn 改写）+ 受电招命中后速度 +1（ER 与官方一致；折算 ×1.1 前提增益，不计入基础速度评估）');
+          }else{
+            A(abzh+'：对 '+M+' 免疫（inn 改写）＋受 '+M+' 招命中后「最高攻击项」+1（ER 口径，折算 ×1.5 前提增益，不计入基础力度）；ER 口径差：'+(abil===114?'引水 最高攻项 +1 / 官方 特攻 +1 且仅转移单体':(abil===157?'食草 ER 追加草招转移（Redirects Grass moves）/ 官方 攻击 +1 且不转移':(abil===31?'避雷针 最高攻项 +1 / 官方 特攻 +1':'与官方一致')))+'（差异登记）');
+          }
+        }
+        break;}
+      case 'water_bubble_shell':{
+        var wm=mechNum2(mc,'waterMul',2.0);
+        if(r.mvTypeMul['水']===undefined||r.mvTypeMul['水']<wm)r.mvTypeMul['水']=wm;
+        if(r.defHf.indexOf('火')<0)r.defHf.push('火');
+        A('水泡：水招威力 ×'+wm+'（招式级改写）+ 受火招伤害减半（inn 改写）+ 免疫灼伤（ER 与官方一致）');
+        break;}
+      case 'water_veil_guard':{
+        if(r.healFrac<1/16)r.healFrac=1/16;
+        D('水幕：免疫灼伤（官方一致）；**ER 特有**：登场自动施放「水流环」→ 每回合回复 1/16 最大 HP（ER 特有效果，差异登记）');
+        break;}
+      case 'intimidate_weaken':{
+        if(r.physWane<1)r.physWane=1;
+        D('威吓：换入降对方物攻 1 级 → 我方物理承受减伤（防御/站场增益；ER 与官方一致）');
+        break;}
+      case 'anti_intimidate':{
+        r.vsIntim+=1;
+        if(abil===553){
+          if(r.atkMul[hi]<1.5)r.atkMul[hi]=1.5;
+          A('警卫犬（553）：被威吓时攻击 +1（按 ×1.5 折算）→ 对抗威吓评估改写（ER 与官方一致）');
+        }else D(abzh+'：免疫威吓 → 对抗威吓评估（免受对方威吓降攻；ER 与官方一致；ER Inner Focus 追加 Focus Blast 必中）');
+        break;}
+      case 'multiscale_sash':{
+        var df=mechNum2(mc,'fullHpDamageMultiplier',0.5);
+        if(!(df>0&&df<=1))df=0.5;
+        if(r.defFlat>df)r.defFlat=df;
+        D(abzh+'：满血（或首击）受击减伤 ×'+df+' → 生存锚点（减伤 ×'+df+'，入防御匹配 inn；ER 与官方一致）');
+        break;}
+      case 'sheer_force_boost':{
+        var pm=mechNum2(mc,'powMul',1.3);
+        if(r.sheerMul<pm)r.sheerMul=pm;
+        A('全力攻击：带追加效果的招式威力 ×'+pm+' 且追加效果不触发（ER 与官方一致）→ 招式级改写（副效果识别口径见报告）');
+        break;}
+      case 'scrappy_ghost':{
+        r.scrappy=1;r.vsIntim+=1;
+        A('胆量：一般/格斗招可命中幽灵（破除幽灵免疫，招式级改写）+ 免疫威吓（ER 与官方一致；ER 另记免疫 Scare）');
+        break;}
+      case 'light_metal_weight':{
+        var sm=mechNum2(mc,'speedMul',1.3);
+        if(r.spdMul<sm)r.spdMul=sm;
+        r.weightHalf=1;
+        P('轻金属：速度 ×'+sm+'（ER 特有）+ 体重减半 → 减轻体重类招式伤害（打草结447/踢倒67/重磅冲撞484，防御维度改写）；官方仅体重减半（差异登记）');
+        break;}
+      case 'huge_power_phys':{
+        var am=mechNum2(mc,'atkMul',2.0),sd=(abil===74?'特殊':'物理');
+        if(r.atkMul[sd]<am)r.atkMul[sd]=am;
+        A(abzh+'：'+(sd==='特殊'?('特攻 ×'+am+'（ER 口径）'):('物攻 ×'+am+'（ER 与官方一致）'))+' → 攻击维度改写'+((abil===74)?'；ER 特攻 ×'+am+' / 官方 物攻 ×'+am+'（差异登记）':''));
+        break;}
+      case 'magician_steal':{
+        r.itemAudit.push('魔术师：自身无道具时命中即偷取对手道具 → 道具位评估改写（可空道具位触发前提；ER desc「非接触招式后偷取」/ 官方「自身无道具 + 攻击招式命中」）');
+        D('魔术师：命中偷取对手道具 → 道具位评估改写；铁律 id=170 仅出现在 cond，绝不入 with.ids（数据层已保证）');
+        break;}
+      default:break;
+    }
+    }
+  });
+  _MEV_MEMO[k]=r;return r;
+}
+/* 招式级攻击乘子（abiAdjOf 接入点）：atkMul[side] 与 mvTypeMul[ty] 取 max（避免与 out 标签重复相乘） */
+function mechAtkMulOf(s,side,ty,ctx){
+  var res={mul:1,why:[]};
+  if(!mechRwOn()||!s)return res;
+  var r;try{r=mechEvalOf(s,ctx)}catch(e){return res}
+  var v=1;
+  (side==='双刀'?['物理','特殊']:[side]).forEach(function(sd){var x=(r.atkMul&&r.atkMul[sd])||1;if(x>v)v=x});
+  if(ty&&r.mvTypeMul&&r.mvTypeMul[ty]!==undefined&&r.mvTypeMul[ty]>v)v=r.mvTypeMul[ty];
+  if(v>1){res.mul=v;res.why=(r.atkWhys||[]).slice(0)}
+  return res;
+}
+/* 招式级（需 m）：全力攻击 / 胆量 —— 与 mechMvAdj（move 类机制）并行，均为恒正乘子 */
+function mechAbiMvAdj(s,m,ctx){
+  var res={mul:1,why:[]};
+  if(!mechRwOn()||!s||!m)return res;
+  var r;try{r=mechEvalOf(s,ctx)}catch(e){return res}
+  var v=1,wh=[];
+  if(r.sheerMul>1&&mvSecEffect(m)){v=r.sheerMul;wh.push('全力攻击：带追加效果的招式威力 ×'+r.sheerMul+'（副效果不触发；ER 与官方一致）')}
+  if(r.scrappy&&(m[3]==='一般'||m[3]==='格斗')){if(1.1>v)v=1.1;wh.push('胆量：'+m[3]+'系招可命中幽灵（破除幽灵免疫，攻击评估改写）')}
+  if(v>1){res.mul=v;res.why=wh}
+  return res;
+}
+/* 力度值（D4）：巨力按 id 分档 —— 37 物攻×2 / 74 ER 特攻×2（官方物攻×2，差异登记）+ 天气强攻 + 吸收增益 */
+function mechAtkBestOf(s,ctx){
+  var b=atkBest(s);if(!mechRwOn()||!s)return b;
+  var v=b,me;try{me=mechEvalOf(s,ctx)}catch(e){return b}
+  var pm=(me.atkMul&&me.atkMul['物理'])||1,sp=(me.atkMul&&me.atkMul['特殊'])||1;
+  if(pm>1)v=Math.max(v,Math.round(bstI(s,1)*pm));
+  if(sp>1)v=Math.max(v,Math.round(bstI(s,3)*sp));
+  return v;
+}
+/* 速度值（D2/D3）：天气提速 / 轻金属（只提速、不降速） */
+function mechSpdOf(s,ctx){
+  var b=spdOf(s);if(!mechRwOn()||!s)return b;
+  var me;try{me=mechEvalOf(s,ctx)}catch(e){return b}
+  return me.spdMul>1?Math.round(b*me.spdMul):b;
+}
+/* 防御匹配改写（defCellTrio 接入）：免疫（inn=0）/ 减半（inn×0.5）/ 生效口径降权（opt×1.25，不动 inn） */
+function mechDefAdjOf(s,at){
+  var out={imm:false,hf:false,down:1,defFlat:1};
+  if(!mechRwOn()||!s)return out;
+  var r;try{r=mechEvalOf(s,{})}catch(e){return out}
+  if(r.defImm.indexOf(at)>-1)out.imm=true;
+  if(r.defHf.indexOf(at)>-1)out.hf=true;
+  if(r.defDown.indexOf(at)>-1)out.down=1.25;
+  out.defFlat=r.defFlat;
+  return out;
+}
+/* ==================== v4.12 ② Smogon 先验软接入（SMOGON_PRIOR_ENABLED 门控） ====================
+   数据源：ERDATA.smogonPrior（构建期由 build_tool_html.py 读 nn_data/smogon_prior_2026-09.json 注入，
+   顶层 {meta,species}，120 物种；结构 = {zh,en,showdown,weighted_usage,usage_norm,moves[],items[],teammates[],src}）。
+   职责分界（诚实标注）：usagePrior 管**物种常见度**次排序；smogonPrior 管**配招/道具/队友**先验。
+   开关：SMOGON_PRIOR_ENABLED=false → 全部消费函数返回空/原行为（逐字节回退 v4.11）。
+   权重：SMOGON_PRIOR_W=0.35（< USAGE_PRIOR_W 0.6），先验只作并列微排序，机制覆盖仍主导。 */
+var SMOGON_PRIOR_ENABLED=true;
+var SMOGON_PRIOR_W=0.35;
+var SMOGON_SRC_ZH='原版（Smogon/PS）';
+function smogonPriorMeta(){try{return (ERDATA&&ERDATA.smogonPrior&&ERDATA.smogonPrior.meta)||null}catch(e){return null}}
+function smogonOn(){if(!SMOGON_PRIOR_ENABLED)return false;try{return !!(ERDATA&&ERDATA.smogonPrior&&ERDATA.smogonPrior.species)}catch(e){return false}}
+function smogonPriorOf(id){if(!smogonOn())return null;try{return ERDATA.smogonPrior.species[''+id]||null}catch(e){return null}}
+function smogonListOf(sp,key){if(!sp||!sp[key])return [];return sp[key]}
+function smogonPct(sp,key,id){if(!sp||!sp[key])return 0;var out=0;(sp[key]||[]).forEach(function(x){if(x&&(''+x.id)===(''+id))out=+x.percent||0});return out}
+function smogonNote(){return SMOGON_SRC_ZH+'惯例 ≠ ER 使用率（ER 无对战统计=已知缺口）；smogonPrior 管配招/道具/队友先验，usagePrior 管物种常见度次排序，二者职责分开'}
+/* 道具位：候选道具在**该物种先验 items** 中 → 小权重软优先（只作并列微排序，不新增候选、不否决） */
+var SMOGON_ITEM_GAIN=0.30;
+function smogonItemBonus(s,itemId){
+  if(!smogonOn())return 0;
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return 0;
+  var p=smogonPct(sp,'items',itemId);if(!(p>0))return 0;
+  if(!itemById(itemId))return 0;               /* 机制前提：该道具须在 ER 存在（机制评估不吃亏） */
+  return SMOGON_PRIOR_W*SMOGON_ITEM_GAIN*(p/100);
+}
+function smogonItemWhy(s,itemId){
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return '';
+  var p=smogonPct(sp,'items',itemId);if(!(p>0))return '';
+  return SMOGON_SRC_ZH+'惯例配备 '+p.toFixed(1)+'%（'+smogonNote()+'）';
+}
+/* 配招位：先验常见招式 → 小权重加成（不覆盖机制/覆盖度逻辑） */
+var SMOGON_MOVE_GAIN=0.10;
+function smogonMoveBonus(s,moveId){
+  if(!smogonOn())return 0;
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return 0;
+  var p=smogonPct(sp,'moves',moveId);if(!(p>0))return 0;
+  var mv=MV[moveId];if(!mv)return 0;
+  return SMOGON_PRIOR_W*SMOGON_MOVE_GAIN*(p/100);
+}
+function smogonMoveWhy(s,moveId){
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return '';
+  var p=smogonPct(sp,'moves',moveId);if(!(p>0))return '';
+  return SMOGON_SRC_ZH+'常见招 '+p.toFixed(1)+'%（'+smogonNote()+'）';
+}
+/* 队友区：先验队友（映射到 ER 物种）——核心物种先验 teammates 的 ER id 集合 */
+function smogonMateIds(s){
+  if(!smogonOn())return [];
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return [];
+  var out=[];(sp.teammates||[]).forEach(function(x){if(x&&x.id!==undefined&&x.id!==null)out.push(''+x.id)});
+  return out;
+}
+/* 用户池字符串（用于队友提示归类：池内 / 全库） */
+function smogonMateHint(s,poolIds){
+  if(!smogonOn())return null;
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return null;
+  var t=(sp.teammates||[]).filter(function(x){return x&&x.id!==undefined&&x.id!==null});
+  if(!t.length)return null;
+  var inPool=[],outPool=[];
+  t.forEach(function(x){var id=''+x.id;(poolIds&&poolIds.indexOf(id)>-1?inPool:outPool).push({name:x.name,id:id,pct:+x.percent||0,zh:(function(){try{var o=spId2Obj(+id);return o?o.zh:''}catch(e){return ''}})()})});
+  return {priors:t,inPool:inPool,outPool:outPool};
+}
+/* 队友区渲染（策略卡内；池内/全库分类 + 诚实标注）
+   v4.12 纪律：**玩家层不出现百分比 / 倍率式子**（v4.11 UI 减负契约，probe_v411_ui F12 断言）→
+   先验占比只折算为定性档位（常见/较常见/偶见/少见），精确百分比仅保留在引擎层审计文案（smogonItemWhy 等 L3）。 */
+function smogonMateBand(p){return p>=20?'常见':(p>=10?'较常见':(p>=3?'偶见':'少见'))}
+function smogonMateHtml(s,poolIds){
+  var h=smogonMateHint(s,poolIds);if(!h)return '';
+  function chip(x){var zh=x.zh||x.name||('#'+x.id),b=smogonMateBand(x.pct);return '<span class="badge" title="'+esc('先验队友 '+x.name+'（'+b+'）')+'">'+esc(zh)+' '+b+'</span>'}
+  var a=h.inPool.slice(0,6),b=h.outPool.slice(0,6);
+  return '<div class="tip" style="background:#eef6ff;border-color:#90caf9"><b>队友先验</b>（'+SMOGON_SRC_ZH+'惯例）：'+
+    (a.length?('已在你的池中：'+a.map(chip).join(' ')):'')+
+    (b.length?((a.length?'　':'')+'全库亦有：'+b.map(chip).join(' ')):'')+
+    (a.length||b.length?'':'（本物种先验队友均未映射到 ER 物种）')+
+    '<br><span style="font-size:11px;color:var(--sub)">'+esc(smogonNote())+'；原版惯例 ≠ ER 使用率，仅作提示、不改变队友排序硬门。</span></div>';
+}
+/* ==================== v4.12 ③ 体系模板生成（轴库 axis_lib「体系模板」六位） ====================
+   数据源：AXIS_LIB（构建期内嵌 nn_data/axis_lib.json，15 轴 × 6 位：体系核心/打手位/补盲位/联防位/
+   撒钉清钉轮转位/功能位 + note）。每位 = {角色/要求/依据…} 文本，含具体 ER 数字与 id。
+   生成：按用户存档池（SAV_ROWS → myPoolFromSav）匹配「该位要求」（特性/招式/属性实名命中）；
+         池中不足 → 从全库补位并标注「补位」。优雅降级：字段缺失 → 该轴不显示模板、行为不变。 */
+var AXIS_TPL_POS=['体系核心','打手位','补盲位','联防位','撒钉清钉轮转位','功能位'];
+function axisTplOf(id){
+  var ax=null;try{ax=axisById(id)}catch(e){}
+  var t=ax&&ax['体系模板'];return (t&&typeof t==='object')?t:null;
+}
+function tplPosText(tpl,k){try{return JSON.stringify(tpl[k]||{})}catch(e){return ''}}
+function tplPosReq(tpl,k){
+  var o=(tpl&&tpl[k])||{},out=[];
+  ['角色','要求','速度线','力度要求','受益','依据'].forEach(function(x){if(o[x])out.push(String(o[x]))});
+  if(!out.length){for(var q in o){if(q!=='依据'&&o[q])out.push(String(o[q]))}}
+  return out.join('；');
+}
+function tplMatchScore(t,txt){
+  var sc=0,hit=[];
+  try{
+    (t.abis||[]).concat(t.inns||[]).forEach(function(n){if(n&&txt.indexOf(n)>-1){sc+=3;hit.push('特性·'+n)}});
+    [t.t1,t.t2].forEach(function(ty){if(ty&&txt.indexOf(ty)>-1){sc+=1;hit.push('属性·'+ty)}});
+  }catch(e){}
+  return {sc:sc,hit:hit};
+}
+function v412UserPoolIds(){
+  try{var L=myPoolFromSav((typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[]);
+    return L.map(function(x){return ''+x.id})}catch(e){return []}
+}
+function axisTemplateOf(core,axisId){
+  var tpl=axisTplOf(axisId);if(!tpl)return null;
+  var pos=AXIS_TPL_POS.filter(function(k){return tpl[k]});if(!pos.length)return null;
+  var poolIds=v412UserPoolIds(),used={},picks={};
+  if(core&&core.id)used[''+core.id]=1;
+  var lib=[];try{ERDATA.species.forEach(function(t){if(!isFinalSp(t))return;if(!isValidSp(t))return;lib.push(t)})}catch(e){}
+  var poolSp=[];poolIds.forEach(function(id){var o=null;try{o=spId2Obj(id)}catch(e){o=null};if(o)poolSp.push(o)});
+  pos.forEach(function(k){
+    if(k==='体系核心'&&core){picks[k]={id:''+core.id,zh:core.zh,fill:false,why:'本方案核心',sc:0};used[''+core.id]=1;return}
+    var txt=tplPosText(tpl,k),best=null,bestSc=0;
+    function scan(list,fromPool,mvToo){
+      list.forEach(function(t){
+        if(!t||used[''+t.id])return;
+        var m=tplMatchScore(t,txt),sc=m.sc,hit=m.hit.slice(0);
+        if(mvToo&&sc>0){var L=[];try{L=learnC(t)}catch(e){L=[]}
+          L.forEach(function(mid){var mvv=MV[mid];if(mvv&&mvv[1]&&txt.indexOf(mvv[1])>-1){sc+=2;if(hit.indexOf('招式·'+mvv[1])<0)hit.push('招式·'+mvv[1])}})}
+        if(sc>bestSc){bestSc=sc;best={id:''+t.id,zh:t.zh,fill:!fromPool,why:hit.join('/')}}
+      });
+    }
+    scan(poolSp,true,true);
+    if(!best)scan(lib,false,false);
+    if(best){used[best.id]=1;picks[k]=best}else picks[k]=null;
+  });
+  return {picks:picks,pos:pos,tpl:tpl,nPool:poolIds.length};
+}
+/* L2 流派卡内渲染（既有卡片结构不动，仅追加一个 details 块；字段缺失 → 空串） */
+function axisTplHtml(core,axisId){
+  if(!axisTplOf(axisId))return '';
+  var t=null;try{t=axisTemplateOf(core,axisId)}catch(e){t=null}
+  if(!t)return '';
+  var rows=t.pos.map(function(k){
+    var req=tplPosReq(t.tpl,k),pk=t.picks[k]||null,rq=req.length>200?(req.slice(0,200)+'…'):req;
+    return '<li style="margin-bottom:2px"><b>'+esc(k)+'</b>：'+
+      (pk?('<span class="abi" onclick="event.stopPropagation();openSpById('+pk.id+')">'+esc(pk.zh)+'</span>'+
+        (pk.fill?'<span class="badge" style="background:#ffe0b2">补位</span>':'')+
+        (pk.why?('<span class="dim"> '+esc(pk.why)+'</span>'):'')):'<span class="dim">—（按该位要求未匹配，可留空）</span>')+
+      (rq?('<div style="font-size:11px;color:var(--sub)">该位要求：'+esc(rq)+'</div>'):'')+'</li>';
+  }).join('');
+  return '<details class="inline" style="margin-top:4px"><summary>🧱 体系模板（六位 · 轴库「体系模板」）—— 展开看完整 6 人体系配置建议</summary>'+
+    '<div style="margin-top:4px"><ul style="margin-left:16px">'+rows+'</ul>'+
+    '<div style="font-size:11px;color:var(--sub)">生成口径：优先从你的存档池（'+t.nPool+' 只）按「该位要求」匹配特性/招式/属性；池中不足则从全库补位并标注「补位」。'+
+    (t.tpl.note?('<br>轴库 note：'+esc(t.tpl.note)):'')+'</div></div></details>';
 }
 /* 物种级剖面改写（§3 imposter_anchor）：百变怪 → 速度复制 + 道具三选（讲究围巾/气势披带/脱壳忍者壳） */
 function mechSpProfile(s){
@@ -4028,6 +4502,13 @@ function pickAttacks(s,side,n,role){
     var pwv=mvDutyAxes(role||'输出',kind);
     /* 分层3：多维打分（各维度相乘；× 原则类别权重 0.85+0.30w ⇒ 同职责内按 P1 四轴动态微调） */
     var sc=pow*(stab?1.6:1)*h.mul*(prio>0?1.3:1)*covAdj*w.mul*a.mul*c.mul*ateMul*sm.mul*(0.85+0.30*pwv.w)*mech.mul;
+    /* v4.12 ① 机制评估改写层（招式级）：全力攻击 125（副效果招 ×1.3）/ 胆量 113（一般·格斗）——恒正乘子 */
+    var mechA={mul:1,why:[]};
+    try{mechA=mechAbiMvAdj(s,m,{side:side})}catch(e){}
+    if(mechA&&mechA.mul&&mechA.mul!==1)sc*=mechA.mul;
+    /* v4.12 ② Smogon 先验软接入：常见招式小权重加成（只作并列微排序，不覆盖机制/覆盖度逻辑；开关关 → 0） */
+    var smogB=0;
+    try{if(smogonOn()){var _spm=smogonPct(smogonPriorOf(s.id),'moves',id);if(_spm>0){smogB=SMOGON_PRIOR_W*SMOGON_MOVE_GAIN*(_spm/100);sc*=(1+smogB)}}}catch(e){}
     var why=['威力'+pow];
     if(sm.mul!==1)why.push('体系加成 '+sm.name+' ×'+sm.mul+'（'+arch+'）');
     if(stab)why.push('本系×1.6'+(convHit?('（-ate 属性转换：'+((conv.src&&conv.src!=='一般')?(conv.src+'→'+conv.type+' '):'')+'×'+ateMul+' + 本系 STAB，已按游戏源码核对）'):''));
@@ -4036,6 +4517,9 @@ function pickAttacks(s,side,n,role){
     if(covAdj>1)why.push('打击面'+cover.length+'属性×'+covAdj.toFixed(2));
     if(w.why)why.push(w.why);
     if(a.why)why.push(a.why);
+    /* v4.12 ①/② why 注入：招式级机制乘子 + Smogon 常见招先验（均注明 ER 口径 / 先验 ≠ ER 使用率） */
+    if(mechA&&mechA.why&&mechA.why.length)mechA.why.forEach(function(x){why.push(x)});
+    if(smogB>0){var _sw=smogonMoveWhy(s,id);if(_sw)why.push(_sw)}
     c.tags.forEach(function(x){why.push(x)});
     if(a.warn)why.push('⚠'+a.warn);
     /* v4.10 机制覆盖：why 注入机制行（严格对齐规格 §3/§5 文案，供探针验收）；warn 只提示、不否决 */
@@ -4439,6 +4923,9 @@ function itemScored(s,side,tag,ctx){
     if(c.id&&RESIST_BERRY_ALL[c.id]){sc+=0.35;ps.push('P5');beats.push('对准实际承受最大弱点')}
     if(/种子$/.test(c.zh)){sc+=0.25;ps.push('P5')}
     if(!ps.length)ps.push('P1');   /* 仅四轴命中 → 基线对位权重（P1）；prin 不允许空，保证 why 可溯源 */
+    /* v4.12 ② Smogon 先验软接入：该物种先验配备过的道具 → 小权重软优先（≤0.105，只作并列微排序；
+       机制覆盖仍主导；SMOGON_PRIOR_ENABLED=false → 0）。机制前提：道具须在 ER 存在（见 smogonItemBonus） */
+    try{var _sgb=smogonItemBonus(s,c.id);if(_sgb>0){sc+=_sgb;var _sgw=smogonItemWhy(s,c.id);if(_sgw)beats.push(_sgw)}}catch(e){}
     var bt=(beats.length?beats.join('；'):(c.note||''));
     var why='克制 '+(bt||'—')+'；代价 '+itemCostOf(c)+'｜原则 '+((ps.length?ps:['P1']).join('/'));
     res.push({zh:c.zh,id:c.id,sc:Math.round(sc*1000)/1000,why:why,ax:ax,prin:ps,i:i});
@@ -4472,6 +4959,13 @@ function buildItem(s,side,roleTag,ctx){
       });
       if(pre.length){list=list.filter(function(x){return !have[x[0]]});list=pre.concat(list)}
     }
+  }catch(e){}
+  /* v4.12 机制锚点（§3 magician_steal）：魔术师 170 —— 命中偷取对手道具 → 道具位评估改写（可空道具位触发前提）。
+     铁律：id=170 仅出现在 cond，绝不入 with.ids（数据层已保证）。 */
+  try{
+    var _me=mechEvalOf(s,{});
+    if(_me.itemAudit&&_me.itemAudit.length&&list.length)
+      list[0][1]=list[0][1]+'；道具位评估改写：'+_me.itemAudit[0];
   }catch(e){}
   return list
 }
@@ -5399,20 +5893,30 @@ var DIM_IMPL={
    var mid=hasAny(cx.L||learnC(s),FUNC_MV.weather);
    if(mid&&WEATHER_MV[mid]===sys)return{pts:2,txt:'可学 '+MV[mid][1]+' 自行开'+sys+'（招式侧，无特性依赖）',cert:1};
    return{pts:0,txt:'无'+sys+'设置/受益特性（+0）'}},
- 'D2':function(s){var v=spdOf(s);
-   if(v>=110)return{pts:5,txt:'速度 '+v+' 高速（+5）'};
-   if(v>=95)return{pts:3,txt:'速度 '+v+' 中高速（+3）'};
-   if(v>=80)return{pts:1,txt:'速度 '+v+' 中速（+1）'};
-   return{pts:0,txt:'速度 '+v+' 偏慢（+0）'}},
- 'D3':function(s){var v=spdOf(s);
+ 'D2':function(s,cx){var b=spdOf(s),v=b,mm=1,mw='';
+   /* v4.12 机制评估改写层：天气提速（叶绿素34/拨沙146/拨雪202 ×1.5）/ 轻金属135（速度 ×1.3） */
+   try{if(mechRwOn()){var me=mechEvalOf(s,cx);if(me.spdMul>1){mm=me.spdMul;v=Math.round(b*mm);mw=(me.spdWhys&&me.spdWhys[0])||''}}}catch(e){}
+   var t;
+   if(v>=110)t={pts:5,txt:'速度 '+v+' 高速（+5）'};
+   else if(v>=95)t={pts:3,txt:'速度 '+v+' 中高速（+3）'};
+   else if(v>=80)t={pts:1,txt:'速度 '+v+' 中速（+1）'};
+   else t={pts:0,txt:'速度 '+v+' 偏慢（+0）'};
+   if(mw)t.txt+=' ·'+mw+'（机制评估改写：基础速度 '+b+'×'+mm+'）';
+   return t},
+ 'D3':function(s){var v=spdOf(s);   /* v4.12：空间低速线**不**套用机制提速（提速对空间轴为负向，遵循「只正向调整」纪律，登记为设计取舍） */
    if(v<=60)return{pts:6,txt:'速度 '+v+'≤60：空间内先手（+6）'};
    if(v<=85)return{pts:3,txt:'速度 '+v+'≤85：可进空间（+3）'};
    return{pts:0,txt:'速度 '+v+'：高于 85，空间下先手权归对手（+0，不剔除）'}},
- 'D4':function(s){var a=atkBest(s);
-   if(a>=130)return{pts:5,txt:'力度 '+a+' 极高（+5）'};
-   if(a>=110)return{pts:3,txt:'力度 '+a+' 高（+3）'};
-   if(a>=95)return{pts:1,txt:'力度 '+a+' 达标（+1）'};
-   return{pts:0,txt:'力度 '+a+' 未达 95（+0）'}},
+ 'D4':function(s,cx){var b=atkBest(s),a=b,mm=1,mw='';
+   /* v4.12 机制评估改写层：巨力（37 物攻×2 / 74 ER 特攻×2）/ 天气强攻（太阳之力·沙之力 ×1.5）/ 属性吸收增益（最高攻项 +1 → ×1.5） */
+   try{if(mechRwOn()){var v2=mechAtkBestOf(s,cx);if(v2!==b){a=v2;mm=(b?v2/b:1);var me=mechEvalOf(s,cx);mw=(me.atkWhys&&me.atkWhys[0])||''}}}catch(e){}
+   var t;
+   if(a>=130)t={pts:5,txt:'力度 '+a+' 极高（+5）'};
+   else if(a>=110)t={pts:3,txt:'力度 '+a+' 高（+3）'};
+   else if(a>=95)t={pts:1,txt:'力度 '+a+' 达标（+1）'};
+   else t={pts:0,txt:'力度 '+a+' 未达 95（+0）'};
+   if(mw)t.txt+=' ·'+mw+'（机制评估改写：基础力度 '+b+'→'+a+'）';
+   return t},
  'D5':function(s){var p=bstI(s,1),q=bstI(s,3);
    if(p>=90&&q>=90)return{pts:3,txt:'双刀：物攻 '+p+' / 特攻 '+q+'（+3）'};
    if(p>=70&&q>=70)return{pts:1,txt:'双刀潜质：物攻 '+p+' / 特攻 '+q+'（+1）'};
@@ -5424,6 +5928,13 @@ var DIM_IMPL={
    return{pts:0,txt:'耐久三角 '+b+'（+0）'}},
  'D7':function(s,cx){var L=cx.L||learnC(s),c=0;
    FUNC_MV.rec.forEach(function(id){if(L.indexOf(id)>-1)c++});
+   /* v4.12 机制评估改写层：天气回复（雨盘44/冰体115 每回合 1/8）/ 水幕41（ER 特有登场水流环 1/16）
+      注意：机制回复是「天气在场即回」，不以自身携带回复招为前提 → 机制回复存在时不走无回复招早退分支 */
+   var mf=0,mw='';
+   try{if(mechRwOn()){var me=mechEvalOf(s,cx);mf=me.healFrac||0;mw=(me.recWhys&&me.recWhys[0])||''}}catch(e){}
+   if(mf>0){
+     var p7=Math.min(Math.min(c,2)*2+2,6);
+     return{pts:p7,txt:'机制每回合回复 '+Math.round(mf*1000)/10+'% 最大 HP'+mw+((c>0)?(' + 回复手段 '+c+' 招'):'')+'（+'+p7+'）'}}
    if(!c)return{pts:0,txt:'无稳定回复招（+0）'};
    return{pts:Math.min(c,2)*2,txt:'回复手段 '+c+' 招（+'+Math.min(c,2)*2+'）'}},
  'D8':function(s,cx){var L=cx.L||learnC(s),cats=[FUNC_MV.hazard,FUNC_MV.pivot,FUNC_MV.speed,FUNC_MV.removal,FUNC_MV.protect,FUNC_MV.wear,FUNC_MV.weather],c=0;
@@ -5445,6 +5956,14 @@ var DIM_IMPL={
      var id=abiIdByZhOrEn(n),tg=id?ERDATA.abiTags[id]:null;if(!tg)return;
      if(tg.im&&!p){p=3;txt='免疫特性 '+n+'（'+tg.im.join('/')+'）'}
      else if(tg.hf&&p<2){p=2;txt='减伤特性 '+n+'（'+tg.hf.join('/')+'）'}});
+   /* v4.12 机制评估改写层：威吓22 / 反威吓（39·12·20·553）/ 满血减伤（136·209·5·231）/ 轻金属135体重减半
+      —— 只正向加分，且与既有 abiTags 标签分取 max（不叠加、不覆盖既有口径） */
+   try{if(mechRwOn()){var me=mechEvalOf(s,cx),mp=0,mt=[];
+     if(me.physWane){mp+=2;mt.push('威吓：换入降对方物攻（物理承受减伤）')}
+     if(me.vsIntim){mp+=1;mt.push('反威吓：免受对方威吓降攻')}
+     if(me.defFlat<1){mp+=2;mt.push('满血受击减伤 ×'+me.defFlat+'（生存锚点）')}
+     if(me.weightHalf){mp+=1;mt.push('轻金属：体重减半（减轻体重类招式伤害）')}
+     if(mp>p){p=mp;txt=mt.join('/')}}}catch(e){}
    if(!txt)return{pts:0,txt:'无免疫/减伤特性（+0）'};
    return{pts:p,txt:txt+'（+'+p+'）'}},
  'D12':function(s,cx){var n=(cx.names||(s.abis||[]).concat(s.inns||[]));
@@ -6386,7 +6905,9 @@ function renderNeedPlan(s,vi){
       '　<b>一句话赢法</b>：'+esc(plan.axis.idea||'')+
       '<br><b>关键协同</b>：'+axSynHtml(plan)+
       '<br><b>弱点预警</b>：'+axWeakHtml(plan.axis)+
-      '<br><span style="font-size:11px;color:var(--sub)">依据：'+esc((plan.axis.basis||[]).join('；'))+'</span></div>';
+      '<br><span style="font-size:11px;color:var(--sub)">依据：'+esc((plan.axis.basis||[]).join('；'))+'</span>'+
+      /* v4.12 ③ 体系模板（轴库「体系模板」六位）——字段缺失 → 空串（该轴不显示模板，行为不变） */
+      (function(){try{return axisTplHtml(plan.core||s,plan.axis.id)}catch(e){return ''}})()+'</div>';
   }
   h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
   h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
@@ -6942,6 +7463,8 @@ function renderCore(s){
     if(mainMates.length)html+='<div class="dim">主推（按本流派契合排序）</div><div class="mateline">'+mainMates.map(function(r){return mateCard(r,pool,true)}).join('')+'</div>';
     else html+='<div class="dim">该流派暂无高匹配队友</div>';
     if(altMates.length)html+='<div class="dim" style="margin-top:4px">备选（体系补盲 / 整体联防，已去重；需求驱动完整推导见「引擎视角」）</div><div class="mategrid">'+altMates.map(function(r){return mateCard(r,pool,false)}).join('')+'</div>';
+    /* v4.12 ② 队友先验（Smogon，软提示）：先验队友映射 ER 物种 → 池内/全库分类；开关关 → 空串（零影响） */
+    try{var _smp=pool?Object.keys(pool.sp||{}):null;var _smh=smogonMateHtml(s,_smp);if(_smh)html+=_smh}catch(e){}
     html+='</div>';
     /* ⑨ 可选注意点 */
     var convB2=convOf(s);

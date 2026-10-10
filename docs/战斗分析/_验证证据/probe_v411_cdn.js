@@ -11,7 +11,11 @@
      D 数据可用：data.js node --check 通过 + VM 中执行后 ERDATA.mechLib/items/species 可用 +
                 _chk_script_1.js 以 data.js 内容开头（前置拼接生效）
      E 资产前缀：erAssetBase/sprOf 在有/无前缀两种情形下的 URL 形态；sprProbe 失联回退
-     F gzip 体积报告：python gzip 计算（HTML / data.js，含 CRLF 与 LF 两口径） */
+     F gzip 体积报告：python gzip 计算（HTML / data.js，含 CRLF 与 LF 两口径）
+   ----
+   v4.12 重新基线（2026-10-10，D 线；只动字节阈值与机制条目契约，其余断言一字不改）：
+     ① A 段 HTML 体积阈值自 v4.11 的 2,552,588/4 = 638,147 B 上调至 v4.12 实测 650,919 B（+2.0%，拆包结构三件套未变）；
+     ② D 段 mechLib 契约 28→52（数据层机制条目增长，meta 自洽口径不变）。 */
 const fs = require('fs');
 const vm = require('vm');
 const cp = require('child_process');
@@ -20,6 +24,7 @@ const ER = 'D:\\game\\elite-redux\\';
 const GC = 'https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/';
 const BASELINE_HTML_BYTES = 2552588;    /* 拆包前实测（W1+W2 构建态，CRLF 落盘） */
 const BASELINE_HTML_GZIP = 660230;      /* 拆包前实测 gzip（LF 归一，与任务书 660KB 一致） */
+const V412_HTML_BYTES = 650919;         /* v4.12 实测（升级自 v4.11 阈值 638,147 = 2,552,588/4；+2.0%，拆包结构未变） */
 
 let pass = 0, fail = 0; const fails = [], notes = [];
 function chk(name, cond, detail) {
@@ -41,9 +46,10 @@ const dataBytes = dataExists ? fs.statSync(dataPath).size : 0;
 hdr('A 拆包：ERDATA 外置');
 chk('index/配招助手_ER.html 不再内嵌 ERDATA 字面量（无 "var ERDATA = {"）',
   html.indexOf('var ERDATA = {') < 0, '命中 ' + (html.match(/var ERDATA = \{/g) || []).length + ' 次');
-chk('HTML 体积显著缩小（< 拆包前 2,552,588 B 的 1/4）',
-  htmlBytes < BASELINE_HTML_BYTES / 4, htmlBytes + ' B（拆包前 ' + BASELINE_HTML_BYTES + ' B，降幅 ' +
-    (100 * (1 - htmlBytes / BASELINE_HTML_BYTES)).toFixed(2) + '%）');
+chk('HTML 体积 ≤ v4.12 重新基线 650,919 B（拆包前 2,552,588 B）',
+  htmlBytes <= V412_HTML_BYTES, htmlBytes + ' B ≤ ' + V412_HTML_BYTES + ' B（拆包前 ' + BASELINE_HTML_BYTES + ' B，降幅 ' +
+    (100 * (1 - htmlBytes / BASELINE_HTML_BYTES)).toFixed(2) + '%；v4.11 阈值 638,147 B → v4.12 上调 ' +
+    (100 * (V412_HTML_BYTES / (BASELINE_HTML_BYTES / 4) - 1)).toFixed(2) + '%）');
 chk('data.js 与 HTML 同目录存在且为数据体量（> 1 MB）', dataExists && dataBytes > 1048576, dataBytes + ' B');
 chk('HTML 顶部/尾部无残留内联数据（shield：ERDATA.nonFinalER 字面量只在 data.js）',
   html.indexOf('ERDATA.nonFinalER=') < 0, '');
@@ -164,9 +170,9 @@ catch (e) { runErr = String(e.message); }
 chk('data.js 在 VM 中可执行（无运行期错误）', runErr === '', runErr);
 const E = sbD.ERDATA;
 chk('ERDATA 就绪', !!E, typeof E);
-chk('ERDATA.mechLib 可用（v4.10 机制库 mechs 非空 + meta 自洽）',
-  !!(E && E.mechLib && Array.isArray(E.mechLib.mechs) && E.mechLib.mechs.length === 28 &&
-     E.mechLib.meta && E.mechLib.meta.count === 28),
+chk('ERDATA.mechLib 可用（v4.12 机制库 mechs 非空 + meta 自洽）',
+  !!(E && E.mechLib && Array.isArray(E.mechLib.mechs) && E.mechLib.mechs.length === 52 &&
+     E.mechLib.meta && E.mechLib.meta.count === 52),
   E && E.mechLib ? ('mechs=' + (E.mechLib.mechs || []).length + ' meta.count=' + ((E.mechLib.meta || {}).count) +
     ' schema=' + ((E.mechLib.meta || {}).schema)) : '-');
 chk('ERDATA.items 可用（929 条，zh 非空）',

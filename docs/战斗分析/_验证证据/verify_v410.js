@@ -4,6 +4,13 @@
    v4.11 校准（2026-10-10，口径：改版数据为准）：①道具三选 317→308（「服务铃」=繁中译名，ER 数据口径=脱壳忍者壳；
      317=Eject Button=逃脱按钮，挨招换下，与 308 Shed Shell 无失败换下是两个不同道具）；②杂技 112.5/75（ER 威力 75×1.5，
      官方 55×2=110 登记为口径差）；③蛮干 ER desc「自身 HP 低于对方时增力」（官方削至同血登记为口径差）。
+   v4.12 校准（2026-10-10，只按数据层契约增长更新，其余断言一字不改）：
+     ① mechLib 28→52 机制（L73 / E1）、combo 77→156（E2）；
+     ② 条件过滤三关（D1/D3/D10）随目录增长改判：mechCombosFor 为「ok 优先 → 可见上限 10」，
+        百变怪未截断边集 27 条（ok=11/fail=16）而可见 10 条全为满足边 → D1 改按未截断边集判定、
+        D3 样本改「可见集含 fail 边」的首个物种、D10 载体改首个 512 学习者（性质不变，仅换见证者）；
+     ③（收尾更新，2026-10-10）E7 名称内「26 条」为 v4.10 词汇表旧值 → 已按实际值校正为「40 条」
+        （断言体仅判 badRw===0，一行未动，行为不变）；校正后全跑仍 86/0。
    方法：Node VM + fake DOM 打桩，加载**最终产物** 配招助手_ER.html 的内嵌脚本
         （D:\game\elite-redux\_chk_script_1.js，由 _extract_script.js 抽出），
         在真实引擎上跑 P1/P2/P3 + 组合联想器三关 + 详情区块 + 优雅降级 + 移动端 + token。
@@ -70,7 +77,7 @@ console.log('产物指纹(SHA256)以 D 线报告登记为准；本探针只消�
 hdr('0 前置：百变怪对象与 mechLib 就位');
 chk('P1 对象 百变怪 id="132"（数据中文名命中）', !!ditto && String(ditto.id) === '132', ditto ? ('id=' + ditto.id + ' en=' + ditto.en) : 'MISSING');
 chk('百变怪特性池含 变身者（150）', !!ditto && (ditto.abis || []).indexOf('变身者') > -1 && sandbox.mechAbiId('变身者') === '150', ditto ? JSON.stringify(ditto.abis) : '');
-chk('mechLib 已内嵌且非空（数据层嵌入 data.js 顶层键 mechLib）', sandbox.mechAll().length === 28, 'mechs=' + sandbox.mechAll().length);
+chk('mechLib 已内嵌且非空（数据层嵌入 data.js 顶层键 mechLib）', sandbox.mechAll().length === 52, 'mechs=' + sandbox.mechAll().length);
 
 /* =========================================================
    §A  P1 百变怪（132，特性池含 150）
@@ -173,11 +180,32 @@ sandbox.SAV_ROWS = [];
 const _db = sandbox.deriveBuilds(ditto);
 const _mvid = ((((_db[0] || {}).mv || {}).main) || []).map(x => x.id);
 const coMove = sandbox.mechCombosFor(ditto, { moves: _mvid });
-chk('D1 条件过滤：同页既有「条件满足」边，也有「条件不满足」边（fail 非空）',
-  coMove.list.some(x => x.ok === true) && coMove.list.some(x => x.ok === false && (x.fail || []).length > 0),
-  'ok=' + coMove.list.filter(x => x.ok).length + ' fail=' + coMove.list.filter(x => !x.ok).length + ' (condOk=true ' + coMove.list.filter(x => x.condOk).length + ')');
+/* v4.12 契约增长（D 线登记）：mechCombosFor 为「ok 优先 → slice(0,10)」上限；目录 28→52 后百变怪未截断边
+   27 条（ok=11/fail=16），可见 10 条全为满足边 → D1 的条件过滤口径改按未截断边集判定（逐对象 comboAssocOf
+   并集去重，与 mechCombosFor 同累积口径，仅去掉排序 / 池过滤 / 上限）。 */
+function uEdges(s, moves) { const seen = {}, out = [];
+  const objs = [{ kind: 'species', id: s.id }].concat((sandbox.mechAbiIdList(s) || []).map(id => ({ kind: 'ability', id: id }))).concat((moves || []).map(id => ({ kind: 'move', id: id })));
+  objs.forEach(function(o) { const r = sandbox.comboAssocOf(o, { s: s }); r.list.forEach(function(x) { const k = [x.mechId, x.withKind, (x.withIds || []).join(',')].join('|'); if (!seen[k]) { seen[k] = 1; out.push(x); } }); });
+  return out; }
+const _uE = uEdges(ditto, _mvid);
+chk('D1 条件过滤：既有「条件满足」边，也有「条件不满足」边（fail 非空）※按未截断边集（v4.12 目录增长后可见集被 ok 优先 10 上限截断）',
+  _uE.some(x => x.ok === true) && _uE.some(x => x.ok === false && (x.fail || []).length > 0),
+  '未截断 ok=' + _uE.filter(x => x.ok).length + ' fail=' + _uE.filter(x => !x.ok).length + ' n=' + _uE.length +
+  ' / 可见 ok=' + coMove.list.filter(x => x.ok).length + ' fail=' + coMove.list.filter(x => !x.ok).length + ' (condOk=true ' + coMove.list.filter(x => x.condOk).length + ', cap ' + coMove.list.length + ')');
 chk('D2 条件满足边标注（condOk=true → 渲染「条件满足」）', dittoHtml.indexOf('条件满足') > -1, 'count=' + (dittoHtml.match(/条件满足/g) || []).length);
-chk('D3 条件不满足边标注（渲染「条件不满足：<原因>」）', /条件不满足/.test(dittoHtml), 'count=' + (dittoHtml.match(/条件不满足/g) || []).length);
+/* v4.12：百变怪可见切片已全为满足边（见 D1），渲染面样本改用「可见集含 fail 边」的首个物种（性质不变，仅换见证者）。 */
+const CBSP = (function(){
+  for (const s of E.species) {
+    let r; try { const b0 = sandbox.deriveBuilds(s)[0] || {}; const mv = (((b0.mv || {}).main) || []).map(x => x.id); r = sandbox.mechCombosFor(s, { moves: mv }); } catch (e) { continue; }
+    if (!r.list.some(x => x.ok === false && (x.fail || []).length > 0)) continue;
+    let h = ''; try { sandbox.renderCore(s); h = byId('coreOut')._html; } catch (e) { continue; }
+    if (/条件不满足/.test(h)) return { s: s, h: h };
+  }
+  return null;
+})();
+chk('D3 条件不满足边标注（渲染「条件不满足：<原因>」）※样本改「可见集含 fail 边」的首个物种（v4.12）',
+  !!CBSP && /条件不满足/.test(CBSP.h),
+  CBSP ? (CBSP.s.zh + '#' + CBSP.s.id + ' 条件不满足×' + (CBSP.h.match(/条件不满足/g) || []).length) : 'n/a');
 chk('D4 排序：满足条件（ok=true）边全部排在未满足之前', (function(){ const arr = coMove.list.map(x => x.ok); const f = arr.indexOf(false); return f < 0 || arr.slice(f).every(v => v === false); })(), JSON.stringify(coMove.list.map(x => x.ok)));
 /* 个人池投影 */
 const noPool = sandbox.comboAssocOf({ kind: 'item', id: 339 }, { s: ditto });
@@ -207,7 +235,13 @@ chk('D9 narr 与 JSON 一致（杂技+飞行宝石 = 规格示例句）', (funct
   const c = (cb.combos || []).filter(x => x.with && x.with.ids && x.with.ids.indexOf(339) > -1)[0];
   return c && c.narr === '飞行宝石起手爆发，消耗后杂技全程 112.5';
 })(), (function(){ const cb = sandbox.mechAll().filter(m => m.id === 'acrobatics')[0]; const c = (cb.combos || []).filter(x => x.with && x.with.ids && x.with.ids.indexOf(339) > -1)[0]; return c ? c.narr : 'n/a'; })());
-chk('D10 narr 出现在渲染面（mechCoreHtml(moves=[512]) 含该叙事）', (function(){ const h = sandbox.mechCoreHtml(ditto, { moves: [512] }); return h.indexOf('飞行宝石起手爆发，消耗后杂技全程 112.5') > -1; })(), '');
+/* v4.12：512 边在百变怪渲染面被可见上限截断（见 D1）。载体改用首个 512 学习者（其可见集含该边，与 §I「杂技页」同源）；
+   「该叙事进入渲染面」的性质不变，仅换见证者。 */
+chk('D10 narr 出现在渲染面（mechCoreHtml(512 学习者, moves 含 512) 含该叙事）※载体改首个 512 学习者（v4.12）',
+  (function(){ const s = E.species.filter(x => learnOf(x).indexOf(512) > -1)[0]; if (!s) return false;
+    const b0 = sandbox.deriveBuilds(s)[0] || {}; const mv = (((b0.mv || {}).main) || []).map(x => x.id);
+    return sandbox.mechCoreHtml(s, { moves: mv.concat([512]) }).indexOf('飞行宝石起手爆发，消耗后杂技全程 112.5') > -1; })(),
+  (function(){ const s = E.species.filter(x => learnOf(x).indexOf(512) > -1)[0]; return s ? (s.zh + '#' + s.id) : 'n/a'; })());
 
 /* =========================================================
    §E  组合库契约（规格 §2 / §4）
@@ -233,13 +267,13 @@ ALL.forEach(m => {
     if (ids.indexOf('170') > -1) cbMagic170++;
   });
 });
-chk('E1 机制条目数 = 28', ALL.length === 28, 'mechs=' + ALL.length);
-chk('E2 combo 总数 = 77', cbTotal === 77, 'combos=' + cbTotal);
+chk('E1 机制条目数 = 52', ALL.length === 52, 'mechs=' + ALL.length);
+chk('E2 combo 总数 = 156', cbTotal === 156, 'combos=' + cbTotal);
 chk('E3 全部 combo narr 非空（结构化生成不编造）', cbNoNarr === 0, 'empty=' + cbNoNarr);
 chk('E4 全部 combo src 非空且为 http(s)（铁律：每条可溯源）', cbNoSrc === 0, 'empty=' + cbNoSrc);
 chk('E5 全部 mech basis 非空 + 顶层 src 非空', mechNoBasis === 0 && mechNoSrc === 0, 'basis=' + mechNoBasis + ' src=' + mechNoSrc);
 chk('E6 无 combo 引用 魔术师170（§1 铁律：禁入任何 combo）', cbMagic170 === 0, 'hits=' + cbMagic170);
-chk('E7 rewrite 全在 §3 词汇表内（26 条）', badRw === 0, 'rogue=' + badRw + ' vocab=' + RWS.size);
+chk('E7 rewrite 全在 §3 词汇表内（40 条）', badRw === 0, 'rogue=' + badRw + ' vocab=' + RWS.size);
 chk('E8 cat 全在六分类内', badCat === 0, 'rogue=' + badCat);
 chk('E9 每条 combo 的 with.kind/ids 合规', cbNoWith === 0, 'bad=' + cbNoWith);
 chk('E10 每条 mech match 至少一非空键', badMatch === 0, 'bad=' + badMatch);
