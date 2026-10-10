@@ -702,6 +702,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
     <input type="text" id="coreAbi" placeholder="特性名" style="width:130px">
     <button class="btn-mini" onclick="coreClear()">清空筛选</button>
     <label style="font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:2px"><input type="checkbox" id="coreFinal" checked onchange="coreFinalToggle()"> 仅最终形态 + 奇石优势</label>
+    <label style="font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:2px"><input type="checkbox" id="coreMega" checked onchange="coreMegaToggle()"> Mega 形态优先（过滤可 Mega 的非 Mega）</label>
   </div>
   <div class="chips" id="coreTypes"></div>
   <div class="grid" id="coreGrid"></div>
@@ -2333,6 +2334,7 @@ function renderAnalyze(){
     ERDATA.species.forEach(function(t){
       if(inTeam[t.id])return;
       if(!isFinalForm(t)&&!evioOk(t))return; /* v4.3.1：非最终形态若具奇石优势则计入推荐 */
+      if(optMegaOnly&&hasMegaForm(t))return; /* v4.13：Mega 形态优先——补位建议同样过滤可 Mega 的非 Mega 形态 */
       if(!isValidSp(t))return; /* B7：占位/无效物种过滤 */
       var sc=0,why=[];
       needTypes.forEach(function(w){
@@ -3112,6 +3114,7 @@ function tplRecs(t){
     var out=[];
     ERDATA.species.forEach(function(s){
       if(!isFinalForm(s)&&!evioOk(s))return; /* v4.3.1：非最终形态若具奇石优势则计入推荐 */
+      if(optMegaOnly&&hasMegaForm(s))return; /* v4.13：Mega 形态优先——可 Mega 的非 Mega 形态不进体系主题榜（开关可关） */
       if(!isValidSp(s))return; /* B7：占位/无效物种（base 全 0，如 2502）过滤 */
       if(sys.length){
         var ben=sys.some(function(x){return spSys(s).indexOf(x)>-1||isSetter(s,x)});
@@ -3401,6 +3404,19 @@ function pickFuncs(s,role,side,used){
   return res;
 }
 var optFinalOnly=true; /* 全局开关：推荐与列表是否仅显示最终形态（默认开） */
+var optMegaOnly=true; /* 全局开关：Mega 形态优先（默认开）——推荐/候选中过滤「可 Mega 的非 Mega 形态」（ER 可永久 Mega，玩家直接用 Mega 形态）；取消勾选恢复全部 */
+var _HASMEGA=null;
+function hasMegaSet(){ /* 可 Mega 的非 Mega 形态集合：由 ERDATA.familyRoot（Mega/道具进化 kd==1 派生）的 root 值派生，排除自映射 */
+  if(_HASMEGA)return _HASMEGA;
+  _HASMEGA={};
+  var fr=ERDATA.familyRoot||{};
+  for(var f in fr){var r=fr[f];if(r&&r!==f)_HASMEGA[''+r]=1}
+  return _HASMEGA;
+}
+function hasMegaForm(s){ /* 该形态存在 Mega/Redux 对应物（且自身不是 Mega 形态） */
+  if(!s)return false;return !!hasMegaSet()[''+s.id]
+}
+function isMegaPreferred(s){return !optMegaOnly||!hasMegaForm(s)} /* 受开关控制：默认过滤可 Mega 的非 Mega 形态 */
 function learnOf(s){var o={};s.lv.forEach(function(p){o[p[1]]=true});s.tut.forEach(function(m){o[m]=true});return Object.keys(o).map(Number)}
 function hasMv(learn,ids){for(var i=0;i<ids.length;i++)if(learn.indexOf(ids[i])>-1)return ids[i];return null}
 function coreSys(s){
@@ -7359,6 +7375,8 @@ function renderCore(s){
     return '<button type="button" class="chip" aria-expanded="false" onclick="l1AtkDef(\'l1tf'+SID+'\','+jsl(String(SID))+',this)" title="点开看 攻（本系打谁有效）/ 防（对手打你）两视角">'+tlabel(t)+' ▾</button>';
   }).join('')+'</div>';
   html+='<div class="accbd" id="l1tf'+SID+'" style="display:none"></div>';
+  /* v4.13：可 Mega 形态提示（ER 永久 Mega：本形态默认不进推荐/候选，开关可恢复） */
+  if(hasMegaForm(s))html+='<div class="tip" style="background:#e8eaf6;margin:4px 0"><b>⚡ 可 Mega 形态</b>：ER 可永久 Mega —— 本形态已按「Mega 形态优先」默认从推荐/候选中过滤，建议直接使用其 Mega 形态（顶部开关可恢复）</div>';
   /* 特性（n 选 1）：点击 chip 直接弹轻量 modal（完整描述/战斗意义/机制词条） */
   var abiN=(s.abis&&s.abis.length)||0,innN=(s.inns&&s.inns.length)||0;
   html+='<div class="chiprow"><span class="dim">特性（'+abiN+' 选 1）：</span>'+((abiN)
@@ -7590,6 +7608,7 @@ function renderCore(s){
   $('coreOut').innerHTML=html;
 }
 function coreFinalToggle(){optFinalOnly=$('coreFinal').checked;if(window.drawCoreList)window.drawCoreList();if(coreSel)renderCore(coreSel)}
+function coreMegaToggle(){optMegaOnly=$('coreMega').checked;if(window.drawCoreList)window.drawCoreList();if(coreSel)renderCore(coreSel)}
 /* ===== v4.6.3 两段式互斥视图（核心配队 / 存档联动组队，纯视图切换、引擎零改动）=====
    背景：点候选卡后方案渲染在长候选列表之下 → 用户以为点不动。
    pick（挑选，默认）：工具栏 + 属性筛选 + 候选网格，仅此一屏；
@@ -7652,6 +7671,7 @@ function selectCore(id){
   function coreMatch(s){
     if(!isValidSp(s))return false; /* B7：占位/无效物种（base 全 0，如 2502）不进核心列表 */
     if(optFinalOnly&&!isFinalForm(s)&&!evioOk(s))return false; /* v4.3.1：奇石优势形态同样可选为核心 */
+    if(optMegaOnly&&hasMegaForm(s))return false; /* v4.13：Mega 形态优先——ER 可永久 Mega，可 Mega 的非 Mega 形态默认不进候选（开关可关） */
     /* C⑧：模糊搜索（中文/英文/编号子串包含；大小写与全半角不敏感） */
     if(!fzAny($('coreSearch').value.trim(),[''+s.id,s.zh,s.en]))return false;
     var selT=[];
