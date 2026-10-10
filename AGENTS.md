@@ -64,6 +64,7 @@ D:\game\elite-redux\
 │   ├── build_sprites.py             ← ★精灵图生成器（gameData NAME → sp<id>.png，四层匹配，可重复运行）
 │   ├── sprites_map.csv              ← 映射记录（id,name,NAME,sprite_file,layer）
 │   └── sprites_report.md            ← 统计与缺失清单（缺失仅 SPECIES_NONE 占位）
+├── 招式表_特性.csv                  ← ★特性中文新源（999 条 BOM；data.js↔gameData 反推，与网页同源；xlsm 已丢失）
 ├── 招式表_可学总表.csv              ← ★配招核心数据：112,580 行（宝可梦×招式×获得方式，含种族/特性/招式数值）
 ├── 招式表_招式数值.csv              ← 1,032 招全数值（中文/属性/分类/威力/命中/PP/先制/描述）
 ├── 招式表_宝可梦基础.csv            ← 1,906 只基础（种族/属性/特性/可学招式计数）
@@ -79,7 +80,7 @@ D:\game\elite-redux\
 ├── ER2.65简汉化\
 │   ├── ERv2.65-beta2-debug汉化版.sav ← 当前主存档（131088B）
 │   ├── ERv2.65-beta2-debug汉化版.gba ← ROM（标题 POKEMON EMER / 码 BPEE）
-│   ├── ER2.65beta版图鉴v0.3.xlsm     ← 汉化图鉴（仅特性表+属性克制 Sheet1；编号列=gameData id）
+│   ├── ER2.65beta版图鉴v0.3.xlsm     ← 汉化图鉴（仅特性表+属性克制 Sheet1；编号列=gameData id；**2026-10-10 已丢失，勿依赖**）
 │   └── *_baseline_*.sav / *_after_candy.sav / *_after_stomp.sav ← 测试档（自动排除）
 ├── elite redux 2.5 debug.sav/.gba   ← ER2.5 旧版存档/ROM（结构同源，可交叉验证）
 ├── 特性.xlsx / 图鉴.xlsx / ER2.5正式版图鉴v0.5.xlsm ← 参考表（脚本不依赖；图鉴.xlsx 搬迁时丢失，勿依赖）
@@ -148,10 +149,17 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 
 输出：CSV(utf-8-sig, 53列) + JSON(summary+records)。特殊区（SA/SB）默认按**代码段内顺序**标注
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
-依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式）+ xlsm 特性表，缺失时回退英文。
+依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
 ## 6. 当前状态（2026-10-10）
 
+- ✅ **四特性强调 + 特性中文源修复（2026-10-10 主 Agent 直办）**：
+  - **xlsm 图鉴已全部丢失**（ROM\ER2.65简汉化 目录已空、D:\game 无任何 *.xlsm）→ 解析器特性中文此前全回退英文；
+  - **新中文源**：`招式表_特性.csv`（根目录，表头 特性编号/特性英文名/特性中文名，999 条 BOM）——由 `data.js`（ERDATA.species 中文 abis/inns 数组）与 `gameDataV2.65beta.json`（stats.abis/inns id 数组）**同序对齐反推**（脚本 C:\temp\build_abi_zh.js，与网页同源，xlsm 不再依赖）；
+  - 关键 id 命中验证：4=战斗盔甲、11=储水、147=奇迹皮肤、840=毒刺、834=毒沼制造者、235=不屈之盾、326=坚不可摧、318=原始铠甲；35 个无物种使用 id 中文缺失（英文兜底，已验证**存档 431 只零命中**）；id 0=无（ABI_ZH_EXTRA）；
+  - **data.js 清理 `#id` 占位**（洛托姆R-岩天性 #1033→Slime Mold 等，共 8 处，均改英文兜底）；
+  - **JS 解析器键名修正**（build_tool_html.py 模板：`主特性(当前生效)`/`天性1-3(固定)` 等含括号键加引号，修 vm 语法错）+ `tools\_chk_js_v42.js` 同步新键名与 MV 注入；
+  - **重跑验证**：Python 431 条 5 锚点全过、四特性全中文（残留 1=洛托姆R-岩 Slime Mold 英文兜底）；node 实测 431 条 5 锚点 K=3 全过、护城龙=战斗盔甲(idx0)/不屈之盾/坚不可摧/原始铠甲/防150、队伍 6 只性格/选中索引/天性/4 招中文全对；gh-pages 已部署（a1fc0a8..21b1f0a）。
 - ✅ v4.1 完成并验证：431 条（队伍6/电脑425/特殊区15/散落1），5 锚点全过。
 - ✅ **4 招式完整解码**（换招实验+10 截图铁证）：队伍 6 只 + 护城龙 + 花舞鸟 + 远古巨蜓 + 化石翼龙
   的 4 招/PP/道具/能力 7 项与游戏截图**完全一致**；全量 66 条有效记录 4 招 id 未知数 = 0。
@@ -551,7 +559,8 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 7. 项目准则
 
 - 内容数据（图鉴ID/物种/种族/特性/招式/道具）以 gameDataV2.65beta.json 为权威（NextDex 官方源）；
-  中文名以 xlsm 汉化图鉴为准（编号列=gameData id），xlsm 未收录时补 ABI_ZH_EXTRA / 回退英文。
+  中文名以根目录招式表 CSV 为准（物种/招式/特性三表，与 build_tool_data.py 网页数据同源；特性表由 data.js↔gameData 反推，
+  xlsm 已丢失勿再依赖），表未收录时补 ABI_ZH_EXTRA / 回退英文。
 - 新增字段/机制：先设计→对齐→实施→用三个轮换档回归测试→更新本文档与 Skill references。
 - 测试档（_baseline/_after_candy/_after_stomp）保留，勿删；解析器自动排除。
 - 官方 GitHub 仓库 master(2024-04) 太旧无 v2.65 高编号物种，仅作参考；权威数据一律走 NextDex gameData。
