@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Pokémon Elite Redux v2.65 存档解析器 v4.1 (4招完整解码版)
+Pokémon Elite Redux v2.65 存档解析器 v4.2 (4招完整解码 + 天性/特性选中项直读)
 =========================================================
+【v4.2 相对 v4.1 (2026-10-10, NextDex load_save.js 位语义 + 机制实证定稿)】
+  - 招式3 掩码 0x1F → 0x3F: +0x0A 低6位 = 招式3 id>>5 (修复 id≥1024 招式截断; 已验证真值均 <1024 不受影响)
+  - 道具掩码 0x1FF → 0x3FF: +0x10 低10位 = items id (修复 id≥512 道具截断; 9只真值均 <512 不受影响)
+  - 天性直读: +0x12 bit10-14 (5位) = nature id (natureT[8]=Impish=淘气 实档命中)
+  - 特性选中项直读: +0x12 bit14-15 (2位) = abilityNum → abis[abilityNum] = 当前生效特性
+    (load_save.js word8: nature=bit10-14, ability=bit30-31; 实档 6/6 命中, 覆盖原 abis[0] 假设)
+  - +0x12..0x13 = language(3)+metLevel(7)+isShiny(2)+maxShiny(2)+abilityNum(2) (非第5招式位)
+  - +0x0A bit6-9 = friendship 低4位 (bit5 归招式3 id>>5 第6位; 原"分组N"语义定稿)
+  - EXP 仍 = +0x06 u16<<5 (ER 布局已右移 5 位存 16 位, 完整 21 位 EXP 高 16 位即此, 无需改)
+  - enc(+0x22..0x2E) 实证为 nickname 区 (非天性/个体; 个体=0 口径不变)
+
 【v4.1 相对 v4.0 的实证修正 (2026-10-06, 三档互证+10张游戏截图+2次换招实验)】
   - 4 招式槽位完整解码 (换招实验铁证):
       +0x04 低11位 = 招式1 id        (105 Recover / 887 Electro Drift ... 全命中)
       +0x08 低11位 = 招式2 id        (182 Protect / 951 Mystic Dance ... 全命中)
       +0x08 高5位  = 招式3 id mod 32 (8/8 命中: 616%32=8, 360%32=8, 56%32=24, 85%32=21, 355%32=3, 794%32=26 ...)
-      +0x0A 低11位 bit4-0 = 招式3 id>>5 (8/8 命中)
-      +0x0A 低11位 bit9-5 = 招式3 分组N (语义待定, 不影响id)
-      → 招式3 id = ((+0x0A & 0x7FF) & 0x1F) << 5 | (+0x08 >> 11)
+      +0x0A 低6位  = 招式3 id>>5 (8/8 命中; 含 id≥1024 的高位)
+      → 招式3 id = ((+0x0A & 0x3F) << 5) | (+0x08 >> 11)
       +0x0E 低11位 = 招式4 (末招) id
-      +0x12 低11位 = 疑似第5招式位 (6只全为合法gameData招式id: 442/482/290/186, 语义待定)
-  - 道具 = +0x10..0x11 & 0x1FF (items id, 0=无; 9只真值全对: 305/312/273/298/0/79/0/285)
+  - 道具 = +0x10..0x11 & 0x3FF (items id, 0=无; 9只真值全对: 305/312/273/298/0/79/0/285)
   - 能力 7×u16 @ +0x3A..0x47 = (当前HP, 最大HP, 攻, 防, 速, 特攻, 特防) — 特防直读, 不再公式重建
   - +0x04..0x07 = 招式1(u16低11位) + EXP>>5(u16) 复合字段 (非 PID)
   - PP ×4 = +0x30..0x33 (当前值, 队伍区; 8只截图全对)
-  - 特性页 = abis[0] (主特性) + inns[0..2] (3天生), gameData id
+  - 特性页 = 当前生效(abis[abilityNum]) + inns[0..2] (3天生), gameData id
   - 可学招式池 = 升级(含等级)/教学/蛋/TMHM 四类
-  - 中文名 = xlsm 汉化图鉴 (编号列 = gameData id), 缺失回退英文
+  - 中文名 = 根目录招式表 CSV (物种/招式, 与网页同源) + xlsm 特性表, 缺失回退英文
 
 【用法】python parse_er_save_v4.py [sav路径] [输出CSV] [输出JSON]
         自动发现: 目录内主 .sav + ER-source/gameDataV2.65beta.json + *图鉴*.xlsm
@@ -33,8 +42,9 @@ PARTY_COUNT = 6
 BOX_CAP = 30
 SEC_SIZE = 0x1000
 FOOTER_MAGIC = b'\x25\x20\x01\x08'
-MOVE_MASK = 0x7FF          # 招式 id 低11位掩码
-ITEM_MASK = 0x1FF          # 道具 id 低9位掩码
+MOVE_MASK = 0x7FF          # 招式 id 低11位掩码 (m1/m2/m4)
+MOVE3_HI_MASK = 0x3F       # 招式3 id>>5 低6位 (v0.2 修正: 支持 id≥1024)
+ITEM_MASK = 0x3FF          # 道具 id 低10位掩码 (v0.2 修正: 支持 id≥512)
 GDATA_NAME = 'gameDataV2.65beta.json'
 GDATA_DIRS = ['ER-source', os.curdir]
 
@@ -49,6 +59,18 @@ ANCHORS = {
 
 TYPE_ZH = ['一般', '格斗', '火', '冰', '电', '虫', '飞行', '钢', '草', '地面',
            '毒', '恶', '水', '超能', '岩石', '龙', '幽灵', '妖精', '神秘', '无', '星晶']
+
+# 天性中文（官方译名，索引 = gameData natureT 序；与官方存在 Docile/Calm 同名属官方译名事实）
+NATURE_ZH = ['勤奋', '孤僻', '勇敢', '固执', '调皮', '大胆', '温和', '悠闲', '淘气', '乐天',
+             '胆小', '急躁', '认真', '爽朗', '天真', '内敛', '慢吞吞', '冷静', '害羞', '马虎',
+             '温和', '温顺', '自大', '慎重', '浮躁']
+
+# 天性修正：nature id -> (增维, 减维)，标准序索引 (0HP 1攻 2防 3特攻 4特防 5速)；无修正 = 不在表
+NATURE_MOD = {
+    1: (1, 2), 2: (1, 5), 3: (1, 3), 4: (1, 4), 5: (2, 1), 7: (2, 5), 8: (2, 3), 9: (2, 4),
+    10: (5, 1), 11: (5, 2), 13: (5, 3), 14: (5, 4), 15: (3, 1), 16: (3, 2), 17: (3, 5), 19: (3, 4),
+    20: (4, 1), 21: (4, 2), 22: (4, 5), 23: (4, 3),
+}
 
 ITEM_ZH = {
     0: '无', 79: '文柚果', 273: '吃剩的东西', 285: '讲究围巾', 298: '湿润岩石',
@@ -128,12 +150,12 @@ def stat(base, ev, lv, nature=1.0, is_hp=False):
 def decode4_moves(v04, v08, v0A, v0E):
     """4 招式槽解码 (换招实验+10截图铁证)
     m1 = +0x04 & 0x7FF; m2 = +0x08 & 0x7FF
-    m3 = ((+0x0A & 0x7FF) & 0x1F) << 5 | (+0x08 >> 11)
+    m3 = ((+0x0A & MOVE3_HI_MASK) << 5) | (+0x08 >> 11)
     m4 = +0x0E & 0x7FF
     """
     m1 = v04 & MOVE_MASK
     m2 = v08 & MOVE_MASK
-    m3 = ((v0A & MOVE_MASK) & 0x1F) << 5 | (v08 >> 11)
+    m3 = ((v0A & MOVE3_HI_MASK) << 5) | (v08 >> 11)
     m4 = v0E & MOVE_MASK
     return m1, m2, m3, m4
 
@@ -155,9 +177,10 @@ def load_gamedata(base_dir, sav=None):
             moves = {m['id']: m for m in gd['moves']}
             items = {i['id']: i for i in gd['items']}
             types = gd['typeT']
-            print(f'[权威数据] {GDATA_NAME} ({p}): 物种{len(species)} 特性{len(abilities)} 招式{len(moves)} 道具{len(items)}')
-            return species, abilities, moves, items, types
-    return None, None, None, None, None
+            natures = gd.get('natureT') or []
+            print(f'[权威数据] {GDATA_NAME} ({p}): 物种{len(species)} 特性{len(abilities)} 招式{len(moves)} 道具{len(items)} 天性{len(natures)}')
+            return species, abilities, moves, items, types, natures
+    return None, None, None, None, None, None
 
 def load_zh(path):
     """中文名：(物种id->zh, 特性id->zh, 招式id->zh)
@@ -223,7 +246,7 @@ def logical_of(off, log_map):
     return (lid, off % SEC_SIZE) if lid is not None else (None, off % SEC_SIZE)
 
 def parse(data, gd, zh, out_csv, out_json, override=None):
-    species, abilities, moves, items, types = gd
+    species, abilities, moves, items, types, natures = gd
     dex_zh, abi_zh, mov_zh = zh
     recs = scan_records(data)
     print(f'记录总数: {len(recs)}')
@@ -287,7 +310,7 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
     anchors_ok, anchors_fail = [], []
 
     def build_row(src, pos, off, spec, lv, exp, evs, moves4, item,
-                  stats=None, pp=None, enc=None, extra12=0, otid_hex=''):
+                  stats=None, pp=None, enc=None, extra12=0, otid_hex='', item_raw=0):
         sp = species.get(spec)
         en = sp['name'] if sp else f'#{spec}'
         base = sp['stats']['base'] if sp else [0]*6
@@ -298,20 +321,30 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             t2 = TYPE_ZH[ts[1]] if len(ts) > 1 and ts[1] < len(TYPE_ZH) else ''
         abis = sp['stats']['abis'] if sp else []
         inns = sp['stats']['inns'] if sp else []
+        # v4.2: +0x10..0x13 = 32位 word8: 道具(bit0-9) + 天性(bit10-14) + isEgg(15)
+        #       + 语言(bit16-18) + 出生等级(bit19-25) + 闪光(bit26-27) + maxShiny(bit28-29) + 特性选中(bit30-31)
+        #       (load_save.js word8 位语义; ER 压缩后 32 位拆为 +0x10 u16 + +0x12 u16)
+        nature_id = (item_raw >> 10) & 0x1F
+        abi_sel = (extra12 >> 14) & 0x3
         ev_std = [evs[0], evs[1], evs[2], evs[4], evs[5], evs[3]]  # 存档序->标准序
         m1, m2, m3, m4 = moves4
-        # 能力: 队伍 7 项直读; 盒子公式基准
+        # 能力: 队伍 7 项直读; 盒子公式基准(天性修正 v4.2 并入)
         if stats:
             cur, mx, atk, dfn, spe, spa, sdf = stats
             cap_note = ''
         else:
+            nmod = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+            nm = NATURE_MOD.get(nature_id)
+            if nm:
+                nmod[nm[0]] = 1.1
+                nmod[nm[1]] = 0.9
             cur = mx = stat(base[0], evs[0], lv, is_hp=True)
-            atk = stat(base[1], evs[1], lv)
-            dfn = stat(base[2], evs[2], lv)
-            spe = stat(base[5], evs[3], lv)
-            spa = stat(base[3], evs[4], lv)
-            sdf = stat(base[4], evs[5], lv)
-            cap_note = '(公式基准)'
+            atk = stat(base[1], evs[1], lv, nmod[1])
+            dfn = stat(base[2], evs[2], lv, nmod[2])
+            spe = stat(base[5], evs[3], lv, nmod[5])
+            spa = stat(base[3], evs[4], lv, nmod[3])
+            sdf = stat(base[4], evs[5], lv, nmod[4])
+            cap_note = '(公式基准·天性修正)'
         nprof = nature_profile(stats, base, evs, lv)
         lup = sp['levelUpMoves'] if sp else []
         lv_up = ' '.join(f'{mv_of(m["id"])}@{m["lv"]}' for m in sorted(lup, key=lambda m: (m['lv'], m['id']))[:8])
@@ -328,8 +361,9 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             'EV_特攻': ev_std[3], 'EV_特防': ev_std[4], 'EV_速度': ev_std[5],
             '能力_当前HP': cur, '能力_最大HP': mx, '能力_攻击': atk, '能力_防御': dfn,
             '能力_速度': spe, '能力_特攻': spa, '能力_特防': f'{sdf}{cap_note}',
-            '特性1': abi_of(abis[0]) if abis else '', '特性2': abi_of(abis[1]) if len(abis) > 1 else '',
-            '特性3': abi_of(abis[2]) if len(abis) > 2 else '',
+            '特性1': abi_of(abis[abi_sel]) if abis and abi_sel < len(abis) else (abi_of(abis[0]) if abis else ''),
+            '特性2': abi_of(abis[1]) if len(abis) > 1 else '', '特性3': abi_of(abis[2]) if len(abis) > 2 else '',
+            '特性选中索引': abi_sel,
             '天生特性1': abi_of(inns[0]) if inns else '', '天生特性2': abi_of(inns[1]) if len(inns) > 1 else '',
             '天生特性3': abi_of(inns[2]) if len(inns) > 2 else '',
             '道具': item_of(item),
@@ -337,9 +371,10 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             'PP1': pp[0] if pp else '', 'PP2': pp[1] if pp else '', 'PP3': pp[2] if pp else '', 'PP4': pp[3] if pp else '',
             '可学_升级': n_up, '可学_教学': n_tut, '可学_蛋': n_egg, '可学_TMHM': n_tm,
             '升级招式(前8)': lv_up,
+            '天性': f'{NATURE_ZH[nature_id]}({natures[nature_id]})' if natures and nature_id < len(natures) else '',
             '天性画像': nprof,
             'OTID': otid_hex or '',
-            '+0x12(疑似第5招)': mv_cell(extra12) if extra12 else '',
+            '+0x12(语言/等级/闪光/特性)': f'0x{extra12:04X}',
             '加密块': enc or '',
         })
 
@@ -356,13 +391,14 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
         v0E = struct.unpack_from('<H', rec, 0x0E)[0]
         v12 = struct.unpack_from('<H', rec, 0x12)[0]
         moves4 = decode4_moves(v04, v08, v0A, v0E)
-        item = struct.unpack_from('<H', rec, 0x10)[0] & ITEM_MASK
+        v10raw = struct.unpack_from('<H', rec, 0x10)[0]
+        item = v10raw & ITEM_MASK
         pp = list(rec[0x30:0x34])
         stats = struct.unpack_from('<7H', rec, 0x3A)
         enc = rec[0x22:0x2F].hex()
         otid_hex = rec[0:4].hex()
         build_row('队伍', f'队伍{i+1}', off, spec, lv, exp, evs, moves4, item,
-                  stats=stats, pp=pp, enc=enc, extra12=v12, otid_hex=otid_hex)
+                  stats=stats, pp=pp, enc=enc, extra12=v12, otid_hex=otid_hex, item_raw=v10raw)
 
     # G1 箱子1-7
     g1_idx = 0
@@ -371,7 +407,7 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
         slot = g1_idx % BOX_CAP + 1
         if box <= 7:
             f = rec_fields(data, off)
-            build_row(f'BOX{box}', f'第{slot}格', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+            build_row(f'BOX{box}', f'第{slot}格', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6], item_raw=f[7])
         g1_idx += 1
 
     # 特殊区 A/B（对战盒/特殊槽位；游戏界面箱号无法从存档结构直接映射，按代码段内顺序标注，
@@ -381,16 +417,16 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
         f = rec_fields(data, off)
         ov = (override or {}).get(f'0x{off:X}')
         if ov:
-            build_row(ov.get('box', '特殊区A'), ov.get('slot', f'第{i+1}条'), off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+            build_row(ov.get('box', '特殊区A'), ov.get('slot', f'第{i+1}条'), off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6], item_raw=f[7])
         else:
-            build_row('特殊区A', f'第{i+1}条', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+            build_row('特殊区A', f'第{i+1}条', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6], item_raw=f[7])
     for i, (off, spec, tag, lid, rel) in enumerate(sb_grp):
         f = rec_fields(data, off)
         ov = (override or {}).get(f'0x{off:X}')
         if ov:
-            build_row(ov.get('box', '特殊区B'), ov.get('slot', f'第{i+1}条'), off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+            build_row(ov.get('box', '特殊区B'), ov.get('slot', f'第{i+1}条'), off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6], item_raw=f[7])
         else:
-            build_row('特殊区B', f'第{i+1}条', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+            build_row('特殊区B', f'第{i+1}条', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6], item_raw=f[7])
 
     # G2 箱子20-26
     g2_idx = 0
@@ -403,13 +439,13 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             box, slot = 25, g2_idx - 150 + 1
         else:
             box, slot = 26, g2_idx - 176 + 1
-        build_row(f'BOX{box}', f'第{slot}格', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+        build_row(f'BOX{box}', f'第{slot}格', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6], item_raw=f[7])
         g2_idx += 1
 
     # OTHER
     for off, spec, tag, lid, rel in groups['OTHER']:
         f = rec_fields(data, off)
-        build_row('散落', f'0x{off:X}', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6])
+        build_row('散落', f'0x{off:X}', off, spec, f[0], f[1], f[2], f[3], f[4], enc=f[5], extra12=f[6], item_raw=f[7])
 
     # 锚点验证
     for spec, (bx, slot, cn) in ANCHORS.items():
@@ -436,14 +472,15 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
     special = [r for r in rows if r['来源'].startswith('特殊区')]
     summary = {
         'sav': os.path.basename(os.path.abspath(out_csv)).replace('.csv', ''),
-        '解析器': 'v4.1 (4招完整解码)',
+        '解析器': 'v4.2 (4招解码 + 天性/特性选中项直读)',
         '权威数据': GDATA_NAME,
         '总记录': len(rows), '队伍': len(party), '电脑区': len(rows) - len(party),
         '特殊区A/B(段内顺序)': len(special), '段轮换K': K,
         '锚点验证': {'通过': [c for c, _ in anchors_ok], '失败': [f'{c}: {m}' for c, m in anchors_fail]},
-        '说明': ('4招式槽: +0x04=招式1, +0x08=招式2(+招式3 mod32 高位), +0x0A=招式3 id>>5(低位), +0x0E=招式4(末招); '
-                 '道具=+0x10&0x1FF; 能力=队伍+0x3A..0x47 7×u16直读(含特防); PP=+0x30..0x33; '
-                 '特性页=特性1(abis[0])+天生特性1-3(inns); 盒子能力为公式基准。'),
+        '说明': ('4招式槽: +0x04=招式1, +0x08=招式2(+招式3 mod32 高位), +0x0A低6位=招式3 id>>5, +0x0E=招式4(末招); '
+                 '道具=+0x10&0x3FF; 天性=+0x12 bit10-14(natureT); 当前特性=abis[+0x12 bit14-15]; '
+                 '能力=队伍+0x3A..0x47 7×u16直读(含特防); PP=+0x30..0x33; '
+                 '特性页=特性1(当前生效)+特性2/3(可选池)+天生特性1-3(inns); 盒子能力为公式基准(天性修正已并入)。'),
     }
     with open(out_json, 'w', encoding='utf-8') as f:
         json.dump({'summary': summary, 'records': rows}, f, ensure_ascii=False, indent=1)
@@ -467,9 +504,10 @@ def rec_fields(data, off):
     v0E = struct.unpack_from('<H', rec, 0x0E)[0]
     v12 = struct.unpack_from('<H', rec, 0x12)[0]
     moves4 = decode4_moves(v04, v08, v0A, v0E)
-    item = struct.unpack_from('<H', rec, 0x10)[0] & ITEM_MASK
+    v10raw = struct.unpack_from('<H', rec, 0x10)[0]
+    item = v10raw & ITEM_MASK
     enc = rec[0x22:0x2F].hex()
-    return lv, exp, evs, moves4, item, enc, v12
+    return lv, exp, evs, moves4, item, enc, v12, v10raw
 
 def auto_discover(here):
     TEST_MARK = ('_after', '_before', '_baseline', '_candy', '_stomp', 'now.')
