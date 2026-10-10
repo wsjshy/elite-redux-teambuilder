@@ -1,0 +1,113 @@
+diff --git a/data/maps/Route101/scripts.inc b/data/maps/Route101/scripts.inc
+index dd0ef5dce..6914abd26 100644
+--- a/data/maps/Route101/scripts.inc
++++ b/data/maps/Route101/scripts.inc
+@@ -216,8 +216,34 @@ Route101_EventScript_Boy::
+ 
+ Route101_EventScript_RouteSign::
+ 	msgbox Route101_Text_RouteSign, MSGBOX_SIGN
++	multichoice 0, 6, MULTI_MY_FIRST_MULTICHOICE, TRUE
++	switch VAR_RESULT
++	case 0, Route101_EventScript_RouteSign_Potatoes
++	case 1, Route101_EventScript_RouteSign_Carrots
++	case 2, Route101_EventScript_RouteSign_Tomatoes
+ 	end
+ 
++Route101_EventScript_RouteSign_Potatoes:
++	msgbox Route101_Text_ILikePotatoesToo, MSGBOX_SIGN
++	end
++
++Route101_EventScript_RouteSign_Carrots:
++	msgbox Route101_Text_ILikeCarrotsToo, MSGBOX_SIGN
++	end
++
++Route101_EventScript_RouteSign_Tomatoes:
++	msgbox Route101_Text_ILikeTomatoesToo, MSGBOX_SIGN
++	end
++
++Route101_Text_ILikePotatoesToo:
++	.string "I like potatoes too!$"
++
++Route101_Text_ILikeCarrotsToo:
++	.string "I like carrots too!$"
++
++Route101_Text_ILikeTomatoesToo:
++	.string "I like tomatoes too!$"
++
+ Route101_EventScript_BirchsBag::
+ 	lock
+ 	faceplayer
+@@ -297,6 +323,5 @@ Route101_Text_WildPokemonInTallGrass:
+ 	.string "to go into the tall grass and search.$"
+ 
+ Route101_Text_RouteSign:
+-	.string "ROUTE 101\n"
+-	.string "{UP_ARROW} OLDALE TOWN$"
++	.string "What do you like the most?$"
+ 
+diff --git a/include/constants/script_menu.h b/include/constants/script_menu.h
+index c58df7335..e0be11ebd 100644
+--- a/include/constants/script_menu.h
++++ b/include/constants/script_menu.h
+@@ -122,6 +122,7 @@
+ #define MULTI_SLATEPORT_TENT_RULES         111
+ #define MULTI_FALLARBOR_TENT_RULES         112
+ #define MULTI_TAG_MATCH_TYPE               113
++#define MULTI_MY_FIRST_MULTICHOICE         114
+ 
+ // Lilycove SS Tidal Multichoice Selections
+ #define SSTIDAL_SELECTION_SLATEPORT        0
+diff --git a/include/strings.h b/include/strings.h
+index eeada2b94..2aa23ce59 100644
+--- a/include/strings.h
++++ b/include/strings.h
+@@ -3026,4 +3026,10 @@ extern const u8 gText_BoxName[];
+ extern const u8 gText_PkmnsNickname[];
+ extern const u8 gText_TellHimTheWords[];
+ 
++// My first multichoice
++extern const u8 gText_Potatoes[];
++extern const u8 gText_Carrots[];
++extern const u8 gText_Tomatoes[];
++
++
+ #endif // GUARD_STRINGS_H
+diff --git a/src/data/script_menu.h b/src/data/script_menu.h
+index 79355748c..6c2c379d1 100644
+--- a/src/data/script_menu.h
++++ b/src/data/script_menu.h
+@@ -771,6 +771,13 @@ static const struct MenuAction MultichoiceList_TagMatchType[] =
+     {gText_Exit},
+ };
+ 
++static const struct MenuAction MultichoiceList_MyFirstMultichoice[] =
++{
++    {gText_Potatoes},
++    {gText_Carrots},
++    {gText_Tomatoes},
++};
++
+ static const struct MenuAction MultichoiceList_Exit[] =
+ {
+     {gText_Exit},
+@@ -898,6 +905,7 @@ static const struct MultichoiceListStruct sMultichoiceLists[] =
+     [MULTI_SLATEPORT_TENT_RULES]       = MULTICHOICE(MultichoiceList_SlateportTentRules),
+     [MULTI_FALLARBOR_TENT_RULES]       = MULTICHOICE(MultichoiceList_FallarborTentRules),
+     [MULTI_TAG_MATCH_TYPE]             = MULTICHOICE(MultichoiceList_TagMatchType),
++    [MULTI_MY_FIRST_MULTICHOICE]       = MULTICHOICE(MultichoiceList_MyFirstMultichoice),
+ };
+ 
+ const u8 *const gStdStrings[] =
+diff --git a/src/strings.c b/src/strings.c
+index d2a82ada4..9ee769616 100644
+--- a/src/strings.c
++++ b/src/strings.c
+@@ -1819,3 +1819,8 @@ const u8 gText_Answer[] = _("ANSWER");
+ const u8 gText_PokeBalls[] = _("POKé BALLS");
+ const u8 gText_Berry[] = _("BERRY");
+ const u8 gText_Berries[] = _("BERRIES");
++
++// My first multichoice
++const u8 gText_Potatoes[] = _("POTATOES");
++const u8 gText_Carrots[] = _("CARROTS");
++const u8 gText_Tomatoes[] = _("TOMATOES");
