@@ -580,6 +580,11 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .mategrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:6px}
 .mate.main{border-color:var(--ok); background:#f6fef8}
 .mate .mn{font-weight:600}
+/* v4.14：队友卡升级 —— 精灵图 + 点击进详情 + 每只配置摘要（mtcfg） */
+.mate{display:flex; flex-direction:column; align-items:flex-start; gap:2px; cursor:pointer; min-width:150px}
+.mate .spmid{width:56px; height:56px; align-self:center; margin:2px auto 4px}
+.mate:hover{border-color:var(--accent)}
+.mtcfg{font-size:11px; color:var(--sub); line-height:1.5; background:#f4f6fa; border-radius:6px; padding:3px 6px; margin:2px 0; max-width:214px; overflow:hidden; text-overflow:ellipsis}
 .own{display:inline-block; font-size:11px; border-radius:999px; padding:1px 7px; margin-left:4px;
   border:1px solid var(--line); white-space:nowrap}
 .own.yes{color:var(--ok); border-color:var(--ok); background:#f0fdf4}
@@ -4836,7 +4841,9 @@ function buildMoves(s,side,roleTag){
 }
 function buildNature(s,side,roleTag){
   var b=s.base;
-  if(roleTag==='肉盾'||roleTag==='受队'||roleTag==='强化')return [['淘气','+防御-特攻（物盾消耗）'],['慎重','+特防-特攻'],['大胆','+防御-攻击']];
+  if(roleTag==='肉盾'||roleTag==='受队')return [['淘气','+防御-特攻（物盾消耗）'],['慎重','+特防-特攻'],['大胆','+防御-攻击']];
+  /* v4.14：强化流性格与速攻/强化 EV 对齐（不再并入肉盾性格分支——此前「晴强化清场」被推淘气/慎重/大胆，与 252 速攻 EV 矛盾） */
+  if(roleTag==='强化')return side==='物理'?[['固执','+攻击-特攻（强化本攻）'],['爽朗','+速度-特攻（强化后清场）']]:[['内敛','+特攻-攻击（强化本攻）'],['胆小','+速度-攻击（强化后清场）']];
   if(roleTag==='天气')return [['慎重','+特防-特攻，站场保天气'],['沉着','+特防-攻击']];
   if(b[5]>=110)return side==='物理'?[['爽朗','+速度-特攻，先手压制'],['固执','+攻击-特攻']]:[['胆小','+速度-攻击，先手压制'],['内敛','+特攻-攻击']];
   if(b[5]<60)return side==='物理'?[['勇敢','+攻击-速度（配空间）'],['固执','+攻击-特攻']]:[['冷静','+特攻-速度（配空间）'],['内敛','+特攻-攻击']];
@@ -5454,6 +5461,23 @@ function deriveBuilds(s,team){
     out.push(b);
   });
   out.breakingRoute=route;
+  /* v4.14 单玩法一致性：同侧且配招前 3 槽完全相同的流派视为同一玩法 → 只保留评分最高的一条
+     （妙蛙花「晴强化清场」与「晴增伤清场」配招重合：强化清场为上位，评分高者胜出，不再并列两条近同卡）
+     评分取自 deriveBuilds 的 sc（cand 已按 sc 降序生成，out 顺序即分序；此处仍显式比较 b.score 稳妥） */
+  var _seenM={},_ded=[];
+  out.forEach(function(bd){
+    var _k=bd.side+'|'+(bd.mv.main||[]).slice(0,3).map(function(sl){return sl.id}).join(',');
+    if(_seenM[_k]){
+      if((bd.score||0)>(_seenM[_k].score||0)){
+        var _ix=_ded.indexOf(_seenM[_k]);
+        if(_ix>-1)_ded[_ix]=bd;
+        _seenM[_k]=bd;
+      }
+      return;
+    }
+    _seenM[_k]=bd;_ded.push(bd);
+  });
+  out=_ded;
   /* v4.11 F-1 修复：breakingRoute 原挂在返回数组上，bd.breakingRoute 恒 undefined；
      这里逐条回填到流派对象（只影响 UI 可展开内容，不改任何推荐结果） */
   for(var _brI=0;_brI<out.length;_brI++){out[_brI].breakingRoute=route}
@@ -7295,8 +7319,8 @@ function evBarHtml(bd){
   }
   var h='<div class="fld"><div class="fhd"><span class="fno">6</span>努力值分配</div>';
   h+='<div class="evsum">数组（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　'+esc(ev.summary)+'　·　模板：<b>'+esc(ev.template)+'</b></div>';
-  h+='<button class="evtap" type="button" aria-expanded="false" onclick="evWhy(this)" title="点条形图展开模板说明">';
-  h+='<span class="evsegs">'+segs+'</span><span class="evv">模板说明 ▾</span></button>';
+  h+='<button class="evtap" type="button" aria-expanded="false" onclick="evWhy(this)" title="展开/收起这套努力值的分配依据">';
+  h+='<span class="evsegs">'+segs+'</span><span class="evv">分配依据 ▸</span></button>';
   h+='<div class="evwhy" hidden>'+esc(evWhyTxt(ev.template))+'</div></div>';
   return h;
 }
@@ -7420,9 +7444,22 @@ function ownBadge(s2,pool){
 function mateCard(r,pool,isMain){
   var s2=(r&&r.s)?r.s:r;if(!s2)return '';
   var why='';try{why=(r.why||[]).slice(0,2).join('；')}catch(e6){}
-  return '<div class="mate'+(isMain?' main':'')+'" title="'+escq(why)+'">'+
+  /* v4.14：队友卡升级 —— 精灵小图 + 点击进详情 + 每只推荐配置（特性/道具/努力值，与流派同侧生成） */
+  var cfg='';
+  try{
+    var mSide=coreSide(s2),mIt=buildItem(s2,mSide,'输出',{}),mAb=pickAbiFor(s2,mSide,'输出'),mEv=buildEvs(s2,mSide,'输出','');
+    var mAbn=(mAb&&mAb[0]&&mAb[0].n)||((s2.abis&&s2.abis[0])||'');
+    var mItn=(mIt&&mIt[0])?(Array.isArray(mIt[0])?mIt[0][0]:''):'';
+    var mEvt=(mEv&&mEv.summary)||'';
+    if(mAbn||mItn||mEvt){
+      cfg='<div class="mtcfg">'+((mAbn?'特性 '+esc(mAbn):'')+(mItn?(' · 道具 '+esc(mItn)):'')+(mEvt?(' · '+esc(mEvt)):'')+'</div>');
+    }
+  }catch(e7){cfg=''}
+  return '<div class="mate'+(isMain?' main':'')+'" onclick="openSpById('+s2.id+')" role="button" tabindex="0" title="点击查看详情：'+escq(why)+'">'+
+    sprImgMid(s2.id)+
     '<div class="mn">'+esc(s2.zh)+ownBadge(s2,pool)+(isMain?'<span class="own yes">主推</span>':'<span class="own no">备选</span>')+'</div>'+
     '<div class="dim">'+tlabel(s2.t1)+(s2.t2&&s2.t2!==s2.t1?(' '+tlabel(s2.t2)):'')+'</div>'+
+    cfg+
     (why?('<div class="dim">'+esc(why)+'</div>'):'')+'</div>';
 }
 /* L2② 设计亮点（1–3 条，支持数组；带可展开溯源） */
