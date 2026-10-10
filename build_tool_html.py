@@ -784,7 +784,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
   window.__ER_FILE=F;
   window.__ER_ASSET_BASE=F?'':GC;   /* 同域资产（sheets 精灵图）主源前缀，消费点见 sprOf() */
   if(typeof ERDATA==='undefined'){
-    document.write('<scr'+'ipt src="'+(F?'':GC)+'data.js"><\/scr'+'ipt>');
+    document.write('<scr'+'ipt src="'+(F?'':GC)+'data.js?v=__DATA_VER__"><\/scr'+'ipt>');
   }
 })();
 </script>
@@ -793,7 +793,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
    主源 404 / 网络失败 / 内容不可用 ⇒ ERDATA 仍 undefined ⇒ 改写同域相对路径 data.js。
    独立成块的唯一原因：document.write 注入的脚本于「写入它的脚本块」结束后才执行，同块内判定不可靠。 */
 if(typeof ERDATA==='undefined'&&!window.__ER_FILE){
-  document.write('<scr'+'ipt src="data.js"><\/scr'+'ipt>');
+  document.write('<scr'+'ipt src="data.js?v=__DATA_VER__"><\/scr'+'ipt>');
 }
 </script>
 <script>
@@ -7895,6 +7895,10 @@ except Exception as _ea:
 final = (TEMPLATE.replace('__ER_CDN_PREFIX__', CDN_PREFIX)
                  .replace('__SPRSHEET__', sheet_js)
                  .replace('__AXISLIB__', axis_js))
+import hashlib as _hl
+_DATA_VER = _hl.sha256(data_js.encode('utf-8')).hexdigest()[:8]  # v4.13b：data.js 内容哈希 → CDN 缓存版本戳（内容变则 URL 变，规避 jsdelivr 强缓存）
+final = final.replace('__DATA_VER__', _DATA_VER)
+print('data.js 缓存版本戳:', _DATA_VER)
 out = BASE + r'\配招助手_ER.html'
 open(out, 'w', encoding='utf-8').write(final)
 print('HTML bytes:', os.path.getsize(out))

@@ -569,7 +569,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
   window.__ER_FILE=F;
   window.__ER_ASSET_BASE=F?'':GC;   /* 同域资产（sheets 精灵图）主源前缀，消费点见 sprOf() */
   if(typeof ERDATA==='undefined'){
-    document.write('<scr'+'ipt src="'+(F?'':GC)+'data.js"><\/scr'+'ipt>');
+    document.write('<scr'+'ipt src="'+(F?'':GC)+'data.js?v=0d64d84f"><\/scr'+'ipt>');
   }
 })();
 </script>
@@ -578,7 +578,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
    主源 404 / 网络失败 / 内容不可用 ⇒ ERDATA 仍 undefined ⇒ 改写同域相对路径 data.js。
    独立成块的唯一原因：document.write 注入的脚本于「写入它的脚本块」结束后才执行，同块内判定不可靠。 */
 if(typeof ERDATA==='undefined'&&!window.__ER_FILE){
-  document.write('<scr'+'ipt src="data.js"><\/scr'+'ipt>');
+  document.write('<scr'+'ipt src="data.js?v=0d64d84f"><\/scr'+'ipt>');
 }
 </script>
 <script>
