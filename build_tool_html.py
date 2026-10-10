@@ -2382,10 +2382,12 @@ function parseCsvRows(text){
   if(cur!==''||row.length){row.push(cur);if(row.length>1||row[0]!=='')rows.push(row)}
   return rows;
 }
-/* ============ 存档 .sav 解析（JS 移植 v4.1，免命令行；与 parse_er_save_v4.py 同逻辑） ============ */
-var OTID_BYTES=[0x80,0x19,0x47,0x64],MOVE_MASK=0x7FF,ITEM_MASK=0x1FF,PC_SIZE=52,PARTY_SIZE=76,PARTY_COUNT=6,BOX_CAP=30,SEC_SIZE=0x1000,SAV_SIZE=0x20000;
+/* ============ 存档 .sav 解析（JS 移植 v4.2，免命令行；与 parse_er_save_v4.py 同逻辑） ============ */
+var OTID_BYTES=[0x80,0x19,0x47,0x64],MOVE_MASK=0x7FF,ITEM_MASK=0x3FF,PC_SIZE=52,PARTY_SIZE=76,PARTY_COUNT=6,BOX_CAP=30,SEC_SIZE=0x1000,SAV_SIZE=0x20000;
 var ANCHORS={411:[1,1,'护城龙'],469:[4,1,'远古巨蜓'],741:[20,1,'花舞鸟'],1513:[26,28,'超级化石翼龙'],2232:[0,0,'土王Mega(队伍首条)']};
 var ITEM_ZH_EXTRA={0:'无',79:'文柚果',273:'吃剩的东西',285:'讲究围巾',298:'湿润岩石',305:'黑色污泥',312:'凸凸头盔'};
+var NATURE_ZH=['勤奋','孤僻','勇敢','固执','调皮','大胆','温和','悠闲','淘气','乐天','胆小','急躁','认真','爽朗','天真','内敛','慢吞吞','冷静','害羞','马虎','温和','温顺','自大','慎重','浮躁'];
+var NATURE_MOD={1:[1,2],2:[1,5],3:[1,3],4:[1,4],5:[2,1],7:[2,5],8:[2,3],9:[2,4],10:[5,1],11:[5,2],13:[5,3],14:[5,4],15:[3,1],16:[3,2],17:[3,5],19:[3,4],20:[4,1],21:[4,2],22:[4,5],23:[4,3]};
 function u16(b,o){return b[o]|(b[o+1]<<8)}
 function u32(b,o){return (b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0}
 function bytesEq(b,o,arr){for(var i=0;i<arr.length;i++){if(b[o+i]!==arr[i])return false}return true}
@@ -2396,13 +2398,13 @@ function decodeRotation(d){var obs=[];for(var sec=0;sec<SAV_SIZE/SEC_SIZE;sec++)
 function slowLevel(exp5){var exp=exp5*32;if(exp<=0)return {lv:0,exp:0};var L=Math.round(Math.pow(exp/1.25,1/3));while(1.25*Math.pow(L+1,3)<=exp+31)L++;while(1.25*Math.pow(L,3)>exp+31)L--;return {lv:L,exp:exp}}
 function findParty(recs,d){for(var i=0;i<recs.length-1;i++){if(recs[i+1][0]-recs[i][0]===PARTY_SIZE){var j=i;while(j+1<recs.length&&recs[j+1][0]-recs[j][0]===PARTY_SIZE)j++;var cnt=j-i+1;if(cnt>=PARTY_COUNT){var ok=0;for(var k=i;k<=Math.min(j,i+PARTY_COUNT-1);k++){var off=recs[k][0];if(off+0x39<d.length&&d[off+0x38]>=1&&d[off+0x38]<=100&&d[off+0x39]===0xFF)ok++}if(ok>=PARTY_COUNT-1)return {start:i,end:i+PARTY_COUNT-1}}}}return {start:null,end:null}}
 function calcStat(base,ev,lv,nature,isHp){if(isHp)return Math.floor((2*base+Math.floor(ev/4))*lv/100)+lv+10;return Math.floor((Math.floor((2*base+Math.floor(ev/4))*lv/100)+5)*nature)}
-function decode4(v04,v08,v0A,v0E){return [v04&MOVE_MASK,v08&MOVE_MASK,(((v0A&MOVE_MASK)&0x1F)<<5)|(v08>>11),v0E&MOVE_MASK]}
+function decode4(v04,v08,v0A,v0E){return [v04&MOVE_MASK,v08&MOVE_MASK,((v0A&0x3F)<<5)|(v08>>11),v0E&MOVE_MASK]}
 function natureProfile(stats,base,evs,lv){if(!stats)return '';var labels=['攻击','防御','速度','特攻','特防'];var bm={攻击:base[1],防御:base[2],特攻:base[3],特防:base[4],速度:base[5]};var em={攻击:evs[1],防御:evs[2],速度:evs[3],特攻:evs[4],特防:evs[5]};var dm={攻击:stats[2],防御:stats[3],速度:stats[4],特攻:stats[5],特防:stats[6]};var prof=[];labels.forEach(function(lab){var b=calcStat(bm[lab],em[lab],lv,1.0,false);var r=b?dm[lab]/b:1.0;prof.push(lab+'='+(r>=1.05?'+10%':(r<=0.95?'-10%':'1.0')))});return prof.join(' ')}
 function mvCell(mid){if(!(mid>0))return '无';var m=MV[mid];return (m?m[1]:'#'+mid)+'(id='+mid+')'}
 function itemOf(iid){if(!(iid>0))return '无';var g=itemById(iid);if(!g)return '待确认(0x'+iid.toString(16).toUpperCase()+')';return (ITEM_ZH_EXTRA[iid]||g[2]||g[1])+'('+g[1]+')'}
-function recFields(d,off){var exp5=u16(d,off+0x06);var sl=slowLevel(exp5);var evs=[d[off+0x14],d[off+0x15],d[off+0x16],d[off+0x17],d[off+0x18],d[off+0x19]];var m4=decode4(u16(d,off+0x04),u16(d,off+0x08),u16(d,off+0x0A),u16(d,off+0x0E));var item=u16(d,off+0x10)&ITEM_MASK;var enc='';for(var i=0x22;i<0x2F;i++)enc+=('0'+d[off+i].toString(16)).slice(-2);return {lv:sl.lv,exp:sl.exp,evs:evs,moves4:m4,item:item,enc:enc,v12:u16(d,off+0x12)}}
+function recFields(d,off){var exp5=u16(d,off+0x06);var sl=slowLevel(exp5);var evs=[d[off+0x14],d[off+0x15],d[off+0x16],d[off+0x17],d[off+0x18],d[off+0x19]];var m4=decode4(u16(d,off+0x04),u16(d,off+0x08),u16(d,off+0x0A),u16(d,off+0x0E));var v10raw=u16(d,off+0x10);var item=v10raw&ITEM_MASK;var v12=u16(d,off+0x12);var enc='';for(var i=0x22;i<0x2F;i++)enc+=('0'+d[off+i].toString(16)).slice(-2);return {lv:sl.lv,exp:sl.exp,evs:evs,moves4:m4,item:item,enc:enc,v12:v12,nature:(v10raw>>10)&0x1F,abiSel:(v12>>14)&0x3}}
 function hexBytes(d,o,n){var s='';for(var i=0;i<n;i++)s+=('0'+d[o+i].toString(16)).slice(-2);return s}
-function buildRowJs(src,pos,off,spec,lv,exp,evs,moves4,item,stats,pp,enc,extra12,otidHex){
+function buildRowJs(src,pos,off,spec,lv,exp,evs,moves4,item,stats,pp,enc,extra12,otidHex,nature,abiSel){
   var sp=speciesById(spec),en=sp?sp.en:'#'+spec,base=sp?(sp.base||[0,0,0,0,0,0]):[0,0,0,0,0,0];
   var t1=sp?sp.t1:'',t2=sp?(sp.t2||''):'';
   var abis=sp?(sp.abis||[]):[],inns=sp?(sp.inns||[]):[];
@@ -2410,12 +2412,12 @@ function buildRowJs(src,pos,off,spec,lv,exp,evs,moves4,item,stats,pp,enc,extra12
   var m1=moves4[0],m2=moves4[1],m3=moves4[2],m4=moves4[3];
   var cur,mx,atk,dfn,spe,spa,sdf,cap='';
   if(stats){cur=stats[0];mx=stats[1];atk=stats[2];dfn=stats[3];spe=stats[4];spa=stats[5];sdf=stats[6]}
-  else{cur=mx=calcStat(base[0],evs[0],lv,1,true);atk=calcStat(base[1],evs[1],lv,1);dfn=calcStat(base[2],evs[2],lv,1);spe=calcStat(base[5],evs[3],lv,1);spa=calcStat(base[3],evs[4],lv,1);sdf=calcStat(base[4],evs[5],lv,1);cap='(公式基准)'}
+  else{var nmod=[1,1,1,1,1,1];var nm=NATURE_MOD[nature];if(nm){nmod[nm[0]]=1.1;nmod[nm[1]]=0.9}cur=mx=calcStat(base[0],evs[0],lv,1,true);atk=calcStat(base[1],evs[1],lv,nmod[1]);dfn=calcStat(base[2],evs[2],lv,nmod[2]);spe=calcStat(base[5],evs[3],lv,nmod[5]);spa=calcStat(base[3],evs[4],lv,nmod[3]);sdf=calcStat(base[4],evs[5],lv,nmod[4]);cap='(公式基准·性格修正)'}
   var nprof=natureProfile(stats,base,evs,lv);
   var lup=(sp?(sp.lv||[]):[]).slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1]}).slice(0,8);
   var lv_up=lup.map(function(p){var m=MV[p[1]];return (m?m[1]:p[1])+'@'+p[0]}).join(' ');
   var nUp=(sp?(sp.lv||[]):[]).length,nTut=(sp?(sp.tut||[]):[]).length;
-  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,特性1:abis[0]||'',特性2:abis[1]||'',特性3:abis[2]||'',天生特性1:inns[0]||'',天生特性2:inns[1]||'',天生特性3:inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4(末招)':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,天性画像:nprof,OTID:otidHex||'','+0x12(疑似第5招)':extra12?mvCell(extra12):'',加密块:enc||''};
+  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,特性1:abis[abiSel]||'',特性2:abis[1]||'',特性3:abis[2]||'',特性选中索引:abiSel,天生特性1:inns[0]||'',天生特性2:inns[1]||'',天生特性3:inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4(末招)':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,性格:NATURE_ZH[nature]||'',性格画像:nprof,OTID:otidHex||'','+0x12(语言/等级/闪光/特性)':extra12?('0x'+extra12.toString(16).toUpperCase()):'',加密块:enc||''};
 }
 function parseSavBytes(d){
   var recs=scanRecords(d);
@@ -2432,15 +2434,15 @@ function parseSavBytes(d){
   var gnames=['G1','SA','SB','G2','OTHER'];
   gnames.forEach(function(g){groups[g].sort(function(a,b){return (a[3]||-1)-(b[3]||-1)||a[2]-b[2]})});
   var rows=[],anchorsOk=[],anchorsFail=[];
-  party.forEach(function(r,i){var off=r[0],spec=r[1];if(off+PARTY_SIZE>d.length)return;var f=recFields(d,off);var stats=[];for(var k=0;k<7;k++)stats.push(u16(d,off+0x3A+2*k));var pp=[d[off+0x30],d[off+0x31],d[off+0x32],d[off+0x33]];rows.push(buildRowJs('队伍','队伍'+(i+1),off,spec,f.lv,f.exp,f.evs,f.moves4,f.item,stats,pp,f.enc,f.v12,hexBytes(d,off,4)))});
-  var g1idx=0,g2idx=0;
+  party.forEach(function(r,i){var off=r[0],spec=r[1];if(off+PARTY_SIZE>d.length)return;var f=recFields(d,off);var stats=[];for(var k=0;k<7;k++)stats.push(u16(d,off+0x3A+2*k));var pp=[d[off+0x30],d[off+0x31],d[off+0x32],d[off+0x33]];rows.push(buildRowJs('队伍','队伍'+(i+1),off,spec,f.lv,f.exp,f.evs,f.moves4,f.item,stats,pp,f.enc,f.v12,hexBytes(d,off,4),f.nature,f.abiSel))});
+  var g1idx=0,g2idx=0,saIdx=0,sbIdx=0;
   gnames.forEach(function(gn){groups[gn].forEach(function(r){var off=r[0],spec=r[1];if(off+PC_SIZE>d.length)return;var f=recFields(d,off);var src,pos;
     if(gn==='G1'){var box=Math.floor(g1idx/BOX_CAP)+1,slot=g1idx%BOX_CAP+1;g1idx++;if(box<=7){src='BOX'+box;pos='第'+slot+'格'}else{src='散落';pos='0x'+off.toString(16).toUpperCase()}}
-    else if(gn==='SA'){src='特殊区(待锚)';pos='待锚A'}
-    else if(gn==='SB'){src='特殊区(待锚)';pos='待锚B'}
+    else if(gn==='SA'){src='特殊区A';pos='第'+(saIdx+1)+'条';saIdx++}
+    else if(gn==='SB'){src='特殊区B';pos='第'+(sbIdx+1)+'条';sbIdx++}
     else if(gn==='G2'){var b2x,sl2;if(g2idx<150){b2x=20+Math.floor(g2idx/BOX_CAP);sl2=g2idx%BOX_CAP+1}else if(g2idx<176){b2x=25;sl2=g2idx-150+1}else{b2x=26;sl2=g2idx-176+1}g2idx++;src='BOX'+b2x;pos='第'+sl2+'格'}
     else{src='散落';pos='0x'+off.toString(16).toUpperCase()}
-    rows.push(buildRowJs(src,pos,off,spec,f.lv,f.exp,f.evs,f.moves4,f.item,null,null,f.enc,f.v12,''));
+    rows.push(buildRowJs(src,pos,off,spec,f.lv,f.exp,f.evs,f.moves4,f.item,null,null,f.enc,f.v12,'',f.nature,f.abiSel));
   })});
   var special=rows.filter(function(r){return r.来源.indexOf('特殊区')>-1});
   var partyRows=rows.filter(function(r){return r.来源==='队伍'});

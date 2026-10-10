@@ -243,10 +243,11 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
       **补位建议 Top4**（针对共同弱点≥2 属性的免疫者 + 覆盖缺口属性的本系者，全图鉴聚合评分，点击入队）。
       修复 bug：体检读 `s.info` → 实际在 `teamInfo[s.id]`（addToTeam 用独立 map 存 info），修正后土王 4 招
       (自我再生/守住/大地神力/毒千针)=✓本系+点评+配置健康。
-  - **内嵌 JS 存档解析器（v3.8，用户"别让我用命令行，集成到网页上"）**：
-    - parse_er_save_v4.py 的 v4.1 逻辑全量移植为 JS（parseSavBytes 函数族，内嵌 build_tool_html.py）：
+  - **内嵌 JS 存档解析器（v4.2，用户"别让我用命令行，集成到网页上"）**：
+    - parse_er_save_v4.py 的 v4.2 逻辑全量移植为 JS（parseSavBytes 函数族，内嵌 build_tool_html.py）：
       scanRecords(OTID 扫描)/decodeRotation(段轮换K投票)/slowLevel(慢速组Lv)/findParty(76B间距+等级校验)/
-      decode4(4招解码式)/calcStat(能力公式 IV=0 口径)/natureProfile(天性画像反推)/buildRowJs(53列 CSV 行)。
+      decode4(4招解码式：招式3掩码0x3F)/calcStat(能力公式 IV=0+性格修正 NATURE_MOD 21条)/recFields(性格=+0x10 bit10-14、
+      特性选中项=+0x12 bit14-15、道具掩码0x3FF)/buildRowJs(性格/特性选中索引/盒子能力·性格修正列)。已 node 实测 431 条、5 锚点全过。
       数据源 = 网页内嵌 ERDATA（species.base=种族6项/abis·inns=中文名/lv·tut=可学池；MV=招式中文；items=道具中文）——
       **不再依赖 xlsm/gameData 外部文件，双击 HTML 即完整解析**。
     - 队伍构建 Tab 新增「📂 解析存档 .sav」按钮（hidden file input → FileReader → parseSavBytes）：
