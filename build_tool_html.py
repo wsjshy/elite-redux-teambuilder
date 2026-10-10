@@ -7132,6 +7132,11 @@ function evWhy(btn){
   try{btn.setAttribute('aria-expanded',box.hasAttribute('hidden')?'false':'true')}catch(e1){}
 }
 /* L1 特性/天性 chip：点击直接弹轻量 modal（完整描述 + 战斗意义 + 机制词条），不做就地展开 */
+function abiChipName(n){ /* chip 显示名与弹层一致：以 ABI 表规范中文（=游戏内真名，如 #326=顽固/#318=根源盔甲）为准 */
+  var id=abiIdByZhOrEn(n);
+  if(id===null||id===undefined)return n;
+  var a=ABI[id];return (a&&a[2])?a[2]:n;
+}
 function abiModal(abiName,kind){
   var id=abiIdByZhOrEn(abiName);
   var hasId=(id!==null&&id!==undefined);
@@ -7358,13 +7363,13 @@ function renderCore(s){
   var abiN=(s.abis&&s.abis.length)||0,innN=(s.inns&&s.inns.length)||0;
   html+='<div class="chiprow"><span class="dim">特性（'+abiN+' 选 1）：</span>'+((abiN)
     ? s.abis.map(function(n,ai){
-        return '<button type="button" class="chip" onclick="abiModal('+jsl(n)+',\'特性\')" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(n)+'</button>';
+        return '<button type="button" class="chip" onclick="abiModal('+jsl(n)+',\'特性\')" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(abiChipName(n))+'</button>';
       }).join('')
     : '<span class="dim">无</span>')+'</div>';
   /* 天性（固定全部拥有）：点击 chip 直接弹轻量 modal */
   html+='<div class="chiprow"><span class="dim">天性（固定 '+innN+' 个·全部拥有）：</span>'+((innN)
     ? s.inns.map(function(n,ii){
-        return '<button type="button" class="chip chip-inn" onclick="abiModal('+jsl(n)+',\'天性\')" title="天性固定拥有，点开看作用详情">'+esc(n)+'</button>';
+        return '<button type="button" class="chip chip-inn" onclick="abiModal('+jsl(n)+',\'天性\')" title="天性固定拥有，点开看作用详情">'+esc(abiChipName(n))+'</button>';
       }).join('')
     : '<span class="dim">无</span>')+'</div>';
   html+='<span class="abi4rule">四特性体系：主特性 '+abiN+' 选 1 生效；天性 '+innN+' 个固定全部拥有 —— 配队评估两者并计（免疫/半伤/添属性/联防）</span>';
