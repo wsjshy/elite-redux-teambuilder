@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Pokémon Elite Redux v2.65 存档解析器 v4.2 (4招完整解码 + 天性/特性选中项直读)
+Pokémon Elite Redux v2.65 存档解析器 v4.2 (4招完整解码 + 性格/特性选中项直读)
 =========================================================
 【v4.2 相对 v4.1 (2026-10-10, NextDex load_save.js 位语义 + 机制实证定稿)】
   - 招式3 掩码 0x1F → 0x3F: +0x0A 低6位 = 招式3 id>>5 (修复 id≥1024 招式截断; 已验证真值均 <1024 不受影响)
   - 道具掩码 0x1FF → 0x3FF: +0x10 低10位 = items id (修复 id≥512 道具截断; 9只真值均 <512 不受影响)
-  - 天性直读: +0x12 bit10-14 (5位) = nature id (natureT[8]=Impish=淘气 实档命中)
+  - 性格直读: +0x10 bit10-14 (5位) = nature id (natureT[8]=Impish=淘气 实档命中)
   - 特性选中项直读: +0x12 bit14-15 (2位) = abilityNum → abis[abilityNum] = 当前生效特性
     (load_save.js word8: nature=bit10-14, ability=bit30-31; 实档 6/6 命中, 覆盖原 abis[0] 假设)
   - +0x12..0x13 = language(3)+metLevel(7)+isShiny(2)+maxShiny(2)+abilityNum(2) (非第5招式位)
   - +0x0A bit6-9 = friendship 低4位 (bit5 归招式3 id>>5 第6位; 原"分组N"语义定稿)
   - EXP 仍 = +0x06 u16<<5 (ER 布局已右移 5 位存 16 位, 完整 21 位 EXP 高 16 位即此, 无需改)
-  - enc(+0x22..0x2E) 实证为 nickname 区 (非天性/个体; 个体=0 口径不变)
+  - enc(+0x22..0x2E) 实证为 nickname 区 (非性格/个体; 个体=0 口径不变)
 
 【v4.1 相对 v4.0 的实证修正 (2026-10-06, 三档互证+10张游戏截图+2次换招实验)】
   - 4 招式槽位完整解码 (换招实验铁证):
@@ -60,12 +60,12 @@ ANCHORS = {
 TYPE_ZH = ['一般', '格斗', '火', '冰', '电', '虫', '飞行', '钢', '草', '地面',
            '毒', '恶', '水', '超能', '岩石', '龙', '幽灵', '妖精', '神秘', '无', '星晶']
 
-# 天性中文（官方译名，索引 = gameData natureT 序；与官方存在 Docile/Calm 同名属官方译名事实）
+# 性格中文（官方译名，索引 = gameData natureT 序；与官方存在 Docile/Calm 同名属官方译名事实）
 NATURE_ZH = ['勤奋', '孤僻', '勇敢', '固执', '调皮', '大胆', '温和', '悠闲', '淘气', '乐天',
              '胆小', '急躁', '认真', '爽朗', '天真', '内敛', '慢吞吞', '冷静', '害羞', '马虎',
              '温和', '温顺', '自大', '慎重', '浮躁']
 
-# 天性修正：nature id -> (增维, 减维)，标准序索引 (0HP 1攻 2防 3特攻 4特防 5速)；无修正 = 不在表
+# 性格修正：nature id -> (增维, 减维)，标准序索引 (0HP 1攻 2防 3特攻 4特防 5速)；无修正 = 不在表
 NATURE_MOD = {
     1: (1, 2), 2: (1, 5), 3: (1, 3), 4: (1, 4), 5: (2, 1), 7: (2, 5), 8: (2, 3), 9: (2, 4),
     10: (5, 1), 11: (5, 2), 13: (5, 3), 14: (5, 4), 15: (3, 1), 16: (3, 2), 17: (3, 5), 19: (3, 4),
@@ -178,7 +178,7 @@ def load_gamedata(base_dir, sav=None):
             items = {i['id']: i for i in gd['items']}
             types = gd['typeT']
             natures = gd.get('natureT') or []
-            print(f'[权威数据] {GDATA_NAME} ({p}): 物种{len(species)} 特性{len(abilities)} 招式{len(moves)} 道具{len(items)} 天性{len(natures)}')
+            print(f'[权威数据] {GDATA_NAME} ({p}): 物种{len(species)} 特性{len(abilities)} 招式{len(moves)} 道具{len(items)} 性格{len(natures)}')
             return species, abilities, moves, items, types, natures
     return None, None, None, None, None, None
 
@@ -221,7 +221,7 @@ def load_zh(path):
     return dex_zh, abi_zh, mov_zh
 
 def nature_profile(stats, base, evs, lv):
-    """从直读能力(7项含特防)反推天性修正画像 (仅队伍)"""
+    """从直读能力(7项含特防)反推性格修正画像 (仅队伍)"""
     if not stats:
         return ''
     labels = ['攻击', '防御', '速度', '特攻', '特防']
@@ -321,14 +321,14 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             t2 = TYPE_ZH[ts[1]] if len(ts) > 1 and ts[1] < len(TYPE_ZH) else ''
         abis = sp['stats']['abis'] if sp else []
         inns = sp['stats']['inns'] if sp else []
-        # v4.2: +0x10..0x13 = 32位 word8: 道具(bit0-9) + 天性(bit10-14) + isEgg(15)
+        # v4.2: +0x10..0x13 = 32位 word8: 道具(bit0-9) + 性格(bit10-14) + isEgg(15)
         #       + 语言(bit16-18) + 出生等级(bit19-25) + 闪光(bit26-27) + maxShiny(bit28-29) + 特性选中(bit30-31)
         #       (load_save.js word8 位语义; ER 压缩后 32 位拆为 +0x10 u16 + +0x12 u16)
         nature_id = (item_raw >> 10) & 0x1F
         abi_sel = (extra12 >> 14) & 0x3
         ev_std = [evs[0], evs[1], evs[2], evs[4], evs[5], evs[3]]  # 存档序->标准序
         m1, m2, m3, m4 = moves4
-        # 能力: 队伍 7 项直读; 盒子公式基准(天性修正 v4.2 并入)
+        # 能力: 队伍 7 项直读; 盒子公式基准(性格修正 v4.2 并入)
         if stats:
             cur, mx, atk, dfn, spe, spa, sdf = stats
             cap_note = ''
@@ -344,7 +344,7 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             spe = stat(base[5], evs[3], lv, nmod[5])
             spa = stat(base[3], evs[4], lv, nmod[3])
             sdf = stat(base[4], evs[5], lv, nmod[4])
-            cap_note = '(公式基准·天性修正)'
+            cap_note = '(公式基准·性格修正)'
         nprof = nature_profile(stats, base, evs, lv)
         lup = sp['levelUpMoves'] if sp else []
         lv_up = ' '.join(f'{mv_of(m["id"])}@{m["lv"]}' for m in sorted(lup, key=lambda m: (m['lv'], m['id']))[:8])
@@ -371,8 +371,8 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             'PP1': pp[0] if pp else '', 'PP2': pp[1] if pp else '', 'PP3': pp[2] if pp else '', 'PP4': pp[3] if pp else '',
             '可学_升级': n_up, '可学_教学': n_tut, '可学_蛋': n_egg, '可学_TMHM': n_tm,
             '升级招式(前8)': lv_up,
-            '天性': f'{NATURE_ZH[nature_id]}({natures[nature_id]})' if natures and nature_id < len(natures) else '',
-            '天性画像': nprof,
+            '性格': f'{NATURE_ZH[nature_id]}({natures[nature_id]})' if natures and nature_id < len(natures) else '',
+            '性格画像': nprof,
             'OTID': otid_hex or '',
             '+0x12(语言/等级/闪光/特性)': f'0x{extra12:04X}',
             '加密块': enc or '',
@@ -472,15 +472,15 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
     special = [r for r in rows if r['来源'].startswith('特殊区')]
     summary = {
         'sav': os.path.basename(os.path.abspath(out_csv)).replace('.csv', ''),
-        '解析器': 'v4.2 (4招解码 + 天性/特性选中项直读)',
+        '解析器': 'v4.2 (4招解码 + 性格/特性选中项直读)',
         '权威数据': GDATA_NAME,
         '总记录': len(rows), '队伍': len(party), '电脑区': len(rows) - len(party),
         '特殊区A/B(段内顺序)': len(special), '段轮换K': K,
         '锚点验证': {'通过': [c for c, _ in anchors_ok], '失败': [f'{c}: {m}' for c, m in anchors_fail]},
         '说明': ('4招式槽: +0x04=招式1, +0x08=招式2(+招式3 mod32 高位), +0x0A低6位=招式3 id>>5, +0x0E=招式4(末招); '
-                 '道具=+0x10&0x3FF; 天性=+0x12 bit10-14(natureT); 当前特性=abis[+0x12 bit14-15]; '
+                 '道具=+0x10&0x3FF; 性格=+0x10 bit10-14(natureT); 当前特性=abis[+0x12 bit14-15]; '
                  '能力=队伍+0x3A..0x47 7×u16直读(含特防); PP=+0x30..0x33; '
-                 '特性页=特性1(当前生效)+特性2/3(可选池)+天生特性1-3(inns); 盒子能力为公式基准(天性修正已并入)。'),
+                 '特性页=特性1(当前生效)+特性2/3(可选池)+天性1-3(inns); 盒子能力为公式基准(性格修正已并入)。'),
     }
     with open(out_json, 'w', encoding='utf-8') as f:
         json.dump({'summary': summary, 'records': rows}, f, ensure_ascii=False, indent=1)
