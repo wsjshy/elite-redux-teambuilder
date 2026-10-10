@@ -159,7 +159,8 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - 关键 id 命中验证：4=战斗盔甲、11=储水、147=奇迹皮肤、840=毒刺、834=毒沼制造者、235=不屈之盾、326=坚不可摧、318=原始铠甲；35 个无物种使用 id 中文缺失（英文兜底，已验证**存档 431 只零命中**）；id 0=无（ABI_ZH_EXTRA）；
   - **data.js 清理 `#id` 占位**（洛托姆R-岩天性 #1033→Slime Mold 等，共 8 处，均改英文兜底）；
   - **JS 解析器键名修正**（build_tool_html.py 模板：`主特性(当前生效)`/`天性1-3(固定)` 等含括号键加引号，修 vm 语法错）+ `tools\_chk_js_v42.js` 同步新键名与 MV 注入；
-  - **重跑验证**：Python 431 条 5 锚点全过、四特性全中文（残留 1=洛托姆R-岩 Slime Mold 英文兜底）；node 实测 431 条 5 锚点 K=3 全过、护城龙=战斗盔甲(idx0)/不屈之盾/坚不可摧/原始铠甲/防150、队伍 6 只性格/选中索引/天性/4 招中文全对；gh-pages 已部署（a1fc0a8..21b1f0a）。
+  - **重跑验证**：Python 431 条 5 锚点全过、四特性全中文（残留 1=洛托姆R-岩 Slime Mold 英文兜底）；node 实测 431 条 5 锚点 K=3 全过、护城龙=战斗盔甲(idx0)/不屈之盾/坚不可摧/原始铠甲/防150、队伍 6 只性格/选中索引/天性/4 招中文全对；
+  - **线上部署修复（重要教训）**：此前线上停留在 v4.10 时代——**GitHub Pages 部署连续 4 次失败**（`pages build and deployment` failure，最后成功 fd12087e 为 10-10 10:48），根因 = **gh-pages 分支 `ER-source/nextdex` 残留 git 子模块 gitlink（160000）且无 .gitmodules 定义** → Pages 构建报 `No url found for submodule path 'ER-source/nextdex' in .gitmodules`（exit 128）。修复：`git rm --cached ER-source/nextdex` 提交推送（cb85a5e）；**另注意部署文件提取必须用 Python 二进制 `git show master:<file>`（禁止 PS 重定向 `>`，会引入 UTF-16/BOM/编码破坏）**。修复后线上 index.html=583742B 含「四特性体系」渲染，浏览器实测护城龙 特性(3选1)/天性(固定3·全部拥有)/四特性说明 全显示、console 0 error。
 - ✅ v4.1 完成并验证：431 条（队伍6/电脑425/特殊区15/散落1），5 锚点全过。
 - ✅ **4 招式完整解码**（换招实验+10 截图铁证）：队伍 6 只 + 护城龙 + 花舞鸟 + 远古巨蜓 + 化石翼龙
   的 4 招/PP/道具/能力 7 项与游戏截图**完全一致**；全量 66 条有效记录 4 招 id 未知数 = 0。
@@ -572,6 +573,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html`+`配招工具_data.js`+`assets/`+`.nojekyll`+`ER-source` 两 json，与 master 跟踪集对齐避免切换冲突）。
 - **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`（v4.6 验证：index 2,332,615B/data.js 6,487,486B/精灵图/.nojekyll 全 200，index 与本地同 SHA）。
 - **更新流程**：改 build 脚本→重生成 HTML→`git commit`+`push github master`→孤儿分支重建 gh-pages（`checkout --orphan gh-pages`→清工作区**先移出 ER-source 与 4 项脱跟踪构建输入**（`招式表_可学总表.csv` / `ER2.65简汉化\ER2.65beta版图鉴v0.3.xlsm` / `ER2.65简汉化\分类.xlsx` / `ER2.5正式版图鉴v0.5.xlsm`——**曾于 v4.6.4 期被误删，重建见 §12**）→`checkout master -- 部署产物`→commit→`push github gh-pages --force`）→`checkout master`→移回 ER-source→`reset --hard master`。
+- **部署后必验（2026-10-10 教训，防"推了没生效"）**：① `git status`/`git ls-tree` 确认 **gh-pages 上无子模块 gitlink（160000）**——`ER-source/nextdex` 曾致 Pages 构建连续 4 次失败（`No url found for submodule path` exit 128），修复=`git rm --cached ER-source/nextdex`；② 部署文件提取一律 **Python 二进制 `git show master:<file>` 写盘**，禁止 PS `>` 重定向（UTF-16/BOM/编码破坏）；③ push 后查 Actions `pages build and deployment` run **conclusion=success**（API：`/actions/runs?per_page=5`），failure 时线上停留在最后成功版本；④ `curl` 线上 index.html 校验目标标记（如 `四特性体系`）与字节数 = 本地。
 - **部署硬前提**：HTML 与 `assets\sheets` 必须同目录（相对路径引用）；`.gitignore` 排除清单见文件本身（.gba/.sav/.ss*/ER2.65简汉化/ER-source 除两 json 外全部/nn_data/nn_models/顶层 `/_*` 探针/大 CSV/xlsx/**assets/sprites/**——旧精灵图源本地保留供 build_sprites_sheet.py 重跑，不入库）。
 - **ER-source 内嵌仓库处理**：官方克隆的 `ER-source\.git` 已改名 `.git.bak`（防 gitlink 吞文件）；恢复上游关联时改回 `.git` 即可，数据文件零改动。
 
