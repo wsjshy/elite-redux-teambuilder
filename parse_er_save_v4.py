@@ -77,8 +77,8 @@ ITEM_ZH = {
     305: '黑色污泥', 312: '凸凸头盔',
 }
 
-# xlsm 未收录但游戏内确认的汉化名 (特性)
-ABI_ZH_EXTRA = {834: '毒沼制造者'}
+# xlsm 未收录但游戏内确认的汉化名 (特性)；0 = 空槽位
+ABI_ZH_EXTRA = {834: '毒沼制造者', 0: '无'}
 
 def scan_records(data):
     out = []
@@ -184,8 +184,8 @@ def load_gamedata(base_dir, sav=None):
 
 def load_zh(path):
     """中文名：(物种id->zh, 特性id->zh, 招式id->zh)
-    物种/招式：优先读根目录 CSV 表（与 build_tool_data.py 网页数据同源，搬迁后图鉴.xlsx 已不在）；
-    特性：读 xlsm 特性表（v0.3/v0.5 任一）；表/文件缺失时跳过不崩溃。
+    物种/招式/特性：优先读根目录 CSV 表（与 build_tool_data.py 网页数据同源，搬迁后 xlsm 图鉴已不在）；
+    xlsm 特性表（v0.3/v0.5 任一）存在时合并补缺；表/文件缺失时跳过不崩溃。
     """
     import openpyxl, csv
     dex_zh, abi_zh, mov_zh = {}, {}, {}
@@ -208,16 +208,29 @@ def load_zh(path):
                 except Exception:
                     continue
                 mov_zh[iid] = (r[2], r[1] or r[2])
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    if '特性' in wb.sheetnames:
-        for r in wb['特性'].iter_rows(values_only=True):
-            if r[0] is None: continue
-            try:
-                iid = int(r[0])
-            except Exception:
-                continue
-            abi_zh[iid] = (str(r[2]), str(r[3]) if r[3] else '')
-    wb.close()
+    abi_csv = os.path.join(base, '招式表_特性.csv')        # 0编号 1英文 2中文（由 data.js 反推，与网页同源）
+    if os.path.exists(abi_csv):
+        for r in csv.reader(open(abi_csv, encoding='utf-8-sig')):
+            if r and r[0].strip() and r[0].strip() != '特性编号':
+                try:
+                    iid = int(r[0].strip())
+                except Exception:
+                    continue
+                if len(r) > 2 and r[2]:
+                    abi_zh[iid] = (r[1] if len(r) > 1 else '', r[2])
+    if path and os.path.exists(path):
+        wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+        if '特性' in wb.sheetnames:
+            for r in wb['特性'].iter_rows(values_only=True):
+                if r[0] is None:
+                    continue
+                try:
+                    iid = int(r[0])
+                except Exception:
+                    continue
+                if iid not in abi_zh or not abi_zh[iid][1]:
+                    abi_zh[iid] = (str(r[2]), str(r[3]) if r[3] else '')
+        wb.close()
     return dex_zh, abi_zh, mov_zh
 
 def nature_profile(stats, base, evs, lv):
@@ -361,11 +374,11 @@ def parse(data, gd, zh, out_csv, out_json, override=None):
             'EV_特攻': ev_std[3], 'EV_特防': ev_std[4], 'EV_速度': ev_std[5],
             '能力_当前HP': cur, '能力_最大HP': mx, '能力_攻击': atk, '能力_防御': dfn,
             '能力_速度': spe, '能力_特攻': spa, '能力_特防': f'{sdf}{cap_note}',
-            '特性1': abi_of(abis[abi_sel]) if abis and abi_sel < len(abis) else (abi_of(abis[0]) if abis else ''),
-            '特性2': abi_of(abis[1]) if len(abis) > 1 else '', '特性3': abi_of(abis[2]) if len(abis) > 2 else '',
-            '特性选中索引': abi_sel,
-            '天生特性1': abi_of(inns[0]) if inns else '', '天生特性2': abi_of(inns[1]) if len(inns) > 1 else '',
-            '天生特性3': abi_of(inns[2]) if len(inns) > 2 else '',
+            '主特性(当前生效)': abi_of(abis[abi_sel]) if abis and abi_sel < len(abis) else (abi_of(abis[0]) if abis else ''),
+            '可选特性2': abi_of(abis[1]) if len(abis) > 1 else '', '可选特性3': abi_of(abis[2]) if len(abis) > 2 else '',
+            '主特性选中索引': abi_sel,
+            '天性1(固定)': abi_of(inns[0]) if inns else '', '天性2(固定)': abi_of(inns[1]) if len(inns) > 1 else '',
+            '天性3(固定)': abi_of(inns[2]) if len(inns) > 2 else '',
             '道具': item_of(item),
             '招式1': mv_cell(m1), '招式2': mv_cell(m2), '招式3': mv_cell(m3), '招式4(末招)': mv_cell(m4),
             'PP1': pp[0] if pp else '', 'PP2': pp[1] if pp else '', 'PP3': pp[2] if pp else '', 'PP4': pp[3] if pp else '',
@@ -564,13 +577,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     xlsm = xlsm_def
-    if not xlsm or not os.path.exists(xlsm):
-        print('未找到图鉴 xlsm, 中文名将回退英文')
-        zh = ({}, {}, {})
-    else:
-        print(f'图鉴(中文名): {xlsm}')
-        zh = load_zh(xlsm)
-        print(f'  物种中文 {len(zh[0])} 特性中文 {len(zh[1])} 招式中文 {len(zh[2])}')
+    zh = load_zh(xlsm if (xlsm and os.path.exists(xlsm)) else None)
+    print(f'中文名源: 根目录招式表 CSV(物种/招式/特性, 与网页同源)' + (f' + xlsm {xlsm}' if xlsm and os.path.exists(xlsm) else ' (未找到 xlsm 图鉴)'))
+    print(f'  物种中文 {len(zh[0])} 特性中文 {len(zh[1])} 招式中文 {len(zh[2])}')
 
     if not sav or not os.path.exists(sav):
         print('未找到 .sav 文件, 请指定: python parse_er_save_v4.py <sav路径>')

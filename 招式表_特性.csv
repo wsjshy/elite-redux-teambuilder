@@ -1,0 +1,995 @@
+﻿特性编号,特性英文名,特性中文名
+1,Stench,恶臭
+2,Drizzle,降雨
+3,Speed Boost,加速
+4,Battle Armor,战斗盔甲
+5,Sturdy,结实
+6,Damp,湿气
+7,Limber,柔软
+8,Sand Veil,沙隐
+9,Static,静电
+10,Volt Absorb,蓄电
+11,Water Absorb,储水
+12,Oblivious,迟钝
+13,Cloud Nine,无关天气
+14,Compound Eyes,复眼
+15,Insomnia,不眠
+16,Color Change,变色
+17,Immunity,免疫
+18,Flash Fire,引火
+19,Shield Dust,鳞粉
+20,Own Tempo,我行我素
+21,Suction Cups,吸盘
+22,Intimidate,威吓
+23,Shadow Tag,影子游戏
+24,Rough Skin,粗糙皮肤
+25,Wonder Guard,神奇守护
+26,Levitate,飘浮
+27,Effect Spore,孢子
+28,Synchronize,同步
+29,Clear Body,恒净之躯
+30,Natural Cure,自然回复
+31,Lightning Rod,避雷针
+32,Serene Grace,天恩
+33,Swift Swim,悠游自如
+34,Chlorophyll,叶绿素
+35,Illuminate,发光
+36,Trace,复制
+37,Huge Power,大力士
+38,Poison Point,毒刺
+39,Inner Focus,精神力
+40,Magma Armor,熔岩铠甲
+41,Water Veil,水幕
+42,Magnet Pull,磁力
+43,Soundproof,隔音
+44,Rain Dish,雨盘
+45,Sand Stream,扬沙
+46,Pressure,压迫感
+47,Thick Fat,厚脂肪
+48,Early Bird,早足
+49,Flame Body,火焰之躯
+50,Run Away,逃足
+51,Keen Eye,锐利目光
+52,Hyper Cutter,巨钳
+53,Pickup,捡拾
+54,Truant,懒惰
+55,Hustle,活力
+56,Cute Charm,迷人之躯
+57,Plus,正电
+58,Minus,负电
+59,Forecast,天气预报
+60,Sticky Hold,黏着
+61,Shed Skin,蜕皮
+62,Guts,毅力
+63,Marvel Scale,神奇鳞片
+64,Liquid Ooze,污泥浆
+65,Overgrow,茂盛
+66,Blaze,猛火
+67,Torrent,激流
+68,Swarm,虫之预感
+69,Rock Head,坚硬脑袋
+70,Drought,干旱
+71,Arena Trap,沙穴
+72,Vital Spirit,干劲
+73,White Smoke,白烟
+74,Pure Power,瑜伽之力
+75,Shell Armor,硬壳盔甲
+76,Air Lock,气闸
+78,Motor Drive,电气引擎
+79,Rivalry,斗争心
+80,Steadfast,不屈之心
+81,Snow Cloak,雪隐
+82,Gluttony,贪吃鬼
+83,Anger Point,愤怒穴位
+84,Unburden,轻装
+85,Heatproof,耐热
+86,Simple,单纯
+87,Dry Skin,干燥皮肤
+88,Download,下载
+89,Iron Fist,铁拳
+90,Poison Heal,毒疗
+91,Adaptability,适应力
+92,Skill Link,连续攻击
+93,Hydration,湿润之躯
+94,Solar Power,太阳之力
+95,Quick Feet,飞毛腿
+96,Normalize,一般皮肤
+97,Sniper,狙击手
+98,Magic Guard,魔法防守
+99,No Guard,无防守
+100,Stall,后攻
+101,Technician,技术高手
+102,Leaf Guard,叶子防守
+103,Klutz,笨拙
+104,Mold Breaker,破格
+105,Super Luck,超幸运
+106,Aftermath,引爆
+107,Anticipation,危险预知
+108,Forewarn,预知梦
+109,Unaware,纯朴
+110,Tinted Lens,有色眼镜
+111,Filter,过滤
+113,Scrappy,胆量
+114,Storm Drain,引水
+115,Ice Body,冰冻之躯
+116,Solid Rock,坚硬岩石
+117,Snow Warning,降雪
+118,Honey Gather,采蜜
+119,Frisk,察觉
+120,Reckless,舍身
+121,Multitype,多重属性
+122,Flower Gift,花之礼
+123,Bad Dreams,梦魇
+124,Pickpocket,顺手牵羊
+125,Sheer Force,强行
+126,Contrary,唱反调
+127,Unnerve,紧张感
+128,Defiant,不服输
+129,Defeatist,受迫
+130,Cursed Body,诅咒之躯
+131,Healer,治愈之心
+132,Friend Guard,友情防守
+133,Weak Armor,碎裂铠甲
+134,Heavy Metal,重金属
+135,Light Metal,轻金属
+136,Multiscale,多重鳞片
+137,Toxic Boost,中毒激升
+138,Flare Boost,受热激升
+139,Harvest,收获
+140,Telepathy,心灵感应
+141,Moody,心情不定
+142,Overcoat,防尘
+143,Poison Touch,剧毒之触
+144,Regenerator,再生力
+145,Big Pecks,健壮胸肌
+146,Sand Rush,挖沙
+147,Wonder Skin,奇迹皮肤
+148,Analytic,分析
+149,Illusion,幻觉
+150,Imposter,变身者
+151,Infiltrator,穿透
+152,Mummy,木乃伊
+153,Moxie,自信过度
+154,Justified,正义之心
+155,Rattled,胆小
+156,Magic Bounce,魔法镜
+157,Sap Sipper,食草
+158,Prankster,恶作剧之心
+159,Sand Force,沙之力
+160,Iron Barbs,铁棘
+162,Victory Star,胜利之星
+163,Turboblaze,涡轮火焰
+164,Teravolt,兆级电压
+165,Aroma Veil,芳香幕
+166,Flower Veil,花幕
+168,Protean,变幻自如
+169,Fur Coat,毛皮大衣
+170,Magician,魔术师
+171,Bulletproof,防弹
+172,Competitive,好胜
+173,Strong Jaw,强壮之颚
+174,Refrigerate,冰冻皮肤
+175,Sweet Veil,甜幕
+176,Stance Change,战斗切换
+177,Gale Wings,疾风之翼
+178,Mega Launcher,超级发射器
+179,Grass Pelt,草之皮毛
+180,Symbiosis,共生
+181,Tough Claws,硬爪
+182,Pixilate,妖精皮肤
+183,Gooey,黏滑
+184,Aerilate,飞行皮肤
+185,Parental Bond,亲子爱
+186,Dark Aura,暗黑气场
+187,Fairy Aura,妖精气场
+188,Aura Break,气场破坏
+189,Primordial Sea,始源之海
+190,Desolate Land,终结之地
+191,Delta Stream,德尔塔气流
+192,Stamina,持久力
+193,Wimp Out,跃跃欲逃
+194,Emergency Exit,遁走
+195,Water Compaction,遇水凝固
+196,Merciless,不仁不义
+197,Shields Down,界限盾壳
+198,Stakeout,蹲守
+199,Water Bubble,水泡
+200,Steelworker,钢能力士
+201,Berserk,怒火冲天
+202,Slush Rush,拨雪
+203,Long Reach,远隔
+204,Liquid Voice,湿润之声
+205,Triage,治愈之心
+206,Galvanize,电气皮肤
+207,Surge Surfer,冲浪之尾
+208,Schooling,鱼群
+209,Disguise,画皮
+210,Battle Bond,牵绊变身
+211,Power Construct,群聚变形
+212,Corrosion,腐蚀
+213,Comatose,绝对睡眠
+214,Queenly Majesty,女王威严
+215,Innards Out,甩不掉的
+216,Dancer,舞者
+217,Battery,蓄电池
+218,Fluffy,毛茸茸
+219,Dazzling,棱镜装甲
+220,Soul-Heart,魂心
+221,Tangling Hair,卷发
+222,Receiver,接球手
+223,Power of Alchemy,化学之力
+224,Beast Boost,异兽提升
+225,RKS System,AR系统
+226,Electro Surge,电气制造者
+227,Psychic Surge,精神制造者
+228,Misty Surge,薄雾制造者
+229,Grassy Surge,青草制造者
+230,Full Metal Body,金属防护
+231,Shadow Shield,幻影防守
+232,Prism Armor,棱镜装甲
+233,Neuroforce,脑核之力
+234,Intrepid Sword,不挠之剑
+235,Dauntless Shield,不屈之盾
+236,Libero,自由者
+238,Cotton Down,棉絮
+239,Propeller Tail,螺旋尾鳍
+240,Mirror Armor,镜甲
+241,Gulp Missile,一口导弹
+242,Stalwart,坚毅
+243,Steam Engine,蒸汽机
+244,Punk Rock,庞克摇滚
+245,Sand Spit,喷沙
+246,Ice Scales,冰鳞粉
+247,Ripen,熟成
+248,Ice Face,结冻头
+249,Power Spot,能量点
+250,Mimicry,拟态
+251,Screen Cleaner,除障
+252,Steely Spirit,钢魂
+253,Perish Body,灭亡之躯
+254,WandrngSprit,游魂
+255,Gorilla Tactics,一猩一意
+256,Neutralizing Gas,化学变化气体
+257,Pastel Veil,粉彩护幕
+258,HungerSwitch,饱了又饿
+259,Quick Draw,速击
+260,Unseen Fist,无形拳
+261,CuriusMedicn,怪药
+262,Transistor,电晶体
+263,Dragon's Maw,龙颚
+264,ChillngNeigh,苍白嘶鸣
+265,Grim Neigh,漆黑嘶鸣
+266,As One,人马一体
+267,As One,人马一体
+268,Chloroplast,叶绿体
+269,Whiteout,白茫茫
+270,Pyromancy,火焰占卜
+271,Keen Edge,锐利刀刃
+272,Prism Scales,棱镜鳞片
+273,Power Fists,铁拳之力
+274,Sand Song,沙之歌
+275,Rampage,暴走
+276,Vengeance,复仇
+277,Blitz Boxer,闪电拳手
+278,Antarctic Bird,南极鸟
+279,Immolate,献祭
+280,Crystallize,结晶
+281,Electrocytes,电细胞
+282,Aerodynamics,空气动力学
+283,Christmas Spirit,圣诞精神
+284,Exploit Weakness,弱点利用
+285,Ground Shock,大地冲击
+286,Ancient Idol,古代偶像
+287,Mystic Power,神秘力量
+288,Perfectionist,完美主义者
+289,Growing Tooth,不断生长的牙齿
+290,Inflatable,充气
+291,Aurora Borealis,北极光
+292,Avenger,复仇者
+293,Let's Roll,我们滚吧
+294,Aquatic,水生
+295,Loud Bang,巨响
+296,Lead Coat,铅衣
+297,Amphibious,两栖
+298,Grounded,接地
+299,Earthbound,大地束缚
+300,Fighting Spirit,斗争精神
+302,Coil Up,盘卷
+303,Fossilized,化石
+304,Magical Dust,魔法粉
+305,Dreamcatcher,捕梦人
+306,Nocturnal,夜行
+307,Self Sufficient,自给自足
+308,Tectonize,构造
+309,Ice Age,冰河时代
+310,Half Drake,半龙
+311,Liquified,液化
+312,Dragonfly,龙飞
+313,Dragonslayer,屠龙者
+314,Mountaineer,登山者
+315,Hydrate,水合
+316,Metallic,金属化
+317,Permafrost,永冻土
+318,Primal Armor,原始铠甲
+319,Raging Boxer,狂暴拳手
+320,Air Blower,吹气筒
+321,Juggernaut,主宰
+322,Short Circuit,短路
+323,Majestic Bird,华贵之鸟
+324,Phantom,幻影
+325,Intoxicate,醉人
+326,Impenetrable,坚不可摧
+327,Hypnotist,催眠师
+328,Overwhelm,压制
+329,Scare,惊吓
+330,Majestic Moth,华贵之蛾
+331,Soul Eater,噬魂
+332,Soul Linker,灵魂链接
+333,Sweet Dreams,美梦
+334,Bad Luck,厄运
+335,Haunted Spirit,作祟的魂魄
+336,Electric Burst,电爆
+337,Raw Wood,原木
+338,Solenoglyphs,毒牙
+339,Spider Lair,蜘蛛巢
+340,Fatal Precision,致命精准
+341,Fort Knox,坚壁
+342,Seaweed,海草
+343,Psychic Mind,超能之心
+344,Poison Absorb,毒吸收
+345,Scavenger,拾荒者
+346,Twist. Dimension,扭曲空间
+347,Multi-Headed,多头龙
+348,North Wind,北风
+349,Overcharge,过载
+350,Violent Rush,狂暴突袭
+351,Flaming Soul,烈焰之魂
+352,Sage Power,贤者之力
+353,Bone Zone,骨区
+354,Weather Control,天气控制
+355,Speed Force,速度之力
+356,Sea Guardian,海洋守护者
+357,Molten Down,熔解
+358,Hyper Aggressive,极度好战
+359,Flock,鸟群
+360,Field Explorer,旷野探险家
+361,Striker,前锋
+362,Frozen Soul,冰霜之魂
+363,Predator,掠食者
+364,Looter,掠夺者
+365,Lunar Eclipse,月食
+366,Solar Flare,太阳耀斑
+367,Power Core,动力核心
+368,Sighting System,瞄准系统
+370,Opportunist,机会主义者
+371,Giant Wings,巨翼
+372,Momentum,动量
+373,Grip Pincer,钳制
+374,Big Leaves,大叶子
+375,Precise Fist,精密之拳
+376,Deadeye,神枪手
+377,Artillery,炮术
+378,Amplifier,扩音器
+379,Ice Dew,冰露
+380,Sun Worship,太阳崇拜
+381,Pollinate,授粉
+382,Volcano Rage,火山之怒
+383,Cold Rebound,冰冷反击
+384,Low Blow,下流打击
+385,Nosferatu,诺斯费拉图
+386,Spectral Shroud,幽灵魂
+387,Discipline,自律
+388,Thundercall,雷召
+389,Marine Apex,海洋霸主
+390,Mighty Horn,强大之角
+391,Hardened Sheath,硬化鞘
+392,Arctic Fur,极地毛发
+393,Spectralize,幽灵魂化
+395,Iron Barrage,钢铁弹幕
+396,Steel Barrel,钢桶
+397,Pyro Shells,火焰弹
+398,Fungal Infection,真菌感染
+399,Parry,招架
+400,Scrapyard,废料场
+401,Loose Quills,松散尖刺
+402,Toxic Debris,毒棘
+403,Roundhouse,回旋踢
+404,Mineralize,矿化
+405,Loose Rocks,松散岩石
+406,Spinning Top,旋转陀螺
+407,Retribution Blow,报应打击
+408,Fearmonger,恐惧散布者
+409,King's Wrath,王之怒
+410,Queen's Mourning,后之哀
+411,Toxic Spill,毒溢
+412,Desert Cloak,沙漠披风
+413,Draconize,龙化
+414,Pretty Princess,漂亮公主
+415,Self Repair,自我修复
+416,Atomic Burst,原子爆炸
+417,Hellblaze,地狱烈焰
+418,Riptide,激流
+419,Forest Rage,森林之怒
+420,Primal Maw,原始颚
+421,Sweeping Edge,横扫利刃
+422,Gifted Mind,天赋异禀
+423,Hydro Circuit,水力循环
+424,Equinox,昼夜平分
+425,Absorbant,吸收
+426,Clueless,无知的
+427,Cheating Death,逃过一死
+428,Cheap Tactics,廉价战术
+429,Coward,懦夫
+430,Volt Rush,伏特冲击
+431,Dune Terror,沙丘恐惧
+432,Infernal Rage,地狱之怒
+433,Dual Wield,双持
+434,Elemental Charge,元素充能
+435,Ambush,埋伏
+436,Atlas,阿特拉斯
+437,Radiance,光辉
+438,Jaws of Carnage,杀戮之颚
+439,Angel's Wrath,天使之怒
+440,Prismatic Fur,棱彩毛发
+441,Shocking Jaws,电击之颚
+442,Fae Hunter,妖精猎人
+443,Gravity Well,引力井
+444,Evaporate,蒸发
+445,Lumberjack,伐木工
+446,Well Baked Body,好烤的身体
+447,Furnace,熔炉
+448,Electromorphosis,电力转换
+449,Rocky Payload,岩石载荷
+450,Earth Eater,食土
+451,Lingering Aroma,余香
+452,Fairy Tale,童话
+454,Adrenaline Rush,肾上腺素冲击
+455,Archmage,大法师
+456,Cryomancy,冰霜占卜
+457,Phantom Pain,幻痛
+458,Purgatory,炼狱
+459,Emanate,散发
+461,Monkey Business,猴子把戏
+462,Combat Specialist,格斗专家
+463,Jungle's Guard,丛林守卫
+464,Hunter's Horn,猎人之角
+465,Pixie Power,小精灵之力
+467,Magma Eater,岩浆食者
+468,Super Hot Goo,超热黏胶
+469,Nika,尼卡
+470,Archer,弓箭手
+472,Super Slammer,超级重击者
+473,Inversion,反转
+474,Accelerate,加速
+475,Frost Burn,霜焰
+476,Itchy Defense,发痒防御
+477,Generator,发电机
+478,Moon Spirit,月之魂
+479,Dust Cloud,尘云
+480,Berserker Rage,狂战士之怒
+481,Trickster,诡计师
+482,Sand Guard,沙之守卫
+483,Natural Recovery,自然恢复
+484,Wind Rider,乘风
+485,Soothing Aroma,舒缓香气
+486,Prim and Proper,一本正经
+488,Tipping Point,临界点
+489,Enlightened,开悟
+490,Peaceful Slumber,安眠
+491,Aftershock,余震
+492,Freezing Point,冻结点
+493,Cryo Proficiency,低温熟练
+494,Arcane Force,神秘力量
+495,Doombringer,末日使者
+496,Wishmaker,许愿星
+497,Yuki Onna,雪女
+498,Suppress,压制
+499,Refrigerator,冷藏箱
+500,Heaven Asunder,天崩地裂
+501,Purifying Waters,净化之水
+502,Seaborne,海生
+503,High Tide,涨潮
+504,Change of Heart,变心
+505,Mystic Blades,神秘刀锋
+506,Determination,决心
+507,Fertilize,施肥
+508,Pure Love,纯洁的爱
+509,Fighter,斗士
+510,Mycelium Might,菌丝之力
+511,Telekinetic,念动力
+512,Combustion,燃烧
+513,Blade's Essence,刀刃精华
+514,Powder Burst,粉末爆炸
+515,Retriever,寻回犬
+516,Monster Mash,怪物混音
+517,Two Step,两步
+518,Spiteful,怨恨
+519,Fortitude,刚毅
+520,Devourer,吞噬者
+521,Phantom Thief,幽灵窃贼
+522,Early Grave,早夭
+523,Grappler,擒拿手
+524,Bass Boosted,低音增强
+525,Flaming Jaws,烈焰之颚
+526,Monster Hunter,怪物猎人
+527,Crowned Sword,冠之剑
+528,Crowned Shield,冠之盾
+529,Berserk DNA,狂暴DNA
+530,Crowned King,冠之王
+531,Clap Trap,夹子陷阱
+532,Permanence,恒久
+533,Hubris,傲慢
+534,Cosmic Daze,宇宙迷乱
+535,Mind's Eye,心眼
+536,Blood Price,血价
+537,Spike Armor,尖刺盔甲
+538,Voodoo Power,巫毒之力
+539,Chrome Coat,铬涂层
+540,Banshee,女妖
+541,Web Spinner,吐丝者
+542,Showdown Mode,决胜模式
+543,Seed Sower,播种者
+544,Airborne,空中
+545,Parroting,模仿
+546,Salt Circle,盐圈
+547,Purifying Salt,净化之盐
+548,Protosynthesis,古代活性
+549,Quark Drive,夸克充能
+550,Wind Power,风力发电
+551,Impulse,脉冲
+552,Terminal Velocity,终端速度
+553,Guard Dog,看门狗
+554,Anger Shell,愤怒甲壳
+555,Egoist,利己主义者
+556,Subdue,压制
+557,Readied Action,准备就绪
+558,Stygian Rush,冥河冲刺
+559,Guilt Trip,愧疚
+560,Tidal Rush,潮汐冲击
+561,Zero To Hero,从零到英雄
+562,Costar,同台共演
+563,Commander,指挥官
+564,Tactical Retreat,战术撤退
+565,Vengeful Spirit,复仇之魂
+566,Cud Chew,反刍
+567,Armor Tail,尾甲
+568,Mind Crunch,精神咬碎
+569,Supreme Overlord,至高之主
+570,Ill Will,恶意
+571,Fire Scales,火鳞
+572,Watch Your Step,注意脚下
+573,Rapid Response,快速响应
+574,Sharp Edges,锋利的边缘
+575,Thermal Exchange,热交换
+576,Good As Gold,黄金之躯
+577,Sharing Is Caring,分享即是关爱
+578,Tablets Of Ruin,灾祸之简
+579,Sword Of Ruin,灾祸之剑
+580,Vessel Of Ruin,灾祸之鼎
+581,Beads Of Ruin,灾祸之珠
+582,Thick Skin,厚皮
+583,Gallantry,英勇
+584,Orichalcum Pulse,绯红脉动
+585,Sun Basking,沐日
+586,Winged King,羽之王
+587,Hadron Engine,强子引擎
+588,Iron Serpent,钢之蛇
+589,Catastrophe,大灾变
+590,Blademaster,剑术大师
+591,Celestial Blessing,天之恩泽
+592,Minion Control,仆从控制
+593,Molten Blades,熔岩之刃
+594,Haunting Frenzy,萦绕狂暴
+595,Noise Cancel,噪音消除
+596,Radio Jam,无线电干扰
+597,Olé!,¡Olé!
+598,Malicious,恶毒
+599,Dead Power,死亡之力
+600,Brawling Wyvern,搏斗飞龙
+601,Mythical Arrows,神话之箭
+602,Lawnmower,割草机
+603,Flourish,茂密丛林
+604,Desert Spirit,沙漠之魂
+605,Contempt,蔑视
+606,Aerialist,空中飞人
+607,Tera Shell,太晶甲壳
+608,Toxic Chain,毒锁链
+609,Parasitic Spores,寄生孢子
+610,Poison Puppeteer,毒操偶师
+611,Entrance,着迷
+612,Rejection,拒绝
+613,Apple Enlightenment,苹果启示
+614,Balloon Bomb,气球炸弹
+615,Flaming Maw,烈焰之颚
+616,Demolitionist,爆破专家
+617,Rockhard Will,磐石意志
+618,Fragrant Daze,芳香迷乱
+619,Low Visibility,低能见度
+620,Old Mariner,老水手
+621,Ectoplasm,灵质
+622,Beautiful Music,美妙音乐
+623,Surprise!,惊喜！
+624,Snow Song,雪之歌
+625,Greater Spirit,崇高精神
+626,Resonance,共鸣
+627,Ethereal Rush,飘渺冲刺
+628,Pretty Privilege,漂亮特权
+629,Shallow Grave,浅坟
+630,Menacing Situation,威吓局势
+631,Shiny Lightning,闪光闪电
+632,Terrify,恐怖
+633,Ice Downfall,冰崩
+634,Last Stand,背水一战
+635,Pyroclastic Flow,火山碎屑流
+636,Blood Bath,血浴
+637,Battle Aura,战斗气场
+638,Bloodlust,嗜血
+639,Piercing Solo,独奏穿刺
+640,Rhythmic,韵律
+641,Chunky Bass Line,厚重低音
+642,Jackhammer,手提钻
+643,Denting Blows,凹陷打击
+644,Ice Cold Hunter,冰冷猎人
+645,Soul Crusher,灵魂粉碎者
+646,Arc Flash,弧光闪烁
+647,Unicorn,独角兽
+648,On the Prowl,潜行
+649,Pretentious,自命不凡
+650,Venoblaze Pincers,毒焰钳
+651,Eternal Blessing,永恒祝福
+652,Sugar Rush,糖分冲击
+653,Rest in Peace,安息
+654,White Noise,白噪音
+655,Smokey Maneuvers,烟雾机动
+656,Tag,标签
+657,Power Metal,力量金属
+658,Power Edge,力量之刃
+662,Higher Rank,更高阶层
+663,Funeral Pyre,火葬柴堆
+664,Flame Bubble,火焰气泡
+665,Elemental Vortex,元素漩涡
+666,Snowy Wrath,雪之怒
+667,Pattern Change,模式切换
+668,No Turning Back,义无反顾
+669,Flammable Coat,易燃外套
+670,Draco Morale,龙之士气
+671,Bad Omen,恶兆
+672,Mosh Pit,音乐节
+673,Blood Stain,血渍
+674,Blood Stigma,血之烙印
+675,Max Acceleration,最大加速
+676,Sidewinder,响尾蛇
+677,Petrify,石化
+678,Fluffiest,最毛茸茸
+679,Way of Precision,精密之道
+680,Way of Swiftness,迅捷之道
+681,Atomic Punch,原子拳
+682,Iron Giant,铁巨人
+683,Master Hand,大师之手
+684,Final Blow,最终一击
+685,Hospitality,热情好客
+686,Butter Up,奉承
+687,Vitality Strike,活力打击
+688,Imposing Wings,威严之翼
+689,Sword of Damnation,诅咒之剑
+690,Restraining Order,限制令
+691,Assassin's Tools,刺客工具
+692,Frostmaw,霜冻之颚
+693,Patchwork,拼凑
+694,Blind Rage,盲目狂怒
+695,Slipstream,滑流
+696,Apex Predator,顶级掠食者
+697,Dragon's Ritual,龙之仪式
+698,Pinnacle Blade,巅峰之刃
+699,Energized,充能
+700,Color Spectrum,光谱
+701,Steel Beetle,钢甲虫
+702,From the Shadows,来自暗影
+703,Rage Point,怒穴
+704,Hot Coals,热煤
+705,Terastal Treasure,太晶宝藏
+706,Shocking Maw,电击之颚
+707,Gleam Eyes,微光之眼
+708,Megabite,巨咬
+709,Dream State,梦境
+710,Dream Whimsy,梦幻奇想
+711,Lunar Affinity,月之亲和
+712,Flame Shield,火焰盾
+713,Aquatic Dweller,水栖居民
+714,Apple Pie,苹果派
+715,Hover,悬浮
+716,Depravity,堕落
+717,Wildfire,野火
+718,Jumpscare,突然惊吓
+719,Tar Toss,焦油投掷
+720,Stun Shock,惊愕冲击
+721,Raging Goddess,狂怒女神
+722,Whiplash,鞭打
+723,Supersweet Syrup,超甜糖浆
+724,Lucky Halo,幸运光环
+725,Trash Heap,垃圾堆
+726,Sludgy Mix,污泥混合
+727,Overwatch,守望
+728,Wind Rage,风怒
+729,Victory Bomb,胜利炸弹
+730,Razor Sharp,削铁如泥
+731,To The Bone,至骨
+732,Blade Dance,刀舞
+733,Taekkyeon,跆跟
+734,Ape Shift,猿之变
+735,Know Your Place,识相点
+736,Deep Cuts,深割
+737,Life Steal,生命偷取
+739,Teraform Zero,太晶归零
+740,Set Ablaze,点燃
+741,Breakwater,防波堤
+742,Magical Fists,魔法之拳
+743,Cutthroat,凶手
+744,Sand Bender,沙之操控者
+745,Sand Pit,沙坑
+747,Daybreak,破晓
+748,Energy Siphon,能量虹吸
+749,Reservoir,水库
+750,Neurotoxin,神经毒素
+751,Energy Horns,能量角
+753,Crust Coat,硬壳
+754,Puffy,蓬松
+755,Balloon Blitz,气球突击
+756,Twinkle Toes,纤巧脚尖
+757,Doom Blast,末日爆裂
+758,Brute Force,蛮力
+759,Faraday Cage,法拉第笼
+760,Acidic Slime,酸性黏液
+761,Rose Garden,玫瑰园
+762,Qigong,气功
+763,Conjurer Of Deceit,欺诈魔术师
+764,Deep Freeze,深度冻结
+765,Soul Devourer,灵魂吞噬者
+766,Champion's Entrance,冠军登场
+767,Presto,急板
+768,Samba,桑巴
+769,JunshiSanda,拳跆双修
+770,Gladiator,角斗士
+771,Forsaken Heart,弃心
+772,Relentless,无情
+773,Soothsayer,预言家
+774,Corrupted Mind,扭曲心灵
+775,Flame Coat,火焰外套
+776,Unown Power,未知之力
+778,Venom Crown,毒冠
+779,Blight Scale,疫病鳞片
+780,Gunman,枪手
+781,Hunter's Mark,猎人印记
+783,Caretaker,守护者
+784,Poseidon's Dominion,波塞冬之域
+785,Two-Faced,双面
+786,Lullaby,摇篮曲
+787,Cryo Architect,冰晶建筑师
+788,Glacial Rage,冰川之怒
+789,Immovable Object,不动之物
+790,Frenzied Phantom,狂乱魅影
+792,Metallic Jaws,金属之颚
+793,Calculative,精于算计
+794,Deadly Precision,致命精准
+795,Embody Aspect,体现形态
+796,Embody Aspect,体现形态
+797,Embody Aspect,体现形态
+798,Embody Aspect,体现形态
+799,We Will Rock You,我们将震撼你
+800,Deviate,偏离
+801,Sun's Bounty,太阳的恩赐
+802,Rite Of Spring,春日仪式
+803,Headstrong,刚愎自用
+804,Firefighter,消防员
+805,Sepia Lens,棕褐色镜片
+806,Super Sniper,超级狙击手
+807,Woodland Curse,林地诅咒
+808,Malodor,恶臭
+809,Blur,模糊
+810,Elude,规避
+811,Drake Of Rage,暴怒之龙
+812,Reverberate,混响
+813,Mixed Martial Arts,综合格斗
+814,Strategic Pause,战略停顿
+815,Overrule,否决
+816,Mental Pollution,精神污染
+817,Madness Enhancement,狂化增强
+818,Tentalock,触手束缚
+820,Soul Tap,灵魂之触
+821,Scarecrow,稻草人
+822,Ominous Shroud,不祥之幕
+823,Chilling Presence,寒意逼人
+824,Frostbind,冰封禁锢
+825,Glacial Ghost,冰川鬼影
+826,Tender Affection,温柔爱意
+827,Wonder Scale,神奇鳞片
+829,Stainless Steel,不锈钢
+830,Temporal Rupture,时空断裂
+831,Grass Flute,草笛
+832,Hemotoxin,溶血毒素
+834,Toxic Surge,毒沼制造者
+835,Atlantic Ruler,大西洋统治者
+836,Biofilm,生物膜
+837,Chokehold,扼喉
+839,Neutralizing Fog,中和雾气
+840,Poison Quills,毒刺
+842,Festivities,庆典
+843,Fey Flight,妖精飞行
+844,Best Offense,最佳攻势
+845,Impaler,穿刺者
+846,Magus Blades,魔导剑
+847,Lightning Born,闪电之躯
+848,Superheavy,超重
+849,World Serpent,世界之蛇
+850,Lucky Wings,幸运之翼
+851,Komodo,科莫多
+852,Envenom,施毒
+853,Purple Haze,紫色迷雾
+854,Gnashing Cannon,咬牙加农
+855,Hyper Cleanse,超净
+856,Molten Coat,熔岩外套
+857,Royal Decree,王室敕令
+858,Breezy Neigh,轻风嘶鸣
+859,Dreamscape,梦境
+860,Haste Makes Waste,欲速则不达
+861,Hungry Maws,饥饿之颚
+862,Thermal Slide,热滑
+863,Thermomancy,热力占卜
+864,Chuckster,强投手
+865,Heat Sink,散热器
+866,Relic Stone,遗石
+867,Supercell,超级单体
+868,Lightning Aspect,闪电形态
+869,Blistering Sun,灼日
+870,Molten Core,熔核
+871,Fire Aspect,火焰形态
+872,Aurora's Gale,极光之风
+873,Ice Plumes,冰羽
+874,Winter Throne,寒冬王座
+875,Energy Tap,能量之触
+876,Sludge Spit,污泥喷吐
+877,Swamp Thing,沼泽生物
+878,Frosty Prescence,霜寒降临
+879,Chilling Pellets,寒冰弹
+880,Paint Shot,颜料射击
+881,Stonecutter,石匠
+882,Edgelord,边缘领主
+883,Warmonger,战争贩子
+884,Locust Swarm,蝗群
+885,Revelation,天启
+886,Curse of Famine,饥荒诅咒
+887,Crystalline Armor,水晶铠甲
+888,Soul Harvest,灵魂收割
+889,Thick Blubber,厚脂
+890,Craving,渴望
+891,Rat King,鼠王
+892,Crispy Cream,酥脆奶油
+893,Deep Fried,油炸
+894,Food Lovers,美食家
+895,Lunar Wrath,月之怒
+896,Spyware,间谍软件
+897,Virus,病毒
+898,Power Leak,电力泄漏
+899,Backup Power,备用电源
+900,Sand Fiend,沙之魔
+901,Moustache,胡子
+902,Depth Explorer,深度探险家
+903,Dune Veil,沙丘帷幕
+904,Strong Foundation,坚实基础
+905,Fog Machine,造雾机
+906,Drop Blocks,落块
+907,Laser Drill,激光钻
+908,Lightsaber,光剑
+909,Loose Thorns,松散荆棘
+910,Turf War,地盘争夺
+911,Greedy,贪婪
+912,Musical Notes,音符
+913,Strikeout,三振出局
+914,Home Run,本垒打
+915,Bruiser,壮汉
+916,Narcissist,自恋者
+917,Let's Dance,来跳舞吧
+918,Dragonfruit,火龙果
+919,Lead Claws,铅爪
+920,Rocky Exterior,岩石外表
+921,Flawless Precision,无瑕精准
+922,Empress,女皇
+923,Mashed Potato,土豆泥
+924,Taste the Rainbow,品味彩虹
+925,Rainbow Scales,彩虹鳞
+926,Hypnotic Touch,催眠之触
+927,Wings of Pestilence,疫病之翼
+928,Hydra,九头蛇
+929,Sundae,圣代
+930,Ice Picks,冰镐
+931,Hammer Fist,锤拳
+932,Drakelp Head,龙首藻
+934,Mach 3,3马赫
+935,Raging Storm,暴风雨
+936,Sumo Guard,相扑守卫
+937,Sumo Wrestler,相扑手
+938,Cosmic Wings,宇宙之翼
+939,Cosmic Dust,宇宙尘埃
+940,Cool Exit,酷炫离场
+941,Devious Present,恶作剧礼物
+942,Christmas Nightmare,圣诞噩梦
+943,Sap Trap,树液陷阱
+944,Dead Bark,枯树皮
+945,Chainsaw,链锯
+946,Galeforce Wings,飓风之翼
+948,Massive Pelt,厚重毛皮
+949,I Am Steve,我是史蒂夫
+950,Tangled Tails,缠尾
+951,Foamy Web,泡沫网
+952,Sharp Talons,锐爪
+953,Zen Garden,禅意花园
+954,Tummyache,胃痛
+955,Hypnotic Trance,催眠恍惚
+956,Brain Overload,大脑过载
+957,Brain Mass,脑容量
+958,Chestnut Shield,栗子盾
+959,Chestnut Axe,栗子斧
+960,Giant Shuriken,巨型手里剑
+961,Witch Broom,女巫扫帚
+962,Angelic Wings,天使之翼
+963,Wrestle Showman,摔跤表演家
+964,Lucha Libre,自由式摔跤
+965,Fire Ruler,火之统治者
+966,Chandelier,枝形吊灯
+967,Foggy Eye,雾眼
+968,Toxic Shell,毒壳
+969,Hand Barnacles,手藤壶
+970,Voltron,战神金刚
+971,Fire's Wrath,火之怒
+972,Emperor's Wrath,帝王之怒
+973,Lepidopteran,鳞翅目
+974,Break it Down,分解
+975,Talon Trap,爪钩陷阱
+976,Backstreet Boy,后街男孩
+977,Backflip,后空翻
+978,Crushing Jaw,粉碎之颚
+979,Eternal Flower,永恒之花
+980,Nihil Blaster,虚无一击
+981,Hollow Ice Zone,冰窟地带
+982,Cryostasis,低温休眠
+983,Overcast,阴天
+984,Flower Necklace,花项链
+985,Mega Drill,巨型钻头
+986,Mucus Membrane,黏液膜
+987,Rain Shroud,雨幕
+988,Curlipede,卷曲蜈蚣
+989,Storm Cloud,积雨云
+990,Waterborne,水传播
+991,Resilience,韧性
+992,Going Berserk,进入狂暴
+993,Thunder Clouds,雷云
+997,Shattered Armor,破碎铠甲
+998,Acid Reflux,胃酸反流
+999,Ghost Frenzy,幽灵狂乱
+1002,Fortress,堡垒
+1003,Bird of Prey,猛禽
+1004,Feathercoat,羽衣
+1005,Power Outage,停电
+1006,Electro Booster,电击助推器
+1007,Current Crash,电流冲击
+1008,Daredevil,冒失鬼
+1009,Frost Dragon,霜龙
+1010,Thermal Entropy,热熵
+1011,Sinister Claws,阴险之爪
+1012,Petal Shield,花瓣盾
+1013,Mob Boss,黑帮老大
+1014,Ghost Pepper,幽灵辣椒
+1015,Droideka,毁灭者
+1016,3 > 1,3 ョ 1
+1017,Icicle Fist,冰柱拳
+1018,Abominable Monster,可憎怪物
+1019,Wind Chimes,风铃
+1020,Unstable Core,不稳定核心
+1021,Aura Armor,气场铠甲
+1022,Deflect,偏斜
+1023,Overwhelming Mind,压倒性思维
+1024,Duality,二元性
+1025,Foul Energy,死神拥抱
+1027,Jungle Fever,丛林热
+1028,King of the Jungle,丛林之王
+1029,Warrior's Spear,勇士之矛

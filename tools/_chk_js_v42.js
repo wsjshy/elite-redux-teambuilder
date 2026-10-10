@@ -9,7 +9,7 @@ const start = html.indexOf('/* ============ 存档 .sav 解析');
 const end = html.indexOf('function parseSavFile', start);
 if (start < 0 || end < 0) { console.log('解析器块未找到'); process.exit(1); }
 let code = html.slice(start, end);
-vm.runInContext('var MV={},ABI={},ITM={};' + code, ctx);
+vm.runInContext('var MV={},ABI={},ITM={};ERDATA.moves.forEach(function(m){MV[m[0]]=m});ERDATA.abilities.forEach(function(a){ABI[a[0]]=a});ERDATA.items.forEach(function(i){ITM[i[0]]=i});' + code, ctx);
 
 const savPath = 'D:/mGBA-0.10.2-win64/ROM/elite redux/ER2.65简汉化/ERv2.65-beta2-debug汉化版.sav';
 const arr = new Uint8Array(fs.readFileSync(savPath));
@@ -21,12 +21,12 @@ console.log('锚点:', res.summary.anchorsOk.length, '过 /', res.summary.anchor
 // 护城龙 BOX1 槽1
 const hu = res.rows.filter(r => r.宝可梦 === '护城龙' && r.来源 === 'BOX1' && r.位置 === '第1格')[0];
 if (hu) {
-  console.log('\n护城龙 BOX1槽1: 性格=', hu['性格'], '| 特性1=', hu['特性1'], '(idx', hu['特性选中索引'], ') | 防=', hu['能力_防御'], '| 4招=', hu['招式1'], hu['招式2'], hu['招式3'], hu['招式4(末招)']);
-  console.log('  期望: 性格=淘气(Impish), 特性1=战斗盔甲(idx0), 防=150, 招=守住/十万马力/铁头/尖刺防守');
+  console.log('\n护城龙 BOX1槽1: 性格=', hu['性格'], '| 主特性=', hu['主特性(当前生效)'], '(idx', hu['主特性选中索引'], ') | 天性=', hu['天性1(固定)'], hu['天性2(固定)'], hu['天性3(固定)'], '| 防=', hu['能力_防御'], '| 4招=', hu['招式1'], hu['招式2'], hu['招式3'], hu['招式4(末招)']);
+  console.log('  期望: 性格=淘气, 主特性=战斗盔甲(idx0), 天性=不屈之盾/坚不可摧/原始铠甲, 防=150, 招=守住/十万马力/铁头/尖刺防守');
 }
 // 队伍 6 只
 console.log('\n队伍 6 只:');
-res.party.forEach(r => console.log(' ', r.宝可梦, '| 性格=', r['性格'], '| 特性1=', r['特性1'], '(idx', r['特性选中索引'], ') | 招式3=', r['招式3']));
+res.party.forEach(r => console.log(' ', r.宝可梦, '| 性格=', r['性格'], '| 主特性=', r['主特性(当前生效)'], '(idx', r['主特性选中索引'], ') | 天性=', [r['天性1(固定)'], r['天性2(固定)'], r['天性3(固定)']].join('/'), '| 招式3=', r['招式3']));
 // 特殊区 15 条标注
 const sp = res.rows.filter(r => r.来源.indexOf('特殊区') > -1);
 console.log('\n特殊区条数:', sp.length, '首条:', sp[0] ? (sp[0].来源 + ' ' + sp[0].位置 + ' ' + sp[0].宝可梦 + ' 性格=' + sp[0]['性格']) : '无');

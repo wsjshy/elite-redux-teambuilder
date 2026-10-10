@@ -471,6 +471,9 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .chip{display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:8px 14px; border:1px solid var(--line);
   border-radius:999px; background:var(--card); font-size:13px; cursor:pointer; font-family:inherit; color:inherit}
 .chip[aria-expanded="true"]{border-color:var(--accent); color:var(--accent); background:#eef2ff}
+.chip-inn{border-color:#a5d6a7; background:#e8f5e9; color:#2e7d32}
+.chip-inn[aria-expanded="true"]{border-color:#2e7d32; color:#2e7d32; background:#c8e6c9}
+.abi4rule{font-size:11px; color:#2e7d32; margin:2px 0 6px; padding:4px 8px; background:#f1f8f2; border-radius:6px; display:inline-block}
 .statbars{margin:6px 0}
 .stattot{font-size:12px; color:var(--sub); margin-top:4px}
 .acc{border:1px solid var(--line); border-radius:8px; background:#fcfdff; margin:6px 0; padding:0 9px}
@@ -2417,7 +2420,7 @@ function buildRowJs(src,pos,off,spec,lv,exp,evs,moves4,item,stats,pp,enc,extra12
   var lup=(sp?(sp.lv||[]):[]).slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1]}).slice(0,8);
   var lv_up=lup.map(function(p){var m=MV[p[1]];return (m?m[1]:p[1])+'@'+p[0]}).join(' ');
   var nUp=(sp?(sp.lv||[]):[]).length,nTut=(sp?(sp.tut||[]):[]).length;
-  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,特性1:abis[abiSel]||'',特性2:abis[1]||'',特性3:abis[2]||'',特性选中索引:abiSel,天生特性1:inns[0]||'',天生特性2:inns[1]||'',天生特性3:inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4(末招)':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,性格:NATURE_ZH[nature]||'',性格画像:nprof,OTID:otidHex||'','+0x12(语言/等级/闪光/特性)':extra12?('0x'+extra12.toString(16).toUpperCase()):'',加密块:enc||''};
+  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,'主特性(当前生效)':abis[abiSel]||'',可选特性2:abis[1]||'',可选特性3:abis[2]||'',主特性选中索引:abiSel,'天性1(固定)':inns[0]||'','天性2(固定)':inns[1]||'','天性3(固定)':inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4(末招)':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,性格:NATURE_ZH[nature]||'',性格画像:nprof,OTID:otidHex||'','+0x12(语言/等级/闪光/特性)':extra12?('0x'+extra12.toString(16).toUpperCase()):'',加密块:enc||''};
 }
 function parseSavBytes(d){
   var recs=scanRecords(d);
@@ -7368,12 +7371,20 @@ function renderCore(s){
     return '<button type="button" class="chip" aria-expanded="false" onclick="l1AtkDef(\'l1tf'+SID+'\','+jsl(String(SID))+',this)" title="点开看 攻（本系打谁有效）/ 防（对手打你）两视角">'+tlabel(t)+' ▾</button>';
   }).join('')+'</div>';
   html+='<div class="accbd" id="l1tf'+SID+'" style="display:none"></div>';
-  /* 特性 chip（n 选 1）：点开就地展开作用详情；原文 >40 字走轻量弹层 */
-  html+='<div class="chiprow"><span class="dim">特性：</span>'+((s.abis&&s.abis.length)
+  /* 特性（n 选 1）：点开就地展开作用详情；原文 >40 字走轻量弹层 */
+  var abiN=(s.abis&&s.abis.length)||0,innN=(s.inns&&s.inns.length)||0;
+  html+='<div class="chiprow"><span class="dim">特性（'+abiN+' 选 1）：</span>'+((abiN)
     ? s.abis.map(function(n,ai){
-        return '<button type="button" class="chip" aria-expanded="false" onclick="abiInline(\'l1ab'+SID+'_'+ai+'\','+jsl(n)+',this)" title="点开看作用详情">'+esc(n)+' ▾</button>';
+        return '<button type="button" class="chip" aria-expanded="false" onclick="abiInline(\'l1ab'+SID+'_'+ai+'\','+jsl(n)+',this)" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(n)+' ▾</button>';
       }).join('')+s.abis.map(function(n,ai){return '<div class="accbd" id="l1ab'+SID+'_'+ai+'" style="display:none"></div>'}).join('')
     : '<span class="dim">无</span>')+'</div>';
+  /* 天性（固定全部拥有）：点开就地展开作用详情 */
+  html+='<div class="chiprow"><span class="dim">天性（固定 '+innN+' 个·全部拥有）：</span>'+((innN)
+    ? s.inns.map(function(n,ii){
+        return '<button type="button" class="chip chip-inn" aria-expanded="false" onclick="abiInline(\'l1in'+SID+'_'+ii+'\','+jsl(n)+',this)" title="天性固定拥有，点开看作用详情">'+esc(n)+' ▾</button>';
+      }).join('')+s.inns.map(function(n,ii){return '<div class="accbd" id="l1in'+SID+'_'+ii+'" style="display:none"></div>'}).join('')
+    : '<span class="dim">无</span>')+'</div>';
+  html+='<span class="abi4rule">四特性体系：主特性 '+abiN+' 选 1 生效；天性 '+innN+' 个固定全部拥有 —— 配队评估两者并计（免疫/半伤/添属性/联防）</span>';
   /* 种族值六维条形图（含总值） */
   var stNames=['HP','攻击','防御','特攻','特防','速度'];
   html+='<div class="statbars">';
