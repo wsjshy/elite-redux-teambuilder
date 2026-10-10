@@ -7131,36 +7131,19 @@ function evWhy(btn){
   if(box.hasAttribute('hidden'))box.removeAttribute('hidden');else box.setAttribute('hidden','');
   try{btn.setAttribute('aria-expanded',box.hasAttribute('hidden')?'false':'true')}catch(e1){}
 }
-/* L1 特性 chip 就地展开（abiDescZh + abiTags + glossary）；原文 >40 字走轻量弹层 */
-function abiInline(boxId,abiName,btn){
-  var box=$(boxId);if(!box)return;
-  if(box.style.display&&box.style.display!=='none'){
-    box.style.display='none';if(btn&&btn.setAttribute)btn.setAttribute('aria-expanded','false');return;
-  }
-  box.style.display='block';if(btn&&btn.setAttribute)btn.setAttribute('aria-expanded','true');
-  if(box.getAttribute&&box.getAttribute('data-filled'))return;
+/* L1 特性/天性 chip：点击直接弹轻量 modal（完整描述 + 战斗意义 + 机制词条），不做就地展开 */
+function abiModal(abiName,kind){
   var id=abiIdByZhOrEn(abiName);
   var hasId=(id!==null&&id!==undefined);
   var zh=hasId?abiDescZhOf(id):null,a=hasId?ABI[id]:null;
   var nm=(a&&a[2])?a[2]:String(abiName);
   var tg=hasId?abiTagLines(id):[];
-  var plain=String(zh==null?'':zh).replace(/<[^>]*>/g,'');
-  var full='<div style="margin-bottom:3px"><b>'+esc(nm)+'</b>'+(a&&a[1]&&a[1]!==nm?('（'+esc(a[1])+'）'):'')+
-    (hasId?(' <span class="badge badge-neu">#'+id+'</span>'):'')+'</div>'+
+  var full='<div style="margin-bottom:6px"><b>'+esc(nm)+'</b>'+(a&&a[1]&&a[1]!==nm?('（'+esc(a[1])+'）'):'')+
+    (hasId?(' <span class="badge badge-neu">#'+id+'</span>'):'')+
+    ' <span class="dim">'+(kind==='天性'?'天性（固定拥有）':'特性（可选·n 选 1）')+'</span></div>'+
     '<div>'+glossify(zh||'（无中文描述）')+'</div>'+
-    (tg.length?('<div class="ruleline">战斗意义：'+tg.map(function(x){return esc(x)}).join('；')+'</div>'):'');
-  if(box.setAttribute)box.setAttribute('data-filled','1');
-  if(plain.length>40){
-    if(box.setAttribute){box.setAttribute('data-title','特性 · '+nm);box.setAttribute('data-full',full)}
-    box.innerHTML='<div class="dim">原文较长（'+plain.length+' 字）—— 已改为轻量弹层展示，避免撑开卡片。</div>'+
-      '<button class="btn-mini tap44" type="button" onclick="l1ModalFrom(this)">查看完整详情（弹层）</button>';
-    return;
-  }
-  box.innerHTML=full;
-}
-function l1ModalFrom(btn){
-  var box=btn&&btn.parentNode;if(!box||!box.getAttribute)return;
-  l1Modal(box.getAttribute('data-title'),box.getAttribute('data-full'));
+    (tg.length?('<div class="ruleline" style="margin-top:6px"><b>战斗意义</b>：'+tg.map(function(x){return esc(x)}).join('；')+'</div>'):'');
+  l1Modal(String(kind||'特性')+' · '+nm,full);
 }
 function l1Modal(title,htmlStr){
   var m=$('l1Modal');
@@ -7371,18 +7354,18 @@ function renderCore(s){
     return '<button type="button" class="chip" aria-expanded="false" onclick="l1AtkDef(\'l1tf'+SID+'\','+jsl(String(SID))+',this)" title="点开看 攻（本系打谁有效）/ 防（对手打你）两视角">'+tlabel(t)+' ▾</button>';
   }).join('')+'</div>';
   html+='<div class="accbd" id="l1tf'+SID+'" style="display:none"></div>';
-  /* 特性（n 选 1）：点开就地展开作用详情；原文 >40 字走轻量弹层 */
+  /* 特性（n 选 1）：点击 chip 直接弹轻量 modal（完整描述/战斗意义/机制词条） */
   var abiN=(s.abis&&s.abis.length)||0,innN=(s.inns&&s.inns.length)||0;
   html+='<div class="chiprow"><span class="dim">特性（'+abiN+' 选 1）：</span>'+((abiN)
     ? s.abis.map(function(n,ai){
-        return '<button type="button" class="chip" aria-expanded="false" onclick="abiInline(\'l1ab'+SID+'_'+ai+'\','+jsl(n)+',this)" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(n)+' ▾</button>';
-      }).join('')+s.abis.map(function(n,ai){return '<div class="accbd" id="l1ab'+SID+'_'+ai+'" style="display:none"></div>'}).join('')
+        return '<button type="button" class="chip" onclick="abiModal('+jsl(n)+',\'特性\')" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(n)+'</button>';
+      }).join('')
     : '<span class="dim">无</span>')+'</div>';
-  /* 天性（固定全部拥有）：点开就地展开作用详情 */
+  /* 天性（固定全部拥有）：点击 chip 直接弹轻量 modal */
   html+='<div class="chiprow"><span class="dim">天性（固定 '+innN+' 个·全部拥有）：</span>'+((innN)
     ? s.inns.map(function(n,ii){
-        return '<button type="button" class="chip chip-inn" aria-expanded="false" onclick="abiInline(\'l1in'+SID+'_'+ii+'\','+jsl(n)+',this)" title="天性固定拥有，点开看作用详情">'+esc(n)+' ▾</button>';
-      }).join('')+s.inns.map(function(n,ii){return '<div class="accbd" id="l1in'+SID+'_'+ii+'" style="display:none"></div>'}).join('')
+        return '<button type="button" class="chip chip-inn" onclick="abiModal('+jsl(n)+',\'天性\')" title="天性固定拥有，点开看作用详情">'+esc(n)+'</button>';
+      }).join('')
     : '<span class="dim">无</span>')+'</div>';
   html+='<span class="abi4rule">四特性体系：主特性 '+abiN+' 选 1 生效；天性 '+innN+' 个固定全部拥有 —— 配队评估两者并计（免疫/半伤/添属性/联防）</span>';
   /* 种族值六维条形图（含总值） */
