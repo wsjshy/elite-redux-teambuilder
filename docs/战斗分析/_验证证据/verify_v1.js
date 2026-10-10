@@ -73,9 +73,9 @@ chk('数据层 conv 只给目标属性、无 src 字段（来源属性由引擎�
 /* ============ B8：WCONF / ABI_ATE 落地 ============ */
 hdr('B8 WCONF / ABI_ATE 参数落地（已按游戏源码核对后：按 v2.65 源码为准）');
 const W = sandbox.WCONF, AT = sandbox.ABI_ATE;
-const wantW = { manualDurTurns: 8, abilityDurTurns: 8, rockTurnsAbility: 12, rockTurnsManual: 12, boost: 0.5, abilityBoost: 0.5, terrainBoost: 1.3, terrainDurTurns: 8, terrainExtenderTurns: 12, tailwindTurns: 4, autoTailwindTurns: 4, trickroomTurns: 5, trickroomPrio: -7, paraSpeed: 0.5, paraFullChance: 0.25 };
+const wantW = { manualDurTurns: 8, abilityDurTurns: 8, rockTurnsAbility: 12, rockTurnsManual: 12, boost: 0.5, abilityBoost: 0.5, terrainBoost: 1.3, terrainDurTurns: 8, terrainExtenderTurns: 12, tailwindTurns: 4, autoTailwindTurns: 4, trickroomTurns: 6, trickroomPrio: -7, paraSpeed: 0.5, paraFullChance: 0.25 };
 Object.keys(wantW).forEach(k => chk('WCONF.' + k + ' = ' + wantW[k], W[k] === wantW[k], 'got=' + W[k]));
-chk('WCONF.lightClayTurns 存在且为 null（待实测）', 'lightClayTurns' in W && W.lightClayTurns === null, String(W.lightClayTurns));
+chk('WCONF.lightClayTurns 定稿结构：招式 4 招 5→8 / North Wind 3→5', W.lightClayTurns && W.lightClayTurns.moveScreens.base === 5 && W.lightClayTurns.moveScreens.clay === 8 && W.lightClayTurns.abilityNorthWind.base === 3 && W.lightClayTurns.abilityNorthWind.clay === 5, JSON.stringify(W.lightClayTurns));
 chk('v3.23 天气回合单档：源码 8 / 岩石 12，手动与特性相同（无 changelog 的「手动 5」档）', W.manualDurTurns === 8 && W.abilityDurTurns === 8 && W.rockTurnsManual === 12 && W.rockTurnsAbility === 12, [W.manualDurTurns, W.abilityDurTurns, W.rockTurnsManual, W.rockTurnsAbility].join('/'));
 chk('v3.23 天气增伤取消分源：boost == abilityBoost（同档 ×1.5，增量语义 1+值）', W.boost === 0.5 && W.abilityBoost === 0.5 && (1 + W.abilityBoost) === 1.5, 'boost=' + W.boost + ' abilityBoost=' + W.abilityBoost);
 chk('v3.23 场地延展器 11 → 12（源码 TERRAIN_DURATION_EXTENDED=12）', W.terrainExtenderTurns === 12, String(W.terrainExtenderTurns));
@@ -84,12 +84,12 @@ chk('hazardRules 四类齐全', ['spikes', 'stealthRock', 'toxicSpikes', 'sticky
 chk('hazardRules.spikes 3 层 1/8→1/6→1/4（考古修正 3/16→1/6）', W.hazardRules.spikes.maxLayers === 3 && W.hazardRules.spikes.dmg.join() === [1 / 8, 1 / 6, 1 / 4].join(), W.hazardRules.spikes.dmg.join());
 chk('hazardRules.stickyWeb 速度 -1 + 免疫飞行/飘浮/气球', W.hazardRules.stickyWeb.speedStage === -1 && W.hazardRules.stickyWeb.immune.join() === '飞行,飘浮,气球', W.hazardRules.stickyWeb.immune.join());
 chk('defogRapidSpin：spin=self / defog=both / 雾中闪避 -1', W.defogRapidSpin.rapidSpin === 'self' && W.defogRapidSpin.defog === 'both' && W.defogRapidSpin.defogEvasion === -1, JSON.stringify(W.defogRapidSpin));
-chk('frostbite：1/16 + 特攻×0.5 + 冰雹×3（值保留，×3 转待实测）', W.frostbite.dmgFraction === 1 / 16 && W.frostbite.spAtkMult === 0.5 && W.frostbite.hailChanceMult === 3, JSON.stringify(W.frostbite));
-chk('toxicTerrain：8 回合 / 1.3 / 1/16 / 不转毒菱 / 种子未收录', W.toxicTerrain.exists === true && W.toxicTerrain.durTurns === 8 && W.toxicTerrain.boost === 1.3 && W.toxicTerrain.dmgFraction === 1 / 16 && W.toxicTerrain.spikesToToxicSpikes === false && W.toxicTerrain.seed === '未收录', JSON.stringify(W.toxicTerrain));
+chk('frostbite：1/16 + 特攻×0.5 + 冰雹×1（2026-10-10 定稿：v2.65 已删除雪天×3）', W.frostbite.dmgFraction === 1 / 16 && W.frostbite.spAtkMult === 0.5 && W.frostbite.hailChanceMult === 1, JSON.stringify(W.frostbite));
+chk('toxicTerrain：8 回合 / 1.3 / 1/16 / 不转毒菱（定稿）/ 种子不存在（定稿）', W.toxicTerrain.exists === true && W.toxicTerrain.durTurns === 8 && W.toxicTerrain.boost === 1.3 && W.toxicTerrain.dmgFraction === 1 / 16 && W.toxicTerrain.spikesToToxicSpikes === false && W.toxicTerrain.seed.indexOf('不存在') === 0, JSON.stringify(W.toxicTerrain));
 chk('ABI_ATE.multiplier = 1.0（v2.65 宏族无 onOffensiveMultiplier）+ stabConvert + procChance 1.0', AT.multiplier === 1.0 && AT.stabConvert === true && AT.procChance === 1.0, JSON.stringify(AT));
 chk('ABI_ATE.specialBoost 三特例 ×1.1：96 Normalize / 280 Crystallize / 659 Superconductor', AT.specialBoost['96'] === 1.1 && AT.specialBoost['280'] === 1.1 && AT.specialBoost['659'] === 1.1 && Object.keys(AT.specialBoost).length === 3, JSON.stringify(AT.specialBoost));
 chk('ateMulOf：宏族匿名 id → 1.0（如 174 Refrigerate）/ 三特例 → 1.1', sandbox.ateMulOf(174) === 1.0 && sandbox.ateMulOf(96) === 1.1 && sandbox.ateMulOf(280) === 1.1 && sandbox.ateMulOf(659) === 1.1 && sandbox.ateMulOf(null) === 1.0, [174, 96, 280, 659].map(x => x + '→' + sandbox.ateMulOf(x)).join(' '));
-chk('待实测清单 6 项（v4.2 新增 wxGrantOrder：天气归属两代机制相反、待实测；其余为 v2.65+ 考古后的 5 项）', Object.keys(sandbox.WCONF_PEND).length === 6 && Object.keys(sandbox.WCONF_PEND).join() === 'WCONF.trickroomTurns,WCONF.frostbite.hailChanceMult,WCONF.lightClayTurns,WCONF.toxicTerrain.spikesToToxicSpikes,WCONF.toxicTerrain.seed,WCONF.wxGrantOrder', Object.keys(sandbox.WCONF_PEND).join(','));
+chk('待实测清单 0 项（2026-10-10 ER 机制实证定稿：原 6 项全部定稿，WCONF_PEND 清空）', Object.keys(sandbox.WCONF_PEND).length === 0, Object.keys(sandbox.WCONF_PEND).join(','));
 chk('v3.23 转定稿项已移出 PEND（天气回合/岩石/增伤/场地倍率/延展器/顺风/-ate）', ['WCONF.rockTurnsManual', 'WCONF.terrainBoost', 'WCONF.terrainExtenderTurns', 'WCONF.tailwindTurns', 'ABI_ATE.stabConvert', 'ABI_ATE.multiplier', 'WCONF.boost', 'WCONF.abilityBoost', 'WCONF.manualDurTurns', 'WCONF.abilityDurTurns', 'WCONF.rockTurnsAbility', 'WCONF.terrainDurTurns'].every(k => !sandbox.WCONF_PEND[k]), Object.keys(sandbox.WCONF_PEND).join(','));
 chk('wxNums() 单档 ×1.5（无 +20%）+ 无徽标', /晴\/雨增伤 ×1\.5/.test(sandbox.wxNums()) && /已按游戏源码核对/.test(sandbox.wxNums()) && !/\+20%/.test(sandbox.wxNums()) && !/待游戏内实测确认/.test(sandbox.wxNums()), sandbox.wxNums());
 chk('terrainNums() ×1.3 + v2.65 源码注 + 延展器 12 + 无徽标', /×1\.3/.test(sandbox.terrainNums()) && /已按游戏源码核对/.test(sandbox.terrainNums()) && /延展器 12 回合/.test(sandbox.terrainNums()) && !/待游戏内实测确认/.test(sandbox.terrainNums()), sandbox.terrainNums());
@@ -591,7 +591,7 @@ chk('「机制口径」折叠块存在且唯一（#ruleBoxCore 渲染 wxRuleHtml
 chk('流派卡含「选招依据」', /选招依据/.test(coreHtml), '');
 chk('流派卡含「盲点」检查', /盲点/.test(coreHtml), '');
 chk('流派卡含「特性免疫警示」或双刀补盲', /特性免疫警示|双刀补盲|无盲点/.test(coreHtml), '');
-chk('renderCore 含天气/场地数值卡（v3.23：单档 ×1.5 + 空间行徽标）', /晴\/雨增伤 ×1\.5/.test(coreHtml) && !/\+20%/.test(coreHtml) && /待游戏内实测确认/.test(coreHtml), '');
+chk('renderCore 含天气/场地数值卡（v3.23：单档 ×1.5 + 定稿后无徽标）', /晴\/雨增伤 ×1\.5/.test(coreHtml) && !/\+20%/.test(coreHtml) && !/待游戏内实测确认/.test(coreHtml) && /戏法空间 6 回合（定稿：含施放回合，实际 6 个回合时段）/.test(coreHtml), '');
 chk('renderCore 含耐久口径文案（B2）', /耐久口径/.test(coreHtml), '');
 chk('renderCore 含除钉说明（229/432）', /229/.test(coreHtml) && /432/.test(coreHtml), '');
 sandbox.selectCore(2502);
@@ -778,8 +778,8 @@ const ruleHtml = sandbox.wxRuleHtml();
 const ruleRows = [];
 ruleHtml.replace(/<tr><td>([^<]*)<\/td><td[^>]*>([^<]*)<\/td><td[^>]*>(.*?)<\/td><\/tr>/g, (all, n, k, v) => { ruleRows.push({ n: n, k: k, v: v, badge: /待游戏内实测确认/.test(v) }); return all; });
 const pendKeys = Object.keys(sandbox.WCONF_PEND);
-/* v3.23（以 v2.65+ 源码为准）后 5 项待实测 → 机制口径表应带徽标的 4 行（逐行归属，测试侧显式列出） */
-const expBadgeRows = ['WCONF.lightClayTurns', 'WCONF.trickroomTurns', 'WCONF.frostbite', 'WCONF.toxicTerrain', 'WCONF.wxGrantOrder'];
+/* 2026-10-10 ER 机制实证定稿后：原 5 项待实测全部定稿 → 口径表应 0 行带徽标 */
+const expBadgeRows = [];
 const gotBadgeRows = ruleRows.filter(r => r.badge).map(r => r.k);
 const badgeOcc = (ruleHtml.match(/待游戏内实测确认/g) || []).length;
 const badgeRowOcc = ruleRows.reduce((a, r) => a + (r.v.match(/待游戏内实测确认/g) || []).length, 0);
@@ -792,8 +792,8 @@ const noBadgeBad = expNoBadge.filter(k => (ruleRows.filter(r => r.k === k)[0] ||
 console.log('  机制口径表行数=' + ruleRows.length + ' 带徽标行=' + gotBadgeRows.length + ' 徽标出现次数=' + badgeOcc + ' pend 清单=' + pendKeys.length);
 console.log('  带徽标行键=' + gotBadgeRows.join(', '));
 console.log('  逐行徽标次数=' + ruleRows.map(r => r.k + '×' + (r.v.match(/待游戏内实测确认/g) || []).length).filter(x => !/×0$/.test(x)).join(' | '));
-chk('D3 口径表徽标行 = 6 项待实测所覆盖的 5 行（逐行归属；v4.2 新增 WCONF.wxGrantOrder）', rowBad.length === 0 && gotBadgeRows.length === expBadgeRows.length, rowBad.map(r => r.k + '(badge=' + r.badge + ')').join(' | ') || (gotBadgeRows.length + ' 行全一致'));
-chk('D3 口径表表格内徽标出现次数 = 6（对应待实测 6 项；v3.22 为 8 / 考古轮 11 / 初版 14）', badgeRowOcc === 6, badgeRowOcc + ' 处');
+chk('D3 口径表徽标行 = 0（2026-10-10 实证定稿后全部无徽标）', rowBad.length === 0 && gotBadgeRows.length === expBadgeRows.length, rowBad.map(r => r.k + '(badge=' + r.badge + ')').join(' | ') || (gotBadgeRows.length + ' 行全一致'));
+chk('D3 口径表表格内徽标出现次数 = 0（对应待实测 0 项；定稿前 v3.23 为 6 / v3.22 为 8 / 考古轮 11 / 初版 14）', badgeRowOcc === 0, badgeRowOcc + ' 处');
 chk('D3 已裁定/已实证参数行不挂徽标（天气回合·增伤·场地倍率·延展器·顺风·-ate·麻痹·隐形岩·除钉 共 16 键）', noBadgeBad.length === 0, noBadgeBad.join(' | ') || 'clean');
 chk('D3/v3.23 口径表 WCONF.boost 行无徽标 + 显示 +50%（×1.5）', !ruleRows.filter(r => r.k === 'WCONF.boost')[0].badge && /\+50%（×1\.5）/.test(ruleRows.filter(r => r.k === 'WCONF.boost')[0].v), ruleRows.filter(r => r.k === 'WCONF.boost')[0].v);
 chk('v3.23 口径表 WCONF.terrainBoost 行无徽标（已按游戏源码核对定稿）+ 值 ×1.3 + 注 B_TERRAIN_TYPE_BOOST=GEN_8', !ruleRows.filter(r => r.k === 'WCONF.terrainBoost')[0].badge && /×1\.3（已按游戏源码核对：B_TERRAIN_TYPE_BOOST=GEN_8）/.test(ruleRows.filter(r => r.k === 'WCONF.terrainBoost')[0].v), ruleRows.filter(r => r.k === 'WCONF.terrainBoost')[0].v);
@@ -809,13 +809,13 @@ chk('v3.23 口径表顺风/延展器行无徽标（常量 3 ⇒ 实际 4 时段 
   const a = ruleRows.filter(r => r.k === 'WCONF.tailwindTurns')[0], b = ruleRows.filter(r => r.k === 'WCONF.autoTailwindTurns')[0], c = ruleRows.filter(r => r.k === 'WCONF.terrainExtenderTurns')[0];
   return !a.badge && !b.badge && !c.badge && /4 回合（已按游戏源码核对：常量 3 \+ 当回合不递减 ⇒ 实际 4 个回合时段）/.test(a.v) && /4 回合（已按游戏源码核对：SHORT=3，同上 ⇒ 实际 4 个回合时段，与手动相同）/.test(b.v) && /12 回合（已按游戏源码核对：TERRAIN_DURATION 8\/EXTENDED 12；原记 11）/.test(c.v);
 })(), ruleRows.filter(r => r.k === 'WCONF.tailwindTurns')[0].v + ' | ' + ruleRows.filter(r => r.k === 'WCONF.terrainExtenderTurns')[0].v);
-chk('v3.23 口径表冻伤行挂 1 处徽标 + 注明雪天 ×3 游戏源码中未见', (function () {
+chk('2026-10-10 口径表冻伤行无徽标 + 注明冰雹×1 定稿（v2.65 已删除雪天×3，仅 Cryomancy×5）', (function () {
   const r = ruleRows.filter(r => r.k === 'WCONF.frostbite')[0];
-  return r.badge === true && (r.v.match(/待游戏内实测确认/g) || []).length === 1 && /冰雹触发×3 游戏源码中未见（旧版有\/v2\.65\+ 仅 Cryomancy×5）/.test(r.v) && /已按游戏源码核对/.test(r.v);
+  return r.badge === false && (r.v.match(/待游戏内实测确认/g) || []).length === 0 && /冰雹触发×1（定稿 2026-10-10：v2.65 已删除雪天×3，仅 Cryomancy×5；/.test(r.v) && /已按游戏源码核对/.test(r.v);
 })(), ruleRows.filter(r => r.k === 'WCONF.frostbite')[0].v.replace(/<[^>]+>/g, '[徽标]'));
-chk('v3.23 口径表戏法空间行挂 1 处徽标 + 注明文案 5 / 推算 6 + 先制 -7 已按游戏数据核对', (function () {
+chk('2026-10-10 口径表戏法空间行无徽标 + 注明 6 个回合时段（含施放回合）定稿 + 先制 -7 已按游戏数据核对', (function () {
   const r = ruleRows.filter(r => r.k === 'WCONF.trickroomTurns')[0];
-  return r.badge === true && (r.v.match(/待游戏内实测确认/g) || []).length === 1 && /5 回合（官方文案 5；源码常量 5 \+ 当回合不递减 ⇒ 推算 6 个回合时段，差 1 待实测） \/ 先制 -7（已按游戏数据核对）/.test(r.v);
+  return r.badge === false && (r.v.match(/待游戏内实测确认/g) || []).length === 0 && /6 个回合时段（定稿：源码常量 5 \+ 施放当回合不递减 ⇒ 实际 6 时段含施放回合；desc\/官方文案记 5 系不含施放回合口径） \/ 先制 -7（已按游戏数据核对）/.test(r.v);
 })(), ruleRows.filter(r => r.k === 'WCONF.trickroomTurns')[0].v.replace(/<[^>]+>/g, '[徽标]'));
 chk('考古：口径表 paraSpeed/paraFullChance 行无徽标且标注已按游戏源码核对', !ruleRows.filter(r => r.k === 'WCONF.paraSpeed')[0].badge && /已按游戏源码核对/.test(ruleRows.filter(r => r.k === 'WCONF.paraSpeed')[0].v) && !ruleRows.filter(r => r.k === 'WCONF.paraFullChance')[0].badge && /已按游戏源码核对/.test(ruleRows.filter(r => r.k === 'WCONF.paraFullChance')[0].v), ruleRows.filter(r => r.k === 'WCONF.paraSpeed')[0].v + ' | ' + ruleRows.filter(r => r.k === 'WCONF.paraFullChance')[0].v);
 const spikesRow = ruleRows.filter(r => r.k === 'WCONF.hazardRules.spikes')[0];
@@ -825,7 +825,7 @@ chk('裁定 2：隐形岩行无徽标、无「疑似失效」风险文案、明�
 const defogRow = ruleRows.filter(r => r.k === 'WCONF.defogRapidSpin')[0];
 chk('裁定 3：除钉行定稿（无徽标 + 用户确认 + 双方钉子/墙仅对手侧/降闪避 1 级）', !defogRow.badge && (defogRow.v.match(/待游戏内实测确认/g) || []).length === 0 && /用户确认/.test(defogRow.v) && /清双方钉子/.test(defogRow.v) && /墙仅对手侧/.test(defogRow.v) && /降闪避 1 级/.test(defogRow.v), defogRow.v);
 const toxicRow = ruleRows.filter(r => r.k === 'WCONF.toxicTerrain')[0];
-chk('裁定 1：剧毒场地毒招 +30%（用户确认定稿，该处无徽标）+ 仅 2 处徽标（转毒菱/种子）', /毒招 ×1\.3（\+30%，用户确认，定稿）/.test(toxicRow.v) && (toxicRow.v.match(/待游戏内实测确认/g) || []).length === 2, toxicRow.v.replace(/<[^>]+>/g, '[徽标]'));
+chk('裁定 1：剧毒场地毒招 +30%（用户确认定稿）+ 无徽标（转毒菱/种子 2026-10-10 定稿）', /毒招 ×1\.3（\+30%，用户确认，定稿）/.test(toxicRow.v) && (toxicRow.v.match(/待游戏内实测确认/g) || []).length === 0, toxicRow.v.replace(/<[^>]+>/g, '[徽标]'));
 chk('裁定 2：WCONF 已无 hazardBugNote 键（整项移除，非降级）', !('hazardBugNote' in sandbox.WCONF), Object.keys(sandbox.WCONF).join(','));
 chk('裁定 2：口径表全文无「疑似失效 / hazardBugNote」风险文案', !/疑似失效/.test(ruleHtml) && !/hazardBugNote/.test(ruleHtml), '');
 chk('裁定 3：WCONF.defogRapidSpin 含 walls=foeOnly（墙仅对手侧）', sandbox.WCONF.defogRapidSpin.walls === 'foeOnly' && sandbox.WCONF.defogRapidSpin.defogEvasion === -1 && sandbox.WCONF.defogRapidSpin.rapidSpin === 'self' && sandbox.WCONF.defogRapidSpin.defog === 'both', JSON.stringify(sandbox.WCONF.defogRapidSpin));
@@ -840,7 +840,7 @@ chk('D3 手动天气 +50% 后不再挂徽标（全模板）', !/\+50%[^。；]{0
 chk('D3/v3.23 雨天模板显示单档 ×1.5 数值（无 +20%）', /×1\.5/.test(rainTip) && !/\+20%/.test(rainTip), rainTip.replace(/<[^>]+>/g, '').slice(0, 120));
 chk('D3/v3.23 wxTip 后全模板无残留徽标（v2.65 实证项已定稿；徽标仅存在于口径表）', (wxTippedAll.match(/待游戏内实测确认/g) || []).length === 0, (wxTippedAll.match(/待游戏内实测确认/g) || []).length + ' 处');
 chk('D3/v3.23 tplRuleTip 天气行 = 8 回合 + ×1.5，无 +20% 分源数值（「无『特性 20%』档」否定式注记除外）', /天气 8 回合/.test(byId('tplRuleTip')._html) && /×1\.5/.test(byId('tplRuleTip')._html) && !/\+20%/.test(byId('tplRuleTip')._html), byId('tplRuleTip')._html.slice(0, 140));
-chk('D3/v3.23 核心配队数值卡：天气 8 回合无徽标 / 单档 ×1.5 / 场地行无徽标 / 空间行 1 徽标', /晴\/雨增伤 ×1\.5（已按游戏源码核对：不分手动\/特性，单档）/.test(sandbox.wxNums()) && !/待游戏内实测确认/.test(sandbox.wxNums()) && !/待游戏内实测确认/.test(sandbox.terrainNums()) && /戏法空间 5 回合<span class="badge badge-pend"/.test(byId('coreOut')._html || '') && !/麻痹减速 ×0\.5（已按游戏源码核对）<span class="badge badge-pend"/.test(byId('coreOut')._html || ''), '');
+chk('D3/v3.23 核心配队数值卡：天气 8 回合无徽标 / 单档 ×1.5 / 场地行无徽标 / 空间行 6 时段无徽标（定稿）', /晴\/雨增伤 ×1\.5（已按游戏源码核对：不分手动\/特性，单档）/.test(sandbox.wxNums()) && !/待游戏内实测确认/.test(sandbox.wxNums()) && !/待游戏内实测确认/.test(sandbox.terrainNums()) && /戏法空间 6 回合（定稿：含施放回合，实际 6 个回合时段）/.test(byId('coreOut')._html || '') && !/戏法空间[^<]*<span class="badge badge-pend"/.test(byId('coreOut')._html || '') && !/麻痹减速 ×0\.5（已按游戏源码核对）<span class="badge badge-pend"/.test(byId('coreOut')._html || ''), '');
 chk('裁定 1/3：数值卡毒招 +30%（用户确认）与除钉定稿行均无徽标', /毒招 ×1\.3（\+30%，用户确认）\s*\/ 非毒钢接地/.test((byId('coreOut')._html || '').replace(/<[^>]+>/g, '')) && /除钉：229 高速旋转（清自身侧）\/ 432 清除浓雾（清双方钉子、墙仅对手侧、降闪避 1 级）——已按游戏源码核对 \+ 用户确认/.test((byId('coreOut')._html || '').replace(/<[^>]+>/g, '')) && !/毒招 ×1\.3（\+30%，用户确认）<span class="badge badge-pend"/.test(byId('coreOut')._html || ''), '');
 
 /* D4：僵直关键词补全（间隔型/休息型）+ 蓄力型区分 + 误判守护 */

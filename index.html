@@ -597,7 +597,9 @@ function tIdx(t){return ERDATA.types.indexOf(t)}
    并按用户指示「以 v2.65+ 源码为准」以 _验证证据/_源码考古_v265_20261006.md（在线官方仓 eliteredux-source
    upcoming 分支：Pin A=7d85acd5…@2026-03-28 = v2.65 时代、Pin B=910945b9…@2026-10-06 = 最新）落地。
    带「实证」标注者 = 双 pin 源码逐字取到；标「待实测」者仍按口径表默认值实现，
-   UI 相应位置加徽标「待游戏内实测确认」，待游戏内证据再定稿。 */
+   UI 相应位置加徽标「待游戏内实测确认」，待游戏内证据再定稿。
+   2026-10-10 ER 机制实证定稿：全部 6 项 PEND 清零（见 docs/战斗分析/_验证证据/ER机制实证_20261010/00_主清单与全量查证结果表.md），
+   WCONF_PEND 为空表，UI 不再挂「待游戏内实测确认」徽标。 */
 var WCONF={
   manualDurTurns:8, abilityDurTurns:8, rockTurnsAbility:12, rockTurnsManual:12
     /*实证（v2.65 双 pin）：include/battle_util.h「WEATHER_DURATION 8 / WEATHER_DURATION_EXTENDED 12」；
@@ -615,12 +617,16 @@ var WCONF={
                      ZERO(gSideTimers[].started) ⇒ 当回合不递减 ⇒ 实际 4 个回合时段（与官方文案 4 turns 自洽）*/,
   autoTailwindTurns:4 /*v3.23 由 3 改 4：特性侧用 TAILWIND_DURATION_SHORT=3 + 同一 started 机制 ⇒ 实际亦 4 个回合时段，
                          与手动相同（差别不在时长）*/,
-  lightClayTurns:null /*待实测（实证两条链路：招式壁类 SCREEN_DURATION 5 → 持 Light Clay SCREEN_DURATION_EXTENDED 8；
-                         特性侧 North Wind 自动极光幕 SCREEN_DURATION_SHORT 3 → 持 Light Clay SCREEN_DURATION 5；
-                         Light Wield 自动光墙属 v2.65 之后新增。另：特性「烟雾」用 ITEM_LIGHT_CLAY 与 HOLD_EFFECT 枚举比较，
-                         疑永远取 SHORT —— 源码级疑瑕疵，未做游戏内验证）*/,
-  trickroomTurns:5 /*待实测：官方文案 5；源码 TRICK_ROOM_DURATION=5 但同一「当回合不递减」机制 ⇒ 机械推算 6 个回合时段，
-                      差 1 须游戏内实测裁定*/, trickroomPrio:-7 /*已按游戏数据核对：gameDataV2.65beta.json moves[433].prio=-7（源码树无优先级硬编码）*/,
+  lightClayTurns:{moveScreens:{base:5,clay:8,scope:'极光幕/反射壁/光墙/烟幕（白雾/幸运咒语/神秘守护不延展）'},abilityNorthWind:{base:3,clay:5}}
+    /*定稿（2026-10-10，v2.65 双 pin 实证）：招式侧仅 4 招（极光幕/反射壁/光墙/烟幕）SCREEN_DURATION 5 → 持 Light Clay
+       SCREEN_DURATION_EXTENDED 8；白雾/幸运咒语用 SCREEN_DURATION、神秘守护硬编码 5（不延展）；
+       特性侧 North Wind 自动极光幕 SCREEN_DURATION_SHORT 3 → 持 Light Clay SCREEN_DURATION 5；
+       Light Wield 自动光墙属 v2.65 之后新增（Pin B）。另：特性「烟雾」用 ITEM_LIGHT_CLAY 与 HOLD_EFFECT 枚举比较
+       疑永远取 SHORT —— 源码级疑瑕疵，已实读确认属实，不影响引擎参数（见 ER机制实证_20261010/时序场地组证据 W3）*/,
+  trickroomTurns:6 /*定稿（2026-10-10，v2.65 双 pin 实证）：TRICK_ROOM_DURATION=5（battle_util.h:56）+ 施放当回合
+                      started 置位不递减（battle_script_commands.c:11881-82；battle_util.c:2025）⇒ 实际 6 个回合时段
+                      （含施放回合）；desc/官方文案记 5 turns 系不含施放回合口径；旧版 2024-04 无 started 检查（当时 5 时段），
+                      「+1」为 v2.65 时代引入（见 ER机制实证_20261010/时序场地组证据 W1）*/, trickroomPrio:-7 /*已按游戏数据核对：gameDataV2.65beta.json moves[433].prio=-7（源码树无优先级硬编码）*/,
   paraSpeed:0.5 /*实证：battle_config.h「B_PARALYSIS_SPEED GEN_7 // Speed is decreased by 50%」+ battle_main.c speed /= 2*/,
   paraFullChance:0.25 /*实证（v2.65）：battle_util.c CANCELLER_PARALYSED「Random() % 4」⇒ 25%；
                           v2.65 之后版本引入 Pokémon Champions 块（B_USE_CHAMPIONS_PARALYSIS，mod=8 ⇒ 12.5%），Pin A 无该配置块*/,
@@ -631,17 +637,21 @@ var WCONF={
     stickyWeb:{layers:1,speedStage:-1,immune:['飞行','飘浮','气球']}
   },
   defogRapidSpin:{rapidSpin:'self', defog:'both', defogEvasion:-1, walls:'foeOnly'} /*定稿（已按游戏源码核对 + 用户确认）：清除浓雾清双方钉子、墙仅对手侧、降闪避 1 级、不清地形场地（§9）*/,
-  frostbite:{dmgFraction:1/16, spAtkMult:0.5, hailChanceMult:3} /*前两项实证（ENDTURN_FROSTBITE maxHP/16 + battle_util.c spAttack /= 2）；
-                      hailChanceMult=3 转**待实测**：v2.65 双 pin 均**未找到**「雪天提高冻伤概率 ×3」（GetMoveEffectChance 全文只有
-                      彩虹 ×2；唯一概率加成是特性 Cryomancy「*effectChance *= 5」）；旧版 2024-04 克隆有该逻辑 ⇒ 版本删除型变更，待游戏内确认（§8）*/,
+  frostbite:{dmgFraction:1/16, spAtkMult:0.5, hailChanceMult:1} /*前三项实证定稿（2026-10-10）：前两项 v2.65 源码实证
+                      （ENDTURN_FROSTBITE maxHP/16 + battle_util.c spAttack /= 2）；hailChanceMult 由 3 改 1 —— v2.65 双 pin 全树
+                      **未找到**「雪天提高冻伤概率 ×3」（GetMoveEffectChance 全文只有彩虹 ×2；唯一概率加成是特性 Cryomancy
+                      「*effectChance *= 5」abilities.cc:5988）；×3 仅存在于旧版 2024-04（battle_script_commands.c:3871-3873）
+                      ⇒ v2.65 已删除该逻辑，官方特性页文案未同步（见 ER机制实证_20261010/时序场地组证据 W2）*/,
   toxicTerrain:{exists:true, durTurns:8, dmgFraction:1/16, boost:1.3 /*定稿：用户游戏内确认毒招 +30%（= ×1.3）；源码 MUL_MODIFIER(...,1.3) 实证*/,
-    spikesToToxicSpikes:false /*待实测（源码两 pin + v2.65 数据均未找到「撒菱→毒菱」实现，现值为 false 口径）*/,
-    seed:'未收录' /*待实测：v2.65 数据表 929 条道具**无** Toxic Seed（源码有 HOLD_EFFECT_PARAM_TOXIC_TERRAIN 分支 → TryHandleSeed(SPDef+1)）*/},
-  wxGrantOrder:'slow' /*天气归属（谁主导在场天气）——07 组队方法论 §1.2/§2.x + 研究资料 _03 §2.4 / _02 §6.3：
-      两代机制**相反**、须实测 ⇒ 做成可配置参数（默认取现代口径，见下）。
-      'slow' = modern：多个自动天气特性同时入场时，**慢者的特性后发动 → 慢者主导**（Koraidon 135 速先发、Kyogre 90 速后发动覆盖 → 雨）；
-      'fast' = legacy（Smogon DP-era「Speed is critical in determining which weather will be in place」⇒ 快者主导）。
-      ER 属第三代内核但有现代改动 ⇒ 【待实测】（未实测前配置为 'slow'，UI 标注徽标）*/
+    spikesToToxicSpikes:false /*定稿（2026-10-10）：v2.65 未实现「撒菱→毒菱」——Pin A/B 全仓 6 关键词 0 命中 + er-config
+      MoveBehaviorConfigList 撒菱/毒菱各自 legacy_config 互不引用 + Bulbapedia 无此机制 ⇒ GBACodes 记载为文档超前/错误（源码最高权威）*/,
+    seed:'不存在（v2.65 数据无该道具）' /*定稿（2026-10-10）：v2.65 数据/er-config 均无 ITEM_TOXIC_SEED（种子仅 Electric/Psychic/Misty/Grassy 4 个），
+      源码 HOLD_EFFECT_PARAM_TOXIC_TERRAIN 分支（TryHandleSeed SPDef+1）为死代码 ⇒ 机制不生效*/},
+  wxGrantOrder:'slow' /*天气归属（谁主导在场天气）——定稿（2026-10-10，v2.65 双 pin 实证 + 官方文档）：
+      battle_main.c:4374 换入按速度降序（SortBattlersBySpeed(...FALSE) 快→慢）逐个发动入场特性，
+      TryChangeBattleWeather（:3706）后者覆盖异种天气 ⇒ 慢者的特性最后发动 → **慢者主导**；
+      Bulbapedia Weather 页「the slowest Pokémon's Ability will override」一致。
+      'fast' 旧口径（Smogon DP-era「Speed is critical...」）仅为主系列 Gen 4-7 语义，不适用 ER v2.65*/
 };
 var ABI_ATE={
   multiplier:1.0 /*实证（v2.65 双 pin 逐字相同）：src/abilities.cc ATE_ABILITY 宏只有 onMoveType + onStab，**无 onOffensiveMultiplier**
@@ -655,16 +665,15 @@ var ABI_ATE={
 };
 /* 转换属性招的实际输出倍率：宏族 ×1.0（无 10% 加成），仅三特例 ×1.1 */
 function ateMulOf(id){var v=ABI_ATE.specialBoost[''+id];return (v===undefined?ABI_ATE.multiplier:v)}
-/* 待实测参数清单——口径表 14 项 → 2026-10-06 源码考古 11 项 → 用户三项裁定 8 项 → 已按游戏源码核对后 5 项：
-   ① v2.65+ 考古转定稿（去徽标）：manualDurTurns / rockTurnsManual（8→12，源码无 5 档）、terrainBoost、terrainExtenderTurns（12）、
-      tailwindTurns（常量 3 ⇒ 实际 4 时段）、ABI_ATE.multiplier（1.0）/ stabConvert（.onStab 实证）；
-   ② v2.65+ 考古**新增**待实测（挂徽标）：trickroomTurns（文案 5 / 推算 6，差 1）、frostbite.hailChanceMult（游戏源码中未见雪天 ×3）；
-   ③ 持续待实测：lightClayTurns、toxicTerrain.spikesToToxicSpikes、toxicTerrain.seed。
-   UI 徽标用 */
-var WCONF_PEND={'WCONF.trickroomTurns':1,'WCONF.frostbite.hailChanceMult':1,'WCONF.lightClayTurns':1,
-  'WCONF.toxicTerrain.spikesToToxicSpikes':1,'WCONF.toxicTerrain.seed':1,
-  'WCONF.wxGrantOrder':1 /* v4.2 新增（用户指令「WCONF 补 wxGrantOrder」）：天气归属规则两代机制相反（快者/慢者主导），
-     07 文档+研究资料 _03 §2.4 标【待实测】⇒ 按「待实测挂徽标」原则入清单（口径表原 5 项 → 6 项）*/};
+/* 待实测参数清单——2026-10-10 ER 机制实证定稿后**清空**（原 6 项全部定稿，见 ER机制实证_20261010/00_主清单与全量查证结果表）：
+   ① 戏法空间回合 5→6（v2.65 双 pin 实证：TRICK_ROOM_DURATION=5 + started 不递减 ⇒ 6 时段含施放回合）；
+   ② 冻伤雪天 ×3 → 1（v2.65 删除该逻辑，仅 Cryomancy ×5）；
+   ③ 光之黏土双链路定稿（招式 4 招 5→8 / North Wind 3→5）；
+   ④ 撒菱→毒菱定稿（未实现，GBACodes 记载为文档超前/错误）；
+   ⑤ Toxic Seed 定稿（v2.65 数据无该道具，机制不生效）；
+   ⑥ 天气归属定稿 slow（v2.65 换入按速度降序 ⇒ 慢者主导）。
+   UI 徽标用；现为空表。 */
+var WCONF_PEND={};
 function pendBadge(){return '<span class="badge badge-pend" title="该数值为口径表默认值，尚未经游戏内实测确认">待游戏内实测确认</span>'}
 function pct(x){return Math.round(x*100)+'%'}
 /* 分数显示（撒菱伤害表等整数倒数分数；避免 1/6 被 JS 打印成 0.16666666666666666） */
@@ -702,8 +711,8 @@ function wxRuleHtml(){
     ['场地延展器','WCONF.terrainExtenderTurns',WCONF.terrainExtenderTurns+' 回合（已按游戏源码核对：TERRAIN_DURATION 8/EXTENDED 12；原记 11）',''],
     ['顺风(手动)','WCONF.tailwindTurns',WCONF.tailwindTurns+' 回合（已按游戏源码核对：常量 3 + 当回合不递减 ⇒ 实际 4 个回合时段）',''],
     ['顺风(特性自动)','WCONF.autoTailwindTurns',WCONF.autoTailwindTurns+' 回合（已按游戏源码核对：SHORT=3，同上 ⇒ 实际 4 个回合时段，与手动相同）',''],
-    ['光之黏土延展壁类','WCONF.lightClayTurns','待实测（已按游戏源码核对两条链路：招式壁类 5→8（持 Light Clay）／特性侧 North Wind 极光幕 3→5；Light Wield 属 v2.65 之后新增）','pend'],
-    ['戏法空间','WCONF.trickroomTurns',WCONF.trickroomTurns+' 回合（官方文案 5；源码常量 5 + 当回合不递减 ⇒ 推算 6 个回合时段，差 1 待实测） / 先制 '+WCONF.trickroomPrio+'（已按游戏数据核对）','pend'],
+    ['光之黏土延展壁类','WCONF.lightClayTurns','招式壁类（仅极光幕/反射壁/光墙/烟幕）5→8（持 Light Clay；白雾/幸运咒语/神秘守护不延展）／特性 North Wind 极光幕 3→5（2026-10-10 v2.65 双 pin 定稿）',''],
+    ['戏法空间','WCONF.trickroomTurns',WCONF.trickroomTurns+' 个回合时段（定稿：源码常量 5 + 施放当回合不递减 ⇒ 实际 6 时段含施放回合；desc/官方文案记 5 系不含施放回合口径） / 先制 '+WCONF.trickroomPrio+'（已按游戏数据核对）',''],
     ['麻痹减速','WCONF.paraSpeed','×'+WCONF.paraSpeed+'（已按游戏源码核对：B_PARALYSIS_SPEED=GEN_7）',''],
     ['完全麻痹概率','WCONF.paraFullChance',pct(WCONF.paraFullChance)+'（已按游戏源码核对：Random()%4；后续版本 Champions 块改 12.5%）',''],
     ['撒菱','WCONF.hazardRules.spikes',WCONF.hazardRules.spikes.maxLayers+' 层 '+WCONF.hazardRules.spikes.dmg.map(fracTxt).join('→')+'（仅接地；2 层 1/6 系考古修正，原 3/16 为 Psypoke 讹误）',''],
@@ -711,10 +720,10 @@ function wxRuleHtml(){
     ['毒菱','WCONF.hazardRules.toxicSpikes',WCONF.hazardRules.toxicSpikes.maxLayers+' 层（钢免疫/接地毒系吸收）',''],
     ['黏黏网（粘网）','WCONF.hazardRules.stickyWeb','单层 换人 -1 速（飞行/飘浮/气球免疫）',''],
     ['除钉范围','WCONF.defogRapidSpin','高速旋转清自身侧 / 清除浓雾清双方钉子（已按游戏源码核对，不限场地）· 清除浓雾墙仅对手侧 · 降闪避 1 级（用户确认，定稿）',''],
-    ['冻伤','WCONF.frostbite','每回合 '+fracTxt(WCONF.frostbite.dmgFraction)+' 最大HP + 特攻×'+WCONF.frostbite.spAtkMult+'（已按游戏源码核对）；冰雹触发×'+WCONF.frostbite.hailChanceMult+' 游戏源码中未见（旧版有/v2.65+ 仅 Cryomancy×5）','pend'],
-    ['剧毒场地','WCONF.toxicTerrain','存在：'+WCONF.toxicTerrain.durTurns+' 回合 / 毒招 ×'+WCONF.toxicTerrain.boost+'（+'+pct(WCONF.toxicTerrain.boost-1)+'，用户确认，定稿） / 非毒钢接地每回合 '+fracTxt(WCONF.toxicTerrain.dmgFraction)+'（撒菱转毒菱：源码三处未找到实现'+pendBadge()+'；毒种子：'+WCONF.toxicTerrain.seed+'——v2.65 数据无该道具，源码有分支'+pendBadge()+'）',''],
+    ['冻伤','WCONF.frostbite','每回合 '+fracTxt(WCONF.frostbite.dmgFraction)+' 最大HP + 特攻×'+WCONF.frostbite.spAtkMult+'（已按游戏源码核对，定稿）；冰雹触发×'+WCONF.frostbite.hailChanceMult+'（定稿 2026-10-10：v2.65 已删除雪天×3，仅 Cryomancy×5；官方特性页文案未同步）',''],
+    ['剧毒场地','WCONF.toxicTerrain','存在：'+WCONF.toxicTerrain.durTurns+' 回合 / 毒招 ×'+WCONF.toxicTerrain.boost+'（+'+pct(WCONF.toxicTerrain.boost-1)+'，用户确认，定稿） / 非毒钢接地每回合 '+fracTxt(WCONF.toxicTerrain.dmgFraction)+'（撒菱转毒菱：未实现——Pin A/B 全仓 0 命中，GBACodes 记载为文档超前/错误；毒种子：'+WCONF.toxicTerrain.seed+'——定稿）',''],
     ['-ate 属性转换','ABI_ATE','倍率 ×'+ABI_ATE.multiplier+'（已按游戏源码核对：ATE_ABILITY 宏无 onOffensiveMultiplier；旧版 17 条硬编码 ×1.1 已移除） / 三特例 ×1.1：Normalize(96)/Crystallize(280)/Superconductor(659) / **来源属性 src**：皮肤系 6+1 条来源=一般（数据层 abiTags.conv），Crystallize 来源=岩石→冰、Superconductor 来源=钢→电（目标属性来自数据层；来源属性由 CONV_SRC 补登，命中优先） / 转换后按本系 ×1.6（.onStab 实证） / 触发率 '+ABI_ATE.procChance,''],
-    ['天气归属（谁主导）','WCONF.wxGrantOrder',wxGrantTxt()+'（可配置参数：slow=现代 / fast=旧口径；两代机制相反，ER 属第三代内核但有现代改动 ⇒ 待实测）','pend'],
+    ['天气归属（谁主导）','WCONF.wxGrantOrder',wxGrantTxt()+'（定稿 2026-10-10：v2.65 换入按速度降序发动、慢者特性最后覆盖 ⇒ 慢者主导；「fast 快者主导」旧口径不适用）',''],
     ['威胁库使用率先验（弱先验）','使用率弱先验',threatPriorLine(),'']
   ];
   var h='<details class="rulebox"><summary>📐 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》）</summary><div class="scroll">'+
@@ -727,9 +736,9 @@ function wxRuleHtml(){
 }
 /* 模板/提示文案口径修正（B8：删除写死的 20%/30%/8回合/无限天气旧文案）
    D3 修复（独立黑盒复验）：徽标只挂「待实测」参数（WCONF_PEND）——
-   2026-10-06 考古收敛 11 项 → 用户三项裁定 8 项 → v3.23「以 v2.65+ 源码为准」后 = 5 项
-   （trickroomTurns / frostbite.hailChanceMult / lightClayTurns / toxicTerrain 两项）；
-   天气回合·增伤·场地倍率·顺风·-ate 已由 已按游戏源码核对定稿，故本函数不再挂徽标。 */
+   2026-10-06 考古收敛 11 项 → 用户三项裁定 8 项 → 2026-10-10 ER 机制实证定稿后 = 0 项
+   （戏法空间 6 时段 / 冻伤雪天 ×3 已删除 / 光之黏土双链路 / 撒菱→毒菱未实现 / Toxic Seed 无道具 / 天气归属 slow 全部定稿）；
+   天气回合·增伤·场地倍率·顺风·-ate 已由已按游戏源码核对定稿，故本函数不再挂徽标。 */
 function wxTip(x){
   var s=String(x||'');
   s=s.replace(/ER 天气为无限回合（天气特性），但增伤从 50% 削到 20%/,
@@ -3551,8 +3560,8 @@ function mechMvAdj(s,m,ctx){
         break;}
       case 'endeavor_lowhp':{
         r.pow=Math.round(mechNum(p,['power','pow'],60));r.crossSide=true;
-        r.why.push('ER desc 口径：自身 HP 低于对方时增力（需气势披带/替身/挺住压血前提）');
-        r.why.push('官方口径为削对方至同血（保底 1），差异登记待实测');
+        r.why.push('定稿（v2.65 源码核对）：把对方 HP 削至与自身相同（保底 1）；需自身 HP 低于对方 + 气势披带/替身/挺住压血前提');
+        r.why.push('ER desc「低血线增力」为官方 RS/E 旧文本（数据滞后），以源码「削至同血」为准');
         break;}
       case 'endure_reversal':
         r.why.push('低 HP 战术前提（挺住/替身 → 联动绝处逢生/抓狂/蛮干）');
@@ -7379,8 +7388,8 @@ function renderCore(s){
   eng+='<div class="sec"><h3>天气 / 场地数值（读 WCONF 口径表）</h3>'+
     '<div style="font-size:12px">'+wxNums()+'</div>'+
     '<div style="font-size:12px;margin-top:2px">'+terrainNums()+'</div>'+
-    '<div style="font-size:12px;margin-top:2px">顺风 '+WCONF.tailwindTurns+' 回合（已按游戏源码核对：常量 3 ⇒ 实际 4 个回合时段；特性自动同）· 戏法空间 '+WCONF.trickroomTurns+' 回合'+pendBadge()+' / 先制 '+WCONF.trickroomPrio+'（已按游戏数据核对）· 麻痹减速 ×'+WCONF.paraSpeed+'（已按游戏源码核对）、完全麻痹 '+pct(WCONF.paraFullChance)+'（已按游戏源码核对；后续版本 12.5%）</div>'+
-    '<div style="font-size:12px;margin-top:2px">天气归属（谁主导）：'+wxGrantTxt()+pendBadge()+'</div>'+
+    '<div style="font-size:12px;margin-top:2px">顺风 '+WCONF.tailwindTurns+' 回合（已按游戏源码核对：常量 3 ⇒ 实际 4 个回合时段；特性自动同）· 戏法空间 '+WCONF.trickroomTurns+' 回合（定稿：含施放回合，实际 6 个回合时段） / 先制 '+WCONF.trickroomPrio+'（已按游戏数据核对）· 麻痹减速 ×'+WCONF.paraSpeed+'（已按游戏源码核对）、完全麻痹 '+pct(WCONF.paraFullChance)+'（已按游戏源码核对；后续版本 12.5%）</div>'+
+    '<div style="font-size:12px;margin-top:2px">天气归属（谁主导）：'+wxGrantTxt()+'（定稿 2026-10-10：v2.65 换入按速度降序发动、慢者特性最后覆盖 ⇒ 慢者主导）</div>'+
     '<div style="font-size:12px;margin-top:2px">除钉：229 高速旋转（清自身侧）/ 432 清除浓雾（清双方钉子、墙仅对手侧、降闪避 1 级）——已按游戏源码核对 + 用户确认（均不清场地）；黏黏网（564）→ 换人 -1 速（飞行/飘浮/气球免疫）</div>'+
     '<div style="font-size:12px;margin-top:2px">剧毒场地：'+WCONF.toxicTerrain.durTurns+' 回合 / 毒招 ×'+WCONF.toxicTerrain.boost+'（+'+pct(WCONF.toxicTerrain.boost-1)+'，用户确认） / 非毒钢接地每回合 '+fracTxt(WCONF.toxicTerrain.dmgFraction)+' 最大HP</div>'+
     (ownWx.length?'<div style="font-size:12px;margin-top:2px">本只体系：'+ownWx.map(function(o){return esc(o.sys)+'（'+esc(o.src)+'）'}).join(' / ')+'</div>':'')+
@@ -7516,10 +7525,10 @@ function initRuleBoxes(){
   if(tipEl)tipEl.innerHTML='<details class="inline"><summary>💡 ER 特化提示（读 WCONF 口径表 · 已按游戏源码核对）—— 展开看天气/冻伤/PP/词条说明</summary><div style="margin-top:4px">'+
     '天气 '+WCONF.abilityDurTurns+' 回合（岩石 '+WCONF.rockTurnsAbility+' 回合），手动招与特性同档；'+
     '晴/雨增伤 ×'+(1+WCONF.boost)+'（已按游戏源码核对：不分手动/特性，无「特性 20%」档）；'+
-    '冻伤替代冰冻（每回合 '+fracTxt(WCONF.frostbite.dmgFraction)+' 最大HP + 特攻 ×'+WCONF.frostbite.spAtkMult+'，'+'冰雹触发 ×'+WCONF.frostbite.hailChanceMult+pendBadge()+' 游戏源码中未见）；'+
+    '冻伤替代冰冻（每回合 '+fracTxt(WCONF.frostbite.dmgFraction)+' 最大HP + 特攻 ×'+WCONF.frostbite.spAtkMult+'，'+'冰雹触发 ×'+WCONF.frostbite.hailChanceMult+'（定稿 2026-10-10：v2.65 已删除雪天×3，仅 Cryomancy×5））；'+
     '个体默认 31、Iron Pill 可把速度 IV 调 0（空间队）；所有招式 PP 全满；训练师全员 4 特性+道具。'+
     '<br>v4.x：'+esc(v4ContractNote())+'；词条解释（天气/场地/钉子/强化/异常/先制/蓄力/属性转换/冻伤/麻痹等）在正文中以虚线下划线标出，悬停看释义、点击开「词条卡片」（居中轻量 modal，带遮罩与关闭）。'+
-    '<br>场地：'+terrainNums()+'；顺风 '+WCONF.tailwindTurns+' 回合 / 空间 '+WCONF.trickroomTurns+' 回合'+pendBadge()+WCONF.trickroomPrio+'</div></details>';
+    '<br>场地：'+terrainNums()+'；顺风 '+WCONF.tailwindTurns+' 回合 / 空间 '+WCONF.trickroomTurns+' 回合（定稿：含施放回合，实际 6 个回合时段；先制 '+WCONF.trickroomPrio+'）</div></details>';
 }
 /* ===== v4.11 精灵图主源探活与回退 =====
    CSS background-image 无 onerror，故用一次性 Image 探针（s0.webp，8 张合图之一）：

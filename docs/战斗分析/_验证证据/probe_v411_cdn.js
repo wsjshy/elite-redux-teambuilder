@@ -24,7 +24,7 @@ const ER = 'D:\\game\\elite-redux\\';
 const GC = 'https://gcore.jsdelivr.net/gh/wsjshy/elite-redux-teambuilder@gh-pages/';
 const BASELINE_HTML_BYTES = 2552588;    /* 拆包前实测（W1+W2 构建态，CRLF 落盘） */
 const BASELINE_HTML_GZIP = 660230;      /* 拆包前实测 gzip（LF 归一，与任务书 660KB 一致） */
-const V412_HTML_BYTES = 650919;         /* v4.12 实测（升级自 v4.11 阈值 638,147 = 2,552,588/4；+2.0%，拆包结构未变） */
+const V412_HTML_BYTES = 652338;         /* v4.13 实测（v4.12 基线 650,919 B；ER 机制实证定稿注记 +1,419 B：戏法空间 6 时段/冻伤/光之黏土/剧毒场地/天气归属 定稿文案+glossary 更新） */
 
 let pass = 0, fail = 0; const fails = [], notes = [];
 function chk(name, cond, detail) {
@@ -46,9 +46,9 @@ const dataBytes = dataExists ? fs.statSync(dataPath).size : 0;
 hdr('A 拆包：ERDATA 外置');
 chk('index/配招助手_ER.html 不再内嵌 ERDATA 字面量（无 "var ERDATA = {"）',
   html.indexOf('var ERDATA = {') < 0, '命中 ' + (html.match(/var ERDATA = \{/g) || []).length + ' 次');
-chk('HTML 体积 ≤ v4.12 重新基线 650,919 B（拆包前 2,552,588 B）',
+chk('HTML 体积 ≤ v4.13 重新基线 652,338 B（拆包前 2,552,588 B）',
   htmlBytes <= V412_HTML_BYTES, htmlBytes + ' B ≤ ' + V412_HTML_BYTES + ' B（拆包前 ' + BASELINE_HTML_BYTES + ' B，降幅 ' +
-    (100 * (1 - htmlBytes / BASELINE_HTML_BYTES)).toFixed(2) + '%；v4.11 阈值 638,147 B → v4.12 上调 ' +
+    (100 * (1 - htmlBytes / BASELINE_HTML_BYTES)).toFixed(2) + '%；v4.11 阈值 638,147 B → v4.13 上调 ' +
     (100 * (V412_HTML_BYTES / (BASELINE_HTML_BYTES / 4) - 1)).toFixed(2) + '%）');
 chk('data.js 与 HTML 同目录存在且为数据体量（> 1 MB）', dataExists && dataBytes > 1048576, dataBytes + ' B');
 chk('HTML 顶部/尾部无残留内联数据（shield：ERDATA.nonFinalER 字面量只在 data.js）',
