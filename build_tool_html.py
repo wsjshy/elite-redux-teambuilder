@@ -352,7 +352,7 @@ details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#
 .tip{background:#fff8e6; border-left:3px solid var(--warn); padding:8px 10px; margin:6px 0; font-size:12px; color:#7a5b1a; border-radius:4px}
 textarea.savebox{width:100%; min-height:90px; font-family:Consolas,monospace; font-size:11px; border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical}
 /* ===== v4.6 收尾：页内轻提示（替代原生 alert，不阻塞 JS 线程）===== */
-#toastBox{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:6px; align-items:center; pointer-events:none}
+#toastBox{position:fixed; left:50%; top:86px; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:6px; align-items:center; pointer-events:none}
 .toastmsg{background:rgba(17,24,39,.94); color:#fff; border-radius:8px; padding:10px 14px; font-size:12.5px; line-height:1.5; max-width:min(92vw,560px); box-shadow:0 6px 18px rgba(0,0,0,.28); white-space:pre-wrap; word-break:break-word}
 @media (max-width:640px){
   .grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
@@ -397,7 +397,7 @@ textarea.savebox{width:100%; min-height:90px; font-family:Consolas,monospace; fo
   .mechdet>summary{min-height:44px}
   .mechsec table td,.mechsec table th{font-size:11px}
   .spcard{width:88px; height:88px}
-  #toastBox{left:8px; right:8px; transform:none; bottom:12px}
+  #toastBox{left:8px; right:8px; transform:none; top:70px; bottom:auto}
   .toastmsg{max-width:100%}
 }
 /* ===== v4.6 收尾：平板断点 641–1024px（PC 横版与手机竖版中间档）===== */
@@ -684,7 +684,8 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
     <span class="mini">先制</span><input type="number" id="mvPrMin" placeholder="≥" min="-10">
     <span class="mini" id="mvCount" style="color:var(--sub)"></span>
   </div>
-  <div class="scroll"><table id="mvTable"><thead><tr><th>#</th><th>招式</th><th>属性</th><th>分类</th><th>威力</th><th>命中</th><th>PP</th><th>先制</th></tr></thead><tbody></tbody></table></div>
+  <div class="scroll"><table id="mvTable"><thead><tr><th>#</th><th>招式</th><th>属性</th><th>分类</th><th>威力</th><th>命中</th><th>PP</th><th>先制</th></tr></thead><tbody></tbody></table>
+    <div id="mvEmpty" style="display:none;padding:30px;text-align:center;color:var(--sub);font-size:13px">🔍 输入关键词开始检索（中文 / 英文 / 编号 / 属性 / 描述）</div></div>
   <div class="modal" id="mvDrawer">
     <div class="mbox mboxwide">
       <div class="mhd"><b id="mvDrawerTitle">招式详情</b><button class="close" onclick="closeMv()">×</button></div>
@@ -839,6 +840,11 @@ if(typeof ERDATA==='undefined'&&!window.__ER_FILE){
 <script>
 __SPRSHEET__
 __AXISLIB__
+/* v4.32 P2-4：数据缺失保护——主源+CDN 均失败时优雅提示而非白屏（正常路径 ERDATA 已由加载器同步注入） */
+if(typeof ERDATA==='undefined'){
+  document.documentElement.innerHTML='<div style="font-family:system-ui,sans-serif;padding:40px;text-align:center"><h2>数据加载失败</h2><p style="color:#666">游戏数据（data.js）未能加载。可能是网络波动或 CDN 不可达，请刷新重试。</p><button onclick="location.reload()" style="padding:10px 24px;font-size:14px;border-radius:8px;border:0;background:#2563eb;color:#fff;cursor:pointer">刷新重试</button></div>';
+  throw new Error('ERDATA missing');
+}
 /* ============ 工具函数 ============ */
 var $=function(id){return document.getElementById(id)};
 var MV={},ABI={},ITM={};
@@ -1964,6 +1970,9 @@ function renderMv(){
   });
   var info=$('mvCount');
   if(info)info.textContent='命中 '+shown+' 条'+(q?('（模糊搜索："'+q+'"）'):'');
+  /* v4.32 P3-1：招式反查显式空态（无搜索词时提示引导，不误以为页面坏了） */
+  var emptyTip=$('mvEmpty');
+  if(emptyTip)emptyTip.style.display=shown?'none':'block';
 }
 function closeMv(){$('mvDrawer').classList.remove('open')}
 /* v4.x UI 定稿：招式详情改居中 modal → 遮罩点击关闭 */
@@ -4631,6 +4640,17 @@ function sanitizeBuild(s,b){
     mv.forEach(function(x){var m=MV[x.id];if(!m)return;var cat=m[4];
       if(cat==='物理'){phys++;atkAny++}else if(cat==='特殊'){spec++;atkAny++}});
     var side=String(b.side||''),tag=String(b.roleTag||'');
+    /* v4.32 P1-3：物理攻击种族极低（<70）不推荐物理招——双倍奉还/吸取拳等物理招伤害可忽略（幸福蛋攻10案例）；
+       判据用 base[1]（物理攻击种族）而非 atkBest（max(攻,特攻)——幸福蛋特攻75会误放行）；
+       过滤后 side/性格/EV 同步特殊侧，槽位由 fillMvSlots 补满 */
+    if(((s.base&&s.base[1])||0)<70&&phys>0){
+      var kept=mv.filter(function(x){var m=MV[x.id];return !m||m[4]!=='物理'});
+      if(kept.length<mv.length){
+        b.mv.main=kept;b.side='特殊';
+        try{b.nat=buildNature(s,'特殊',tag)}catch(e5){}
+        try{b.ev=buildEvs(s,'特殊',tag,b.name)}catch(e6){}
+      }
+    }
     var wall=(tag==='肉盾'||tag==='受队'||tag==='辅助'||tag==='联防'||side==='辅助');
     if(wall||!atkAny){
       b.ev=evDuraAlloc(s);
@@ -4883,6 +4903,9 @@ function fillMvSlots(s,b){
   var side=(b.side==='双刀')?'双刀':((b.side==='物理')?'物理':'特殊');
   var att=pickAttacks(s,side,4,b.roleTag||'输出');
   var rest=FUNC_MV.rec.concat(FUNC_MV.protect,FUNC_MV.speed,FUNC_MV.hazard,FUNC_MV.wear);
+  /* v4.32 P1-3：物理攻击种族 <70 时 rest 池过滤物理招（防净化后被双倍奉还等补回） */
+  var physOK=((s.base&&s.base[1])||0)>=70;
+  if(!physOK)rest=rest.filter(function(id){var m=MV[id];return !m||m[4]!=='物理'});
   var guard=0;
   while(b.mv.main.length<4&&guard++<8){
     var c=null,i;
@@ -5043,6 +5066,9 @@ function pickAttacks(s,side,n,role){
     /* 分层2：按侧过滤攻击招（双刀=双侧全开，不再被种族高侧单边过滤）；
        机制改写标 crossSide 者跨侧纳入（欺诈按对方物攻／扑击按自物防／陀螺球按相对速度／反击型） */
     if(side!=='双刀'&&m[4]!==(side==='物理'?'物理':'特殊')&&!mech.crossSide)return;
+    /* v4.32 P1-3：跨侧纳入招检查对应种族可玩性——幸福蛋攻10 的特殊侧反击招（双倍奉还）无伤害 */
+    if(mech.crossSide&&m[4]==='物理'&&(s.base[1]||0)<70)return;
+    if(mech.crossSide&&m[4]==='特殊'&&(s.base[3]||0)<70)return;
     var pow=(mech.pow!==null)?mech.pow:(m[5]||0);if(pow<55)return;
     var ty=effMvType(s,m,conv);
     var convHit=!!(conv&&m[3]===(conv.src||'一般'));
@@ -5212,6 +5238,9 @@ function buildNature(s,side,roleTag){
   if(roleTag==='强化')return side==='物理'?[['固执','+攻击-特攻（强化本攻）'],['爽朗','+速度-特攻（强化后清场）']]:[['内敛','+特攻-攻击（强化本攻）'],['胆小','+速度-攻击（强化后清场）']];
   if(roleTag==='天气')return [['慎重','+特防-特攻，站场保天气'],['沉着','+特防-攻击']];
   if(roleTag==='辅助'||roleTag==='联防')return [['大胆','+防御-攻击（免疫/联防位站场）'],['慎重','+特防-特攻（吃特殊压制）']];  /* v4.30：辅助位性格不再给内敛/固执（与耐久 EV 对齐） */
+  /* v4.32 P1-2：双刀流按主攻侧给性格（原落入末行特殊分支 → 全物理配招给内敛/胆小=减攻矛盾）；
+     物理主→固执/爽朗（不减攻击），特殊主→内敛/胆小 */
+  if(side==='双刀')return (b[1]>=b[3])?[['固执','+攻击-特攻（双刀物主）'],['爽朗','+速度-特攻']]:[['内敛','+特攻-攻击（双刀特主）'],['胆小','+速度-攻击']];
   if(b[5]>=110)return side==='物理'?[['爽朗','+速度-特攻，先手压制'],['固执','+攻击-特攻']]:[['胆小','+速度-攻击，先手压制'],['内敛','+特攻-攻击']];
   if(b[5]<60)return side==='物理'?[['勇敢','+攻击-速度（配空间）'],['固执','+攻击-特攻']]:[['冷静','+特攻-速度（配空间）'],['内敛','+特攻-攻击']];
   return side==='物理'?[['固执','+攻击-特攻'],['爽朗','+速度-特攻']]:[['内敛','+特攻-攻击'],['胆小','+速度-攻击']];
@@ -5753,7 +5782,8 @@ function deriveBuilds(s,team){
     /* v45-1：道具 tag 改用**与队伍行同源的核心口径**（coreItemTagOf），不再用打法 tag
        —— 盾/受系核心的强化流派不再被推锁招道具；ctx 同源（体系窗口，v433-2） */
     var b=mkBuild(s,side,nm,spBest,phBest,roleTag,itemTagOfCoreProf(p,s),coreItemCtxOf(s));
-    b=sanitizeBuild(s,b);   /* v4.30 P0-1：派生流派三方一致性（EV×配招类别×性格） */
+    b=sanitizeBuild(s,b);   /* v4.30 P0-1：派生流派三方一致性（EV×配招类别×性格）；v4.32 P1-3 内含低攻物理招净化 */
+    b=fillMvSlots(s,b);     /* v4.32：净化/机制流不满 4 槽时补满（与 mechBuildsOf 同口径） */
     b.name=nm;b.side=side;b.roleTag=roleTag;
     var basis=[];
     if(p.atk.powBest)basis.push({k:'output',txt:'本系最高 '+(side==='特殊'?(p.atk.sp?MV[p.atk.sp.id][1]+'('+p.atk.sp.pow+')':''):(p.atk.ph?MV[p.atk.ph.id][1]+'('+p.atk.ph.pow+')':''))+'　力度 '+p.power});
@@ -6466,7 +6496,10 @@ function scanCombos(members){
       if(!r||!r.parts||!r.parts.length)return;
       if(seenCat[c.cat])return;
       seenCat[c.cat]=1;
-      out.push({id:c.id,name:c.name,cat:c.cat,parts:r.parts,note:r.note,src:c.src});
+      /* v4.32 P1-4：参与者去重——同一只宝可梦不得占两个参与位（阿尔宙斯-幽灵×2 / 超级帝王拿波×2） */
+      var parts=[],seenP={};
+      (r.parts||[]).forEach(function(p){if(!seenP[p]){seenP[p]=1;parts.push(p)}});
+      out.push({id:c.id,name:c.name,cat:c.cat,parts:parts,note:r.note,src:c.src});
     });
   }catch(e3){}
   return out;
@@ -6939,7 +6972,7 @@ function rsL1Of(s,teamIds){
   if(f.slow)why.push('速度线：角速 '+f.spd+' ≤60 → 龟速占比惩罚 '+p1.toFixed(2)+' 分（实测口径：龟速堆胜率代理偏低）');
   if(f.syscnt)why.push('体系受益维度 '+(p2>=0?'+':'')+p2.toFixed(2)+' 分（持有 '+f.syscnt+' 项体系受益）');
   why.push('单体强度维度 '+(p3>=0?'+':'')+p3.toFixed(2)+' 分（种族和 '+Math.round(f.bst)+'；只作一项权重，不再是唯一强度口径）');
-  return {pts:p1+p2+p3,why:'规则偏移层：'+why.join('；')+'（来源：'+RULE_SHIFT.SRC+'）'};
+  return {pts:p1+p2+p3,why:'强度校准：'+why.join('；')};   /* v4.32 P2-1：去「规则偏移层/来源 shift_layer.py」术语（v4.31 清理了队伍卡校准行，队友理由处漏网） */
 }
 /* L2：团队强度校准（尺度保持：与旧引擎位次均分同均值/同标准差）——修正「高估龟速传说堆」 */
 function rsTeamCard(members){
@@ -8094,7 +8127,9 @@ function switchBuild(wrapId,i){
   var cards=wrap.querySelectorAll('.bkp'),tabs=wrap.querySelectorAll('.bktab'),k;
   if(!tabs.length){var tb=$(String(wrapId)+'-tabs');if(tb)tabs=tb.querySelectorAll('.bktab')}   /* v4.30 P0-2：bktab 在 wId-tabs 容器（原从 wId 找恒为空 → aria 状态不更新） */
   for(k=0;k<cards.length;k++){
-    if(k===i){cards[k].classList.remove('bkoff');cards[k].setAttribute('open','')}
+    if(k===i){cards[k].classList.remove('bkoff');cards[k].setAttribute('open','');
+      /* v4.32 P0-1：切流派的 tab 时同步展开目标卡内层 details.big（原只切外层 .bkp，内层 details 无 open → 用户看到"点了没内容"） */
+      var dd=cards[k].querySelector('details.big');if(dd)dd.setAttribute('open','')}
     else cards[k].classList.add('bkoff');
   }
   for(k=0;k<tabs.length;k++){
@@ -8616,9 +8651,11 @@ function selectCore(id){
   function coreMatch(s){
     if(!isValidSp(s))return false; /* B7：占位/无效物种（base 全 0，如 2502）不进核心列表 */
     if(optFinalOnly&&!isFinalForm(s)&&!evioOk(s))return false; /* v4.3.1：奇石优势形态同样可选为核心 */
-    if(optMegaOnly&&hasMegaForm(s))return false; /* v4.13：Mega 形态优先——ER 可永久 Mega，可 Mega 的非 Mega 形态默认不进候选（开关可关） */
+    var _q=String($('coreSearch').value||'').trim();
+    /* v4.32 P2-2：显式搜索时放宽 Mega 过滤（搜"妙蛙花"应返回普通形态；浏览模式保持 Mega 优先默认） */
+    if(optMegaOnly&&hasMegaForm(s)&&!_q)return false;
     /* C⑧：模糊搜索（中文/英文/编号子串包含；大小写与全半角不敏感） */
-    if(!fzAny($('coreSearch').value.trim(),[''+s.id,s.zh,s.en]))return false;
+    if(!fzAny(_q,[''+s.id,s.zh,s.en]))return false;
     var selT=[];
     for(var t in coreFilter.types)if(coreFilter.types[t])selT.push(t);
     if(selT.length){var hitAll=true;selT.forEach(function(t){if(s.t1!==t&&s.t2!==t)hitAll=false});if(!hitAll)return false}
