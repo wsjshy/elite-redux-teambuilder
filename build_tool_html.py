@@ -6214,6 +6214,176 @@ function findTeammates(s,side,roleTag){
   try{top6.main=mainPicks}catch(e){}
   return top6;
 }
+/* ==================================================================================
+   v4.27 组合挖掘引擎（MECH_COMBO）——「眼前一亮」组合层
+   定位：MECH_BUILD 是「单精灵机制流」；MECH_COMBO 是「跨精灵/跨要素组合」——
+   特性×技能×道具×队友的协同组合。只做**扫描+展示**（组合亮点区），不参与排序
+   （先证明价值，后续版本再评估接入评分）。
+   铁律：每条组合的判定用已验证的 ERDATA 数据（特性 id / 招式 id / 属性 / 体系），
+   src 为检索来源（Smogon / 官方 / 对战指南），ER 特殊发散在 note 中标注「ER 发散」。
+   ================================================================================== */
+function hasAbiId(s,id){return (s.abis||[]).concat(s.inns||[]).map(abiIdC).indexOf(id)>-1}
+function learnHasAnyId(s,ids){var L=learnC(s);for(var i=0;i<ids.length;i++)if(L.indexOf(ids[i])>-1)return true;return false}
+var MECH_COMBO=[
+  /* ① 先制天气轴：恶作剧之心 + 天气招 → 先制开天气（Smogon Volbeat Prankster 模型：先制日照/求雨+鼓掌+电磁波+UT） */
+  {id:'prank_weather',name:'先制天气轴',cat:'联动',
+   src:'https://www.smogon.com/articles/pu-weather',
+   check:function(mem){
+     var setter=mem.filter(function(x){return x.core&&hasAbiId(x.s,158)&&learnHasAnyId(x.s,FUNC_MV.weather)});
+     if(!setter.length)return null;
+     if(mem.some(function(x){return x.core&&isSetterAny(x.s)}))return null; /* 队伍已有特性天气手 → 手动天气招冗余（用户铁律：有日照特性就不配大晴天） */
+     var sysKey=null;
+     setter[0].s&&FUNC_MV.weather.forEach(function(id){var w=WEATHER_MV[id];if(w&&learnC(setter[0].s).indexOf(id)>-1)sysKey=sysKey||w});
+     var ben=[];
+     if(sysKey)ben=mem.filter(function(x){return x!==setter[0]&&(x.s.abis||[]).concat(x.s.inns||[]).some(function(n){return abiSysOf(n)===sysKey})});
+     return {parts:[setter[0].s.zh].concat(ben.slice(0,2).map(function(x){return x.s.zh})),
+       note:setter[0].s.zh+' 恶作剧之心先制开'+sysKey+'（'+sysKey+'招先制出招），受益者：'+
+         (ben.length?ben.slice(0,2).map(function(x){return x.s.zh}).join('、'):'暂无（可再补一只'+sysKey+'受益打手）')+
+         '。Smogon PU 实例：Volbeat（恶作剧之心+日照+鼓掌+UT）先制开晴'}
+     }},
+  /* ② 慢速轮转换天气：低速 UT/VS 手把天气手安全送进场（Smogon PU 实例：Vullaby 慢速UT → Hippopotas 开沙） */
+  {id:'slow_pivot_weather',name:'慢速轮转换天气',cat:'联动',
+   src:'https://www.smogon.com/articles/pu-weather',
+   check:function(mem){
+     var pivot=mem.filter(function(x){return spdOf(x.s)<=60&&learnHasAnyId(x.s,FUNC_MV.pivot)});
+     var setter=mem.filter(function(x){return x.core&&isSetterAny(x.s)});
+     if(!pivot.length||!setter.length)return null;
+     return {parts:[pivot[0].s.zh,setter[0].s.zh],
+       note:pivot[0].s.zh+'（低速 UT/VS，速度 '+spdOf(pivot[0].s)+'）→ 换入 '+setter[0].s.zh+'（特性自动开'+isSetterAny(setter[0].s)+'）'+
+         '：低速轮转让天气手无损登场、保持节奏。Smogon PU 实例：Vullaby 慢速UT 换 Hippopotas 开沙暴'}
+     }},
+  /* ③ 雨天双必中：雨天 + 打雷/暴风 100% 命中（Thunder/Hurricane 雨天必中——经典雷雨电系/飞行系打手） */
+  {id:'rain_thunder',name:'雨天双必中',cat:'输出',
+   src:'https://stratadex.net/guides/rain-teams',
+   check:function(mem){
+     var hasRain=mem.some(function(x){return x.core&&isSetterAny(x.s)==='雨'});
+     var users=mem.filter(function(x){return learnHasAnyId(x.s,[87,542])});
+     if(!hasRain||!users.length)return null;
+     return {parts:users.slice(0,3).map(function(x){return x.s.zh}),
+       note:'雨天在场时 '+(users.slice(0,3).map(function(x){return x.s.zh}).join('、'))+' 的打雷/暴风 100% 必中——'+
+         '电系补水系盲点（对飞行/水系）、飞行系压草系/格斗系；无须命中道具、省出道具位'}
+     }},
+  /* ④ 雨天轻快爆发：雨天 + 悠游自如（速度×2）打手 */
+  {id:'rain_swim',name:'雨天轻快爆发',cat:'输出',
+   src:'https://stratadex.net/guides/rain-teams',
+   check:function(mem){
+     var hasRain=mem.some(function(x){return x.core&&isSetterAny(x.s)==='雨'});
+     var swim=mem.filter(function(x){return hasAbiId(x.s,33)});
+     if(!hasRain||!swim.length)return null;
+     return {parts:swim.slice(0,3).map(function(x){return x.s.zh}),
+       note:'雨天中 '+(swim.slice(0,3).map(function(x){return x.s.zh}).join('、'))+'（悠游自如）速度×2 先手清场，且水系本系 +50% 增伤——'+
+         '无需速度努力即可超速大多数高速线，努力可全投力度/耐久'}
+     }},
+  /* ⑤ 沙暴岩系特防：沙暴 + 岩石系特防×1.5（经典沙暴肉盾轴） */
+  {id:'sand_rock',name:'沙暴岩系特防',cat:'联防',
+   src:'https://champsdex.com/posts/pokemon-champions-cores-guide-2026/',
+   check:function(mem){
+     var hasSand=mem.some(function(x){return x.core&&isSetterAny(x.s)==='沙'});
+     var rocks=mem.filter(function(x){return x.s.t1==='岩石'||x.s.t2==='岩石'});
+     if(!hasSand||!rocks.length)return null;
+     return {parts:rocks.slice(0,3).map(function(x){return x.s.zh}),
+       note:'沙暴中 '+(rocks.slice(0,3).map(function(x){return x.s.zh}).join('、'))+' 特防×1.5——岩石系扛特殊攻击能力大增，'+
+         '适合作为特殊联防盾（ER 发散：岩石系可同时受益沙暴的拔沙特性和物攻补盲）'}
+     }},
+  /* ⑥ 雪天极光幕：雪天 + 极光幕 物特伤害减半 + 肉盾核心（Snow setter + Aurora Veil + 肉盾墙 = 经典防守核） */
+  {id:'snow_veil',name:'雪天极光幕',cat:'联防',
+   src:'https://champsdex.com/posts/pokemon-champions-cores-guide-2026/',
+   check:function(mem){
+     var hasSnow=mem.some(function(x){return x.core&&isSetterAny(x.s)==='雪'});
+     var veil=mem.filter(function(x){return learnHasAnyId(x.s,[657])});
+     var wall=mem.filter(function(x){return bulkOf(x.s)>=300});
+     if(!hasSnow||!veil.length||!wall.length)return null;
+     return {parts:[veil[0].s.zh].concat(wall.slice(0,2).map(function(x){return x.s.zh})),
+       note:'雪天中 '+veil[0].s.zh+' 开极光幕（物/特伤害减半），配合 '+(wall.slice(0,2).map(function(x){return x.s.zh}).join('、'))+'（耐久 '+
+         (wall.slice(0,2).map(function(x){return bulkOf(x.s)}).join('/'))+'）组成防守核——极光幕下肉盾更难被突破，是标准受队/平衡队核心'}
+     }},
+  /* ⑦ 空间雨天：戏法空间 + 雨天 + 低速水系炮台（VGC 经典 TR+Rain：Pelipper 降雨 + 空间内水炮清场） */
+  {id:'tr_rain',name:'空间雨天',cat:'双轴',
+   src:'https://stratagemvgc.app/en/guides/teams/champ-tr-rain',
+   check:function(mem){
+     var tr=mem.filter(function(x){return learnHasAnyId(x.s,[433])});
+     var hasRain=mem.some(function(x){return x.core&&isSetterAny(x.s)==='雨'});
+     var slowWater=mem.filter(function(x){return spdOf(x.s)<=60&&(x.s.t1==='水'||x.s.t2==='水')&&atkBest(x.s)>=95});
+     if(!tr.length||!hasRain||!slowWater.length)return null;
+     return {parts:[tr[0].s.zh].concat(slowWater.slice(0,2).map(function(x){return x.s.zh})),
+       note:'双轴方案：'+tr[0].s.zh+' 开戏法空间 → 低速 '+(slowWater.slice(0,2).map(function(x){return x.s.zh}).join('、'))+
+         '（速度 '+slowWater.slice(0,2).map(function(x){return spdOf(x.s)}).join('/')+'）在空间内先手，雨天水本 +50% 火力全开；'+
+         '空间结束后自然高速模式接管（双节奏切换，VGC TR+Rain 模型）'}
+     }},
+  /* ⑧ 毒疗站场轴：毒疗 + 剧毒珠 + 轮转手（毒疗每回合回 1/8，轮转手让毒疗手安全反复登场） */
+  {id:'toxic_orb_pivot',name:'毒疗站场轴',cat:'续航',
+   src:'https://www.smogon.com/smog/issue37/weather-wars-in-doubles',
+   check:function(mem){
+     var toxic=mem.filter(function(x){return hasAbiId(x.s,90)});
+     var pivot=mem.filter(function(x){return learnHasAnyId(x.s,FUNC_MV.pivot)});
+     if(!toxic.length)return null;
+     return {parts:[toxic[0].s.zh].concat(pivot.slice(0,1).map(function(x){return x.s.zh})),
+       note:toxic[0].s.zh+'（毒疗）携带剧毒珠每回合回 1/8 最大 HP——站场消耗流核心；'+
+         (pivot.length?'配 '+pivot[0].s.zh+'（UT/VS）反复无损登场，毒疗收益持续兑现':'可补一名 UT/VS 轮转手让毒疗收益持续兑现')}
+     }},
+  /* ⑨ 免疫触发提速：引水/避雷针/储水/食草 + 队友对应属性招式（ER 特有：属性免疫 + 触发后提速） */
+  {id:'immun_trigger',name:'免疫触发提速',cat:'ER特有',
+   src:'',
+   check:function(mem){
+     var imm={114:'水',31:'电',11:'水',157:'草'};
+     var hit=mem.filter(function(x){return hasAbiId(x.s,114)||hasAbiId(x.s,31)||hasAbiId(x.s,11)||hasAbiId(x.s,157)});
+     if(!hit.length)return null;
+     var notes=[];
+     hit.slice(0,3).forEach(function(x){
+       var tp=[];
+       if(hasAbiId(x.s,114)||hasAbiId(x.s,11))tp.push('水');
+       if(hasAbiId(x.s,31))tp.push('电');
+       if(hasAbiId(x.s,157))tp.push('草');
+       notes.push(x.s.zh+'（免疫'+tp.join('/')+'，被对应属性招式命中后提速）');
+     });
+     return {parts:notes.map(function(n){return n.split('（')[0]}),
+       note:notes.join('、')+'——ER 特有机制：免疫特性被对应属性命中时触发提速，'+
+         '队友带同属性招式（水/电/草）即可自主触发（也可借对手招式触发）；免疫=天然联防（对'+
+         notes.map(function(n){return n.split('免疫')[1].split('，')[0]}).join('/')+'属性完全无效）'}
+     }},
+  /* ⑩ 撒钉除钉双保险：钉子手 + 除钉手（高速旋转清自身侧 / 清除浓雾清双方） */
+  {id:'hazard_removal',name:'撒钉除钉双保险',cat:'场地',
+   src:'',
+   check:function(mem){
+     var haz=mem.filter(function(x){return learnHasAnyId(x.s,FUNC_MV.hazard)});
+     var rem=mem.filter(function(x){return learnHasAnyId(x.s,[229,432])});
+     if(!haz.length||!rem.length)return null;
+     return {parts:[haz[0].s.zh,rem[0].s.zh],
+       note:haz[0].s.zh+'（'+FUNC_MV.hazard.map(function(id){return (MV[id]||[])[1]}).filter(function(n,i){return learnC(haz[0].s).indexOf(FUNC_MV.hazard[i])>-1}).join('/')+'撒钉）+ '+
+         rem[0].s.zh+'（'+([229,432].filter(function(id){return learnC(rem[0].s).indexOf(id)>-1}).map(function(id){return (MV[id]||[])[1]}).join('/'))+'除钉）——'+
+         '钉子压血线+除钉保己方节奏，攻防一体的场地双保险；除钉手最好带回复/轮转招避免反复送'}
+     }}
+];
+/* 队伍组合扫描：members=[{s,...}]，命中组合 → [{id,name,cat,parts,note,src}]（≤4 条，按 cat 去重保首条） */
+function scanCombos(members){
+  var out=[],seenCat={};
+  try{
+    var mem=(members||[]).filter(function(m){return m&&m.s});
+    if(mem.length<2)return out;
+    MECH_COMBO.forEach(function(c){
+      if(out.length>=4)return;
+      var r=null;try{r=c.check(mem)}catch(e2){r=null}
+      if(!r||!r.parts||!r.parts.length)return;
+      if(seenCat[c.cat])return;
+      seenCat[c.cat]=1;
+      out.push({id:c.id,name:c.name,cat:c.cat,parts:r.parts,note:r.note,src:c.src});
+    });
+  }catch(e3){}
+  return out;
+}
+/* 组合亮点渲染（纯展示：组合名+参与者+说明+来源；ER 特有标注橙色） */
+function comboHtml(combos){
+  if(!combos||!combos.length)return '';
+  var h='<div class="sec" style="margin:8px 0;background:#f0f9ff;border-color:#7dd3fc"><h3>✨ 组合亮点（'+combos.length+'）</h3>';
+  combos.forEach(function(c){
+    h+='<div style="font-size:12px;margin:4px 0;padding:5px 8px;background:#fff;border-radius:6px;border-left:3px solid '+
+      (c.cat==='ER特有'?'#f59e0b':'#38bdf8')+'">'+
+      '<b>'+esc(c.name)+'</b> <span class="mtag '+(c.cat==='ER特有'?'sys':'def')+'">'+esc(c.cat)+'</span> · 参与：'+
+      esc(c.parts.join(' + '))+'<br><span style="color:var(--sub);font-size:11px">'+esc(c.note)+
+      (c.src?('　<a href="'+esc(c.src)+'" target="_blank" style="color:var(--acc)">来源↗</a>'):'')+'</span></div>';
+  });
+  return h+'</div>';
+}
 /* D8：名称前缀（形态折叠键）—— '阿尔宙斯-毒' → '阿尔宙斯'；'雷电云-灵兽形态' → '雷电云' */
 function prefixKey(s){return String(s.zh||'').split(/[-（(·]/)[0]}
 function mvSrc(s,id){
@@ -7617,6 +7787,8 @@ function renderNeedPlan(s,vi){
     h+='</div>';
   });
   h+='</div>';
+  /* v4.27 组合亮点：对定稿队伍扫描跨精灵组合（展示层，不参与排序） */
+  try{h+=comboHtml(scanCombos(plan.team.map(function(m,i){return i===0?{s:m.s,core:1}:m}))) }catch(eC){h+=''}
   var au=plan.audit;
   /* v4.7：强度校准行（规则偏移层 L2，尺度保持口径；默认开启、可一键回退） */
   try{
@@ -8142,6 +8314,11 @@ function renderCore(s){
     }
     else html+='<div class="dim">该流派暂无高匹配队友</div>';
     if(altMates.length)html+='<div class="dim" style="margin-top:4px">备选（体系补盲 / 整体联防，已去重）</div><div class="mategrid">'+altMates.map(function(r){return mateCard(r,pool,false)}).join('')+'</div>';
+    /* v4.27 组合亮点（展示层）：核心+主推队友定稿 → 跨精灵组合扫描（先制天气轴/慢速轮转/雨天双必中等） */
+    try{
+      var _comb=scanCombos([{s:s,core:1}].concat(mainMates));
+      if(_comb.length)html+=comboHtml(_comb);
+    }catch(eCb){}
     /* v4.12 ② 队友先验（Smogon，软提示）：先验队友映射 ER 物种 → 池内/全库分类；开关关 → 空串（零影响） */
     try{var _smp=pool?Object.keys(pool.sp||{}):null;var _smh=smogonMateHtml(s,_smp);if(_smh)html+=_smh}catch(e){}
     html+='</div>';
