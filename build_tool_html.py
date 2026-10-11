@@ -6059,6 +6059,19 @@ function mateRoleOf(t,wxSys){
   if(!out.length)out.push('输出');
   return out;
 }
+/* v4.23 角色价值随流派动态（主推多样性倾向分用）：同一角色在不同流派里价值不同——
+   强化流更看重 盾/钉子/天气手，速攻流更看重 轮转/控速，受队更看重 状态/回复。
+   只做软化排序倾向，不做任何"必须 N 个某角色"的硬配方。 */
+var MATE_ROLE_PRIO={
+  '强化':{盾:16,钉子:14,天气手:12,回复:9,轮转:7,状态:6,输出:2},
+  '输出':{轮转:10,状态:8,回复:8,钉子:7,天气手:7,盾:7,输出:2},
+  '速攻':{轮转:13,状态:9,钉子:8,回复:7,盾:6,天气手:5,输出:2},
+  '增伤':{天气手:12,钉子:9,盾:8,回复:8,轮转:7,状态:6,输出:2},
+  '肉盾':{状态:14,回复:13,钉子:11,轮转:7,盾:7,天气手:4,输出:1},
+  '受队':{状态:15,回复:13,钉子:11,轮转:7,盾:6,天气手:3,输出:1},
+  '辅助':{状态:13,钉子:11,回复:11,轮转:9,盾:7,天气手:5,输出:1},
+  '输出+':{轮转:11,状态:8,回复:8,钉子:7,天气手:7,盾:7,输出:2}
+};
 function findTeammates(s,side,roleTag){
   side=side||coreSide(s);roleTag=roleTag||'输出';
   var weak=coreWeak(s),holes=coverHoles(s),sys=coreSys(s),learn=learnOf(s);
@@ -6147,19 +6160,23 @@ function findTeammates(s,side,roleTag){
   });
   var top6=fin2.slice(0,6);
   try{top6.pool=fin2.length}catch(e){}
-  /* v4.22 主推多样性（软性，取代 v4.21 硬限制）：
-     用户：不要定死任何规矩——多个天气手（双晴续晴/天气覆盖/场地+天气双开）有真实战略价值，不能一棍子打死。
-     ⇒ 角色互补改为**加分倾向**而非剔除：候选每带一个「相对已选主推的新角色」给 +12 倾向分；
-       同角色但综合分明显更高的精灵依然入选（双天气手可并存）——分数说了算，多样性只做软化排序。 */
+  /* v4.23 主推挑选（软性、按流派动态权衡，取代 v4.22 固定 +12）：
+     用户澄清：所有精灵定队友都**不套固定配方**（不是"单天气手"也不是"双天气手"），
+     而是按当前精灵/流派具体情况动态权衡 联动/联防/补盲/功能。
+     ⇒ 角色互补倾向分 = **该角色对当前流派的实际价值**（MATE_ROLE_PRIO 按 roleTag 查表，
+       强化流更看重盾/钉子/天气手，速攻流更看重轮转，受队更看重状态/回复），
+       而非固定 +12；倾向分仅做软化排序，综合分（含联防/补盲/体系/功能/同弱点惩罚）仍说了算，
+       不存在"必须 N 个某角色"的配方。 */
   fin2.sort(function(a,b){return (b.score-a.score)||(b.fit-a.fit)});
+  var _prio=MATE_ROLE_PRIO[roleTag]||MATE_ROLE_PRIO['输出'];
   var mainPicks=[],roleUsed={};
   while(mainPicks.length<3){
     var _best=null,_bestEff=-1e9;
     for(var _mi=0;_mi<fin2.length;_mi++){
       var _r=fin2[_mi];if(mainPicks.indexOf(_r)>-1)continue;
       var _roles=mateRoleOf(_r.s,wxSys),_fresh=0;
-      _roles.forEach(function(x){if(!roleUsed[x])_fresh++});
-      var _eff=_r.score+_fresh*12; /* 新角色倾向 +12/个；不硬剔除 */
+      _roles.forEach(function(x){if(!roleUsed[x])_fresh+=(_prio[x]||1)});
+      var _eff=_r.score+_fresh; /* 倾向分随流派动态；不硬剔除 */
       if(_eff>_bestEff){_bestEff=_eff;_best=_r}
     }
     if(!_best)break;
