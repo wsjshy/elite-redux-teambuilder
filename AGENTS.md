@@ -886,3 +886,16 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - **队友卡升级**：`mateCard` 加精灵小图（spmid）+ 整卡可点击（`openSpById` 进详情）+ **每只队友推荐配置行**（特性·道具·EV 摘要，按队友自身 coreSide 用 buildItem/pickAbiFor/buildEvs 现算，如 席多蓝恩=钢能力士·弱点保险·4HP/252特攻/252速）；CSS 补 `.mate` 竖排图卡 + `.mtcfg` 配置行 + hover 高亮。
   - **EV 条**：按钮文案「模板说明 ▾」→「分配依据 ▸」（仍点击展开 evWhyTxt），title 自解释。
   - 线上验证（妙蛙花）：流派 1 条、性格 内敛/胆小、队友 带配置行、console 0 error；master `f49ea07`+`cf6a8f2`、gh-pages `eb406b7`。
+
+## 30. v4.15 轴库恢复 + nn_data 损失面（2026-10-11）
+
+- **事件**：响应「继续」排查上轮构建日志 `[warn] 轴知识库不可用` 时发现 **`nn_data/` 目录整体丢失**（axis_lib.json / mech_lib_v412.json / smogon_prior_2026-09.json / species_map.json / chaos\ 全无），同时 **`招式表_可学总表.csv` 丢失**。两者均在 .gitignore（`nn_data/`、`招式表_可学总表.csv`）→ **git 无法恢复**（`git ls-files nn_data/` 空）。
+- **损失面实测**：`data.js`（2,210,805 B）与 `配招工具_data.js`（6,777,757 B）仅含 `ERDATA.usagePrior`（coverage=747），axisLib/mechLib/smogonPrior/sysSet 均缺失 → 上一轮 v4.14 构建实际已退化：AXIS_LIB 回退空数组（多方案框架仅呈现规模/风格变体）、Smogon 先验关闭（队友先验提示缺失，仅 usagePrior「常见」标签兜底）。
+- **恢复（axis_lib 可无源重建，已落地）**：`AXES`（15 轴，build_tool_data.py L1754 起）+ `AXIS_TEMPLATES`（15 轴×六位+note，L2043 起）均为**纯字面量硬编码** → 新增 `restore_nn_axis.py`：AST 提取两字典 → 按数据层 L2428-2435 合并逻辑（每轴追加 `体系模板` 键）→ 落盘 `nn_data\axis_lib.json`（15 轴 / 78,167 B）。重跑 `build_tool_html.py`：`内嵌 AXIS_LIB：15 条轴（76.3 KB）` ✓，静态验证 AXIS_LIB_embedded + axisTemplateOf/axisById/axisStateOf/axisVariantsOf 全在 ✓；浏览器实测 `AXIS_LIB.length=15`（rain/sun/sand/snow/trickroom/e_terrain/misty/grassy/psychic/toxic/hazard/boost/stall/pivot/weaken）✓。
+- **不可恢复（登记缺口）**：
+  1. `nn_data\mech_lib_v412.json`（52 机制/156 combo/40 词汇）——`build_mech_lib`（L2590）**只校验不生成**，为只读输入真文件；docs 无 JSON 备份 → 机制词条层缺失，但 `mechEvalOf` 硬编码 13 case 仍在（机制评分不丢，仅词条溯源/combos 丰富度降级）。
+  2. `nn_data\smogon_prior_2026-09.json`（120 物种先验）——需联网抓 Smogon chaos 重建（暂缓，引擎侧 SMOGON_PRIOR_ENABLED 优雅关闭）。
+  3. `nn_data\species_map.json` + `chaos\raw\*.json`——同上需联网重建（usagePrior 747 条已从 data.js 兜底）。
+  4. `招式表_可学总表.csv`（112,580 行，build_tool_data.py L51 硬依赖）——可从 gameData learnset 重建，但 build_tool_data.py 另有 `ER2.65简汉化\ER2.65beta版图鉴v0.3.xlsm`（克制表源，L71）也已丢失 → **build_tool_data.py 当前整体不可重跑**（克制表 xlsm 无兜底）；克制表在 data.js/HTML 侧已有 21×21 方阵，数据层重建仅影响未来改动。
+- **教训登记**：nn_data 与可学总表 CSV 属「可重建但工程量大」的中间产物，却无 git 跟踪 + 无备份 → 建议后续**把 axis_lib.json 纳入 git**（或定期打包备份），smogon/chaos 重建脚本固化。`restore_nn_axis.py` 保留于仓库根目录（可重复执行）。
+- **产物指纹（v4.15）**：`配招助手_ER.html` = `index.html` = **862,919 B**（+AXIS_LIB 76 KB 注入）；`data.js` 2,210,805 B（不变）。提交链待登记（master v4.15 构建 + gh-pages 部署）。
