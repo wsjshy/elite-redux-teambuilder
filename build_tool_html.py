@@ -801,8 +801,8 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <script>/*__ER_LOADER__*/
 /* ===== v4.11 数据加载器（bootstrap）=====
    ERDATA 已拆包到同目录 data.js。取用序（同步，document.write 注入 parser-blocking 脚本）：
-     非 file: → 主源 CDN_PREFIX（gcore.jsdelivr 镜像）data.js；
-     失败      → 紧随其后的回退块改写同域相对路径 data.js；
+     非 file: → 主源同域相对路径 data.js（gh-pages 同仓库自带，快且无第三方跨域告警）；
+     失败      → 紧随其后的回退块改写 CDN 前缀（jsdelivr gcore 镜像）data.js；
      file:     → 直接相对路径 data.js（本地双击不受影响，不触网取 CDN）。
    该块必须独立于应用代码块：document.write 写入的脚本在本块结束后才被解析执行。 */
 (function(){
@@ -814,18 +814,20 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
     F=(p==='file:');
   }catch(e){F=true}
   window.__ER_FILE=F;
-  window.__ER_ASSET_BASE=F?'':GC;   /* 同域资产（sheets 精灵图）主源前缀，消费点见 sprOf() */
+  window.__ER_ASSET_BASE=F?'':'';   /* v4.30：资产同域优先（gh-pages 自带 assets/sheets，不再默认走 CDN） */
+  window.__ER_CDN=GC;               /* CDN 仅作回退源（sprOf 同域 404 时兜底） */
   if(typeof ERDATA==='undefined'){
-    document.write('<scr'+'ipt src="'+(F?'':GC)+'data.js?v=__DATA_VER__"><\/scr'+'ipt>');
+    document.write('<scr'+'ipt src="data.js?v=__DATA_VER__"><\/scr'+'ipt>');
   }
 })();
 </script>
 <script>/*__ER_LOADER_FB__*/
-/* ===== v4.11 回退块（同域相对路径）=====
-   主源 404 / 网络失败 / 内容不可用 ⇒ ERDATA 仍 undefined ⇒ 改写同域相对路径 data.js。
+/* ===== v4.11 回退块（v4.30 起 = CDN 兜底）=====
+   主源（同域）404 / 网络失败 / 内容不可用 ⇒ ERDATA 仍 undefined ⇒ 改写 CDN 前缀 data.js。
    独立成块的唯一原因：document.write 注入的脚本于「写入它的脚本块」结束后才执行，同块内判定不可靠。 */
 if(typeof ERDATA==='undefined'&&!window.__ER_FILE){
-  document.write('<scr'+'ipt src="data.js?v=__DATA_VER__"><\/scr'+'ipt>');
+  var __erG=window.__ER_CDN||'__ER_CDN_PREFIX__';
+  document.write('<scr'+'ipt src="'+__erG+'data.js?v=__DATA_VER__"><\/scr'+'ipt>');
 }
 </script>
 <script>__FAMGRAPH__</script>
@@ -4604,6 +4606,52 @@ function bestRecMv(s){
   });
   return best;
 }
+/* v4.30 输出侧一致性（新玩家 P0-1 修复）：
+   ① physOutOk(s)：物攻侧是否可玩（种族攻击 ≥70，或 ≥50 且 ≥ 特攻 60%）——
+      硬撑等强制物理侧的机制流先过此门槛，物攻 10 的幸福蛋不再被推物理硬撑流。
+   ② sanitizeBuild(s,b)：流派生成后的三方一致性兜底（EV × 配招类别 × 性格）——
+      辅助/受队/肉盾位或全变化配招 → EV 重算为耐久模板（杜绝「252攻+内敛」练废组合）；
+      主输出侧与配招类别矛盾 → EV 主项跟随配招；内敛却主物攻 / 固执却主特攻 → 换性格。 */
+function physOutOk(s){var b=s.base||[0,0,0,0,0,0];return b[1]>=70||(b[1]>=50&&b[1]>=b[3]*0.6)}
+function evDuraAlloc(s){
+  var bb=s.base||[0,0,0,0,0,0],alloc=[252,0,0,0,0,0];
+  if(bb[2]>=bb[4])alloc[2]=252,alloc[4]=4;else alloc[4]=252,alloc[2]=4;
+  var parts=[];for(var k=0;k<6;k++)if(alloc[k])parts.push(alloc[k]+evName(k));
+  return {template:'耐久',alloc:alloc,summary:parts.join(' / ')};
+}
+function sanitizeBuild(s,b){
+  if(!b||!s)return b;
+  try{
+    var mv=(b.mv&&b.mv.main)||[],phys=0,spec=0,atkAny=0;
+    mv.forEach(function(x){var m=MV[x.id];if(!m)return;var cat=m[4];
+      if(cat==='物理'){phys++;atkAny++}else if(cat==='特殊'){spec++;atkAny++}});
+    var side=String(b.side||''),tag=String(b.roleTag||'');
+    var wall=(tag==='肉盾'||tag==='受队'||tag==='辅助'||tag==='联防'||side==='辅助');
+    if(wall||!atkAny){
+      b.ev=evDuraAlloc(s);
+      if(!atkAny&&tag!=='辅助'&&tag!=='联防'&&side!=='辅助'&&tag!=='肉盾'&&tag!=='受队'){
+        /* 输出位却无攻击招：名称/描述降级为「功能/受队向」（不称「爆发/清场」） */
+        try{b.desc=(b.desc||'').replace('输出','功能').replace('爆发','站场').replace('清场','消耗')}catch(e1){}
+      }
+    }else{
+      var wantIdx=(phys>spec)?1:((spec>phys)?3:((side==='特殊')?3:1));
+      var ev=b.ev&&b.ev.alloc;
+      if(ev&&ev[wantIdx]===0&&(ev[1]||ev[3])){
+        var oi=(wantIdx===1)?3:1;
+        if(ev[oi]>0){ev[wantIdx]=ev[oi];ev[oi]=0;
+          var ps=[];for(var k2=0;k2<6;k2++)if(ev[k2])ps.push(ev[k2]+evName(k2));
+          b.ev.summary=ps.join(' / ');}
+      }
+      var nat=b.nat;
+      if(nat&&nat.length&&ev){
+        var mainIdx=(ev[1]>ev[3]?1:(ev[3]>ev[1]?3:0));
+        if(mainIdx===1&&nat[0][0]==='内敛')b.nat=buildNature(s,'物理',tag);
+        else if(mainIdx===3&&nat[0][0]==='固执')b.nat=buildNature(s,'特殊',tag);
+      }
+    }
+  }catch(e){}
+  return b;
+}
 function mechBuildBase(s,side,name,rw,desc,roleTag){
   var b={name:name,side:side||coreSide(s),roleTag:roleTag||'输出',itemTag:'机制',mv:{main:[],funcs:[]},
     nat:null,it:[],abi:[],desc:desc||'',basis:[],ev:null,score:99,breakingRoute:'机制',mechRw:rw};
@@ -4810,6 +4858,7 @@ var MECH_BUILD={
   /* 硬撑：异常状态下威力翻倍（112）→ 剧毒珠/火焰珠自异常 */
   facade_status:function(s,cs){
     if(!mechHasMv(s,263))return null;
+    if(!physOutOk(s))return null;   /* v4.30 P0-1：物攻侧不可玩（如攻击 10 的幸福蛋）不生成物理硬撑流 */
     var b=mechBuildBase(s,'物理','硬撑异常爆发','facade_status',
       '硬撑在中毒/灼伤/麻痹时威力翻倍（112）——自挂异常（剧毒珠/火焰珠），第一回合开始就是满威力');
     b.mv.main.push({id:263,kind:'attack',tag:'核心',why:['异常状态下威力 112（翻倍）——首回合即可满威']});
@@ -4831,6 +4880,7 @@ function mechBuildsOf(s){
     var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
     /* 配招空槽的机制流派不生成（如再生力流但全无 UT/VS/钉子/状态招）——空卡没有可玩性 */
     if(b&&(!b.mv.main||!b.mv.main.length))b=null;
+    if(b)b=sanitizeBuild(s,b);   /* v4.30 P0-1：机制流三方一致性（EV×配招×性格） */
     if(b)out.push(b);
   });
   return out;
@@ -5134,6 +5184,7 @@ function buildNature(s,side,roleTag){
   /* v4.14：强化流性格与速攻/强化 EV 对齐（不再并入肉盾性格分支——此前「晴强化清场」被推淘气/慎重/大胆，与 252 速攻 EV 矛盾） */
   if(roleTag==='强化')return side==='物理'?[['固执','+攻击-特攻（强化本攻）'],['爽朗','+速度-特攻（强化后清场）']]:[['内敛','+特攻-攻击（强化本攻）'],['胆小','+速度-攻击（强化后清场）']];
   if(roleTag==='天气')return [['慎重','+特防-特攻，站场保天气'],['沉着','+特防-攻击']];
+  if(roleTag==='辅助'||roleTag==='联防')return [['大胆','+防御-攻击（免疫/联防位站场）'],['慎重','+特防-特攻（吃特殊压制）']];  /* v4.30：辅助位性格不再给内敛/固执（与耐久 EV 对齐） */
   if(b[5]>=110)return side==='物理'?[['爽朗','+速度-特攻，先手压制'],['固执','+攻击-特攻']]:[['胆小','+速度-攻击，先手压制'],['内敛','+特攻-攻击']];
   if(b[5]<60)return side==='物理'?[['勇敢','+攻击-速度（配空间）'],['固执','+攻击-特攻']]:[['冷静','+特攻-速度（配空间）'],['内敛','+特攻-攻击']];
   return side==='物理'?[['固执','+攻击-特攻'],['爽朗','+速度-特攻']]:[['内敛','+特攻-攻击'],['胆小','+速度-攻击']];
@@ -5675,6 +5726,7 @@ function deriveBuilds(s,team){
     /* v45-1：道具 tag 改用**与队伍行同源的核心口径**（coreItemTagOf），不再用打法 tag
        —— 盾/受系核心的强化流派不再被推锁招道具；ctx 同源（体系窗口，v433-2） */
     var b=mkBuild(s,side,nm,spBest,phBest,roleTag,itemTagOfCoreProf(p,s),coreItemCtxOf(s));
+    b=sanitizeBuild(s,b);   /* v4.30 P0-1：派生流派三方一致性（EV×配招类别×性格） */
     b.name=nm;b.side=side;b.roleTag=roleTag;
     var basis=[];
     if(p.atk.powBest)basis.push({k:'output',txt:'本系最高 '+(side==='特殊'?(p.atk.sp?MV[p.atk.sp.id][1]+'('+p.atk.sp.pow+')':''):(p.atk.ph?MV[p.atk.ph.id][1]+'('+p.atk.ph.pow+')':''))+'　力度 '+p.power});
@@ -7890,7 +7942,7 @@ function buildEvs(s,side,roleTag,buildName){
   var sideN=String(side||''),tag=String(roleTag||''),name=String(buildName||''),pr='';
   try{pr=String((coreRole(s)||{}).role||'')}catch(e0){pr=''}
   var a=[0,0,0,0,0,0],tpl='速攻',k;
-  var isWall=(tag==='肉盾'||tag==='受队'||pr==='肉盾');
+  var isWall=(tag==='肉盾'||tag==='受队'||pr==='肉盾'||tag==='辅助'||tag==='联防'||sideN==='辅助');  /* v4.30：辅助/联防位也走耐久，杜绝「252攻+内敛」练废组合 */
   var isSpace=(b[5]<=50)&&(pr==='慢速炮台'||pr==='空间打手'||tag.indexOf('空间')>-1||name.indexOf('空间')>-1);
   var outIdx=(sideN==='特殊')?3:1;            /* 主输出：特殊侧 → 特攻(3)；物理/双刀 → 物攻(1) */
   if(isSpace){tpl='空间低速';a[0]=252;a[outIdx]=252;a[2]=4}
@@ -8011,6 +8063,7 @@ function l1AtkDef(boxId,spId,btn){
 function switchBuild(wrapId,i){
   var wrap=$(wrapId);if(!wrap)return;
   var cards=wrap.querySelectorAll('.bkp'),tabs=wrap.querySelectorAll('.bktab'),k;
+  if(!tabs.length){var tb=$(String(wrapId)+'-tabs');if(tb)tabs=tb.querySelectorAll('.bktab')}   /* v4.30 P0-2：bktab 在 wId-tabs 容器（原从 wId 找恒为空 → aria 状态不更新） */
   for(k=0;k<cards.length;k++){
     if(k===i){cards[k].classList.remove('bkoff');cards[k].setAttribute('open','')}
     else cards[k].classList.add('bkoff');

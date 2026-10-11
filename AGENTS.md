@@ -1034,3 +1034,15 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - `comboScoreOf(hits)` 全局衰减：首条 +2、额外每条 +1、封顶 +4（0/2/3/4/4）——命中多条不线性放大，只做同角色/同需求择优的软偏好。
   - findTeammates 动态贪心改用 comboScoreOf；buildTeamByNeeds 选候选处接入：同需求候选按「综合分+与已定队伍组合命中」重排（pick 择优，不影响需求闭合与多功能申报）。
 - **验证**：comboScoreOf(0/1/2/3/5)=0/2/3/4/4；班基拉斯核心配队渲染正常（组合亮点）；大嘴鸥队伍构建按需求骨架闭合（补盲/控速/钉位/除钉位），组合分为软偏好不破坏需求驱动。
+
+
+## 45. v4.30 新玩家评测 P0 修复（2026-10-11）
+
+- **背景**：子代理以 ER 新玩家视角全面评测（独立报告），P0 高危三项：①幸福蛋攻击 10 被推「物理向硬撑爆发」+剧毒珠——照抄练废；②九尾辅助位「属性免疫联防位」EV 252攻/252速 + 性格内敛（减攻）——三方矛盾；③data.js 走第三方 CDN + document.write 跨域注入（Chrome 可能拦截）。
+- **修复**：
+  - `physOutOk(s)`：物攻侧可玩门槛（攻≥70 或 ≥50 且 ≥特攻60%）→ facade_status 硬撑流不生成于物攻 10 的幸福蛋。
+  - `sanitizeBuild(s,b)`（挂在 mechBuildsOf 与 deriveBuilds 两个生成入口）：辅助/受队/肉盾位或全变化配招 → EV 重算耐久模板；主输出侧与配招类别矛盾 → EV 主项跟随配招；内敛却主物攻/固执却主特攻 → 换性格。
+  - buildEvs isWall 加辅助/联防位；buildNature 加辅助/联防分支（大胆/慎重，不再内敛/固执）。
+  - switchBuild tabs 选择器修复：bktab 在 wId-tabs 容器（原从 wId 查恒空 → aria 状态不更新）。
+  - 数据加载：主源改**同域相对路径 data.js**（gh-pages 自带），CDN gcore 仅作回退；精灵图 assets 同域优先（__ER_ASSET_BASE=''）。
+- **验证**：幸福蛋流派只剩 1 条（硬撑流消失）EV=耐久；九尾流派1 性格大胆/慎重 + 252HP/252特防 耐久；流派切换展开正常；本地 file:// 加载正常。
