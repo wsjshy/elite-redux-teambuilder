@@ -1061,3 +1061,19 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - ⑦ 移动端 header：<768px 去 `position:sticky`（原 flex-wrap 多层遮正文），隐藏副标题 .tag、nav 单行横滑。
 - **验证**（chrome-devtools，本地 v431d）：九尾免疫联防位 4 招满槽；天蝎王毒疗流 side=物理 且配招无破坏光线、冰弱 ×4；核心配队与详情页「燃烧之魂」0 命中全为「烈焰之魂」；天蝎王 fill:9 队伍 6 只；node --check exit 0。
 - 提交链：master `471d1bb` → gh-pages `8645d86`（verify：fillMvSlots+abiChipName+含倍率 全命中）。
+
+## 47. v4.32 新玩家复测 v4.30 修复（2026-10-11）
+
+- **背景**：全新 organizer `o_000EGn8dvVO` 以纯新玩家视角复测线上 v4.30（两次独立浏览器会话交叉验证，33 张截图），报告：`…\agents\o_000EGn8dvVO\artifacts\评测报告.md`。结论「值得用、默认流派可照抄，但新玩家友好度不过关」。
+- **P0-1 流派 tab 切换不展开**：switchBuild 只切外层 .bkp，内层 `details.big` 无 open → 用户看到「点了没内容」。修复：切换时对目标卡内 `details.big` 补 `setAttribute('open','')`。
+- **P1-2 双刀流减攻性格**：幸福蛋R「破盾·双刀向」全物理招却推内敛/胆小。buildNature 新增 side==='双刀' 分支：物攻主→固执/爽朗，特攻主→内敛/胆小。
+- **P1-3 低物理攻混物理招**：幸福蛋（攻10）「特殊向」混入双倍奉还/吸取拳。三层修复：①sanitizeBuild 物理攻种族（base[1]）<70 时过滤全部物理招并重算特殊侧性格/EV；②fillMvSlots rest 池同口径过滤（防净化后被补回）；③pickAttacks crossSide 跨侧纳入招（反击型）按对应种族可玩性门槛（防双倍奉还回流）。
+- **P1-4 组合亮点参与者重复**：scanCombos 输出前按名字去重（阿尔宙斯-幽灵×2 / 超级帝王拿波×2 清零）。
+- **P2-1 队友理由术语**：rsL1Of 返回串去「规则偏移层/来源 shift_layer.py」，改「强度校准：」开头（v4.31 只清了队伍卡，队友理由漏网）。
+- **P2-2 搜索漏普通形态**：coreMatch 显式搜索词非空时放宽 `optMegaOnly&&hasMegaForm` 过滤（浏览模式保持 Mega 优先）；搜「妙蛙花」返回 妙蛙花 + 超级妙蛙花X/Y。
+- **P2-4 数据缺失保护**：应用块头部 ERDATA undefined 时显示「数据加载失败」重试按钮而非白屏（jsdelivr 首访告警判定为旧浏览器缓存伪影，v4.30 起主源已同域）。
+- **P3-1 招式反查空态**：mvTable 下新增 `mvEmpty` 提示「输入关键词开始检索」（原默认空白误以为页面坏了）。
+- **P3-3 导出 toast 位置**：toastBox 从底部移顶部（top:86px），更靠近操作区（移动端 top:70px）。
+- **未做/待决**：P1-1（九尾「4招」标题间歇只渲 2 招，未 100% 复现，疑与构建后二次改写标题写死「4 招」有关，待复现排查）；P2-3（移动端流派 tab 截断，可选项）；P3-2（存档联动示例文件）；两套定位词表统一（需先确认筛选匹配逻辑以免回归）。
+- **验证**（chrome-devtools，本地 v432d）：天蝎王流派 tab 切换后目标卡 open=true；幸福蛋R 破盾流 双刀|固执/爽朗；幸福蛋强化流 特殊|内敛/胆小|精神强念/吸取之吻/冥想/精神噪音（无物理招）；搜索「妙蛙花」含普通形态；node --check exit 0。
+- 提交链：master `c505d4d` → gh-pages `7771042`（verify：强度校准+双刀物主+fillMvSlots+mvEmpty 全命中）。
