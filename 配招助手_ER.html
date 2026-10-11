@@ -5967,17 +5967,35 @@ function findTeammates(s,side,roleTag){
        ③ 极端不足 6 定位时按综合分补位。 */
   fin2.sort(function(a,b){return (b.score-a.score)||(b.fit-a.fit)});
   var _prio=MATE_ROLE_PRIO[roleTag]||MATE_ROLE_PRIO['输出'];
-  var byRole={},mainPicks=[];
-  for(var _mi=0;_mi<fin2.length&&mainPicks.length<6;_mi++){
-    var _r=fin2[_mi];
-    var _roles=mateRoleOf(_r.s,wxSys);
-    var _free=_roles.filter(function(x){return !byRole[x]});
-    if(!_free.length)continue; /* 角色全占用 → 留给同定位候选 */
-    _free.sort(function(a,b){return ((_prio[b]||1)-(_prio[a]||1))});
-    var _pri=_free[0];
-    try{_r.priRole=_pri}catch(e9){}
-    byRole[_pri]=1;
-    mainPicks.push(_r);
+  var byRole={},mainPicks=[],takenIdx={};
+  /* v4.28 组合契合分：每轮从「有空角色」的候选中选 综合分+组合分 最高者（动态贪心）。
+     组合分 = 候选入队后与 核心+已定队友 的临时组合命中数 × COMBO_SCORE（软加分：影响同角色择优、
+     让主推队伍「为组合而组」，不破坏角色骨架；角色全占用者仍留作同定位候选）。 */
+  var COMBO_SCORE=3;
+  while(mainPicks.length<6){
+    var _best=null,_bestVal=-1e9;
+    for(var _mi=0;_mi<fin2.length&&_mi<80;_mi++){
+      if(takenIdx[_mi])continue;
+      var _r=fin2[_mi];
+      var _roles=mateRoleOf(_r.s,wxSys);
+      var _free=_roles.filter(function(x){return !byRole[x]});
+      if(!_free.length)continue; /* 角色全占用 → 留给同定位候选 */
+      var _cg=0;
+      try{
+        var _tm=[{s:s,core:1}].concat(mainPicks.map(function(p){return {s:p.s}}), [{s:_r.s}]);
+        _cg=scanCombos(_tm).length;
+      }catch(ecg){_cg=0}
+      var _val=_r.score+_cg*COMBO_SCORE;
+      if(_val>_bestVal){_bestVal=_val;_best={r:_r,mi:_mi,free:_free,cg:_cg}}
+    }
+    if(!_best)break;
+    var _freeB=_best.free;
+    _freeB.sort(function(a,b){return ((_prio[b]||1)-(_prio[a]||1))});
+    var _pri=_freeB[0];
+    try{_best.r.priRole=_pri}catch(e9){}
+    try{_best.r.comboGain=_best.cg}catch(ecg2){}
+    byRole[_pri]=1;takenIdx[_best.mi]=1;
+    mainPicks.push(_best.r);
   }
   /* 极端：定位不足 6 → 补综合分最高未入队者（不浪费高分精灵） */
   for(var _mi2=0;_mi2<fin2.length&&mainPicks.length<6;_mi2++){
@@ -7945,6 +7963,8 @@ function oneLiner(bd){
 function renderCore(s){
   if(!s){$('coreOut').innerHTML='<div class="tip">先在上方搜索并选定一只核心宝可梦</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   if(!isValidSp(s)){$('coreOut').innerHTML='<div class="tip">该编号为占位/无效物种（种族值六项为 0），已过滤、不参与配队推荐。</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
+  var _ftC={};
+  function ftC(s,side,rt){var k=side+'|'+rt;return _ftC[k]||(_ftC[k]=findTeammates(s,side,rt))}
   var prof=coreRole(s),side=coreSide(s),weak=coreWeak(s),recs=findTeammates(s,side);
   var note=null;
   ERDATA.coreNotes.forEach(function(n){if(n.id==s.id)note=n});
@@ -8023,7 +8043,7 @@ function renderCore(s){
   html+='</div><div id="'+wId+'">';
   builds.forEach(function(bd,i){
     var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?bd.abi[0].n:'—';
-    var tms=findTeammates(s,bd.side,bd.roleTag);
+    var tms=ftC(s,bd.side,bd.roleTag);
     /* v4.11：tabpanel 容器包裹流派卡 —— 首卡 details 的 class 固定为字面量 "big rec"（verify_v4 B④ 断言），
        切换只切外层 .bkp 的 .bkoff，不重建页面（展开态 / 滚动位置保留） */
     html+='<div class="bkp'+(i===0?'':' bkoff')+'" id="'+wId+'c'+i+'" role="tabpanel" aria-labelledby="'+wId+'t'+i+'">';
@@ -8125,7 +8145,7 @@ function renderCore(s){
     '　耐久 '+esc(in0c.phys)+' / '+esc(in0c.spec)+'　'+esc(coreComment(s))+'</div>'+
     '<div style="font-size:11px;color:var(--sub);margin-top:4px">耐久口径（口径实读）：物理耐久 = HP+物攻+防御、特殊耐久 = HP+特攻+特防；≥300 判肉盾、≥230 偏耐久、≥270 开肉盾流派。</div></div>';
   builds.forEach(function(bd,i){
-    var tmsE=findTeammates(s,bd.side,bd.roleTag);
+    var tmsE=ftC(s,bd.side,bd.roleTag);
     eng+='<div class="sec"><h3>流派 '+(i+1)+'：'+esc(bd.name)+' · 引擎推导</h3>';
     eng+='<div style="font-size:12px;line-height:1.9">'+
       '<b>打法依据</b>（动态推导）：'+esc((bd.basis||[]).map(function(x){return x.txt}).join('；'))+
