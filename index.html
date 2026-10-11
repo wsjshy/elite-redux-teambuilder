@@ -508,7 +508,8 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   </div>
   <div id="csvPanel" style="display:none;margin-bottom:6px">
     <textarea class="savebox" id="saveCsv" placeholder="粘贴 存档解析（网页版）CSV 文本 → 点「导入」自动分析当前队伍…（更省事：直接点上方 📂 解析存档 选 .sav 文件）"></textarea>
-    <div style="margin-top:4px"><button class="btn" onclick="importSaveBox()">导入</button> <span class="mini" style="color:var(--sub)">只认队伍行</span></div>
+    <div style="margin-top:4px"><button class="btn" onclick="importSaveBox()">导入</button> <span class="mini" style="color:var(--sub)">只认队伍行</span>
+      <span class="mini" style="color:var(--sub)">（v4.33 也支持每行一个宝可梦名/编号的简单名单）</span></div>
   </div>
   <div id="savParseOut" style="margin:6px 0"></div>
   <!-- v4.6-B：存档联动组队（我的宝可梦）—— 与下方全图鉴组队并列，不替换 -->
@@ -784,7 +785,7 @@ function wxRuleHtml(){
     ['天气归属（谁主导）','WCONF.wxGrantOrder',wxGrantTxt()+'（定稿 2026-10-10：v2.65 换入按速度降序发动、慢者特性最后覆盖 ⇒ 慢者主导；「fast 快者主导」旧口径不适用）',''],
     ['威胁库使用率先验（弱先验）','使用率弱先验',threatPriorLine(),'']
   ];
-  var h='<details class="rulebox"><summary>📐 机制口径（参数 ↔ 当前值；内部参数名供对照《机制默认口径表》）</summary><div class="scroll">'+
+  var h='<details class="rulebox"><summary>📐 机制口径（当前生效值；内部参数名对照《机制默认口径表》，供开发对照）</summary><div class="scroll">'+
     '<table style="margin-top:2px"><thead><tr><th>机制</th><th>参数</th><th>当前值</th></tr></thead><tbody>';
   rows.forEach(function(r){
     h+='<tr><td>'+esc(r[0])+'</td><td style="font-size:11px;color:var(--sub)">'+esc(r[1])+'</td><td style="font-size:12px">'+r[2]+(r[3]==='pend'?pendBadge():'')+'</td></tr>';
@@ -1464,7 +1465,7 @@ function abiTagLines(id){
     var cv=g.conv;
     L.push('属性转换（conv）：'+(typeof cv==='object'?((cv.src||'一般')+' 系招 → '+cv.conv+' 系'):(cv+'（来源 一般）'))+'，按本系 STAB ×1.6 结算');
   }
-  if(g.nt)L.push('备注（nt）：'+g.nt);
+  if(g.nt)L.push('备注：'+g.nt);
   Object.keys(g).forEach(function(k){if(['im','hf','add','out','def','conv','nt'].indexOf(k)<0)L.push(k+'：'+JSON.stringify(g[k]))});
   return L;
 }
@@ -1610,7 +1611,7 @@ function openSp(s){
   });
   html+='</div>';
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
-  html+='<div class="sec"><h3>特性（n 选 1，点击看描述）</h3>';
+  html+='<div class="sec"><h3>特性（'+s.abis.length+' 选 1，点击看描述）</h3>';
   s.abis.forEach(function(n){
     var id=abiIdByZhOrEn(n);
     html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(abiChipName(n))+'</span>';   /* v4.31：统一 ABI 表规范中文（消除「烈焰之魂/燃烧之魂」双名） */
@@ -1835,7 +1836,7 @@ function renderAtk(t){
 function renderDef(){
   var sel=[];
   document.querySelectorAll('#defChips button').forEach(function(b){if(b.classList.contains('on'))sel.push(b.textContent)});
-  if(!sel.length){$('defResult').innerHTML='<div style="color:var(--sub)">请选择 1-2 个属性</div>';return}
+  if(!sel.length){$('defResult').innerHTML='<div style="color:var(--sub)">请选择属性（可多选，同时选中多个 = 看综合承受面）</div>';return}
   var weak={},res={},imm={};
   ERDATA.types.forEach(function(at){
     var mult=1;
@@ -1889,13 +1890,20 @@ function tmFilterReset(){
   })();
   /* 首次渲染：候选卡片（含精灵图）与队伍槽位。原代码缺此初始化，
      导致「队伍构建」Tab 初次进入时候选列表与槽位均为空白，需先输入搜索词才出现。 */
-  renderTm(true);renderSlots();
+  /* v4.33 N6 修复：loadTeam 内部渲染（renderTm/renderSlots→abiBadges→NM2ID）依赖定义在本脚本块后部的全局；
+     顶层同步调用会在其初始化前抛错并中断整块执行（NM2ID 永不建立）→ 整体延迟到脚本块结束后执行 */
+  setTimeout(function(){try{loadTeam()}catch(e){}},0);
 })();
 function renderTm(reset){
   var q=$('tmSearch').value.trim();
   var role=$('tmRole')?$('tmRole').value:'';
   var abi=$('tmAbi')?$('tmAbi').value.trim():'';
   var arr=ERDATA.species.filter(function(s){return spMatch(s,q,tmTypeSel,role,abi)});
+  /* v4.33 N11：纯数字查询时精确编号命中者置顶 */
+  if(/^\d+$/.test(q)){
+    var exact=null;arr.forEach(function(s){if(String(s.id)===q&&!exact)exact=s});
+    if(exact){arr=arr.filter(function(s){return s!==exact});arr.unshift(exact);}
+  }
   arr=sortedSp(arr,$('tmSort').value);
   if(reset){tmShown=0;$('tmGrid').innerHTML=''}
   var take=arr.slice(tmShown,tmShown+tmStep);
@@ -1919,18 +1927,45 @@ function renderTm(reset){
 window.addEventListener('scroll',function(){
   if($('tab-team').classList.contains('active')&&window.innerHeight+window.scrollY>document.body.scrollHeight-400)renderTm(false);
 });
+/* v4.33 N6：队伍 localStorage 持久化（刷新/重开不丢；仅存 id 与轻量信息，精灵数据仍以 ERDATA 为准） */
+function saveTeam(){
+  try{
+    localStorage.setItem('er_team',JSON.stringify(team.map(function(s){return s.id})));
+    localStorage.setItem('er_teamInfo',JSON.stringify(teamInfo));
+  }catch(e){}
+}
+function loadTeam(){
+  try{
+    var ids=JSON.parse(localStorage.getItem('er_team')||'[]');
+    if(!(ids instanceof Array)||!ids.length)return;
+    var info=JSON.parse(localStorage.getItem('er_teamInfo')||'{}');
+    team=[];teamInfo={};
+    ids.forEach(function(id){
+      var s=speciesById(id);
+      if(!s)return;
+      team.push(s);
+      var it=info[String(id)]||{fromSave:false};
+      if(typeof it!=='object')it={fromSave:false};
+      teamInfo[id]=it;
+    });
+    /* v4.33 N6 修复：renderAnalyze 读 NM2ID（赋值在文件后部），顶层立即调用会在其初始化前抛错中断整块脚本
+       → 延迟到本脚本块执行完再算（setTimeout 回调在块结束后运行，NM2ID 已就绪） */
+    renderTm(true);renderSlots();
+    setTimeout(function(){try{renderAnalyze()}catch(e){}},0);
+  }catch(e){}
+}
 function addToTeam(s,info){
   if(!isValidSp(s))return; /* B7：无效/占位物种不进队伍（coreMatch 与导入路径统一过滤） */
   if(team.length>=6){toast('最多 6 只');return}
   if(team.indexOf(s)>-1)return;
   team.push(s);
   if(info)teamInfo[s.id]=info;else teamInfo[s.id]={fromSave:false};
-  renderTm(true);renderSlots();renderAnalyze();
+  renderTm(true);renderSlots();renderAnalyze();saveTeam();
 }
 function removeFromTeam(s){
   var i=team.indexOf(s);
   if(i>-1){team.splice(i,1);delete teamInfo[s.id]}
-  renderTm(true);renderSlots();renderAnalyze();
+  renderTm(true);renderSlots();renderAnalyze();saveTeam();
 }
 function renderSlots(){
   var html='';
@@ -2000,7 +2035,7 @@ function pickAbi(id,idx){
     if(!n)return;
     info.pick=(info.pick===n)?null:n;
   }
-  renderSlots();renderAnalyze();
+  renderSlots();renderAnalyze();saveTeam();
 }
 /* ============ 特性修正评估（v3：整体聚合——属性×天性×可选特性） ============ */
 var IMMUNE_RISK={}; /* 属性 -> 常见免疫特性名（进攻警示用） */
@@ -2532,6 +2567,29 @@ function toast(msg,ms){
 function copySavCsv(){if(!lastSavCsv){toast('暂无解析结果');return}var ta=document.createElement('textarea');ta.value=lastSavCsv;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(ta);toast('已复制 '+lastSavCsv.split('\n').length+' 行 CSV')}
 function downloadSavCsv(){if(!lastSavCsv){toast('暂无解析结果');return}var blob=new Blob(['\ufeff'+lastSavCsv],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='存档解析_网页版_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);document.body.removeChild(a)},500)}
 function toggleCsvPanel(){var p=$('csvPanel');p.style.display=p.style.display==='none'?'block':'none'}
+/* v4.33 N7：简单名单导入——每行第 0 列可为 宝可梦中文名/英文名/编号（数字或 #N）；返回成功入队数 */
+function importNameList(rows){
+  var added=0,seen={};
+  for(var i=0;i<rows.length;i++){
+    if(team.length>=6)break;
+    var r=rows[i];if(!r||!r.length)continue;
+    var cell=String(r[0]||'').trim();if(!cell)continue;
+    var s=null;
+    var m=cell.match(/#?\s*(\d+)/);
+    if(m)s=speciesById(Number(m[1]));
+    if(!s){
+      var zh=(cell.split('#')[0]||'').trim(),en=(zh.indexOf('(')>-1&&zh.indexOf(')')>zh.indexOf('('))?zh.slice(zh.indexOf('(')+1,zh.indexOf(')')):'';
+      if(zh){ERDATA.species.forEach(function(x){if(!s&&x.zh===zh)s=x})}
+      if(!s&&en){ERDATA.species.forEach(function(x){if(!s&&x.en&&x.en.toLowerCase()===en.toLowerCase())s=x})}
+      if(!s){ERDATA.species.forEach(function(x){if(!s&&(x.zh||'').indexOf(zh)>-1&&zh.length>=2)s=x})}
+    }
+    if(!s||!isValidSp(s))continue;
+    if(seen[String(s.id)])continue;seen[String(s.id)]=1;
+    if(team.indexOf(s)>-1)continue;
+    addToTeam(s,{fromSave:false});added++;
+  }
+  return added;
+}
 function importSaveBox(){
   var text=$('saveCsv').value;
   if(!text.trim()){toast('请先粘贴存档 CSV 文本');return}
@@ -2540,7 +2598,13 @@ function importSaveBox(){
   var hdr=rows[0],idx={};
   if(hdr.length&&hdr[0]&&hdr[0].charCodeAt(0)===0xFEFF)hdr[0]=hdr[0].slice(1);
   hdr.forEach(function(c,i){idx[c]=i});
-  if(idx['来源']===undefined||idx['图鉴编号']===undefined){toast('表头不匹配，需要 存档解析（网页版）导出的 CSV（含 来源 / 图鉴编号 列）');return}
+  if(idx['来源']===undefined||idx['图鉴编号']===undefined){
+    /* v4.33 N7：兼容「每行一个宝可梦名/编号」的简单名单——新玩家贴 6 个名字即可入队；
+       失败时明确 toast（表头不匹配 + 两种支持格式），不再静默 */
+    var got=importNameList(rows);
+    if(got>0){toast('已按名单导入 '+got+' 只');return}
+    toast('表头不匹配：需「来源/图鉴编号」列（网页版存档解析导出格式），或每行一个宝可梦名/编号（如 妙蛙花 / #3）');return;
+  }
   var cleared=clearTeamForImport(); /* D2：导入前清空既有队伍，保证 6 只全导入 */
   var added=0;
   for(var i=1;i<rows.length;i++){
@@ -2620,7 +2684,7 @@ function renderAbi(){
       '<div class="mini" style="color:var(--sub);margin-top:4px;clear:both">'+esc(desc.slice(0,120))+(desc.length>120?'…':'')+' <span style="color:var(--accent)">（点击展开详情卡）</span></div></div>'+
       '<div class="abimain" style="display:none">'+
         '<div class="sec" style="margin:8px 0"><h3>中文描述</h3><div style="font-size:12px;line-height:1.95">'+glossify(desc||'（无中文描述）')+'</div></div>'+
-        '<div class="sec" style="margin:8px 0"><h3>战斗意义（ABI_TAGS 标签解读）</h3><div style="font-size:12px;line-height:1.9">'+
+        '<div class="sec" style="margin:8px 0"><h3>特性效果（战斗意义）</h3><div style="font-size:12px;line-height:1.9">'+
           (tl.length?tl.map(function(x){return '• '+esc(x)}).join('<br>'):'<span style="color:var(--sub)">（ABI_TAGS 未登记标签）</span>')+'</div></div>'+
         '<div class="sec" style="margin:8px 0"><h3>持有者（分两列：可选池 / 天性固定）</h3><div class="abicol">'+
           abiOwnerCol('作为特性（可选池）',grp.ab)+abiOwnerCol('作为天性（固定）',grp.inn)+'</div></div>'+
@@ -4144,7 +4208,7 @@ function smogonMateHtml(s,poolIds){
     (a.length?('已在你的池中：'+a.map(chip).join(' ')):'')+
     (b.length?((a.length?'　':'')+'全库亦有：'+b.map(chip).join(' ')):'')+
     (a.length||b.length?'':'（本物种先验队友均未映射到 ER 物种）')+
-    '<br><span style="font-size:11px;color:var(--sub)">'+esc(smogonNote())+'；原版惯例 ≠ ER 使用率，仅作提示、不改变队友排序硬门。</span></div>';
+    '<br><span style="font-size:11px;color:var(--sub)">'+esc(smogonNote())+'；原版惯例 ≠ ER 使用率，仅作提示，不硬性改变队友排序。</span></div>';
 }
 /* ==================== v4.12 ③ 体系模板生成（轴库 axis_lib「体系模板」六位） ====================
    数据源：AXIS_LIB（构建期内嵌 nn_data/axis_lib.json，15 轴 × 6 位：体系核心/打手位/补盲位/联防位/
@@ -4500,7 +4564,7 @@ var MECH_BUILD={
     b.it=[['飞行宝石','本发 1.5 倍后消耗 → 杂技立即满威力（组合考古：bulbapedia Acrobat）']];
     var seeds=[328,329,330,331];seeds.forEach(function(i){var it=itemById(i);if(it)b.it.push([it[2]||it[1],'场地种子：场地+1 防后消耗 → 杂技翻倍（一次性）'])});
     b.it.push(['气势披带','吃一击后消耗 → 杂技翻倍 + 保命']);
-    b.basis.push({k:'mech',txt:'机制 杂技（acrobatics_item）——道具位=引爆器，消耗即增伤'});
+    b.basis.push({k:'mech',txt:'机制 杂技——道具位=引爆器，消耗即增伤'});
     return b;
   },
   /* 扑击：按物防结算 + 铁壁转化 */
@@ -4660,7 +4724,7 @@ var MECH_BUILD={
     if(mechHasMv(s,92))b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：免疫换回合挂状态']});
     if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：免疫位站场']});
     b.it=[['剩饭','站场续航'],['凸凸头盔','吃接触伤害反伤（联防位常被物攻点）']];
-    b.basis.push({k:'mech',txt:'机制 属性免疫（type_immunity_absorb）——0 伤免疫位，把对面对应输出手废掉'});
+    b.basis.push({k:'mech',txt:'机制 属性免疫——0 伤免疫位，把对面对应输出手废掉'});
     return b;
   },
   /* 硬撑：异常状态下威力翻倍（112）→ 剧毒珠/火焰珠自异常 */
@@ -5559,7 +5623,8 @@ function deriveBuilds(s,team){
   }
   var spBest=stabBest(s,'特殊'),phBest=stabBest(s,'物理'),out=[];
   cand.forEach(function(c,i){
-    var side=c.side||coreSide(s),nm=(pref?pref:'')+c.base,roleTag=c.tag;
+    var side=c.side||coreSide(s),nm=(pref&&c.base.indexOf(pref)<0?pref:'')+c.base,roleTag=c.tag;
+    /* v4.33 N18：前缀与 base 语义重叠时去重（强化+强化清场 → 强化清场，不再"强化强化清场"） */
     /* v4.3.3：自身即天气/场地设置手时，道具位按「天气」角色走（天气岩石/光之黏土等） */
     /* v45-1：道具 tag 改用**与队伍行同源的核心口径**（coreItemTagOf），不再用打法 tag
        —— 盾/受系核心的强化流派不再被推锁招道具；ctx 同源（体系窗口，v433-2） */
@@ -6260,9 +6325,19 @@ var MECH_COMBO=[
      var haz=mem.filter(function(x){return learnHasAnyId(x.s,FUNC_MV.hazard)});
      var rem=mem.filter(function(x){return learnHasAnyId(x.s,[229,432])});
      if(!haz.length||!rem.length)return null;
-     return {parts:[haz[0].s.zh,rem[0].s.zh],
-       note:haz[0].s.zh+'（'+FUNC_MV.hazard.map(function(id){return (MV[id]||[])[1]}).filter(function(n,i){return learnC(haz[0].s).indexOf(FUNC_MV.hazard[i])>-1}).join('/')+'撒钉）+ '+
-         rem[0].s.zh+'（'+([229,432].filter(function(id){return learnC(rem[0].s).indexOf(id)>-1}).map(function(id){return (MV[id]||[])[1]}).join('/'))+'除钉）——'+
+     /* v4.33 N2：撒钉手与除钉手必须互异——同一只精灵同时学两招也只得占一职（双保险才成立） */
+     var hz=haz[0],rm=rem[0];
+     if(hz.s.id===rm.s.id){
+       var rm2=rem.filter(function(x){return x.s.id!==hz.s.id})[0];
+       if(rm2)rm=rm2;
+       else{
+         var hz2=haz.filter(function(x){return x.s.id!==rm.s.id})[0];
+         if(hz2)hz=hz2;else return null;
+       }
+     }
+     return {parts:[hz.s.zh,rm.s.zh],
+       note:hz.s.zh+'（'+FUNC_MV.hazard.map(function(id){return (MV[id]||[])[1]}).filter(function(n,i){return learnC(hz.s).indexOf(FUNC_MV.hazard[i])>-1}).join('/')+'撒钉）+ '+
+         rm.s.zh+'（'+([229,432].filter(function(id){return learnC(rm.s).indexOf(id)>-1}).map(function(id){return (MV[id]||[])[1]}).join('/'))+'除钉）——'+
          '钉子压血线+除钉保己方节奏，攻防一体的场地双保险；除钉手最好带回复/轮转招避免反复送'}
      }}
 ];
@@ -7816,7 +7891,7 @@ function evBarHtml(bd){
     segs+='<span class="evseg ev'+(rank[k]||0)+'" style="width:'+w+'%" title="'+escq(evName(k)+' '+a[k])+'"></span>';
   }
   var h='<div class="fld"><div class="fhd"><span class="fno">6</span>努力值分配</div>';
-  h+='<div class="evsum">数组（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　'+esc(ev.summary)+'　·　模板：<b>'+esc(ev.template)+'</b></div>';
+  h+='<div class="evsum">'+esc(ev.summary)+'　·　数值（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　模板：<b>'+esc(ev.template)+'</b></div>';
   h+='<button class="evtap" type="button" aria-expanded="false" onclick="evWhy(this)" title="展开/收起这套努力值的分配依据">';
   h+='<span class="evsegs">'+segs+'</span><span class="evv">分配依据 ▸</span></button>';
   h+='<div class="evwhy" hidden>'+esc(evWhyTxt(ev.template))+'</div></div>';
@@ -7845,7 +7920,7 @@ function abiModal(abiName,kind){
   var tg=hasId?abiTagLines(id):[];
   var full='<div style="margin-bottom:6px"><b>'+esc(nm)+'</b>'+(a&&a[1]&&a[1]!==nm?('（'+esc(a[1])+'）'):'')+
     (hasId?(' <span class="badge badge-neu">#'+id+'</span>'):'')+
-    ' <span class="dim">'+(kind==='天性'?'天性（固定拥有）':'特性（可选·n 选 1）')+'</span></div>'+
+    ' <span class="dim">'+(kind==='天性'?'天性（固定拥有）':'特性（可选·数量见持有者详情）')+'</span></div>'+
     '<div>'+glossify(zh||'（无中文描述）')+'</div>'+
     (tg.length?('<div class="ruleline" style="margin-top:6px"><b>战斗意义</b>：'+tg.map(function(x){return esc(x)}).join('；')+'</div>'):'');
   l1Modal(String(kind||'特性')+' · '+nm,full);
@@ -8232,9 +8307,10 @@ function renderCore(s){
     /* ⑧ 队友（v4.24：**完整 6 人推荐队**，每只带定位徽章 + 同定位候选可混搭替换；备选 5 只网格） */
     html+='<div class="fld"><div class="fhd"><span class="fno">8</span>推荐队伍（6 人）</div>'+
       '<div class="dim">核心（'+esc(bd.side)+'向 / '+esc(bd.roleTag||'')+'）＋5 名队友；每名队友标<u>定位</u>，定位下方给出同定位候选，可混搭替换；全部按综合分+体系+联防动态权衡</div>';
-    var mainMates=(tms.main&&tms.main.length)?tms.main:tms.slice(0,6),seenId={},altMates=[];
+    /* v4.33 N1：6 人队=核心+5 名队友——主推最多 5 只（原 tms.main 可 6 只→正文"核心以外 6 只"=7 人超限矛盾） */
+    var mainMates=(tms.main&&tms.main.length)?tms.main.slice(0,5):tms.slice(0,5),seenId={},altMates=[];
     mainMates.forEach(function(r){if(r&&r.s)seenId[String(r.s.id)]=1});
-    tms.slice(6).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
+    tms.slice(5).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     recs.forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     if(mainMates.length){
       html+='<div class="dim" style="margin-top:2px">推荐 6 人队（核心以外 '+mainMates.length+' 只队友，主定位标注，定位下可换候选）</div><div class="mateline">'+mainMates.map(function(r){
@@ -8427,6 +8503,10 @@ function selectCore(id){
   function coreClear(){
     coreFilter={types:{}};
     $('coreSearch').value='';$('coreRole').value='';$('coreMv').value='';$('coreAbi').value='';
+    /* v4.33 N3：一并清「仅最终形态 / Mega 优先」开关与 checkbox UI 态（原只清 4 个字段，开关原样保留=空壳感） */
+    optFinalOnly=false;optMegaOnly=false;
+    var f=$('coreFinal');if(f)f.checked=false;
+    var m=$('coreMega');if(m)m.checked=false;
     renderCoreTypes();draw();
   }
   window.coreClear=coreClear;
@@ -8451,6 +8531,12 @@ function selectCore(id){
   }
   function draw(){
     var arr=ERDATA.species.filter(coreMatch);
+    /* v4.33 N11：纯数字查询时精确编号命中者置顶（输入 1 → #1 在最前，不再 #1/#10/#11 混排） */
+    var _q=String($('coreSearch').value||'').trim();
+    if(/^\d+$/.test(_q)){
+      var exact=null;arr.forEach(function(s){if(String(s.id)===_q&&!exact)exact=s});
+      if(exact){arr=arr.filter(function(s){return s!==exact});arr.unshift(exact);}
+    }
     arr=sortedSp(arr,$('coreSort').value);
     var box=$('coreGrid');box.innerHTML='';
     arr.slice(0,60).forEach(function(s){
