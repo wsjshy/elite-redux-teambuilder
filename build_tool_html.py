@@ -6989,6 +6989,31 @@ function needList(core,cx){
   if(p.fn.tr)add('trset',3);
   else if(p.slow&&p.ok)add('trset',4);   /* 低速重炮核心：空间由队友提供 */
   if(p.fn.tr||(p.slow&&p.ok))add('truse',3);  /* 空间打手位：低速加分、中速不达标低分但**不剔除**（零硬门） */
+  /* v4.25 机制驱动队友需求：核心**实际命中**机制流时自动生成对应队友需求（队伍构建 Tab 与核心配队机制流对齐）。
+     命中判定 = MECH_BUILD[rw](core) 返回非空（与 mechBuildsOf 同口径，杜绝"全机制库遍历"误判）；
+     仅对「需要队友配合才能发挥」的机制生成需求；纯自身机制（杂技/扑击/陀螺球/欺诈/魔法防守/全力攻击/
+     胆量/巨力/水泡/硬撑/轻装）不占需求清单（价值已由 D2/D4/D7 等机制评估维度体现）。 */
+  var hitRws={};
+  try{
+    if(mechOn()){
+      mechAll().forEach(function(mc){
+        if(!mc||!mc.rewrite||!MECH_BUILD[mc.rewrite])return;
+        var b=null;try{b=MECH_BUILD[mc.rewrite](core,null)}catch(eH2){b=null}
+        if(b)hitRws[mc.rewrite]=1;
+      });
+    }
+  }catch(eH){}
+  try{
+    if(mechOn()){
+      /* note 累加（不覆盖）：同一需求被多个**命中**机制触达时（如百变怪=变身者+恶作剧之心并存），说明并写 */
+      function mechNote(n,txt){if(!n)return;n.note=(n.note?n.note+'；':'')+txt}
+      if(hitRws.imposter_anchor){var _m1=add('pivot',6);mechNote(_m1,'变身者流——需 UT/VS 轮转手让变身者安全变身登场（自身种族/技能池不参与评价）')}
+      if(hitRws.toxic_heal_item){var _m2=add('pivot',5);mechNote(_m2,'毒疗站场流——轮转/回复协同，保证带剧毒珠站场安全')}
+      if(hitRws.regenerator_pivot){var _m3=add('pivot',4);mechNote(_m3,'再生力轮转流——UT/VS 轮转轴协同，最大化再生力收益')}
+      if(hitRws.prankster_priority){var _m4=add('pivot',4);mechNote(_m4,'恶作剧之心流——安全轮转，先制辅助不被白打')}
+      if(hitRws.type_immunity_absorb){var _m5=add('wxabuse',5);mechNote(_m5,'免疫特性流（引水/避雷针/蓄水/食草等）——队友需对应属性招式/天气触发免疫提速')}
+    }
+  }catch(eMe){}
   /* 通用位（低优先，兜底） */
   add('haz',p.fn.haz?0:2);
   add('clear',p.fn.rem?0:2);
