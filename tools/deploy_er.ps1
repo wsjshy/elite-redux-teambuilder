@@ -13,18 +13,31 @@ $DeployFiles = @("index.html", "data.js", "README.md")
 $Version = $args[0]; if (-not $Version) { $Version = "v4.2" }
 $Message = $args[1]; if (-not $Message) { $Message = "Deploy: $Version" }
 
+# 坑4（v4.35 实测）：PS 5.1 下 EAP=Stop 会把 git 的正常 stderr 输出当终止错误（如 checkout 的
+# "Switched to branch..."），脚本在步骤3 中断。统一经 Invoke-Git 调用：EAP 临时降为 Continue，
+# 用 $LASTEXITCODE 判成败；如需静默输出，把命令的 stderr 引到 Out-Null 交给它处理。
+function Invoke-Git {
+    param([Parameter(ValueFromRemainingArguments=$true)][string[]]$Args2)
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & $Git -C $Repo @Args2
+    $rc = $LASTEXITCODE
+    $ErrorActionPreference = $prevEAP
+    return $rc
+}
+
 # 步骤0：确保在 master 且干净（坑2：master 有未提交改动时切分支会失败）
-& $Git -C $Repo checkout master
+Invoke-Git checkout master | Out-Null
 $dirty = (& $Git -C $Repo status --porcelain) -join "`n"
 # 有改动则提交（master 是开发分支，正常流程是提交后部署）
 if ($dirty.Trim().Length -gt 0) {
-    & $Git -C $Repo add -A
-    & $Git -C $Repo commit -m "$Message"
-    & $Git -C $Repo push github master
+    Invoke-Git add -A | Out-Null
+    Invoke-Git commit -m "$Message" | Out-Null
+    Invoke-Git push github master | Out-Null
     Write-Host "[1/6] master committed & pushed"
 } else {
     Write-Host "[1/6] master clean, skip commit"
-    & $Git -C $Repo push github master
+    Invoke-Git push github master | Out-Null
 }
 
 # 步骤2：确认部署产物存在（坑1：先复制到临时目录再切分支）
@@ -48,11 +61,11 @@ New-Item -ItemType File -Path (Join-Path $Temp ".nojekyll") -Force | Out-Null
 Write-Host "[2/6] deploy artifacts staged to $Temp"
 
 # 步骤3：切 gh-pages（首次=orphan 创建；坑3：每步检查，失败即停）
-& $Git -C $Repo checkout gh-pages 2>$null
-if ($LASTEXITCODE -ne 0) {
-    & $Git -C $Repo checkout --orphan gh-pages
-    if ($LASTEXITCODE -ne 0) { throw "创建 gh-pages 分支失败" }
-    & $Git -C $Repo rm -rf --cached . 2>$null
+$rc = Invoke-Git checkout gh-pages
+if ($rc -ne 0) {
+    $rc = Invoke-Git checkout --orphan gh-pages
+    if ($rc -ne 0) { throw "创建 gh-pages 分支失败" }
+    Invoke-Git rm -rf --cached . | Out-Null
 }
 Write-Host "[3/6] on gh-pages"
 
@@ -62,12 +75,17 @@ Copy-Item (Join-Path $Temp "*") (Join-Path $Repo ".") -Recurse -Force
 Write-Host "[4/6] old cleared, new copied"
 
 # 步骤5：提交并推送 gh-pages（--force 覆盖历史部署，孤儿分支/更新通用）
-& $Git -C $Repo add -A
-& $Git -C $Repo commit -m "$Message"
-& $Git -C $Repo push github gh-pages --force
+Invoke-Git add -A | Out-Null
+Invoke-Git commit -m "$Message" | Out-Null
+$rc = Invoke-Git push github gh-pages --force
+if ($rc -ne 0) {
+    Write-Host "[5/6] direct push failed, retry with proxy"
+    $rc = Invoke-Git -c http.proxy=http://127.0.0.1:7890 push github gh-pages --force
+    if ($rc -ne 0) { throw "gh-pages push failed with proxy too" }
+}
 Write-Host "[5/6] gh-pages pushed"
 
 # 步骤6：切回 master
-& $Git -C $Repo checkout master
+Invoke-Git checkout master | Out-Null
 Remove-Item -Recurse -Force $Temp -ErrorAction SilentlyContinue
 Write-Host "[6/6] done, back on master. URL: https://wsjshy.github.io/elite-redux-teambuilder/"
