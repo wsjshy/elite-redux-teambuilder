@@ -600,6 +600,10 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 .mate .spmid{width:56px; height:56px; align-self:center; margin:2px auto 4px}
 .mate:hover{border-color:var(--accent)}
 .mtcfg{font-size:11px; color:var(--sub); line-height:1.5; background:#f4f6fa; border-radius:6px; padding:3px 6px; margin:2px 0; max-width:214px; overflow:hidden; text-overflow:ellipsis}
+/* v4.35 P0-1：队友卡新增「本队定位下的推荐招组」——就地文本行（不打弹窗、不遮战斗视野），
+   桌面端单行省略、窄屏自动换行不溢出（overflow-wrap:anywhere 防长中文招名撑破卡片）。 */
+.mtmv{font-size:11px; color:var(--sub); line-height:1.5; padding:2px 6px; margin:0 0 2px; max-width:214px;
+  overflow-wrap:anywhere; word-break:break-word; border-left:2px solid var(--line); white-space:normal}
 .own{display:inline-block; font-size:11px; border-radius:999px; padding:1px 7px; margin-left:4px;
   border:1px solid var(--line); white-space:nowrap}
 .own.yes{color:var(--ok); border-color:var(--ok); background:#f0fdf4}
@@ -628,6 +632,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   .bktabs{height:48px; margin:4px 0 6px}
   .mate{max-width:none}
   .mategrid{grid-template-columns:repeat(auto-fill,minmax(122px,1fr))}
+  .mtmv{max-width:none}
   .lmodbox{max-width:100%}
   .mvrow{gap:4px}
   .l1hd{gap:6px}
@@ -646,7 +651,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.35</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3227,7 +3232,13 @@ function archOfTpl(t){
 /* 体系识别：精灵（核心配队队友推荐用；与模板共用同一张维度表） */
 function archOfSp(s,side,roleTag){
   var learn=learnOf(s);
-  if(learnHasName(s,'戏法空间',learn)||/空间/.test(roleTag||''))return '空间';
+  /* v4.35 P2-2（验收 P2-2）：核心速度 ≥100 且流派未显式标空间时，不按空间轴组队——
+     原实现只要「可学戏法空间」就归『空间』，会把 130 速核心（如超梦）配进全低速空间队。
+     空间轴现在只留给「低速且可学戏法空间」或「流派名显式含空间」的核心。 */
+  var exSpace=/空间/.test(roleTag||'');
+  if(exSpace)return '空间';
+  var fast=false;try{fast=spdOf(s)>=100}catch(esp){fast=false}
+  if(!fast&&learnHasName(s,'戏法空间',learn))return '空间';
   var sys=coreSys(s),wx=sys.filter(function(x){return ['晴','雨','沙','雪'].indexOf(x)>-1});
   if(wx.length)return wx[0];
   if(sys.filter(function(x){return /场地/.test(x)}).length)return '场地';
@@ -6086,12 +6097,33 @@ function buildItem(s,side,roleTag,ctx){
   }catch(e){}
   return list
 }
-function pickAbiFor(s,side,roleTag){
+function pickAbiFor(s,side,roleTag,ctx){
   var names=s.abis,out=[];
+  /* v4.35 P0-2：可选 ctx={allowSys,own} —— 队伍层复用时传入「队伍实际可开体系」，
+     对**门控特性/开体系手**做体系一致性校验：体系不在队伍里 → 死特性强降权（正向降权，严禁剔除）。 */
+  var allowSys=(ctx&&ctx.allowSys)||null,ownSys=(ctx&&ctx.own)||null;
   names.forEach(function(n){
     var id=abiIdByZhOrEn(n),tag=id?ERDATA.abiTags[id]:null,sc=0,why=[];
     var sys=SYS_MAP[n];
     if(sys){sc+=3;why.push('负责'+sys+'体系')}
+    if(allowSys){
+      var sysB=null,sysS=null;
+      try{sysB=abiSysOf(n)}catch(ea){sysB=null}
+      try{sysS=abiSetExt(n)}catch(eb){sysS=null}
+      var sy=sysS||sysB||'';
+      if(sy){
+        if(allowSys[sy]||(ownSys&&ownSys[sy])){sc+=2;why.push('命中队伍体系 '+sy)}
+        else{sc-=4;why.push('体系不匹配（'+sy+' 不在本队体系内 → 死特性，降权）')}
+      }
+      /* v4.35（v4.35b 追加）核心天气互斥校验：核心天气体系固定时，队友自身「开另一套天气」的特性
+         会在入场时**覆盖核心天气**（反协同）→ 强降权。
+         仅判 天气 × 天气（WX_SYS=晴/雨/沙/雪）；场地/场地体系与天气可共存，不进此判定；
+         与核心同系的开手（多天气手正向冗余，如雪队三开雪手）不受影响。仍是排序降权，严禁剔除。 */
+      var coreWx=(ctx&&ctx.coreWx)||null;
+      if(coreWx&&coreWx.length&&sy&&WX_SYS.indexOf(sy)>-1&&coreWx.indexOf(sy)<0){
+        sc-=5;why.push('与核心天气冲突（核心='+coreWx.join('/')+'，此特性自开='+sy+' → 会覆盖核心天气，强降权）');
+      }
+    }
     if(tag){
       if(tag.out){sc+=3;why.push('输出×'+tag.out.mul+(tag.out.cond?'('+tag.out.cond+')':''))}
       if(tag.im){sc+=2;why.push('免疫'+tag.im.join('/'))}
@@ -6723,6 +6755,11 @@ function mateRoleOf(t,wxSys){
   if((t.abis||[]).concat(t.inns||[]).indexOf('再生力')>-1)out.push('轮转');
   if(t.base[2]>=120||t.base[4]>=120)out.push('盾');
   if(hasAny(tl,[92,269,87,30]))out.push('状态');
+  /* v4.35 P1-4：进攻力达标的队友可**兼任**『输出』位。原实现只有「无任何其他角色」才给输出位，
+     而输出在 MATE_ROLE_PRIO 里优先级最低 → 6 个槽位被 6 个非输出角色占满，输出位仅 8.4%（A3）。
+     输出仍排最后（优先级最低），只在其他角色被占用时落位 → 不改变既有骨架顺序，只让输出位可达。 */
+  var _off=false;try{_off=(atkBest(t)>=95&&spdOf(t)>=70)}catch(eo){_off=false}
+  if(_off)out.push('输出');
   if(!out.length)out.push('输出');
   return out;
 }
@@ -6743,6 +6780,34 @@ var MATE_ROLE_PRIO={
    衰减软加分：首条命中 +2、额外每条 +1、封顶 +4 —— 防「某两只强绑定」：
    命中多条不线性叠加放大，只做同角色/同需求择优的软偏好。 */
 function comboScoreOf(hits){return hits?(2+Math.min(2,hits-1)):0}
+/* ==================================================================================
+   v4.35 队伍层（P1-1 增量联防 / P1-2 骨架打散 / P1-3 频次归一化）
+   口径与机器报告对齐（blind_scan.cjs）：某属性被 **≥2 名队友** 弱 = 1 条「共用弱点」；
+   「盲区」= 该属性有队友弱、且全队无人抵抗/免疫。
+   全部为**排序软因子**（正向打分，严禁反向剔除）；仅「共用弱点 ≥6」一条为硬约束收尾
+   （任务书 P1-1 明确要求：选满后共用弱点 >5 用「联防增量最高」备选替换得分最低成员）。
+   ================================================================================== */
+var _SP_TALLY={};
+function _spTally(s){
+  var k=''+s.id,c=_SP_TALLY[k];if(c)return c;
+  var T=ERDATA.types;c={};
+  for(var i=0;i<T.length;i++){var v=defCellTrio(s,T[i]).inn;c[T[i]]={w:(v>1?1:0),r:((v>0&&v<1)?1:0),im:(v===0?1:0)}}
+  _SP_TALLY[k]=c;return c;
+}
+function _tmTally(members){
+  var T=ERDATA.types,tal={},i,j;
+  for(i=0;i<T.length;i++)tal[T[i]]={w:0,r:0,im:0};
+  for(j=0;j<members.length;j++){
+    var m=members[j];if(!m)continue;var c=_spTally(m);
+    for(i=0;i<T.length;i++){var t=T[i];tal[t].w+=c[t].w;tal[t].r+=c[t].r;tal[t].im+=c[t].im}
+  }
+  return tal;
+}
+function _teamSw(tal){var n=0;for(var t in tal)if(tal[t].w>=2)n++;return n}
+function _teamBlind(tal){var n=0;for(var t in tal)if(tal[t].w>0&&tal[t].r===0&&tal[t].im===0)n++;return n}
+/* P1-2/P1-3：全局队友频次 + 同核心跨流派复用登记（模块级；UI 增量、导出脚本按物种序确定） */
+var _MATE_FREQ={},_MATE_FREQ_SEEN={},_CORE_MATE_USED={};
+var _USED_PEN=3.0;   /* 同核心跨流派复用惩罚（换皮治理，v4.34g 换皮 36/67 → 目标显著下降） */
 function findTeammates(s,side,roleTag){
   side=side||coreSide(s);roleTag=roleTag||'输出';
   var weak=coreWeak(s),holes=coverHoles(s),sys=coreSys(s),learn=learnOf(s);
@@ -6779,20 +6844,32 @@ function findTeammates(s,side,roleTag){
        对立天气体系（晴↔雨/沙/雪 同槽互斥）仅作为排序键（fit=0 → 靠后但仍可见，见下方 sort） */
     var tsys=coreSys(t);
     var same=tsys.filter(function(x){return sys.indexOf(x)>-1});
-    var fit=1;
+    var fit=1,stSet=[],st=null;
+    try{sys.forEach(function(x){if(!stSet.length&&isAbilSet(t,x))stSet.push(x)})}catch(est){}
+    if(stSet.length){try{st={x:stSet[0],n:sysSetterOf(t,stSet[0])}}catch(est2){st={x:stSet[0],n:null}}}
     if(needWx){
       if(same.length){sc+=5;fit=2;why.push('同'+same.join('/')+'体系（受益 +5）')}
+      else if(st){sc+=4;fit=2;why.push('可开'+st.x+'（'+(st.n?(st.n.kind+st.n.name):'天气/场地手')+' +4）')}
       else{
-        var st=null;
-        wxSys.forEach(function(x){if(!st&&isAbilSet(t,x))st={x:x,n:sysSetterOf(t,x)}});
-        if(st){sc+=4;fit=2;why.push('可开'+st.x+'（'+(st.n?(st.n.kind+st.n.name):'天气/场地手')+' +4）')}
-        else{
-          /* 冲突天气：核心是天气体系而候选自带另一套「天气」（场地可与天气共存 → 不算冲突） */
-          var clash=tsys.some(function(x){return WX_SYS.indexOf(x)>-1&&WX_SYS.indexOf(coreWxKey)>-1&&x!==coreWxKey});
-          if(clash){fit=0;why.push('自带另一套天气体系（仅排序靠后，未剔除）')}
-        }
+        /* 冲突天气：核心是天气体系而候选自带另一套「天气」（场地可与天气共存 → 不算冲突） */
+        var clash=tsys.some(function(x){return WX_SYS.indexOf(x)>-1&&WX_SYS.indexOf(coreWxKey)>-1&&x!==coreWxKey});
+        if(clash){fit=0;why.push('自带另一套天气体系（仅排序靠后，未剔除）')}
       }
-    }else if(tsys.length){sc+=2;why.push('可为你开'+tsys.join('/')+'（+2）')}
+    }else if(same.length){sc+=2;why.push('同'+same.join('/')+'体系（受益 +2）')}
+    else if(st){sc+=2;why.push('可开'+st.x+'（+2）')}
+    /* v4.35 P0-2 体系白名单（正向打分，严禁反向剔除；多天气手正向冗余不受影响）：
+       候选「能开」的体系里出现**非核心体系**（他系天气/场地手）→ 强降权。
+       AP2 根因：核心青草场地被 5 个异系场地制造者顶替——原实现对「核心无体系/异系」都只给 +2 奖励，
+       没有任何降权，导致体系互斥堆叠。核心有体系时，同系开手/受益者仍正常加分（+4/+5），不受影响。 */
+    var _other=tsys.filter(function(x){return sys.indexOf(x)<0});
+    if(_other.length&&!same.length){sc-=4;why.push('开的是他系体系（'+_other.join('/')+'，降权 −4）')}
+    /* v4.35 P1-3 全局队友频次归一化：被大量队伍反复选用的「通用高分件」降权（对数衰减、封顶 6）；
+       体系相关复用豁免（天气手/受益者属合理强绑定，不误伤——144 三开雪手这类正向冗余不算复用）。 */
+    var _freq=_MATE_FREQ[t.id]||0;
+    if(_freq>0&&!(needWx&&(same.length||st))){
+      var _fp=Math.min(6,Math.round(1.6*Math.log(1+_freq)));
+      if(_fp>0){sc-=_fp;why.push('全库已复用 '+_freq+' 次（频次归一化 −'+_fp+'）')}
+    }
     /* ④ 侧向分工（⑤）：物理侧→物理联防/威吓；特殊侧→特殊联防；受队/肉盾→剧毒/钉子/回复 */
     if(side==='物理'){
       if(t.base[2]>=110){sc+=2;why.push('物理联防（防御'+t.base[2]+'）')}
@@ -6842,23 +6919,39 @@ function findTeammates(s,side,roleTag){
   fin2.sort(function(a,b){return (b.score-a.score)||(b.fit-a.fit)});
   var _prio=MATE_ROLE_PRIO[roleTag]||MATE_ROLE_PRIO['输出'];
   var byRole={},mainPicks=[],takenIdx={};
+  var _thisKey=side+'|'+roleTag;
+  var _usedByCore=_CORE_MATE_USED[''+s.id]||(_CORE_MATE_USED[''+s.id]={});
+  var _coreOff=(String(roleTag)==='输出'||String(roleTag)==='增伤'||String(roleTag)==='强化');
   /* v4.28 组合契合分：每轮从「有空角色」的候选中选 综合分+组合分 最高者（动态贪心）。
      组合分 = 候选入队后与 核心+已定队友 的临时组合命中数 → comboScoreOf（衰减软加分：首条+2、额外
      每条+1、封顶+4 —— 防「某两只强绑定」：命中多条不线性叠加放大，只做同角色择优的软偏好）。 */
   while(mainPicks.length<6){
+    var _members=[s].concat(mainPicks.map(function(p){return p.s}));
+    var _tal0=_tmTally(_members),_sw0=_teamSw(_tal0),_bl0=_teamBlind(_tal0);
+    /* v4.35 P1-4 输出位强制配额：核心自身为非输出流派（受队/肉盾/轮转…）时，前 5 名队友至少 1 个输出位
+       ——在第 5 个槽位（UI 展示的最后一格）强制落『输出』，不挤掉更早的高价值骨架。
+       （v4.34g 输出位 800/9530=8.4%：输出在 MATE_ROLE_PRIO 里优先级最低，6 槽恒被 6 个非输出角色占满。） */
+    var _forceOut=(mainPicks.length===4&&!_coreOff&&!byRole['输出']);
     var _best=null,_bestVal=-1e9;
     for(var _mi=0;_mi<fin2.length&&_mi<80;_mi++){
       if(takenIdx[_mi])continue;
       var _r=fin2[_mi];
       var _roles=mateRoleOf(_r.s,wxSys);
       var _free=_roles.filter(function(x){return !byRole[x]});
+      if(_forceOut){var _fo=_free.filter(function(x){return x==='输出'});if(_fo.length)_free=_fo}
       if(!_free.length)continue; /* 角色全占用 → 留给同定位候选 */
       var _cg=0;
       try{
         var _tm=[{s:s,core:1}].concat(mainPicks.map(function(p){return {s:p.s}}), [{s:_r.s}]);
         _cg=scanCombos(_tm).length;
       }catch(ecg){_cg=0}
-      var _val=_r.score+comboScoreOf(_cg);
+      /* v4.35 P1-1 增量联防校验：新增「共用弱点(≥2人弱) / 盲区」→ 降权；补掉 → 加分（正向打分，不剔除） */
+      var _tal1=_tmTally(_members.concat([_r.s]));
+      var _dSw=_teamSw(_tal1)-_sw0,_dBl=_teamBlind(_tal1)-_bl0;
+      var _syn=-(2.2*Math.max(0,_dSw))-(1.6*Math.max(0,_dBl))+(3.0*Math.max(0,-_dSw))+(2.0*Math.max(0,-_dBl));
+      /* v4.35 P1-2 同核心跨流派队友复用惩罚（AP5 换皮治理：同核不同流派不再机械共用同一支队） */
+      var _cross=((_usedByCore[_r.s.id]&&_usedByCore[_r.s.id]!==_thisKey)?_USED_PEN:0);
+      var _val=_r.score+comboScoreOf(_cg)+_syn-_cross;
       if(_val>_bestVal){_bestVal=_val;_best={r:_r,mi:_mi,free:_free,cg:_cg}}
     }
     if(!_best)break;
@@ -6877,6 +6970,57 @@ function findTeammates(s,side,roleTag){
     try{_r2.priRole=mateRoleOf(_r2.s,wxSys)[0]}catch(ea){}
     mainPicks.push(_r2);
   }
+  /* v4.35 P1-1 硬约束（任务书明确要求）：选满后「最大共用弱点」>5 时，
+     用「联防增量最高」的备选替换，直到 ≤5（A3 全库 730 支 ≥6 → 目标 0）。
+     替换同时校验角色可承继（优先保角色语义一致），并复用同一份 tally（无新增口径）。
+     v4.35b 口径修正：与 **UI 展示的 6 人队**（核心 + mainPicks[0..4]；第 6 席为兜底、不进 UI）对齐，
+     候选池放宽至 top 160、轮次 8 —— 原实现在 7 人口径上迭代，可见 6 人队仍留 13 支 ≥6。 */
+  try{
+    var _round=0,_vis=mainPicks.slice(0,5);
+    while(_round++<8){
+      var _curSw=_teamSw(_tmTally([s].concat(_vis.map(function(p){return p.s}))));
+      if(_curSw<=5)break;
+      var _in={};_in[''+s.id]=1;mainPicks.forEach(function(p){_in[''+p.s.id]=1});
+      var _bsel=null;
+      for(var _xi=0;_xi<_vis.length;_xi++){
+        var _old=_vis[_xi],_oldRole=_old.priRole||'输出';
+        for(var _ci=0;_ci<fin2.length&&_ci<160;_ci++){
+          var _c=fin2[_ci];
+          if(!_c||_c===_old||_in[''+_c.s.id])continue;
+          var _cand=_vis.slice();_cand[_xi]=_c;
+          var _sw2=_teamSw(_tmTally([s].concat(_cand.map(function(p){return p.s}))));
+          if(_sw2>=_curSw)continue;   /* 必须真的改善共用弱点 */
+          var _rr=null;try{_rr=mateRoleOf(_c.s,wxSys)}catch(er2){_rr=null}
+          var _okRole=(_oldRole==='输出')?(!_rr||_rr.indexOf('输出')>-1):(!_rr||_rr.indexOf(_oldRole)>-1||_rr.indexOf('输出')>-1);
+          var _v=(_okRole?1000:0)-_sw2*30+(_c.score||0)*0.1;
+          if(!_bsel||_v>_bsel.v)_bsel={v:_v,xi:_xi,c:_c,sw:_sw2,role:_oldRole};
+        }
+      }
+      if(!_bsel)break;
+      /* v4.35b 角色可承继校验：替换者承继不了原角色时按真实能力复判（防『天气手』挂名，验收④） */
+      var _role2=_bsel.role;
+      try{
+        var _rr2=mateRoleOf(_bsel.c.s,wxSys)||[];
+        if(_role2==='天气手'&&_rr2.indexOf('天气手')<0)_role2=_rr2[0]||'输出';
+      }catch(er3b){}
+      try{_bsel.c.priRole=_role2}catch(er3){}
+      try{_bsel.c.cands=mainPicks[_bsel.xi].cands}catch(er4){}
+      mainPicks[_bsel.xi]=_bsel.c;
+      _vis=mainPicks.slice(0,5);
+    }
+  }catch(eg1){}
+  /* v4.35 P1-2/P1-3 登记：全局队友频次（同 key 幂等，避免 UI 重渲染重复计数）+ 同核心跨流派复用表 */
+  try{
+    var _regKey=''+s.id+'#'+_thisKey;
+    if(!_MATE_FREQ_SEEN[_regKey]){
+      _MATE_FREQ_SEEN[_regKey]=1;
+      var _um=_CORE_MATE_USED[''+s.id]||(_CORE_MATE_USED[''+s.id]={});
+      mainPicks.forEach(function(p){
+        _MATE_FREQ[p.s.id]=(_MATE_FREQ[p.s.id]||0)+1;
+        if(!_um[p.s.id])_um[p.s.id]=_thisKey;
+      });
+    }
+  }catch(ef1){}
   /* 每只主选挂同定位候选（同 priRole 的其余高分者 top 2，用于"换人"） */
   try{
     mainPicks.forEach(function(_m){
@@ -7037,17 +7181,59 @@ var MECH_COMBO=[
          '钉子压血线+除钉保己方节奏，攻防一体的场地双保险；除钉手最好带回复/轮转招避免反复送'}
      }}
 ];
-/* 队伍组合扫描：members=[{s,...}]，命中组合 → [{id,name,cat,parts,note,src}]（≤4 条，按 cat 去重保首条） */
-function scanCombos(members){
+/* v4.35 P1-5 亮点门槛（AP4/AP9 治理）：
+   · 撒钉除钉(hazard_removal) 降级为「基础保障」，不计入组合亮点（全库 ~95% 队伍恒命中 → 退化为噪声）；
+   · src 必填（无检索来源的条目不作亮点）；
+   · 亮点须**体系/核心强相关或三方协同**（核心在参与者里 / 参与方 ≥3 / 组合体系属核心体系）；
+   · 参与方必须**实际配招**支持该组合（strict 口径：按真实装配的 4 招校验）。 */
+var COMBO_SYS={rain_thunder:'雨',rain_swim:'雨',tr_rain:'雨',sand_rock:'沙',snow_veil:'雪'};
+var COMBO_STRICT={
+  prank_weather:function(mem,mvOf){for(var i=0;i<mem.length;i++)for(var j=0;j<mvOf[i].length;j++)if(FUNC_MV.weather.indexOf(mvOf[i][j])>-1)return true;return false},
+  slow_pivot_weather:function(mem,mvOf){return COMBO_STRICT._pivot(mem,mvOf)},
+  rain_thunder:function(mem,mvOf){for(var i=0;i<mem.length;i++)if(mvOf[i].indexOf(87)>-1||mvOf[i].indexOf(542)>-1)return true;return false},
+  tr_rain:function(mem,mvOf){for(var i=0;i<mem.length;i++)if(mvOf[i].indexOf(433)>-1)return true;return false},
+  snow_veil:function(mem,mvOf){for(var i=0;i<mem.length;i++)if(mvOf[i].indexOf(657)>-1)return true;return false},
+  toxic_orb_pivot:function(mem,mvOf){return COMBO_STRICT._pivot(mem,mvOf)},
+  _pivot:function(mem,mvOf){for(var i=0;i<mem.length;i++)for(var j=0;j<mvOf[i].length;j++)if(FUNC_MV.pivot.indexOf(mvOf[i][j])>-1)return true;return false}
+};
+/* 队伍组合扫描：members=[{s,core?,priRole?}]，命中组合 → [{id,name,cat,parts,note,src}]（≤4 条，按 cat 去重保首条）
+   opts.strict=true → 启用 v4.35 P1-5 亮点门槛（展示层用；排序期仍走轻量口径以保性能） */
+function scanCombos(members,opts){
+  var strict=!!(opts&&opts.strict);
   var out=[],seenCat={};
   try{
     var mem=(members||[]).filter(function(m){return m&&m.s});
     if(mem.length<2)return out;
+    var coreS=null;mem.forEach(function(x){if(x.core)coreS=x.s});
+    var coreSysList=[];try{coreSysList=coreS?coreSys(coreS):[]}catch(e0){coreSysList=[]}
+    var teamArr=(coreS?[coreS]:[]).concat(mem.filter(function(x){return !x.core}).map(function(x){return x.s}));
+    var mvOf=null;
+    if(strict){
+      mvOf=[];
+      for(var i=0;i<mem.length;i++){
+        var ids=[];
+        try{
+          if(mem[i].core){var bs=deriveBuilds(mem[i].s);ids=(bs&&bs[0]&&bs[0].mv&&bs[0].mv.main)?bs[0].mv.main.map(function(sl){return sl.id}):[]}
+          else{var asm=mateAssemble(mem[i],teamArr,coreSysList);ids=((asm&&asm.moves)||[]).map(function(m2){return m2.id})}
+        }catch(e1b){ids=[]}
+        mvOf.push(ids);
+      }
+    }
     MECH_COMBO.forEach(function(c){
       if(out.length>=4)return;
+      if(strict&&c.id==='hazard_removal')return;  /* P1-5：降级为基础保障，不计亮点 */
+      if(strict&&!c.src)return;                   /* P1-5：src 必填 */
       var r=null;try{r=c.check(mem)}catch(e2){r=null}
       if(!r||!r.parts||!r.parts.length)return;
       if(seenCat[c.cat])return;
+      if(strict){
+        var inParts=!!(coreS&&r.parts.indexOf(coreS.zh)>-1);
+        var csy=COMBO_SYS[c.id]||'';
+        var rel=inParts||r.parts.length>=3||(!!csy&&coreSysList.indexOf(csy)>-1);
+        if(!rel)return;                           /* P1-5：体系/核心强相关或三方协同 */
+        var vf=COMBO_STRICT[c.id];
+        if(vf&&mvOf){var ok=false;try{ok=vf(mem,mvOf)}catch(e3b){ok=false}if(!ok)return}  /* P1-5：参与方实际配招 */
+      }
       seenCat[c.cat]=1;
       /* v4.32 P1-4：参与者去重——同一只宝可梦不得占两个参与位（阿尔宙斯-幽灵×2 / 超级帝王拿波×2） */
       var parts=[],seenP={};
@@ -8744,24 +8930,149 @@ function mateTags(r){
   }catch(e){}
   return out;
 }
-function mateCard(r,pool,isMain,cands){
+/* ==================================================================================
+   v4.35 队伍层修复层（《队伍级引擎修复任务书_v4.35》P0-1/P0-2 的落点）
+   根因（深评 AP1，代码级）：v4.34g 的 mateCard 对每名队友硬编码
+     buildItem(s2, coreSide(s2), '输出', {}) / pickAbiFor(s2, mSide, '输出') / buildEvs(s2, mSide, '输出', '')
+   → roleTag 恒为『输出』、ctx 恒为 `{}`，单精灵层已验收的整条装配闸门链
+     （讲究锁招互斥 / EV×性格×配招 / 机制招核心命中 / 门控特性体系校验 / 天气岩禁推 / 4 槽补满）
+     在队友侧被整体绕过（全库 1388 讲究错配 + 6812 EV 错配 + 263 跨体系死特性 · A3 口径）。
+   本层做法：**不新增第二套装配逻辑**——把队友 priRole 翻译成单精灵层同一 roleTag 词汇，
+   交给 deriveBuilds(mate, 整队) 取「已过全部闸门」的同 tag 流派；取不到时才用同一条管线
+   （mkBuild → sanitizeBuild → fillMvSlots → buildEvs → finalizeBuild）现场装配。
+   角色 tag 映射只把单精灵层不存在的 priRole（盾/回复/钉子/状态/天气手/轮转）并入既有『受队』
+   （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
+   ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
+   ================================================================================== */
+var ER_ENGINE_VER='v4.35';
+/* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
+function mateAssembleTag(priRole){
+  var p=String(priRole||'');
+  if(p==='输出')return '输出';
+  if(p==='强化')return '强化';
+  if(p==='增伤')return '增伤';
+  return '受队';
+}
+/* 该 roleTag 可接受的队友流派 roleTag（先同义，再前缀回退） */
+function mateTagAccept(tag){
+  if(tag==='输出')return ['输出','增伤','强化'];
+  if(tag==='强化'||tag==='增伤')return ['强化','增伤','输出'];
+  return ['受队','肉盾','辅助','联防'];
+}
+/* 队伍实际可开的体系集合 = 核心体系 ∪ 各成员（特性∪天性）里的自动设置手 */
+function teamSysSetOf(teamArr,coreSysList){
+  var set={};
+  (coreSysList||[]).forEach(function(x){if(x)set[x]=1});
+  (teamArr||[]).forEach(function(x){
+    var t=(x&&x.s)?x.s:x;if(!t)return;
+    (t.abis||[]).concat(t.inns||[]).forEach(function(n){var v=null;try{v=abiSetExt(n)}catch(e){v=null};if(v)set[v]=1});
+  });
+  return set;
+}
+var _MATE_ASM_CACHE={},_MATE_ASM_N=0;
+/* 队友真实装配：{abi,abiName,item,itemWhy,ev,roleTag,side,name,moves[],priRole,assembled} */
+function mateAssemble(r,teamArr,coreSysList){
+  var s2=(r&&r.s)?r.s:r;if(!s2)return null;
+  var pri=String((r&&r.priRole)||'');
+  if(!pri){try{pri=mateRoleOf(s2,(coreSysList||[]).filter(isWxSys))[0]||'输出'}catch(e1){pri='输出'}}
+  /* v4.35 P0-2b 角色自洽复判（验收⑤之④「天气手位无开天气手段」归零）：
+     priRole 声称『天气手』，但该队友能力池（特性∪天性）里没有任何能开【本队体系】的设置手时，
+     多为「补位/换人时按队伍需求打标」产生的挂名标签（如 615 几何雪花 / 1657 阿尔宙斯-钢 在雪队里并无降雪）。
+     此时按真实能力复判为顺位第一个非『天气手』定位 —— 正向语义（角色说真话），不剔除该队友。 */
+  if(pri==='天气手'){
+    var _wx0=(coreSysList||[]).filter(isWxSys),_canOpen=false;
+    if(_wx0.length){try{_canOpen=(s2.abis||[]).concat(s2.inns||[]).some(function(n){var v=null;try{v=abiSetExt(n)}catch(e){v=null};return !!v&&_wx0.indexOf(v)>-1})}catch(e00){_canOpen=false}}
+    if(!_canOpen){
+      var _rr0=[];try{_rr0=mateRoleOf(s2,_wx0)}catch(e01){_rr0=[]}
+      var _alt0=null;for(var _i0=0;_i0<_rr0.length;_i0++){if(_rr0[_i0]!=='天气手'){_alt0=_rr0[_i0];break}}
+      pri=_alt0||'输出';
+    }
+  }
+  var tag=mateAssembleTag(pri);
+  var tss=teamSysSetOf(teamArr,coreSysList),tsKey=[];for(var k in tss)tsKey.push(k);tsKey.sort();
+  var tSig=[];try{(teamArr||[]).forEach(function(x){var t=(x&&x.s)?x.s:x;if(t&&(''+t.id!==''+s2.id))tSig.push(t.id)})}catch(e2){}
+  tSig.sort(function(a,b){return a-b});
+  var key=''+s2.id+'|'+pri+'|'+tsKey.join(',')+'|'+tSig.join('.');
+  if(_MATE_ASM_CACHE[key])return _MATE_ASM_CACHE[key];
+  _MATE_ASM_N++;
+  var pick=null,side=null;
+  try{
+    var bs=deriveBuilds(s2,teamArr)||[],want=mateTagAccept(tag);
+    for(var i=0;i<bs.length;i++){if(want.indexOf(String(bs[i].roleTag||''))>-1){pick=bs[i];break}}
+    if(!pick){
+      /* 该队友自身没有该角色的流派（如脆皮但有回复招）→ 走同一管线现场装配该角色配置 */
+      side=coreSide(s2);
+      var spB=null,phB=null;try{spB=stabBest(s2,'特殊');phB=stabBest(s2,'物理')}catch(e3){}
+      var nm=(tag==='输出')?'队内输出位':(tag==='强化'?'队内强化位':('队内'+tag+'位'));
+      pick=mkBuild(s2,side,nm,spB,phB,tag,itemTagOfCoreProf(profileOf(s2),s2),coreItemCtxOf(s2));
+      pick=sanitizeBuild(s2,pick);pick=fillMvSlots(s2,pick);
+      pick.name=nm;pick.side=side;pick.roleTag=tag;
+      pick.ev=buildEvs(s2,side,tag,nm);
+      pick=finalizeBuild(s2,pick);
+    }
+  }catch(e4){pick=null}
+  var out=null;
+  if(pick){
+    side=pick.side||coreSide(s2);
+    var ownSet={};try{(s2.inns||[]).forEach(function(n){var v=null;try{v=abiSetExt(n)}catch(e){v=null};if(v)ownSet[v]=1})}catch(e5){}
+    var abi=null;
+    /* v4.35b：额外传 coreWx=核心自带天气体系（WX_SYS 子集）——队友特性若自开「另一套天气」会覆盖核心天气，
+       由 pickAbiFor 强降权（场地类不判、同系开手不判，见该函数内注释）。 */
+    var cwx=[];try{cwx=(coreSysList||[]).filter(function(x){return WX_SYS.indexOf(x)>-1})}catch(ec0){cwx=[]}
+    try{abi=pickAbiFor(s2,side,pick.roleTag,{allowSys:tss,own:ownSet,coreWx:cwx})}catch(e6){abi=null}
+    if(!abi||!abi.length){try{abi=pickAbiFor(s2,side,pick.roleTag)}catch(e7){abi=[{n:(s2.abis||[])[0]||'',sc:0,why:[]}]}}
+    /* 天气手位：必须实际能开天气（P0-2 / 验收⑤「天气手位无开天气手段」归零） */
+    if(pri==='天气手'){
+      try{
+        var needWx=(coreSysList||[]).filter(isWxSys);
+        if(needWx.length){
+          var curN=(abi[0]&&abi[0].n)||'',curSet=null;try{curSet=abiSetExt(curN)}catch(e8){curSet=null}
+          var innOK=(s2.inns||[]).some(function(n){var v=null;try{v=abiSetExt(n)}catch(e){v=null};return !!v&&needWx.indexOf(v)>-1});
+          if((!curSet||needWx.indexOf(curSet)<0)&&!innOK){
+            var hit=null;(s2.abis||[]).forEach(function(n){if(!hit){var v=null;try{v=abiSetExt(n)}catch(e){v=null};if(v&&needWx.indexOf(v)>-1)hit=n}});
+            if(hit){var rest=abi.filter(function(a){return a.n!==hit});
+              abi=[{n:hit,sc:99,why:['天气手位：实际开'+needWx.join('/')+'（体系闭环，正向置顶）']}].concat(rest)}
+          }
+        }
+      }catch(e9){}
+    }
+    var ev=pick.ev||buildEvs(s2,side,pick.roleTag,pick.name);
+    var it=(pick.it&&pick.it.length)?pick.it[0]:null;
+    var mv=((pick.mv&&pick.mv.main)||[]).slice(0,4).map(function(sl){
+      var m=MV[sl.id];return {id:sl.id,zh:(m?m[1]:String(sl.id)),ty:(m?m[3]:''),cat:(m?m[4]:'')};
+    });
+    out={abi:abi,abiName:(abi&&abi[0]&&abi[0].n)||((s2.abis||[])[0]||''),
+      item:(it?(Array.isArray(it)?it[0]:it):''),itemWhy:(it&&it[1])||'',ev:ev,
+      roleTag:pick.roleTag,side:side,name:pick.name,moves:mv,priRole:pri,assembled:true};
+  }else{
+    out={abi:[],abiName:'',item:'',itemWhy:'',ev:null,roleTag:tag,side:coreSide(s2),name:'',moves:[],priRole:pri,assembled:false};
+  }
+  _MATE_ASM_CACHE[key]=out;return out;
+}
+function mateCard(r,pool,isMain,cands,teamCtx){
   var s2=(r&&r.s)?r.s:r;if(!s2)return '';
   var why='';try{why=(r.why||[]).slice(0,2).join('；')}catch(e6){}
-  /* v4.14：队友卡升级 —— 精灵小图 + 点击进详情 + 每只推荐配置（特性/道具/努力值，与流派同侧生成） */
+  /* v4.35 P0-1：队友配置改由 mateAssemble 真实装配（priRole + 真实队伍 ctx + 复用单精灵层闸门），
+     并新增「该队友在本队定位下的推荐招组」展示（≤4 槽；就地文本、无弹窗、窄屏不溢出）。 */
   var cfg='';
   try{
-    var mSide=coreSide(s2),mIt=buildItem(s2,mSide,'输出',{}),mAb=pickAbiFor(s2,mSide,'输出'),mEv=buildEvs(s2,mSide,'输出','');
-    var mAbn=(mAb&&mAb[0]&&mAb[0].n)||((s2.abis&&s2.abis[0])||'');
-    var mItn=(mIt&&mIt[0])?(Array.isArray(mIt[0])?mIt[0][0]:''):'';
-    var mEvt=(mEv&&mEv.summary)||'';
-    if(mAbn||mItn||mEvt){
-      cfg='<div class="mtcfg">'+((mAbn?'特性 '+esc(mAbn):'')+(mItn?(' · 道具 '+esc(mItn)):'')+(mEvt?(' · '+esc(mEvt)):'')+'</div>');
+    var asm=mateAssemble(r,(teamCtx&&teamCtx.team)||null,(teamCtx&&teamCtx.sys)||coreSys(s2));
+    if(asm){
+      var mAbn=asm.abiName,mItn=asm.item,mEvt=(asm.ev&&asm.ev.summary)||'';
+      if(mAbn||mItn||mEvt){
+        cfg='<div class="mtcfg">'+((mAbn?'特性 '+esc(mAbn):'')+(mItn?(' · 道具 '+esc(mItn)):'')+(mEvt?(' · '+esc(mEvt)):'')+'</div>');
+      }
+      var mvs=(asm.moves||[]);
+      if(mvs.length){
+        cfg+='<div class="mtmv" title="该队友在本队定位（'+escq(asm.roleTag||'')+'）下的推荐招组">'+
+          mvs.map(function(x){return tlabel(x.ty)+esc(x.zh)}).join(' / ')+'</div>';
+      }
     }
   }catch(e7){cfg=''}
   /* v4.24 定位徽章 + 同定位候选（主推卡）：先看角色再谈强度——队伍是 6 人各司其职 */
   var roleHtml='';
   try{
-    var _rl=(r&&r.priRole)||(mateRoleOf(s2,coreSys(s2))[0]||'输出');
+    var _rl=(asm&&asm.priRole)||(r&&r.priRole)||(mateRoleOf(s2,coreSys(s2))[0]||'输出');
     roleHtml='<span class="roltag">'+esc(_rl)+'</span>';
   }catch(e8){roleHtml=''}
   var candHtml='';
@@ -9009,20 +9320,25 @@ function renderCore(s){
     tms.slice(5).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     recs.forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     if(mainMates.length){
+      /* v4.35 P0-1：队友卡配置 = mateAssemble( teammate, 真实 6 人队, 核心体系 ) —— priRole 自洽 + 复用单精灵层闸门 */
+      var _mateTeam=[s].concat(mainMates.map(function(r){return r&&r.s})).filter(Boolean);
+      var _mateCtx={team:_mateTeam,sys:coreSys(s)};
       html+='<div class="dim" style="margin-top:2px">推荐 6 人队（核心以外 '+mainMates.length+' 只队友，主定位标注，定位下可换候选）</div><div class="mateline">'+mainMates.map(function(r){
         var cands=(r&&r.cands)||[];
         if(!cands.length){ /* fallback：从备选/全部候选取同定位 */
           var pri=((r&&r.priRole)||'输出'),_wx=coreSys(s);
           cands=altMates.concat(tms.filter(function(x){return mainMates.indexOf(x)<0})).filter(function(c){return c&&c.s&&mateRoleOf(c.s,_wx).indexOf(pri)>-1}).slice(0,2);
         }
-        return mateCard(r,pool,true,cands);
+        return mateCard(r,pool,true,cands,_mateCtx);
       }).join('')+'</div>';
     }
     else html+='<div class="dim">该流派暂无高匹配队友</div>';
-    if(altMates.length)html+='<div class="dim" style="margin-top:4px">备选（体系补盲 / 整体联防，已去重）</div><div class="mategrid">'+altMates.map(function(r){return mateCard(r,pool,false)}).join('')+'</div>';
-    /* v4.27 组合亮点（展示层）：核心+主推队友定稿 → 跨精灵组合扫描（先制天气轴/慢速轮转/雨天双必中等） */
+    var _mateCtx2={team:[s].concat(mainMates.map(function(r){return r&&r.s})).filter(Boolean),sys:coreSys(s)};
+    if(altMates.length)html+='<div class="dim" style="margin-top:4px">备选（体系补盲 / 整体联防，已去重）</div><div class="mategrid">'+altMates.map(function(r){return mateCard(r,pool,false,null,_mateCtx2)}).join('')+'</div>';
+    /* v4.27 组合亮点（展示层）：核心+主推队友定稿 → 跨精灵组合扫描（先制天气轴/慢速轮转/雨天双必中等）
+       v4.35 P1-5：展示层改 strict 口径（src 必填 + 体系/核心强相关或三方协同 + 参与方实际配招；撒钉除钉降级不计） */
     try{
-      var _comb=scanCombos([{s:s,core:1}].concat(mainMates));
+      var _comb=scanCombos([{s:s,core:1}].concat(mainMates.map(function(r){return {s:r.s,priRole:r.priRole}})),{strict:true});
       if(_comb.length)html+=comboHtml(_comb);
     }catch(eCb){}
     /* v4.12 ② 队友先验（Smogon，软提示）：先验队友映射 ER 物种 → 池内/全库分类；开关关 → 空串（零影响） */
@@ -9299,6 +9615,58 @@ function sprProbe(){
     im.src=b+'assets/sheets/s0.webp';
   }catch(err){}
 }
+/* ==================================================================================
+   v4.35 任务3：守门常驻化 —— engineGuardSelfCheck（构建期全量跑；违规>0 → Python 门闩 sys.exit(1)）
+   并入上轮临时工具 scan_extra2.cjs 的两条**硬性**核验（判定口径逐条对齐，不再依赖外部脚本）：
+     4a 天气岩禁推：物种由（特性 ∪ 天性）自动开无限天气时，流派道具不得出现对应天气岩；
+     4b basis 一致性：「体系 X（自我设置）」必须真由（所选特性 ∪ 天性）开体系；
+                    「体系 X（队友提供窗口）」则（所选特性 ∪ 天性）不得自己开体系。
+   （4b-3 谱系信息项照旧只统计，不作门闩——队友窗口类属设计内。）
+   ================================================================================== */
+function engineGuardSelfCheck(){
+  var ROCK_CAND={'雨':['潮湿岩石'],'晴':['炽热岩石','炎热岩石','炽热之岩'],'沙':['光滑岩石'],'雪':['冰冷岩石']},ROCK={};
+  Object.keys(ROCK_CAND).forEach(function(k){ROCK_CAND[k].forEach(function(nm){
+    try{var id=itemByZhOrEn(nm);if(id!==null&&id!==undefined)ROCK[k]=nm}catch(e){}
+  })});
+  var norm=function(x){return String(x==null?'':x).replace(/\([^)]*\)\s*$/,'').trim()};
+  var SYS9=['雨','晴','沙','雪','电场','精神场地','青草场地','薄雾场地','剧毒场地'];
+  var va=[],vb1=[],vb2=[],nB3=0,checkedA=0,checkedB=0,nSp=0,nB=0,errors=0;
+  (ERDATA.species||[]).forEach(function(s){
+    nSp++;
+    var auto={};try{(ownAutoSys(s)||[]).forEach(function(x){auto[x]=1})}catch(e){}
+    var inns=s.inns||[],abis=s.abis||[],innSet=false;
+    try{innSet=inns.some(function(n){return !!abiSetExt(n)})}catch(e){}
+    var bs=[];try{bs=deriveBuilds(s)}catch(e2){errors++;return}
+    bs.forEach(function(b){
+      nB++;
+      var items=(b.it||[]).map(function(x){return norm(Array.isArray(x)?x[0]:x)});
+      Object.keys(auto).forEach(function(S){
+        var rk=ROCK[S];if(!rk)return;checkedA++;
+        if(items.indexOf(rk)>-1)va.push({id:s.id,zh:s.zh,build:b.name,item:rk,sys:S,autoBy:Object.keys(auto)});
+      });
+      var ab0=(b.abi&&b.abi[0]&&b.abi[0].n)||'',abSet=false;
+      try{abSet=!!abiSetExt(ab0)}catch(e){}
+      var selfSet=abSet||innSet;
+      (b.basis||[]).forEach(function(x){
+        if(!x||x.k!=='field')return;
+        var decl=String(x.txt!==undefined?x.txt:x).split('；')[0];
+        var claim=SYS9.filter(function(t){return decl.indexOf(t)>-1});
+        if(!claim.length)return;
+        checkedB++;
+        var claimSelf=/(自我设置|自身设置手|自我提供)/.test(decl);
+        var claimMate=/(队友提供窗口|队友窗口|队友提供)/.test(decl);
+        if(claimSelf&&!selfSet)vb1.push({id:s.id,zh:s.zh,build:b.name,basis:decl,abi:ab0,inns:inns});
+        else if(claimMate&&selfSet)vb2.push({id:s.id,zh:s.zh,build:b.name,basis:decl,abi:ab0,inns:inns});
+        var lin=[ab0].concat(inns,abis).some(function(n){var v=null;try{v=abiSetExt(n)||abiSysOf(n)}catch(e){v=null};return !!v&&claim.indexOf(v)>-1});
+        if(!lin)nB3++;
+      });
+    });
+  });
+  var total=va.length+vb1.length+vb2.length;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length},
+    detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20)},
+    info:{b3:nB3},species:nSp,builds:nB,errors:errors,checkedA:checkedA,checkedB:checkedB,rock:ROCK};
+}
 initRuleBoxes();
 renderTpl();
 renderMyPool();
@@ -9360,3 +9728,122 @@ data_out = BASE + r'\data.js'
 open(data_out, 'w', encoding='utf-8').write(data_js)
 print('data.js bytes:', os.path.getsize(data_out))
 print('written:', data_out)
+
+# ---- v4.35：index.html 同步（与 配招助手_ER.html 逐字同源）----
+#   历史做法是人工复制，易与正文漂移（本轮核查发现 index.html 与正文逐字相同但无任何自动步骤）。
+#   自 v4.35 起由构建脚本单一写入口同步，避免「页面/工具读到的引擎版本不一致」。
+_idx_out = BASE + r'\index.html'
+import shutil as _sh
+_sh.copyfile(out, _idx_out)
+print('synced:', _idx_out, os.path.getsize(_idx_out), 'bytes')
+
+# ---- v4.35 任务3：守门常驻化（方案 A）——构建末尾跑 node 门闩：
+#   引擎内 engineGuardSelfCheck（天气岩禁推 4a + basis 自身设置手 4b1/4b2）
+#   → node 全量跑 → 违规>0 或 node 缺失/异常 → print 明细 + sys.exit(1)（构建硬失败）。
+import sys as _sys
+import tempfile as _tf
+import subprocess as _sp
+import shutil as _sh2
+_GUARD_JS = r'''/* ER 配招助手 v4.35 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
+'use strict';
+var fs = require('fs'), vm = require('vm'), path = require('path');
+var INDEX = process.argv[2], DATA = process.argv[3];
+function mkEl(tag){
+  var el={_tag:(tag||'div').toLowerCase(),children:[],style:{},dataset:{},value:'',checked:false,
+    innerHTML:'',textContent:'',className:'',id:'',hidden:false,disabled:false,type:'',
+    classList:{_s:new Set(),add:function(){for(var i=0;i<arguments.length;i++)this._s.add(arguments[i])},
+      remove:function(){for(var i=0;i<arguments.length;i++)this._s.delete(arguments[i])},
+      toggle:function(c,f){if(f===undefined)f=!this._s.has(c);f?this._s.add(c):this._s.delete(c);return f},
+      contains:function(c){return this._s.has(c)}},
+    appendChild:function(c){this.children.push(c);return c},removeChild:function(c){return c},
+    insertBefore:function(c){this.children.push(c);return c},append:function(){},replaceChildren:function(){},
+    querySelector:function(){return mkEl('div')},querySelectorAll:function(){return []},
+    getElementsByClassName:function(){return []},getElementsByTagName:function(){return []},
+    setAttribute:function(k,v){this['a_'+k]=v},getAttribute:function(k){return this['a_'+k]===undefined?null:this['a_'+k]},
+    hasAttribute:function(k){return this['a_'+k]!==undefined},removeAttribute:function(k){delete this['a_'+k]},
+    addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return true},
+    focus:function(){},blur:function(){},click:function(){},remove:function(){},insertAdjacentHTML:function(){},
+    scrollIntoView:function(){},getBoundingClientRect:function(){return {top:0,left:0,width:0,height:0,bottom:0,right:0}},
+    closest:function(){return null},contains:function(){return false},replaceWith:function(){},after:function(){},before:function(){},
+    matches:function(){return false},cloneNode:function(){return mkEl(tag)},animate:function(){return {cancel:function(){}}},
+    showModal:function(){},close:function(){},
+    get firstChild(){return this.children[0]||null},get lastChild(){return this.children[this.children.length-1]||null},
+    get parentNode(){return null},get offsetWidth(){return 0},get offsetHeight(){return 0},get scrollHeight(){return 0}};
+  return el;
+}
+function buildCtx(){
+  var reg={},doc={
+    getElementById:function(id){if(!reg[id]){var e=mkEl('div');e.id=id;reg[id]=e}return reg[id]},
+    createElement:function(t){return mkEl(t)},createTextNode:function(t){return {textContent:t,innerHTML:String(t)}},
+    querySelector:function(){return mkEl('div')},querySelectorAll:function(){return []},
+    getElementsByClassName:function(){return []},getElementsByTagName:function(){return []},
+    addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return true},
+    body:mkEl('body'),documentElement:mkEl('html'),head:mkEl('head'),createDocumentFragment:function(){return mkEl('frag')},
+    execCommand:function(){return true},write:function(){},writeln:function(){},open:function(){},close:function(){},
+    cookie:'',readyState:'complete',title:'',hidden:false,visibilityState:'visible'};
+  var st={_m:{},getItem:function(k){return (k in this._m)?this._m[k]:null},setItem:function(k,v){this._m[k]=String(v)},
+    removeItem:function(k){delete this._m[k]},clear:function(){this._m={}}};
+  var ctx={console:console,document:doc,alert:function(){},confirm:function(){return false},prompt:function(){return null},
+    setTimeout:setTimeout,clearTimeout:clearTimeout,setInterval:function(){return 0},clearInterval:function(){},setImmediate:setImmediate,
+    requestAnimationFrame:function(){return 0},cancelAnimationFrame:function(){},JSON:JSON,Math:Math,Date:Date,Object:Object,
+    Array:Array,String:String,Number:Number,Boolean:Boolean,RegExp:RegExp,Error:Error,TypeError:TypeError,Map:Map,Set:Set,
+    Promise:Promise,isFinite:isFinite,isNaN:isNaN,parseInt:parseInt,parseFloat:parseFloat,
+    encodeURIComponent:encodeURIComponent,decodeURIComponent:decodeURIComponent,Blob:function(){},FileReader:function(){},Image:undefined,
+    URL:{createObjectURL:function(){return ''},revokeObjectURL:function(){}},localStorage:st,sessionStorage:st,
+    navigator:{userAgent:'node',clipboard:{writeText:function(){return Promise.resolve()}},language:'zh-CN'},
+    location:{hash:'',href:'file:///'+INDEX.replace(/\\/g,'/'),protocol:'file:',search:'',pathname:'/'},
+    matchMedia:function(){return {matches:false,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){}}},
+    getComputedStyle:function(){return {getPropertyValue:function(){return ''}}},
+    innerWidth:1440,innerHeight:900,devicePixelRatio:1,performance:{now:function(){return Date.now()}},
+    fetch:function(){return Promise.resolve({ok:false,status:404,text:function(){return Promise.resolve('')},json:function(){return Promise.resolve(null)}})},
+    window:null,HTMLElement:function(){},Element:function(){},Node:function(){},Event:function(){},CustomEvent:function(){},
+    MutationObserver:function(){return {observe:function(){},disconnect:function(){}}}};
+  ctx.window=ctx;ctx.globalThis=ctx;ctx.self=ctx;ctx.addEventListener=function(){};
+  vm.createContext(ctx);return ctx;
+}
+function extract(html){var re=/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,m,out=[];while((m=re.exec(html))!==null){if(/\bsrc\s*=/i.test(m[1]||''))continue;out.push(m[2])}return out}
+var html=fs.readFileSync(INDEX,'utf8'),dataJs=fs.readFileSync(DATA,'utf8'),parts=extract(html);
+var fi=3,ei=3,i;
+for(i=0;i<parts.length;i++){if(/familyGraph/.test(parts[i])&&/ERDATA/.test(parts[i]))fi=i}
+for(i=0;i<parts.length;i++){if(/function engineGuardSelfCheck/.test(parts[i]))ei=i}
+var ctx=buildCtx(),loadErr=[];
+try{vm.runInContext(dataJs,ctx,{filename:'data.js'})}catch(e){loadErr.push('data: '+e.message)}
+if(parts[fi]){try{vm.runInContext(parts[fi],ctx,{filename:'familyGraph.js'})}catch(e){loadErr.push('familyGraph: '+e.message)}}
+if(parts[ei]){try{vm.runInContext(parts[ei],ctx,{filename:'engine.js'})}catch(e){loadErr.push('engine: '+e.message+'\n'+String(e.stack||'').split('\n').slice(0,4).join('\n'))}}
+if(typeof ctx.engineGuardSelfCheck!=='function'){console.error('[FATAL] 引擎未暴露 engineGuardSelfCheck（守门自检缺失）');process.exit(2)}
+var r;
+try{r=ctx.engineGuardSelfCheck()}catch(e){console.error('[FATAL] engineGuardSelfCheck 抛错: '+e.message+'\n'+String(e.stack||''));process.exit(2)}
+console.log('守门自检：物种='+r.species+' 流派='+r.builds+' deriveBuilds 异常='+r.errors+' 加载错误='+loadErr.length);
+if(loadErr.length)console.log('  加载错误明细: '+JSON.stringify(loadErr));
+console.log('  4a  天气岩禁推：受检(流派×自动天气)='+r.checkedA+'  违例='+r.viol.a+'（天气岩名映射='+JSON.stringify(r.rock)+'）');
+console.log('  4b-1 basis「自我设置」但（所选特性∪天性）不开体系：受检='+r.checkedB+'  违例='+r.viol.b1);
+console.log('  4b-2 basis「队友提供窗口」但自己就开体系：违例='+r.viol.b2);
+console.log('  4b-3（信息项，不作门闩）体系不在谱系内='+r.info.b3);
+['a','b1','b2'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
+  console.log('    · ['+k+'] '+JSON.stringify(x))})});
+if(r.total>0||r.errors>0){console.error('[FAIL] v4.35 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
+console.log('[OK] v4.35 守门自检通过：4a=0 4b1=0 4b2=0（全量 '+r.builds+' 流派）');
+'''
+_gate_path = os.path.join(_tf.gettempdir(), 'er_guard_check_%d.cjs' % os.getpid())
+with open(_gate_path, 'w', encoding='utf-8') as _gf:
+    _gf.write(_GUARD_JS)
+_node = _sh2.which('node') or _sh2.which('node.exe')
+print('--- v4.35 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
+if not _node:
+    print('[FATAL] 守门自检需要 Node.js，但 PATH 中找不到 node —— 构建中止（v4.35 起守门=构建硬门闩）')
+    _sys.exit(1)
+try:
+    _r = _sp.run([_node, _gate_path, out, data_out], capture_output=True, timeout=1800)
+except Exception as _eg:
+    print('[FATAL] 守门自检无法执行：%s' % _eg)
+    _sys.exit(1)
+_so = (_r.stdout or b'').decode('utf-8', 'replace')
+_se = (_r.stderr or b'').decode('utf-8', 'replace')
+if _so.strip():
+    print(_so.rstrip())
+if _se.strip():
+    print('[node stderr]\n' + _se.rstrip())
+if _r.returncode != 0:
+    print('[FATAL] v4.35 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
+    _sys.exit(1)
+print('[BUILD OK] v4.35 守门自检 exit 0（0 违规）')

@@ -2,14 +2,14 @@
 # 分支约定：master 开发 + gh-pages 部署（AGENTS.md 已登记）
 # 用法：& "D:\Git\bin\git.exe" 已就绪；本脚本自动：commit master → push → 建/更 gh-pages（部署三件套）→ 切回 master
 # 部署产物（gh-pages 分支根目录）：index.html（根访问入口，与 配招助手_ER.html 同内容）+ data.js（ERDATA，网页同域/CDN 加载源）
-#   + assets\sprites（相对路径同目录硬前提）+ ER-source（gameData/additional 供重跑参考）+ .nojekyll
-# 注意：配招工具_data.js 为 v4.11 前的旧名死产物，勿再部署。
+#   + README.md + assets\sprites（相对路径同目录硬前提）+ assets\sheets（运行时合图）+ ER-source 参考 JSON（gameData/additional/item_zh_cn 供重跑参考）+ .nojekyll
+# 注意：配招工具_data.js 为 v4.11 前的旧名死产物，勿再部署；ER-source 的 nextdex/.git.bak 为可重建克隆，不入 gh-pages。
 
 $ErrorActionPreference = "Stop"
 $Git = "D:\Git\bin\git.exe"
 $Repo = "D:\game\elite-redux"
 $Temp = "C:\temp\er-deploy"
-$DeployFiles = @("index.html", "data.js")
+$DeployFiles = @("index.html", "data.js", "README.md")
 $Version = $args[0]; if (-not $Version) { $Version = "v4.2" }
 $Message = $args[1]; if (-not $Message) { $Message = "Deploy: $Version" }
 
@@ -36,7 +36,13 @@ Remove-Item -Recurse -Force $Temp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $Temp -Force | Out-Null
 foreach ($f in $DeployFiles) { Copy-Item (Join-Path $Repo $f) (Join-Path $Temp $f) -Force }
 Copy-Item (Join-Path $Repo "assets") (Join-Path $Temp "assets") -Recurse -Force
-if (Test-Path (Join-Path $Repo "ER-source")) { Copy-Item (Join-Path $Repo "ER-source") (Join-Path $Temp "ER-source") -Recurse -Force }
+# ER-source：仅部署 3 个参考 JSON（gameData/additional/item_zh_cn），可重建克隆（nextdex/.git.bak）不入库
+if (Test-Path (Join-Path $Repo "ER-source")) {
+    New-Item -ItemType Directory -Path (Join-Path $Temp "ER-source") -Force | Out-Null
+    foreach ($ref in @("gameDataV2.65beta.json", "additionalV2.65beta.json", "item_zh_cn.json")) {
+        if (Test-Path (Join-Path $Repo "ER-source\$ref")) { Copy-Item (Join-Path $Repo "ER-source\$ref") (Join-Path $Temp "ER-source\$ref") -Force }
+    }
+}
 # .nojekyll：GitHub Pages 不做 Jekyll 处理
 New-Item -ItemType File -Path (Join-Path $Temp ".nojekyll") -Force | Out-Null
 Write-Host "[2/6] deploy artifacts staged to $Temp"

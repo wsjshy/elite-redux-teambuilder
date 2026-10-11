@@ -559,11 +559,12 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
      修复：pickAbi/removeFromTeamById 的 `x.id===id` 严格比较 → 宽松 `==`（gameData id 字符串/数字混存）。
      ABI_TAGS 41 条覆盖常见免疫/减半/加属性，ER 更广复合特性（如天气相关）可按需扩展。
 
-## 6. 当前状态（2026-10-12，v4.34g）
+## 6. 当前状态（2026-10-12，v4.35）
 
-- ✅ **v4.34g 装配闸门大修已部署**（master `83904e8` / gh-pages `5c23855`，2026-10-12）：由《推荐质量全量分级评估报告》（217 只深评 + 12 条反模式全量筛查）驱动，唯一改动文件 `build_tool_html.py`（引擎侧），`data.js` 逐字节未变；四路验证一致（实施方自证 + 独立黑盒双仪器 + 组织者仓库核验 + 组织者定点探针；MainAgent 本地复验：4461 流派 0 异常 / EV≤510 max=510 / 配招<4槽=0 / 讲究系×变化招=0 / 亮点案例 20+ 只全保留；线上 v4.34g 抽样 0 异常）。
-- ✅ 修复对照（全量 4461 流派，机器实测）：机制套挂名不给件 275→**0**；EV×性格×配招三方矛盾 815+356→**0**；讲究系×变化招 512→**0**；跨天气谱系 33→**0**；天气岩被自动天气作废 108→**0**；配招不足 4 槽 296→**0**；墙招入槽 0→**262**、光之黏土主推 1→**273**（生效口径：所选特性∪天性真开墙才推）；机制特性名实一致（forceMechAbi）；捕宠招四门剔除；负面天性（懒惰）降权；低种族闸门 `lowPowerSpecies`（362 只，未知图腾组各 1 套功能性配置）；组合素材补登 7 组（杂技×轻装、引水×群攻、威吓×折返、恶作剧×双墙×黏土、大力士×腹鼓/水流喷射、唱反调×自降招反差强化 10/19 只产出）。
-- 待办延续：①`scan_extra2.cjs` 天气岩/basis 两条核验并入 `antipattern.cjs` 常驻守门（建议）；②2502 烈焰猴R-B 数据空洞（base 全 0，仓库数据缺口）；③349/360 等低种族联防位生命宝珠道具选择人工复核；④队伍级（6 人联防/组合亮点/队友推荐）联动评估未纳入本次逐卡评审，可作下一轮独立评估；⑤移动端加载慢的图片优化已做过合图（v4.6.2），如仍慢需另测。
+- ✅ **v4.35 队伍级（6 人）联动评估 + 引擎修复已部署**（master `<HASH_MASTER>` / gh-pages `<HASH_GH>`，2026-10-12）：由《队伍级联动评估综合报告》（全量 1906 只机器导出筛查 + 67 核分层深评）驱动；改动文件 `build_tool_html.py`（引擎侧，v4.35c）+ `build_tool_data.py`（2502 空钩子 +27 行，零行为变化）；四路验证一致（实施方自证 + 独立黑盒双仪器「先测量后对账」+ 组织者仓库核验 + 构建门闩确定性复现）。
+- ✅ 队伍级修复对照（全量 1906 队 / 9530 张队友卡，机器实测）：**队友卡真实装配**（按定位角色真实配置特性/道具/EV/招组，原恒用「输出」模板）：讲究系锁招配非输出位 1388→**0**；非输出位配速攻 EV（无 252HP）6812→**0**；天气手位无开天气手段 63→**0**；体系白名单 + 门控特性校验（跨体系死特性引擎口径 **0**，4 条残留全为 #1550 固拉多-原始回归——基线检查器特性表白名单缺项误报）；增量联防 + 硬约束（共用弱点≥6 730→**1**，残留 3 支经全库单槽替换穷举证明结构性无解）；骨架打散（输出位 8.4%→**16.9%**、队友池 298→**765** 只、跨 teamKey 真换皮 380→**19**）；组合亮点门槛（撒钉除钉降级）；archOfSp 空间轴修正。**零回归**：单精灵层 **4461 流派与 v4.34g 导出逐字节相同**；12 支 A 级天气队体系闭环全保留（正向多天气手冗余未硬去重）；`engineGuardSelfCheck`（天气岩/basis 两条核验并入常驻）+ 构建门闩（exit 0 才算过）已落地。
+- ✅ **2502 烈焰猴R-B 数据空洞收尾**：三重证据证实上游「新增未填空壳」（er-config upcoming + 历史 pin A/B 的 SpeciesList.textproto 均无种族值/特性/天性——1926 物种块中唯一 form_of 无显式种族值；ROM `gBaseStats[2502]` 基址 0xC01040 步长 44、44 字节全 0；TrainerList/BattleFrontier/Randomizer 全库 0 引用、不可获得）⇒ **保持现状**（引擎 `isValidSp` 过滤=正确守卫，数据层 `SPECIES_OVERRIDES` 空钩子保留，上游补齐后填 key='2502' 即自动生效）；期间恢复被孤儿分支部署删除的构建输入（oracle 反演 nn_data mechLib 52/smogonPrior 120 + ER-source\item_zh_cn.json 762 中文名），`配招工具_data.js` 重建逐字节一致（md5 53CE44C2…）。
+- 残留登记（保留理由均已入实施/验证报告）：①共用弱点≥6 剩 3 支（1845 飘浮泡泡-沙暴 等，全库单槽替换可达最小共弱=6，结构性无解）；②跨体系门控 4 条 = #1550 基线检查器口径误报（引擎守门 4b-1 违例 0）；③③a=16 全「核心无体系」（③b=0，设计内）；④⑤ 场地/无体系类 = 正向降权不剔除（天气与场地可共存）；⑤186 蚊香蛙皇 共弱 3→4、雨天双必中亮点 26→4（亮点门槛严格化所致，12/12 体系闭环成立）；⑥手机竖版视口未实测（静态 CSS 核验替代）；⑦nn_data/ 与 ER-source\item_zh_cn.json 仍被部署清理（本轮已备份至 agent workspace `o_000ErCGV28w\scratch\_deploy_inputs_backup`；**勿再跑 tools\rebuild_source_inputs.py**——会反向重写 chaos 缓存破坏使用率先验）；⑧上游补齐 2502 数据后需：填 `SPECIES_OVERRIDES['2502']` + 移除引擎 `isValidSp` 硬编码（index.html L814-819）。
 
 ## 7. 项目准则
 
@@ -578,7 +579,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 8. GitHub 部署（2026-10-08 起）
 
 - **仓库**：`github.com/wsjshy/elite-redux-teambuilder`（公开）；远程名 `github`（代理：Git 全局 `http.https://github.com.proxy http://127.0.0.1:7890`）。
-- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html`+`配招工具_data.js`+`assets/`+`.nojekyll`+`ER-source` 两 json，与 master 跟踪集对齐避免切换冲突）。
+- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html`+`data.js`+`README.md`+`assets/`（sheets 运行时合图 + sprites 图源）+`.nojekyll`+`ER-source` 三 json（gameData/additional/item_zh_cn，可重建克隆 nextdex/.git.bak 不入库），与 master 跟踪集对齐避免切换冲突）。**一键部署**：`tools\deploy_er.ps1 v4.35 <message>`（commit+push master → 暂存部署物 → 切 gh-pages 清空复制 → commit+push --force → 切回 master；会删 gitignored 本地输入，必要时先备份）。
 - **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`（v4.6 验证：index 2,332,615B/data.js 6,487,486B/精灵图/.nojekyll 全 200，index 与本地同 SHA）。
 - **更新流程**：改 build 脚本→重生成 HTML→`git commit`+`push github master`→孤儿分支重建 gh-pages（`checkout --orphan gh-pages`→清工作区**先移出 ER-source 与 4 项脱跟踪构建输入**（`招式表_可学总表.csv` / `ER2.65简汉化\ER2.65beta版图鉴v0.3.xlsm` / `ER2.65简汉化\分类.xlsx` / `ER2.5正式版图鉴v0.5.xlsm`——**曾于 v4.6.4 期被误删，重建见 §12**）→`checkout master -- 部署产物`→commit→`push github gh-pages --force`）→`checkout master`→移回 ER-source→`reset --hard master`。
 - **部署后必验（2026-10-10 教训，防"推了没生效"）**：① `git status`/`git ls-tree` 确认 **gh-pages 上无子模块 gitlink（160000）**——`ER-source/nextdex` 曾致 Pages 构建连续 4 次失败（`No url found for submodule path` exit 128），修复=`git rm --cached ER-source/nextdex`；② 部署文件提取一律 **Python 二进制 `git show master:<file>` 写盘**，禁止 PS `>` 重定向（UTF-16/BOM/编码破坏）；③ push 后查 Actions `pages build and deployment` run **conclusion=success**（API：`/actions/runs?per_page=5`），failure 时线上停留在最后成功版本；④ `curl` 线上 index.html 校验目标标记（如 `四特性体系`）与字节数 = 本地。

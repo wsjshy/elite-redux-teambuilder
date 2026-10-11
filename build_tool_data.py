@@ -47,6 +47,33 @@ for r in csv.reader(open(BASE + r'\招式表_宝可梦基础.csv', encoding='utf
     }
 print('species:', len(species))
 
+# ── 数据层物种覆盖补丁（带来源 URL；默认空 = 不改变任何物种）────────────────────
+# 动机：官方数据源本身对个别「新增但未填数据」的形态导出为空壳（base 六项全 0 / 属性=无 / 特性·天性为空）。
+# 权威上游（NextDex 数据源）：https://raw.githubusercontent.com/Elite-Redux/er-config/upcoming/SpeciesList.textproto
+# 已核实结论：id 2502 = SPECIES_INFERNAPE_REDUX_B（CSV：烈焰猴R-B / Infernape Redux B）
+#   在**所有权威来源中都不存在真实 base/abis/inns**（考证见 artifacts/ER_2502数据补洞报告.md）：
+#     · er-config SpeciesList.textproto（upcoming 及历史 pin 6a30b667/9244515）中 2502 仅有
+#       form_of/learnset/visuals/region_prefix，无 hp/atk/def/spatk/spdef/spe/type/ability/innate；
+#       全库 785 个 form_of 形态中 784 个都显式带种族值，唯 2502 没有。
+#     · 成品 ROM `ERv2.65-beta2-debug汉化版.gba` 的 gBaseStats[2502]（基址 0xC01040 / 步长 44）
+#       实测 44 字节全 0x00；全表仅 21 个物种全 0（含 SPECIES_NONE 与 2308–2323 一批同期空壳），2502 属其中。
+#     · 2502 未被 TrainerList / BattleFrontierList / LimitedRandomizerConfig 引用（不可获得）。
+#   ⇒ 故本补丁**故意留空**，绝不写入推测值（严禁编造数值）。
+#     若日后主 Agent 决定采用同族推测值，在此按格式填入并注明「推测（非权威）」依据即可。
+# 覆盖格式：{'<宝可梦编号(CSV 第 0 列)>': {'t1':..,'t2':..,'base':[6 个 int],'abis':[..],'inns':[..]}}（字段可缺省）
+SPECIES_OVERRIDES = {}
+
+for _sid, _ov in SPECIES_OVERRIDES.items():
+    _sp = species.get(_sid)
+    if _sp is None:
+        print('  [覆盖] 警告：CSV 中无此编号', _sid)
+        continue
+    for _fk in ('zh', 'en', 't1', 't2', 'base', 'abis', 'inns'):
+        if _fk in _ov:
+            _sp[_fk] = _ov[_fk]
+    print('  [覆盖] 已应用', _sid, _sp['zh'], 'base=', _sp['base'], 'abis=', _sp['abis'], 'inns=', _sp['inns'])
+# ──────────────────────────────────────────────────────────────────────────────
+
 # 3. 可学总表填充
 for r in csv.reader(open(BASE + r'\招式表_可学总表.csv', encoding='utf-8-sig')):
     if r[0] == '宝可梦编号':
