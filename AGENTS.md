@@ -1046,3 +1046,18 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - switchBuild tabs 选择器修复：bktab 在 wId-tabs 容器（原从 wId 查恒空 → aria 状态不更新）。
   - 数据加载：主源改**同域相对路径 data.js**（gh-pages 自带），CDN gcore 仅作回退；精灵图 assets 同域优先（__ER_ASSET_BASE=''）。
 - **验证**：幸福蛋流派只剩 1 条（硬撑流消失）EV=耐久；九尾流派1 性格大胆/慎重 + 252HP/252特防 耐久；流派切换展开正常；本地 file:// 加载正常。
+
+
+## 46. v4.31 新玩家评测中危修复（2026-10-11）
+
+- **背景**：延续 v4.30 评测子代理报告的中危项清单（黑话上屏/毒疗错配/配招不满槽/弱点无倍率/特性双名/队伍不满编/移动端遮挡）。
+- **修复**：
+  - ① 开发者黑话清理：队伍方案「强度校准」行删除 AUROC/rho/shift_layer/dataset_engine/winrate 等术语，改玩家可读口径「用 4000 支真实对局队伍的胜负结果校准」；`smogonNote()` 去内部字段名（保留「原版惯例 ≠ ER 使用率」诚实标注）。
+  - ② 毒疗流错配（天蝎王物攻 95/特攻 45）：`toxic_heal_item` 的 mechBuildBase side 与 `bestCoverAtk` 均改「物理」——配招实测「剧毒/替身/终极冲击/守住」（原补特攻破坏光线=练废）。
+  - ③ 机制流配招不满 4 槽：新增 `fillMvSlots(s,b)`（挂 mechBuildsOf 各流出口）——九尾免疫联防位原只有睡觉/替身 2 招，现补满 4 槽（睡觉/替身/过热/愤怒灵魂）。
+  - ④ 弱点倍率显示：核心配队弱点行改「弱点（天性口径，含倍率）」，每项附 ×N（天蝎王冰 4× 显示 ×4）。
+  - ⑤ 特性中文双名统一：`abiChipName` 改为**汉化图鉴名优先**（n 含中文即原样返回；仅英文/别名时回退 ABI 表中文）——与 AGENTS §7「中文名以 xlsm 汉化图鉴为准」对齐；详情页特性/天性 chip、流派卡 bSet、弹层标题全走 abiChipName。「烈焰之魂（汉化）≠燃烧之魂（NextDex）」双名现象全站清零。
+  - ⑥ 默认满编 6 只：PLAN_VARIANTS std 方案 opts `{fill:9}`（需求清零后自动补满 6 只），构建口径/audit warning 文案同步「默认满编 6 只」。
+  - ⑦ 移动端 header：<768px 去 `position:sticky`（原 flex-wrap 多层遮正文），隐藏副标题 .tag、nav 单行横滑。
+- **验证**（chrome-devtools，本地 v431d）：九尾免疫联防位 4 招满槽；天蝎王毒疗流 side=物理 且配招无破坏光线、冰弱 ×4；核心配队与详情页「燃烧之魂」0 命中全为「烈焰之魂」；天蝎王 fill:9 队伍 6 只；node --check exit 0。
+- 提交链：master `471d1bb` → gh-pages `8645d86`（verify：fillMvSlots+abiChipName+含倍率 全命中）。
