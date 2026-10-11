@@ -401,6 +401,11 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   cursor:pointer; font-size:16px}
 /* ===== v4.11 移动端（<768 竖版单列）：tab 横滑 + sticky ≤48px；队友主推横滑 / 备选网格 ===== */
 @media (max-width:768px){
+  /* v4.31：移动端 header 去 sticky（flex-wrap 换行成多层会遮正文）+ 精简：隐藏副标题、nav 单行横滑 */
+  header{position:static; padding:6px 10px; gap:6px}
+  header .tag{display:none}
+  header nav{width:100%; display:flex; overflow-x:auto; gap:6px; -webkit-overflow-scrolling:touch}
+  header nav button{flex:0 0 auto; font-size:13px; padding:6px 10px}
   .chip{padding:8px 11px; font-size:12px}
   .bktabs{height:48px; margin:4px 0 6px}
   .mate{max-width:none}
@@ -1602,13 +1607,13 @@ function openSp(s){
   html+='<div class="sec"><h3>特性（n 选 1，点击看描述）</h3>';
   s.abis.forEach(function(n){
     var id=abiIdByZhOrEn(n);
-    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(n)+'</span>';
+    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(abiChipName(n))+'</span>';   /* v4.31：统一 ABI 表规范中文（消除「烈焰之魂/燃烧之魂」双名） */
   });
   html+='<div class="abid" id="abiDesc" style="display:none"></div></div>';
   html+='<div class="sec"><h3>天性（固定 3 个，点击看描述）</h3>';
   s.inns.forEach(function(n){
     var id=abiIdByZhOrEn(n);
-    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(n)+'</span>';
+    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(abiChipName(n))+'</span>';   /* v4.31：同上统一 */
   });
   html+='<div class="abid" id="spInnDesc" style="display:none"></div>'; /* A①：天性描述紧挂天性块内（勿落到特性块） */
   html+='<div class="mini" style="color:var(--sub);margin-top:4px">天性固定生效、不可更换；可选特性的免疫/减半与之叠加（B1）。</div>';
@@ -4072,7 +4077,7 @@ function smogonOn(){if(!SMOGON_PRIOR_ENABLED)return false;try{return !!(ERDATA&&
 function smogonPriorOf(id){if(!smogonOn())return null;try{return ERDATA.smogonPrior.species[''+id]||null}catch(e){return null}}
 function smogonListOf(sp,key){if(!sp||!sp[key])return [];return sp[key]}
 function smogonPct(sp,key,id){if(!sp||!sp[key])return 0;var out=0;(sp[key]||[]).forEach(function(x){if(x&&(''+x.id)===(''+id))out=+x.percent||0});return out}
-function smogonNote(){return SMOGON_SRC_ZH+'惯例 ≠ ER 使用率（ER 无对战统计=已知缺口）；smogonPrior 管配招/道具/队友先验，usagePrior 管物种常见度次排序，二者职责分开'}
+function smogonNote(){return SMOGON_SRC_ZH+'惯例 ≠ ER 使用率（ER 无对战统计=已知缺口）；配招/道具/队友先验与物种常见度次排序两者职责分开'}
 /* 道具位：候选道具在**该物种先验 items** 中 → 小权重软优先（只作并列微排序，不新增候选、不否决） */
 var SMOGON_ITEM_GAIN=0.30;
 function smogonItemBonus(s,itemId){
@@ -4531,11 +4536,12 @@ var MECH_BUILD={
   /* 毒疗：中毒状态下每回合回复 1/8（异常状态收益反转）→ 剧毒珠站场消耗 */
   toxic_heal_item:function(s,cs){
     if(!mechAbiRwHits(s,'toxic_heal_item'))return null;
-    var b=mechBuildBase(s,'特殊','毒疗站场流','toxic_heal_item',
+    /* v4.31：side 改「物理」——毒疗消耗流主输出按物理侧取（天蝎王物攻 95 vs 特攻 45，原写死特殊会补特攻招如破坏光线=练废） */
+    var b=mechBuildBase(s,'物理','毒疗站场流','toxic_heal_item',
       '毒疗把「中毒」从负面反转成每回合 1/8 回复——带剧毒珠自中毒，替身/毒招/钉子消耗，几乎不掉血');
     b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：中毒消耗对手（毒疗只回复自身，不影响输出）']});
     if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：毒疗回 1/8 ≈ 每回合白嫖一个替身']});
-    var cov=bestCoverAtk(s,'特殊');if(cov)b.mv.main.push(cov);
+    var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);   /* v4.31：与 side 对齐（原 '特殊' 会给物攻核心补特攻招如破坏光线） */
     if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住拖毒疗回合']});
     b.it=[['剧毒珠','自中毒 → 毒疗每回合回 1/8（异常收益反转，Smogon 毒疗标准配置）']];
     b.basis.push({k:'mech',txt:'机制 毒疗（toxic_heal_item）——中毒=回复源，替身每回合白嫖'});
@@ -4651,6 +4657,26 @@ var MECH_BUILD={
     return b;
   }
 };
+/* v4.31：机制流配招不满 4 槽（九尾免疫流只 push 睡觉/替身、毒疗流 3 招）→ 用侧向攻击招/功能招补满，
+   保证「配招（4 招）」名副其实；已用 id 不重复 */
+function fillMvSlots(s,b){
+  if(!b||!b.mv||!b.mv.main)return b;
+  var used={};b.mv.main.forEach(function(x){used[''+x.id]=1});
+  var side=(b.side==='双刀')?'双刀':((b.side==='物理')?'物理':'特殊');
+  var att=pickAttacks(s,side,4,b.roleTag||'输出');
+  var rest=FUNC_MV.rec.concat(FUNC_MV.protect,FUNC_MV.speed,FUNC_MV.hazard,FUNC_MV.wear);
+  var guard=0;
+  while(b.mv.main.length<4&&guard++<8){
+    var c=null,i;
+    for(i=0;i<att.length;i++){if(!used[''+att[i].id]){c=att[i];break}}
+    if(c){used[''+c.id]=1;b.mv.main.push({id:c.id,kind:'attack',tag:'攻击',why:['补位攻击（'+side+'侧）']});continue}
+    var fid=null,j;
+    for(j=0;j<rest.length;j++){var id=rest[j];if((learnOf(s)||[]).indexOf(id)>-1&&!used[''+id]){fid=id;break}}
+    if(fid){used[''+fid]=1;b.mv.main.push({id:fid,kind:mvKindOf(fid),tag:'功能',why:['补位功能招']});continue}
+    break;
+  }
+  return b;
+}
 function mechBuildsOf(s){
   var out=[];
   if(!mechOn()||!s)return out;
@@ -4662,6 +4688,7 @@ function mechBuildsOf(s){
     var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
     /* 配招空槽的机制流派不生成（如再生力流但全无 UT/VS/钉子/状态招）——空卡没有可玩性 */
     if(b&&(!b.mv.main||!b.mv.main.length))b=null;
+    if(b)b=fillMvSlots(s,b);   /* v4.31：机制流配招补满 4 槽 */
     if(b)b=sanitizeBuild(s,b);   /* v4.30 P0-1：机制流三方一致性（EV×配招×性格） */
     if(b)out.push(b);
   });
@@ -7217,7 +7244,7 @@ function buildTeamByNeeds(core,opts){
   if(team.length>=tgt&&openLeft.length)
     audit.warnings.push('已达目标规模 '+tgt+' 只但仍有 '+openLeft.length+' 条需求未满足（仍输出，不自动补齐）');
   if(team.length<tgt&&!openLeft.length)
-    audit.warnings.push('需求已清零 → 输出 '+team.length+' 只紧凑队伍（不自动补齐；可用「继续补位」手动追加非需求驱动候选）');
+    audit.warnings.push('需求已清零 → 自动补位候选枯竭，输出 '+team.length+' 只（默认应满编 '+tgt+' 只）');
   return {core:core,prof:prof,sysKey:sysKey,sys:sy,refName:sy.refName,arch:sy.arch,
     needs:needs,team:team,pools:pools,audit:audit,stopReason:stopReason,
     target:tgt,multiMax:mm,fills:fillN,fillCands:fillCands,   /* v4.8 G2/G3：规模参数与补位候选一并回传 */
@@ -7417,7 +7444,7 @@ function reRenderPlan(coreId){
    队伍成员仍由 needList → poolForNeed 全图鉴正向评分动态产生 —— 无固定槽位、无固定名单。 */
 var PLAN_VAR={};   /* coreId → 当前方案序号（默认 0） */
 var PLAN_VARIANTS=[
-  {id:'std',   name:'标准需求驱动', idea:'需求驱动、够用即止（默认）',                opts:{}},
+  {id:'std',   name:'标准需求驱动', idea:'需求驱动 + 自动补满 6 只（队伍 = 六人满编，补位按正向分不模板化）', opts:{fill:9}},
   {id:'tight', name:'紧凑核心队',   idea:'只留核心 + 必要补位，少上人少负担',          opts:{target:4}},
   {id:'full',  name:'满编六只',     idea:'需求清零后按广义正向分补满 6 只，候选不枯竭', opts:{target:6,fill:9}}
 ];
@@ -7577,7 +7604,7 @@ function renderNeedPlan(s,vi){
   h+='<details class="inline"><summary>📐 构建口径（需求驱动 · 动态推导）—— 展开看评分与终止规则</summary><div style="margin-top:4px">'+
     '<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
     '逐条需求在全图鉴做正向评分，选最优填充者；一只满足多条需求 = 多功能加分 <b>+(k−1)×'+NEED_CFG.MULTI_ROLE_BONUS+'</b>；'+
-    '达目标规模 '+teamTarget()+' 只 / 需求清零 → 立即停手（允许 &lt;'+teamTarget()+' 只紧凑队，不自动补齐）。'+
+    '达目标规模 '+teamTarget()+' 只：需求驱动逐条闭合，需求清零后按广义正向分自动补位至目标（默认满编 6 只；「紧凑核心队」方案可显式要 4 只）。'+
     '目标规模与多功能合并上限（当前 ×'+teamMultiMax()+'）均为可配参数：目标调小 = 上限收紧，合并上限随之降低，队伍不会塌到目标之下。'+
     '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。'+
     '（停手规则补充：仅当出现 0 优先级需求时才按优先级截断，当前尚无此类需求。）</div></details>';
@@ -7657,16 +7684,15 @@ function renderNeedPlan(s,vi){
   /* v4.27 组合亮点：对定稿队伍扫描跨精灵组合（展示层，不参与排序） */
   try{h+=comboHtml(scanCombos(plan.team.map(function(m,i){return i===0?{s:m.s,core:1}:m}))) }catch(eC){h+=''}
   var au=plan.audit;
-  /* v4.7：强度校准行（规则偏移层 L2，尺度保持口径；默认开启、可一键回退） */
+  /* v4.7：强度校准行（规则偏移层 L2，尺度保持口径；默认开启、可一键回退）
+     v4.31：上屏文案去开发者黑话——删 AUROC/rho/shift_layer/文件名/开关名，换成玩家能懂的一句话口径 */
   try{
     var rc=rsTeamCard(plan.team);
     if(rc){
-      h+='<div class="tip" style="font-size:11px;background:#eef7ff;border-color:#90caf9"><b>强度校准（规则偏移层 · 确定性修正）</b>：'+
+      h+='<div class="tip" style="font-size:11px;background:#eef7ff;border-color:#90caf9"><b>强度校准</b>：'+
         '引擎位次均分 '+rc.E.toFixed(1)+' → 校准强度 <b>'+rc.S.toFixed(1)+'</b>（'+(rc.d>=0?'+':'')+rc.d.toFixed(1)+'）'+
-        '<br>逐维度（z 加权）：速度线 '+rc.z.slow.toFixed(2)+'｜单体强度 '+rc.z.bst.toFixed(2)+'｜体系协同 '+rc.z.syscnt.toFixed(2)+'｜偏移层 '+rc.z.sh.toFixed(2)+
-        '<br><span style="color:var(--sub)">口径：修正「高估龟速传说堆」——引擎位次均分与真值胜率负相关（AUROC 0.399 / rho −0.190），'+
-        '校准后 AUROC 0.663 / rho +0.318（4000 队真值标签 train→test 复算）；系数来源 shift_layer.py + dataset_engine_v0_winrate.jsonl，非拍脑袋。'+
-        '回退开关 RULE_SHIFT_ENABLED。</span></div>';
+        '<br>逐维度（z 加权）：速度线 '+rc.z.slow.toFixed(2)+'｜单体强度 '+rc.z.bst.toFixed(2)+'｜体系协同 '+rc.z.syscnt.toFixed(2)+'｜阵容修正 '+rc.z.sh.toFixed(2)+
+        '<br><span style="color:var(--sub)">口径：用 4000 支真实对局队伍的胜负结果校准排序权重，修正「只看种族值堆砌传说精灵」的偏差——校准系数为确定性规则，可一键回退。</span></div>';
     }
   }catch(eRC){}
   h+='<div class="tip" style="font-size:11px">体检：需求覆盖 '+au.needCoverage+'%（已满足 '+au.satisfied+'/'+au.total+'）· 队伍 '+au.filled+' 只（目标 '+plan.target+' 只'+(au.fills?('，其中补位 '+au.fills+' 只'):'')+'）· 停止原因 '+esc(stopReasonZh(plan.stopReason))+
@@ -7770,7 +7796,10 @@ function evWhy(btn){
   try{btn.setAttribute('aria-expanded',box.hasAttribute('hidden')?'false':'true')}catch(e1){}
 }
 /* L1 特性/天性 chip：点击直接弹轻量 modal（完整描述 + 战斗意义 + 机制词条），不做就地展开 */
-function abiChipName(n){ /* chip 显示名与弹层一致：以 ABI 表规范中文（=游戏内真名，如 #326=顽固/#318=根源盔甲）为准 */
+function abiChipName(n){ /* v4.31：显示名统一优先「汉化图鉴名」（游戏内实际显示，如 烈焰之魂），
+    仅当 n 非中文（xlsm 未收录、回退英文/别名）时改用 ABI 表中文 —— 与 AGENTS §7「中文名以 xlsm 汉化图鉴为准」对齐，
+    消除「烈焰之魂/燃烧之魂」双名（raw=汉化名、ABI[2]=NextDex 名，以汉化名为准） */
+  if(/[\u4e00-\u9fff]/.test(String(n)))return n;
   var id=abiIdByZhOrEn(n);
   if(id===null||id===undefined)return n;
   var a=ABI[id];return (a&&a[2])?a[2]:n;
@@ -7779,7 +7808,7 @@ function abiModal(abiName,kind){
   var id=abiIdByZhOrEn(abiName);
   var hasId=(id!==null&&id!==undefined);
   var zh=hasId?abiDescZhOf(id):null,a=hasId?ABI[id]:null;
-  var nm=(a&&a[2])?a[2]:String(abiName);
+  var nm=abiChipName(abiName);   /* v4.31：弹层标题与 chip 同一中文源（汉化图鉴名优先） */
   var tg=hasId?abiTagLines(id):[];
   var full='<div style="margin-bottom:6px"><b>'+esc(nm)+'</b>'+(a&&a[1]&&a[1]!==nm?('（'+esc(a[1])+'）'):'')+
     (hasId?(' <span class="badge badge-neu">#'+id+'</span>'):'')+
@@ -8084,7 +8113,7 @@ function renderCore(s){
   html+='<div class="stattot">种族值总值 <b>'+spBst(s)+'</b>（条形图按单项上限 255 归一）</div></div>';
   /* 概要：定位 / 弱点（天性口径）/ 细分定位 */
   html+='<div class="hlbox"><b>'+esc(prof.role)+'</b> —— '+esc(prof.desc)+'</div>';
-  html+='<div style="margin:4px 0"><b style="font-size:13px">弱点（天性口径）</b>：'+(weak.length?weak.map(tlabel).join(' '):'<span style="color:var(--ok)">无弱点</span>')+
+  html+='<div style="margin:4px 0"><b style="font-size:13px">弱点（天性口径，含倍率）</b>：'+(weak.length?weak.map(function(t){var m=defCellTrio(s,t).inn;return tlabel(t)+(m>1?'×'+m:'')}).join(' '):'<span style="color:var(--ok)">无弱点</span>')+
     ' <span class="dim">找队友时优先补这些</span></div>';
   if(tags.length)html+='<div class="chiprow"><span class="dim">细分定位：</span>'+tags.map(function(t){return '<span class="abi">'+esc(t)+'</span>'}).join(' ')+'</div>';
   /* 人工分析（用户 分类.xlsx 命中）—— 原样保留，折叠入内 */
@@ -8110,7 +8139,7 @@ function renderCore(s){
   });
   html+='</div><div id="'+wId+'">';
   builds.forEach(function(bd,i){
-    var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?bd.abi[0].n:'—';
+    var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?abiChipName(bd.abi[0].n):'—';   /* v4.31：统一走 ABI 表规范中文（消除「烈焰之魂/燃烧之魂」双名） */
     var tms=ftC(s,bd.side,bd.roleTag);
     /* v4.11：tabpanel 容器包裹流派卡 —— 首卡 details 的 class 固定为字面量 "big rec"（verify_v4 B④ 断言），
        切换只切外层 .bkp 的 .bkoff，不重建页面（展开态 / 滚动位置保留） */
