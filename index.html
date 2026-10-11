@@ -4602,7 +4602,9 @@ function buildMoves(s,side,roleTag){
     var id=null,why=[];
     if(f==='boost'){id=hasMv(learn,boostIds);if(id)why=['强化招（'+side+'侧优先）']}
     else if(funcs[f]){id=funcs[f].id;why=funcs[f].why}
-    else if(f==='weather'){learn.forEach(function(x){if(!id&&WEATHER_MV[x]&&coreSys(s).indexOf(WEATHER_MV[x])>-1)id=x});if(id)why=['体系天气/场地招']}
+    else if(f==='weather'){learn.forEach(function(x){if(!id&&WEATHER_MV[x]&&coreSys(s).indexOf(WEATHER_MV[x])>-1){var _wsys=WEATHER_MV[x];/* v4.16：天性/主特性已自动开该天气（如向日葵怪天性干旱/日照）→ 手动天气招浪费格子，跳过；仅当精灵无任何自动开天气手段时才推荐手动档 */if(!isAbilSet(s,_wsys))id=x}});if(id)why=['体系天气/场地招']}
+    /* v4.16 统一守卫：无论 weather 槽来源（pickFuncs 侧 funcs.weather 或上方遍历），只要天性/主特性已自动开该天气 → 手动天气招一律跳过 */
+    if(f==='weather'&&id&&WEATHER_MV[id]&&isAbilSet(s,WEATHER_MV[id]))id=null;
     if(id&&funcUsed.indexOf(id)<0)push(id,why,MV_TAGS[f],FUNC_KIND[f]||mvKindOf(id));
   });
   /* 剩余攻击位填充 */

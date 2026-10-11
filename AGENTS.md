@@ -899,3 +899,15 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   4. `招式表_可学总表.csv`（112,580 行，build_tool_data.py L51 硬依赖）——可从 gameData learnset 重建，但 build_tool_data.py 另有 `ER2.65简汉化\ER2.65beta版图鉴v0.3.xlsm`（克制表源，L71）也已丢失 → **build_tool_data.py 当前整体不可重跑**（克制表 xlsm 无兜底）；克制表在 data.js/HTML 侧已有 21×21 方阵，数据层重建仅影响未来改动。
 - **教训登记**：nn_data 与可学总表 CSV 属「可重建但工程量大」的中间产物，却无 git 跟踪 + 无备份 → 建议后续**把 axis_lib.json 纳入 git**（或定期打包备份），smogon/chaos 重建脚本固化。`restore_nn_axis.py` 保留于仓库根目录（可重复执行）。
 - **产物指纹（v4.15）**：`配招助手_ER.html` = `index.html` = **862,919 B**（+AXIS_LIB 76 KB 注入）；`data.js` 2,210,805 B（不变）。提交链待登记（master v4.15 构建 + gh-pages 部署）。
+
+
+## 31. v4.16 手动天气守卫修复（2026-10-11）
+
+- **触发**：用户截图向日葵怪（向日花怪 #192，天性固定含「干旱」=日照）流派「晴增伤清场」配招仍带手动大晴天——天性出场自动开晴还占 1 格手动晴，效率最低做法（此前 v4.14 只修了妙蛙花路径）。
+- **根因（两处）**：
+  1. uild_tool_html.py mkBuild weather 槽：uncs[f]（pickFuncs 返回的 uncs.weather）**先于** weather 分支命中 → 手动天气招绕过守卫直接入槽（第一版守卫只加在 weather 遍历分支，未覆盖 funcs 侧）。
+  2. isAbilSet(s,'晴') 对「干旱」无效的疑虑已排除：biIdByZhOrEn('干旱')=70 别名归一正常，biSetOf('干旱')='晴' 实测有效。
+- **修复**：weather 槽在 push 前加**统一守卫**——if(f==='weather'&&id&&WEATHER_MV[id]&&isAbilSet(s,WEATHER_MV[id]))id=null（无论来源 funcs.weather 或 weather 遍历分支，天性/主特性已自动开该天气 → 手动天气招一律跳过；仅无任何自动开天气手段的精灵保留手动档）。
+- **验证（本地 ?v=v416b2）**：向日葵怪两流派配招 = 过热/日光束/生长/**寄生种子**（大晴天移除）；回归：超级妙蛙花Y 晴系无大晴天、大嘴鸥雨系无求雨；coreOut 端到端 49,626 字符 weatherMvs=[] ✓。
+- **产物指纹（v4.16）**：配招助手_ER.html=index.html 863,158 B（守卫注入）；data.js 2,210,805 B（不变，缓存戳 633687ac）。
+- 提交链：master v4.16 → gh-pages v4.16（待登记）。
