@@ -4330,6 +4330,155 @@ function mechCombosFor(s,ctx){
   acc.shown=acc.list.length;acc.count=acc.shown;
   return acc;
 }
+/* ============ v4.19 机制驱动流派：组合联想器 ok 的组合 → 流派卡（插到流派列表最前） ============
+   背景：机制组合此前只在详情页「机制解读」展示，不反哺流派生成——百变怪（变身者）流派仍是 4 攻击招。
+   本层把对**配招/道具决策**有决定性影响的机制组合转成机制流派（配招/道具按机制规则覆盖）。
+   每条 = 判定 ok 组合（condOk 通过）+ 手工构造 b 对象（与 mkBuild 返回同构，UI 渲染零改动）。 */
+var MV_TECH_ID={transform:144,acrobatics:512,bodyPress:704,ironDef:334,curse:174,gyroBall:360,foulPlay:492,willo:261,
+  substitute:164,protect:182,facade:263,counter:68,metalBurst:368,recover:0};
+function mechMv(id){var m=MV[id];return m?{id:id,zh:m[1]||('#'+id),pow:m[5]||0,tys:(m[9]||'').split(',')}:null}
+/* 机制流派辅助：本系最强攻击招（排除机制招自身防重复）/ 跨系最强补盲 / 回复招（半血回复优先） */
+function bestStabAtk(s,side,exclude){
+  var learn=learnOf(s),best=null,ex={};if(exclude)ex[exclude]=1;
+  learn.forEach(function(id){
+    if(ex[id])return;
+    var m=MV[id];if(!m||m[4]==='变化')return;
+    if(side!=='双刀'&&m[4]!==side)return;
+    if(!(m[3]===s.t1||m[3]===s.t2))return;
+    var pow=m[5]||0;if(pow<60)return;
+    if(!best||pow>best.pow)best={id:id,kind:'attack',tag:'本系',pow:pow,ty:m[3],why:['本系最高 '+m[1]+'('+pow+')']};
+  });
+  return best;
+}
+function bestCoverAtk(s,side){
+  var learn=learnOf(s),best=null;
+  learn.forEach(function(id){
+    var m=MV[id];if(!m||m[4]==='变化')return;
+    if(side!=='双刀'&&m[4]!==side)return;
+    if(m[3]===s.t1||m[3]===s.t2)return;
+    var pow=m[5]||0;if(pow<70)return;
+    if(!best||pow>best.pow)best={id:id,kind:'cover',tag:'补盲',pow:pow,ty:m[3],why:['补盲 '+m[1]+'('+pow+')，覆盖非本系面']};
+  });
+  return best;
+}
+function bestRecMv(s){
+  var learn=learnOf(s),best=null;
+  learn.forEach(function(id){
+    var m=MV[id];if(!m||m[4]!=='变化')return;
+    var zh=m[1]||'';
+    if(!/回复|再生|祈愿|治愈|吸收|光合|月光|羽栖|偷懒|睡觉/.test(zh))return;
+    if(!best)best={id:id,kind:'rec',tag:'回复',why:['回复 '+(m[1]||'')+'——站场续航']};
+  });
+  return best;
+}
+function mechBuildBase(s,side,name,rw,desc){
+  var b={name:name,side:side||coreSide(s),roleTag:'输出',itemTag:'机制',mv:{main:[],funcs:[]},
+    nat:null,it:[],abi:[],desc:desc||'',basis:[],ev:null,score:99,breakingRoute:'机制',mechRw:rw};
+  try{b.nat=buildNature(s,b.side,b.roleTag)}catch(e){b.nat=null}
+  try{b.ev=buildEvs(s,b.side,b.roleTag,name)}catch(e){b.ev=null}
+  try{b.abi=pickAbiFor(s,b.side,b.roleTag)}catch(e){b.abi=[]}
+  return b;
+}
+function mechHasMv(s,id){return (learnOf(s)||[]).indexOf(id)>-1}
+function mechHasAbi(s,zh){return (s.abis||[]).concat(s.inns||[]).indexOf(zh)>-1}
+var MECH_BUILD={
+  /* 变身者：自身种族/技能池不参与评价，出场自动复制对手 */
+  imposter_anchor:function(s,cs){
+    if(!mechHasAbi(s,'变身者'))return null;
+    var b=mechBuildBase(s,'特殊','变身复制流','imposter_anchor',
+      '变身者特性：出场自动变身为对手（能力值/属性/特性一并复制）——自身种族值与技能池基本不参与评价，配招只保命/辅助');
+    b.mv.main.push({id:144,kind:'tech',tag:'核心',why:['出场复制对手（变身者自动变身）','自身种族 48/48/48 无意义，战斗 = 对手的能力值']});
+    if(mechHasMv(s,512))b.mv.main.push({id:512,kind:'attack',tag:'补位',why:['无道具时威力翻倍（112.5）——围巾/披带消耗后生效']});
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身挡状态/先读']});
+    if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住防暴击']});
+    b.it=[['讲究围巾','变身者复制对手速度后超速原主抢先出手（Smogon 百变怪标准配置；围巾只提速不复制道具）'],
+      ['气势披带','48 基础 HP 换取挨下第一击不被秒（保命，非提速）']];
+    b.abi=[{n:'变身者',sc:99,why:['变身者特性：出场自动变身为对手——本流派的绝对核心（非它不玩此流）']}];
+    b.basis.push({k:'field',txt:'体系 无（复制对手，随敌应变）'});
+    b.basis.push({k:'mech',txt:'机制 变身者（imposter_anchor）——自身强度=对手强度，克制"看种族值选怪"的常规判断'});
+    return b;
+  },
+  /* 杂技：失去道具后威力翻倍（112.5）→ 消耗品联动 */
+  acrobatics_item:function(s,cs){
+    if(!mechHasMv(s,512))return null;
+    var b=mechBuildBase(s,coreSide(s)==='物理'?'物理':'特殊','杂技爆发流','acrobatics_item',
+      '杂技在**无道具位**时威力翻倍（112.5 基准）——用消耗品（宝石/场地种子）起手爆发后自动进入无道具状态，杂技全程高威');
+    b.mv.main.push({id:512,kind:'attack',tag:'核心',why:['无道具时威力翻倍（112.5）','消耗品用尽后自动触发']});
+    var extra=bestStabAtk(s,b.side,null);
+    if(extra)b.mv.main.push(extra);
+    var cov=bestCoverAtk(s,b.side);
+    if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身保血量/控节奏']});
+    b.it=[['飞行宝石','本发 1.5 倍后消耗 → 杂技立即满威力（组合考古：bulbapedia Acrobat）']];
+    var seeds=[328,329,330,331];seeds.forEach(function(i){var it=itemById(i);if(it)b.it.push([it[2]||it[1],'场地种子：场地+1 防后消耗 → 杂技翻倍（一次性）'])});
+    b.it.push(['气势披带','吃一击后消耗 → 杂技翻倍 + 保命']);
+    b.basis.push({k:'mech',txt:'机制 杂技（acrobatics_item）——道具位=引爆器，消耗即增伤'});
+    return b;
+  },
+  /* 扑击：按物防结算 + 铁壁转化 */
+  body_press_def:function(s,cs){
+    if(!mechHasMv(s,704))return null;
+    var b=mechBuildBase(s,'物理','扑击铁壁流','body_press_def',
+      '扑击按**物防**结算威力——铁壁 +2 级物防直接翻档输出，兼顾耐久与力度');
+    b.mv.main.push({id:704,kind:'attack',tag:'核心',why:['按物防结算（种族防高则力度高）','铁壁翻防后威力同步翻档']});
+    if(mechHasMv(s,334))b.mv.main.push({id:334,kind:'boost',tag:'强化',why:['+2 物防 → 扑击威力与耐久同升']});
+    var rec=bestRecMv(s);if(rec)b.mv.main.push(rec);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身挡先制/状态']});
+    b.it=[['防岩果','保铁壁回合（被克制一击后物防 +1，扑击再升档）'],['剩饭','铁壁站场续航']];
+    b.basis.push({k:'mech',txt:'机制 扑击（body_press_def）——物防双倍收益：耐久+输出'});
+    return b;
+  },
+  /* 陀螺球：速度越低威力越高 + 诅咒降速强化 */
+  gyro_ball_speed:function(s,cs){
+    if(!mechHasMv(s,360))return null;
+    var b=mechBuildBase(s,'物理','陀螺球重压流','gyro_ball_speed',
+      '陀螺球按对方速度 / 我方速度结算（越慢越重）——诅咒每次降 1 速、拉高攻防，陀螺球越打越重');
+    b.mv.main.push({id:360,kind:'attack',tag:'核心',why:['速度差结算：我方越慢威力越高','低速精灵（≤50 速）收益最大']});
+    if(mechHasMv(s,174))b.mv.main.push({id:174,kind:'boost',tag:'强化',why:['每层 -1 速 → 陀螺球升档；同时 +攻防']});
+    var rec=bestRecMv(s);if(rec)b.mv.main.push(rec);
+    b.it=[['剩饭','低速站场续航'],['防岩果','防被克制一击']];
+    b.basis.push({k:'mech',txt:'机制 陀螺球（gyro_ball_speed）——慢即是重，诅咒双修'});
+    return b;
+  },
+  /* 欺诈：按对方物攻结算 → 反制物攻手 */
+  foul_play_atk:function(s,cs){
+    if(!mechHasMv(s,492))return null;
+    var b=mechBuildBase(s,'物理','欺诈物反流','foul_play_atk',
+      '欺诈按**对方物攻**结算——我方物攻多低都无所谓，专打物攻手；配合磷火先封对面物攻');
+    b.mv.main.push({id:492,kind:'attack',tag:'核心',why:['按对方物攻结算（我方攻低无碍）','反制物攻手核心输出']});
+    if(mechHasMv(s,261))b.mv.main.push({id:261,kind:'tech',tag:'封锁',why:['先手磷火：对面物攻减半 + 灼伤消耗']});
+    if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住防强化手爆发']});
+    b.it=[['剩饭','站场消耗续航'],['防岩果','保磷火回合']];
+    b.basis.push({k:'mech',txt:'机制 欺诈（foul_play_atk）——以彼之攻，攻彼之身；物攻越高越怕'});
+    return b;
+  },
+  /* 魔法防守：反作用招白嫖 + 生命宝珠无代价 */
+  magic_guard_survival:function(s,cs){
+    if(!mechHasAbi(s,'魔法防守'))return null;
+    var b=mechBuildBase(s,coreSide(s),'魔法防守炮台','magic_guard_survival',
+      '魔法防守免疫**反作用伤害**——生命宝珠 1.3 倍增伤无代价白嫖，反作用高威招（过热/舍身撞等）随便带');
+    var hot=bestStabAtk(s,coreSide(s),null);if(hot)b.mv.main.push(hot);
+    var cov=bestCoverAtk(s,coreSide(s));if(cov)b.mv.main.push(cov);
+    b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：魔法防守下替身不怕任何反作用/毒/烧伤']});
+    if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住']});
+    b.it=[['生命宝珠','1.3 倍增伤，反作用被魔法防守抵消（组合考古：Smogon Magic Guard 标准）']];
+    b.basis.push({k:'mech',txt:'机制 魔法防守（magic_guard_survival）——反作用免疫，宝珠=白嫖增伤'});
+    return b;
+  }
+};
+function mechBuildsOf(s){
+  var out=[];
+  if(!mechOn()||!s)return out;
+  /* v4.19b：枚举**全部机制条目**（不依赖 combo cond ok——cond 是"增强组合"前提，机制招/特性本身可学即可出流），
+     判定统一交给 MECH_BUILD 内部（mechHasMv/mechHasAbi），每种机制最多 1 条 */
+  var seen={};
+  mechAll().forEach(function(mc){
+    var rw=mc&&mc.rewrite;if(!rw||!MECH_BUILD[rw]||seen[rw])return;seen[rw]=1;
+    var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
+    if(b)out.push(b);
+  });
+  return out;
+}
 /* UI：机制徽标 / 机制解读区块（就地展开、无弹窗遮挡） */
 function mechChip(zh){return '<span class="badge badge-mech">机制解读：'+esc(zh)+'</span>'}
 function _mechZs(h){var zs=[];h.forEach(function(x){var z=mechRwZh(x.rewrite);if(zs.indexOf(z)<0)zs.push(z)});return zs.join('/')}
@@ -5263,6 +5412,12 @@ function deriveBuilds(s,team){
     out.push(b);
   });
   out.breakingRoute=route;
+  /* v4.19 机制驱动流派：组合联想器 ok 的机制组合 → 机制流派卡，插到流派列表最前
+     （变身者/杂技/扑击/陀螺球/欺诈/魔法防守——让"特殊性"直接进入推荐，而非只停留在详情页机制解读） */
+  try{
+    var _mechBs=mechBuildsOf(s);
+    for(var _mi=_mechBs.length-1;_mi>=0;_mi--)out.unshift(_mechBs[_mi]);
+  }catch(e){}
   /* v4.14 单玩法一致性：同侧且配招前 3 槽完全相同的流派视为同一玩法 → 只保留评分最高的一条
      （妙蛙花「晴强化清场」与「晴增伤清场」配招重合：强化清场为上位，评分高者胜出，不再并列两条近同卡）
      评分取自 deriveBuilds 的 sc（cand 已按 sc 降序生成，out 顺序即分序；此处仍显式比较 b.score 稳妥） */
