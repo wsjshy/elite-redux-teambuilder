@@ -5929,19 +5929,24 @@ function findTeammates(s,side,roleTag){
   });
   var top6=fin2.slice(0,6);
   try{top6.pool=fin2.length}catch(e){}
-  /* v4.21 队友质量修复（用户：推荐不能"只攻不防/全是天气手"）：
-     ① 排序改为**综合分优先**（score 已含 联防免疫/抵抗+3/+2、补盲+2、体系+5/+4、功能回复/钉子+2、
-        侧向联防+2、同弱点惩罚、威吓……），fit（体系契合）降为次级排序键——天气手不再霸占主推；
-     ② 主推 3 只按**角色多样性**挑选：天气手最多 1 只，其余按综合分从高到低补不同角色
-        （钉子/回复/轮转/盾/状态/输出）——联动、进攻补盲、防守联防都被纳入，而非 3 个同质开晴手 */
+  /* v4.22 主推多样性（软性，取代 v4.21 硬限制）：
+     用户：不要定死任何规矩——多个天气手（双晴续晴/天气覆盖/场地+天气双开）有真实战略价值，不能一棍子打死。
+     ⇒ 角色互补改为**加分倾向**而非剔除：候选每带一个「相对已选主推的新角色」给 +12 倾向分；
+       同角色但综合分明显更高的精灵依然入选（双天气手可并存）——分数说了算，多样性只做软化排序。 */
   fin2.sort(function(a,b){return (b.score-a.score)||(b.fit-a.fit)});
-  var mainPicks=[],roleUsed={},wxDone=false;
-  for(var _mi=0;_mi<fin2.length&&mainPicks.length<3;_mi++){
-    var _r=fin2[_mi],_roles=mateRoleOf(_r.s,wxSys),_isWx=_roles.indexOf('天气手')>-1;
-    if(_isWx&&wxDone)continue; /* 已有天气手 → 跳过第二个开晴的 */
-    var _fresh=_roles.filter(function(x){return !roleUsed[x]});
-    if(_fresh.length){roleUsed[_fresh[0]]=1;if(_isWx)wxDone=true;mainPicks.push(_r)}
-    else if(mainPicks.length<2){mainPicks.push(_r)} /* 兜底：角色用尽仍补位 */
+  var mainPicks=[],roleUsed={};
+  while(mainPicks.length<3){
+    var _best=null,_bestEff=-1e9;
+    for(var _mi=0;_mi<fin2.length;_mi++){
+      var _r=fin2[_mi];if(mainPicks.indexOf(_r)>-1)continue;
+      var _roles=mateRoleOf(_r.s,wxSys),_fresh=0;
+      _roles.forEach(function(x){if(!roleUsed[x])_fresh++});
+      var _eff=_r.score+_fresh*12; /* 新角色倾向 +12/个；不硬剔除 */
+      if(_eff>_bestEff){_bestEff=_eff;_best=_r}
+    }
+    if(!_best)break;
+    mainPicks.push(_best);
+    mateRoleOf(_best.s,wxSys).forEach(function(x){roleUsed[x]=1});
   }
   try{top6.main=mainPicks}catch(e){}
   return top6;
@@ -7791,7 +7796,7 @@ function renderCore(s){
     mainMates.forEach(function(r){if(r&&r.s)seenId[String(r.s.id)]=1});
     tms.slice(3).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     recs.forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
-    if(mainMates.length)html+='<div class="dim">主推（按本流派契合排序）</div><div class="mateline">'+mainMates.map(function(r){return mateCard(r,pool,true)}).join('')+'</div>';
+    if(mainMates.length)html+='<div class="dim">主推（综合契合 + 角色互补排序；同角色高分不硬排除）</div><div class="mateline">'+mainMates.map(function(r){return mateCard(r,pool,true)}).join('')+'</div>';
     else html+='<div class="dim">该流派暂无高匹配队友</div>';
     if(altMates.length)html+='<div class="dim" style="margin-top:4px">备选（体系补盲 / 整体联防，已去重；需求驱动完整推导见「引擎视角」）</div><div class="mategrid">'+altMates.map(function(r){return mateCard(r,pool,false)}).join('')+'</div>';
     /* v4.12 ② 队友先验（Smogon，软提示）：先验队友映射 ER 物种 → 池内/全库分类；开关关 → 空串（零影响） */
