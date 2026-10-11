@@ -6087,6 +6087,10 @@ var MATE_ROLE_PRIO={
   '辅助':{状态:13,钉子:11,回复:11,轮转:9,盾:7,天气手:5,输出:1},
   '输出+':{轮转:11,状态:8,回复:8,钉子:7,天气手:7,盾:7,输出:2}
 };
+/* v4.29 组合契合分换算（全局，findTeammates 与 buildTeamByNeeds 共用）：
+   衰减软加分：首条命中 +2、额外每条 +1、封顶 +4 —— 防「某两只强绑定」：
+   命中多条不线性叠加放大，只做同角色/同需求择优的软偏好。 */
+function comboScoreOf(hits){return hits?(2+Math.min(2,hits-1)):0}
 function findTeammates(s,side,roleTag){
   side=side||coreSide(s);roleTag=roleTag||'输出';
   var weak=coreWeak(s),holes=coverHoles(s),sys=coreSys(s),learn=learnOf(s);
@@ -6187,9 +6191,8 @@ function findTeammates(s,side,roleTag){
   var _prio=MATE_ROLE_PRIO[roleTag]||MATE_ROLE_PRIO['输出'];
   var byRole={},mainPicks=[],takenIdx={};
   /* v4.28 组合契合分：每轮从「有空角色」的候选中选 综合分+组合分 最高者（动态贪心）。
-     组合分 = 候选入队后与 核心+已定队友 的临时组合命中数 × COMBO_SCORE（软加分：影响同角色择优、
-     让主推队伍「为组合而组」，不破坏角色骨架；角色全占用者仍留作同定位候选）。 */
-  var COMBO_SCORE=3;
+     组合分 = 候选入队后与 核心+已定队友 的临时组合命中数 → comboScoreOf（衰减软加分：首条+2、额外
+     每条+1、封顶+4 —— 防「某两只强绑定」：命中多条不线性叠加放大，只做同角色择优的软偏好）。 */
   while(mainPicks.length<6){
     var _best=null,_bestVal=-1e9;
     for(var _mi=0;_mi<fin2.length&&_mi<80;_mi++){
@@ -6203,7 +6206,7 @@ function findTeammates(s,side,roleTag){
         var _tm=[{s:s,core:1}].concat(mainPicks.map(function(p){return {s:p.s}}), [{s:_r.s}]);
         _cg=scanCombos(_tm).length;
       }catch(ecg){_cg=0}
-      var _val=_r.score+_cg*COMBO_SCORE;
+      var _val=_r.score+comboScoreOf(_cg);
       if(_val>_bestVal){_bestVal=_val;_best={r:_r,mi:_mi,free:_free,cg:_cg}}
     }
     if(!_best)break;
@@ -7315,6 +7318,18 @@ function buildTeamByNeeds(core,opts){
       need.status='unmatched';need.note='全图鉴无正向候选';continue;
     }
     var pick=pool2[0];
+    /* v4.29 组合契合（队伍构建接入）：同需求候选按「综合分 + 与已定队伍组合命中」择优（软加分，
+       防强绑衰减：首条+2/额外+1/封顶+4）。不影响需求闭合与多功能申报，仅重排同池择优顺序。 */
+    try{
+      var _tmB=[{s:core,core:true}].concat(team.map(function(m){return {s:m.s}}));
+      pool2.forEach(function(pc){
+        var _hits=scanCombos(_tmB.concat([{s:pc.s}])).length;
+        try{pc.comboGain=_hits}catch(ecb){}
+        pc.score=(pc.score||0)+comboScoreOf(_hits);
+      });
+      pool2.sort(function(a,b){return (b.score-a.score)||((b.base||0)-(a.base||0))});
+      pick=pool2[0];
+    }catch(ecb2){}
     /* 多功能加分申报（R07-27）：该候选同时能满足的其它 open 需求 → 一并置 satisfied */
     var met=[];
     open.forEach(function(nd){
