@@ -5391,7 +5391,17 @@ function deriveBuilds(s,team){
     b.name=nm;b.side=side;b.roleTag=roleTag;
     var basis=[];
     if(p.atk.powBest)basis.push({k:'output',txt:'本系最高 '+(side==='特殊'?(p.atk.sp?MV[p.atk.sp.id][1]+'('+p.atk.sp.pow+')':''):(p.atk.ph?MV[p.atk.ph.id][1]+'('+p.atk.ph.pow+')':''))+'　力度 '+p.power});
-    if(p.field.length)basis.push({k:'field',txt:'体系 '+p.field.join('/')+(p.setter?'（自身设置手）':'（队友提供窗口）')});
+    if(p.field.length){
+      /* v4.18：体系叙述跟随**推荐特性**（一个玩法一个体系）——推荐特性归属体系 = 本流派窗口；
+         另一体系降为「备选特性转流」提示（如向日葵怪推荐叶绿素=晴，青草场地仅提示，不再并列） */
+      var _ab0=b.abi&&b.abi[0]?b.abi[0].n:'';
+      var _absys=_ab0?(abiSysOf(_ab0)||abiSetOf(_ab0)||''):'';
+      var _fld=p.field.filter(function(x){return x===_absys});
+      var _oth=p.field.filter(function(x){return x!==_absys});
+      var _ft='体系 '+(_fld.length?_fld.join('/'):p.field.join('/'))+(p.setter?'（自身设置手）':'（队友提供窗口）');
+      if(_oth.length&&_fld.length)_ft+='；备选特性转「'+_oth.join('/')+'」流';
+      basis.push({k:'field',txt:_ft});
+    }
     if(p.hasBoost&&(roleTag==='强化'||c.key==='speed'))basis.push({k:'boost',txt:'强化路径：'+(p.fn.boost?'可学强化招（攻/特攻双倍型优先）':'无')});
     if(c.key==='tr')basis.push({k:'speed',txt:'速度 '+p.du.spd+' 低（空间内先手）'});
     if(c.key==='pivot')basis.push({k:'pivot',txt:'轮转招（急速折返/伏特替换）'});
@@ -5474,9 +5484,11 @@ function deriveBuilds(s,team){
   /* v4.14 单玩法一致性：同侧且配招前 3 槽完全相同的流派视为同一玩法 → 只保留评分最高的一条
      （妙蛙花「晴强化清场」与「晴增伤清场」配招重合：强化清场为上位，评分高者胜出，不再并列两条近同卡）
      评分取自 deriveBuilds 的 sc（cand 已按 sc 降序生成，out 顺序即分序；此处仍显式比较 b.score 稳妥） */
+  /* v4.18：去重 key 去掉 side——配招前 3 槽完全相同即同一玩法（双刀侧若无物理招进槽 = 与单侧玩法同一套配置，
+     不再因「特殊 vs 双刀」标注不同而并列两条近同卡；真双刀精灵的双刀流派配招含物理招 → key 自然不同，不受影响） */
   var _seenM={},_ded=[];
   out.forEach(function(bd){
-    var _k=bd.side+'|'+(bd.mv.main||[]).slice(0,3).map(function(sl){return sl.id}).join(',');
+    var _k=(bd.mv.main||[]).slice(0,3).map(function(sl){return sl.id}).join(',');
     if(_seenM[_k]){
       if((bd.score||0)>(_seenM[_k].score||0)){
         var _ix=_ded.indexOf(_seenM[_k]);
