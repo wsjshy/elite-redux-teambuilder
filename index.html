@@ -4812,7 +4812,8 @@ function itemApplies(zh,s,p,tg,effSys){
   if(zh==='黑色污泥')return s.t1==='毒'||s.t2==='毒';
   if(zh==='剧毒珠'||zh==='剧毒宝珠'||zh==='火焰宝珠')return abiMentions(s,/中毒时|灼伤时|异常状态时|陷入异常/);   /* 毒疗/毅力类协同（启发式，已登记） */
   if(/岩石$/.test(zh)&&WX_ROCK[effSys||tg.sys0]!==zh)return false; /* 天气岩石：按**队伍体系**（ctx.sys，v433-2）或本物种窗口判定 */
-  if(zh==='光之黏土'||zh==='地形延长器')return tg.sys.some(itemIsExtendableTerrain);
+  if(zh==='光之黏土')return learnOf(s).some(function(x){return x===113||x===115||x===657});   /* v4.17：光之黏土只延长墙（光墙/反射壁/极光幕）——仅真开墙者适用 */
+  if(zh==='地形延长器')return tg.sys.some(itemIsExtendableTerrain);
   if(/种子$/.test(zh)){var need={'电气种子':'电场','青草种子':'青草场地','薄雾种子':'薄雾场地','精神种子':'精神场地'}[zh];return tg.sys.indexOf(need)>-1}
   if(zh==='讲究头带')return p.side!=='特殊';
   if(zh==='讲究眼镜')return p.side!=='物理';
@@ -4854,6 +4855,7 @@ function itemScored(s,side,tag,ctx){
   var setter=isSetterAny(s);
   var windowRole=(tag==='天气'||tag==='场地');   /* 窗口类道具的职责角色：只有这两类角色在"经营窗口" */
   var scarfRedundant=!tg.outsped;                /* 已比环境中位速度快 → 围巾收益减半（对位驱动） */
+  var learn=learnOf(s),WALL_IDS=[113,115,657];   /* 光墙/反射壁/极光幕 —— v4.17：光之黏土只对"真开墙"者加分 */
   itemCandSet(s,tg).forEach(function(c,i){
     if(!itemApplies(c.zh,s,p,tg,effSys))return;
     var ax={burst:c.ax.burst,longevity:c.ax.longevity,punish:c.ax.punish,tech:c.ax.tech},sc=0,ps=[],beats=[];
@@ -4884,7 +4886,7 @@ function itemScored(s,side,tag,ctx){
     if(hazAct&&c.zh==='厚底靴'&&tg.hazWeak){sc+=0.60*Math.min(1,(d.longevity+d.tech)/1.6);ps.push('P4');beats.push('钉子环境：入场不掉血')}
     if(windowRole&&WX_ROCK[effSys]&&c.zh===WX_ROCK[effSys]){sc+=0.70;ps.push('P4');
       beats.push(effSys+'天气窗口延长至 '+WCONF.rockTurnsAbility+' 回合（8→12，考古实证）'+(effSys!==tg.sys0?'；按队伍体系取岩石（窗口由队友提供）':''))}
-    if(windowRole&&c.zh==='光之黏土'&&tg.sys.some(itemIsExtendableTerrain)){sc+=0.60;ps.push('P4');beats.push('场地/墙回合延长（考古口径 12）')}
+    if(windowRole&&c.zh==='光之黏土'&&learn.some(function(x){return WALL_IDS.indexOf(x)>-1})){sc+=0.60;ps.push('P4');beats.push('光墙/反射壁/极光幕回合延长（考古口径 12）——只延长墙，不延长天气/场地；需真开墙者')}
     if(windowRole&&c.zh==='地形延长器'){sc+=0.40;ps.push('P4');beats.push('场地延长至 '+WCONF.terrainExtenderTurns+' 回合（考古实证）')}
     if(c.zh==='防尘护目镜'&&(tg.sys.indexOf('沙')>-1||tg.sys.indexOf('雪')>-1)){sc+=0.30;ps.push('P4')}
     /* P5 ER 协同 */
@@ -4977,7 +4979,13 @@ function mkBuild(s,side,name,spBest,phBest,roleTagEx,itemTagEx,ctx){
     (mv.main.some(function(x){return FUNC_MV.boost.indexOf(x.id)>-1})?'自带强化轴；':'')+
     (side!=='双刀'?(side==='物理'?'物理输出向':'特攻输出向'):'功能/耐久向');
   /* v4.3.3：道具角色可与招式角色分离（如「天气手槽」招式按输出侧走、道具走天气岩石） */
-  return {name:name,side:side,roleTag:roleTag,itemTag:itemTagEx||roleTag,mv:mv,nat:buildNature(s,side,roleTag),it:buildItem(s,side,itemTagEx||roleTag,ctx),abi:pickAbiFor(s,side,roleTag),desc:desc};
+  /* v4.17：光之黏土只在"推荐配招真带墙（光墙113/反射壁115/极光幕657）或特性自动开墙"时保留；
+     无墙时光之黏土是废道具（只延长墙，不延长天气/场地）——从道具推荐中移除（修正"没带双墙却推光之黏土"） */
+  var _it=buildItem(s,side,itemTagEx||roleTag,ctx);
+  var _wallMv=mv.main.some(function(x){return x.id===113||x.id===115||x.id===657});
+  var _wallAbi=abiMentions(s,/光墙|反射壁|极光幕/);
+  if(!(_wallMv||_wallAbi))_it=_it.filter(function(e){return e[0]!=='光之黏土'});
+  return {name:name,side:side,roleTag:roleTag,itemTag:itemTagEx||roleTag,mv:mv,nat:buildNature(s,side,roleTag),it:_it,abi:pickAbiFor(s,side,roleTag),desc:desc};
 }
 /* ============ v4.3：战术流派动态推导（07 §4.6；取代 v4.2 的 genBuilds 固定枚举） ============
    三条红线（07 §4.6.0）：① 命名不得用物特二分（禁「物攻队/特攻队/双刀队」作流派名）
