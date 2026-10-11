@@ -4371,8 +4371,8 @@ function bestRecMv(s){
   });
   return best;
 }
-function mechBuildBase(s,side,name,rw,desc){
-  var b={name:name,side:side||coreSide(s),roleTag:'输出',itemTag:'机制',mv:{main:[],funcs:[]},
+function mechBuildBase(s,side,name,rw,desc,roleTag){
+  var b={name:name,side:side||coreSide(s),roleTag:roleTag||'输出',itemTag:'机制',mv:{main:[],funcs:[]},
     nat:null,it:[],abi:[],desc:desc||'',basis:[],ev:null,score:99,breakingRoute:'机制',mechRw:rw};
   try{b.nat=buildNature(s,b.side,b.roleTag)}catch(e){b.nat=null}
   try{b.ev=buildEvs(s,b.side,b.roleTag,name)}catch(e){b.ev=null}
@@ -4464,6 +4464,127 @@ var MECH_BUILD={
     b.it=[['生命宝珠','1.3 倍增伤，反作用被魔法防守抵消（组合考古：Smogon Magic Guard 标准）']];
     b.basis.push({k:'mech',txt:'机制 魔法防守（magic_guard_survival）——反作用免疫，宝珠=白嫖增伤'});
     return b;
+  },
+  /* 毒疗：中毒状态下每回合回复 1/8（异常状态收益反转）→ 剧毒珠站场消耗 */
+  toxic_heal_item:function(s,cs){
+    if(!mechAbiRwHits(s,'toxic_heal_item'))return null;
+    var b=mechBuildBase(s,'特殊','毒疗站场流','toxic_heal_item',
+      '毒疗把「中毒」从负面反转成每回合 1/8 回复——带剧毒珠自中毒，替身/毒招/钉子消耗，几乎不掉血');
+    b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：中毒消耗对手（毒疗只回复自身，不影响输出）']});
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：毒疗回 1/8 ≈ 每回合白嫖一个替身']});
+    var cov=bestCoverAtk(s,'特殊');if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住拖毒疗回合']});
+    b.it=[['剧毒珠','自中毒 → 毒疗每回合回 1/8（异常收益反转，Smogon 毒疗标准配置）']];
+    b.basis.push({k:'mech',txt:'机制 毒疗（toxic_heal_item）——中毒=回复源，替身每回合白嫖'});
+    return b;
+  },
+  /* 轻装：消耗道具后速度翻倍 → 消耗品（种子/宝石/披带）速攻 */
+  unburden_item:function(s,cs){
+    if(!mechAbiRwHits(s,'unburden_item'))return null;
+    var b=mechBuildBase(s,coreSide(s)==='物理'?'物理':'特殊','轻装速攻流','unburden_item',
+      '轻装在道具消耗后速度翻倍——带一次性消耗品（场地种子/属性宝石/披带），第一回合吃完即超速全场');
+    var extra=bestStabAtk(s,b.side,null);if(extra)b.mv.main.push(extra);
+    if(mechHasMv(s,512))b.mv.main.push({id:512,kind:'attack',tag:'联动',why:['杂技：消耗品用尽=无道具 → 杂技 112.5 + 轻装翻速，双机制叠加']});
+    var cov=bestCoverAtk(s,b.side);if(cov)b.mv.main.push(cov);
+    b.it=[['场地种子','吃场地 +1 级防/速后消耗 → 轻装翻速（种子与轻装天然联动）'],['飞行宝石','本发 1.5 倍后消耗 → 轻装翻速']];
+    b.basis.push({k:'mech',txt:'机制 轻装（unburden_item）——消耗品=速度开关，杂技双收益'});
+    return b;
+  },
+  /* 全力攻击：追加效果取消换 1.3 倍威力；带生命宝珠无反作用 */
+  sheer_force_boost:function(s,cs){
+    if(!mechAbiRwHits(s,'sheer_force_boost'))return null;
+    var b=mechBuildBase(s,coreSide(s),'全力攻击炮台','sheer_force_boost',
+      '全力攻击：带追加效果的招威力 1.3 倍（追加取消）——配生命宝珠时 1.3 覆盖且**反作用取消**，纯白嫖增伤');
+    var hot=bestStabAtk(s,b.side,null);if(hot)b.mv.main.push(hot);
+    var cov=bestCoverAtk(s,b.side);if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身保血']});
+    b.it=[['生命宝珠','全力攻击+宝珠：1.3 倍无反作用（Sheer Force 覆盖宝珠加成并抵消反伤——Bulbapedia）']];
+    b.basis.push({k:'mech',txt:'机制 全力攻击（sheer_force_boost）——追加换威力，宝珠反作用被吞'});
+    return b;
+  },
+  /* 胆量：普通/格斗招可命中幽灵系 → 本系打击面闭环 */
+  scrappy_ghost:function(s,cs){
+    if(!mechAbiRwHits(s,'scrappy_ghost'))return null;
+    var b=mechBuildBase(s,coreSide(s),'胆量无盲流','scrappy_ghost',
+      '胆量让普通/格斗招能命中幽灵系——本系（普/格）打击面无死角，不需要特意补幽灵盲');
+    var hot=bestStabAtk(s,b.side,null);if(hot)b.mv.main.push(hot);
+    var cov=bestCoverAtk(s,b.side);if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    b.it=[['讲究头带','本系力度最大化（本流不吃追加效果，无冲突）']];
+    b.basis.push({k:'mech',txt:'机制 胆量（scrappy_ghost）——普/格打幽灵，本系无盲'});
+    return b;
+  },
+  /* 恶作剧之心：变化招先制 +1 → 先手控场（钉子/状态/强化） */
+  prankster_priority:function(s,cs){
+    if(!mechAbiRwHits(s,'prankster_priority'))return null;
+    var b=mechBuildBase(s,'辅助','恶作剧之心控场','prankster_priority','恶作剧之心让变化招**先制 +1**——先手撒钉/放状态/催眠，速度种族毫无意义','辅助');
+    if(mechHasMv(s,470))b.mv.main.push({id:470,kind:'tech',tag:'钉子',why:['隐形岩：先制撒钉（恶作剧之心）']});
+    else if(mechHasMv(s,191))b.mv.main.push({id:191,kind:'tech',tag:'钉子',why:['撒菱：先制铺钉']});
+    if(mechHasMv(s,92))b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：先手挂状态']});
+    if(mechHasMv(s,269))b.mv.main.push({id:269,kind:'tech',tag:'封锁',why:['挑衅：先手封对面变化招']});
+    var cov=bestCoverAtk(s,'特殊');if(cov)b.mv.main.push(cov);
+    b.it=[['厚底靴','换人不怕钉（轮转型辅助）'],['气势披带','脆皮辅助保命']];
+    b.basis.push({k:'mech',txt:'机制 恶作剧之心（prankster_priority）——变化招先制，速度=废案'});
+    return b;
+  },
+  /* 巨力：物攻 ×2 → 纯物理炮台（种族物攻可低） */
+  huge_power_phys:function(s,cs){
+    if(!mechAbiRwHits(s,'huge_power_phys'))return null;
+    var b=mechBuildBase(s,'物理','巨力物攻炮台','huge_power_phys',
+      '巨力（大力士）物攻 ×2——物攻种族 50 也当 100 用，物理本系配最暴力招即可');
+    var hot=bestStabAtk(s,'物理',null);if(hot)b.mv.main.push(hot);
+    var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    b.it=[['讲究头带','物攻 ×2 ×1.5 = 三倍增伤（巨力流标准配置）'],['生命宝珠','1.3 倍增伤（无追加招可用）']];
+    b.basis.push({k:'mech',txt:'机制 巨力（huge_power_phys）——物攻翻倍，力度=两倍种族'});
+    return b;
+  },
+  /* 水泡：水系威力 ×2 + 火伤减半 → 水系炮台 */
+  water_bubble_shell:function(s,cs){
+    if(!mechAbiRwHits(s,'water_bubble_shell'))return null;
+    var b=mechBuildBase(s,'特殊','水泡水系炮台','water_bubble_shell',
+      '水泡水系威力 ×2（且火伤减半）——本系水招 = 双倍威力的主力输出');
+    var hot=bestStabAtk(s,'特殊',null);if(hot)b.mv.main.push(hot);
+    var cov=bestCoverAtk(s,'特殊');if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    b.it=[['讲究眼镜','水系 2× 再叠 1.5，爆炸力度']];
+    b.basis.push({k:'mech',txt:'机制 水泡（water_bubble_shell）——水系 2 倍，本系即核心'});
+    return b;
+  },
+  /* 再生力：换人回 1/3 → 轮转手（UT/VS + 钉子/回复） */
+  regenerator_pivot:function(s,cs){
+    if(!mechAbiRwHits(s,'regenerator_pivot'))return null;
+    var b=mechBuildBase(s,'辅助','再生力轮转流','regenerator_pivot','再生力换人回 1/3——回合制轮转（UT/VS 蹭伤换人）全程白嫖回复，钉子/状态手的最佳底子','辅助');
+    if(mechHasMv(s,369))b.mv.main.push({id:369,kind:'attack',tag:'轮转',why:['蜻蜓回转：蹭伤换人 + 再生力回血']});
+    else if(mechHasMv(s,521))b.mv.main.push({id:521,kind:'attack',tag:'轮转',why:['急速折返：同上']});
+    if(mechHasMv(s,470))b.mv.main.push({id:470,kind:'tech',tag:'钉子',why:['隐形岩：轮转间隙铺钉']});
+    if(mechHasMv(s,92))b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：消耗']});
+    b.it=[['剩饭','站场+轮转双回复'],['凹凸头盔','物理接触伤害反伤（轮转手常吃物攻）']];
+    b.basis.push({k:'mech',txt:'机制 再生力（regenerator_pivot）——换人=回复，UT/VS 白嫖血'});
+    return b;
+  },
+  /* 属性免疫：引水/蓄水/引火/食草/避雷针 → 免疫位（联防 + 天气白嫖） */
+  type_immunity_absorb:function(s,cs){
+    if(!mechAbiRwHits(s,'type_immunity_absorb'))return null;
+    var b=mechBuildBase(s,'辅助','属性免疫联防位','type_immunity_absorb','引水/蓄水/引火/食草/避雷针：完全免疫对应属性（含多段伤害 0 伤）——天然后手联防位，配合回复招站桩','辅助');
+    var rec=bestRecMv(s);if(rec)b.mv.main.push(rec);
+    if(mechHasMv(s,92))b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：免疫换回合挂状态']});
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：免疫位站场']});
+    b.it=[['剩饭','站场续航'],['凸凸头盔','吃接触伤害反伤（联防位常被物攻点）']];
+    b.basis.push({k:'mech',txt:'机制 属性免疫（type_immunity_absorb）——0 伤免疫位，把对面对应输出手废掉'});
+    return b;
+  },
+  /* 硬撑：异常状态下威力翻倍（112）→ 剧毒珠/火焰珠自异常 */
+  facade_status:function(s,cs){
+    if(!mechHasMv(s,263))return null;
+    var b=mechBuildBase(s,'物理','硬撑异常爆发','facade_status',
+      '硬撑在中毒/灼伤/麻痹时威力翻倍（112）——自挂异常（剧毒珠/火焰珠），第一回合开始就是满威力');
+    b.mv.main.push({id:263,kind:'attack',tag:'核心',why:['异常状态下威力 112（翻倍）——首回合即可满威']});
+    var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    b.it=[['剧毒珠','回合开始自中毒 → 硬撑满威（无副作用）'],['火焰珠','灼伤自挂（注意：灼伤扣攻的精灵慎用）']];
+    b.basis.push({k:'mech',txt:'机制 硬撑（facade_status）——异常=武器，珠=点火开关'});
+    return b;
   }
 };
 function mechBuildsOf(s){
@@ -4475,6 +4596,8 @@ function mechBuildsOf(s){
   mechAll().forEach(function(mc){
     var rw=mc&&mc.rewrite;if(!rw||!MECH_BUILD[rw]||seen[rw])return;seen[rw]=1;
     var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
+    /* 配招空槽的机制流派不生成（如再生力流但全无 UT/VS/钉子/状态招）——空卡没有可玩性 */
+    if(b&&(!b.mv.main||!b.mv.main.length))b=null;
     if(b)out.push(b);
   });
   return out;
