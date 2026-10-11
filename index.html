@@ -5829,9 +5829,19 @@ function evioOk(s,sys,space,side){return !!evioAdv(s,sys,space,side)}
 function evioWhy(s,sys,space,side){var e=evioAdv(s,sys,space,side);return e?('进化奇石（非最终形态）—— '+e.why):''}
 /* v4.3.1/4.3.2：候选池准入 = 最终形态 或 奇石权衡通过形态（替代原「非最终形态一律排除」） */
 function poolOK(s){return isValidSp(s)&&(isFinalForm(s)||evioOk(s))}
+/* v4.21 队友角色标注（多样性主推用）：天气手/钉子/回复/轮转/盾/状态/输出 —— 保证主推 3 只不全是同一角色 */
+function mateRoleOf(t,wxSys){
+  var tl=learnOf(t),out=[];
+  if(wxSys&&wxSys.length&&wxSys.some(function(x){return isAbilSet(t,x)}))out.push('天气手');
+  if(hasAny(tl,FUNC_MV.hazard))out.push('钉子');
+  if(hasAny(tl,FUNC_MV.rec))out.push('回复');
+  if((t.abis||[]).concat(t.inns||[]).indexOf('再生力')>-1)out.push('轮转');
+  if(t.base[2]>=120||t.base[4]>=120)out.push('盾');
+  if(hasAny(tl,[92,269,87,30]))out.push('状态');
+  if(!out.length)out.push('输出');
+  return out;
+}
 function findTeammates(s,side,roleTag){
-  /* v4.x B⑤/⑥：队友推荐按流派区分 + 体系匹配 + 家族去重
-     side/roleTag 缺省时回落到核心自身判定（保持既有调用兼容） */
   side=side||coreSide(s);roleTag=roleTag||'输出';
   var weak=coreWeak(s),holes=coverHoles(s),sys=coreSys(s),learn=learnOf(s);
   var hasRec=hasAny(learn,FUNC_MV.rec),hasHaz=hasAny(learn,FUNC_MV.hazard),hasSpd=hasAny(learn,FUNC_MV.speed);
@@ -5919,6 +5929,21 @@ function findTeammates(s,side,roleTag){
   });
   var top6=fin2.slice(0,6);
   try{top6.pool=fin2.length}catch(e){}
+  /* v4.21 队友质量修复（用户：推荐不能"只攻不防/全是天气手"）：
+     ① 排序改为**综合分优先**（score 已含 联防免疫/抵抗+3/+2、补盲+2、体系+5/+4、功能回复/钉子+2、
+        侧向联防+2、同弱点惩罚、威吓……），fit（体系契合）降为次级排序键——天气手不再霸占主推；
+     ② 主推 3 只按**角色多样性**挑选：天气手最多 1 只，其余按综合分从高到低补不同角色
+        （钉子/回复/轮转/盾/状态/输出）——联动、进攻补盲、防守联防都被纳入，而非 3 个同质开晴手 */
+  fin2.sort(function(a,b){return (b.score-a.score)||(b.fit-a.fit)});
+  var mainPicks=[],roleUsed={},wxDone=false;
+  for(var _mi=0;_mi<fin2.length&&mainPicks.length<3;_mi++){
+    var _r=fin2[_mi],_roles=mateRoleOf(_r.s,wxSys),_isWx=_roles.indexOf('天气手')>-1;
+    if(_isWx&&wxDone)continue; /* 已有天气手 → 跳过第二个开晴的 */
+    var _fresh=_roles.filter(function(x){return !roleUsed[x]});
+    if(_fresh.length){roleUsed[_fresh[0]]=1;if(_isWx)wxDone=true;mainPicks.push(_r)}
+    else if(mainPicks.length<2){mainPicks.push(_r)} /* 兜底：角色用尽仍补位 */
+  }
+  try{top6.main=mainPicks}catch(e){}
   return top6;
 }
 /* D8：名称前缀（形态折叠键）—— '阿尔宙斯-毒' → '阿尔宙斯'；'雷电云-灵兽形态' → '雷电云' */
@@ -7762,7 +7787,7 @@ function renderCore(s){
     /* ⑧ 队友（主推 2–3 横滑 + 备选 3–5 网格；存档池投影「你拥有」标记） */
     html+='<div class="fld"><div class="fhd"><span class="fno">8</span>队友（主推 + 备选）</div>'+
       '<div class="dim">本流派队友（'+esc(bd.side)+'向 / '+esc(bd.roleTag||'')+' 优先，按流派侧向分流）</div>';
-    var mainMates=tms.slice(0,3),seenId={},altMates=[];
+    var mainMates=(tms.main&&tms.main.length)?tms.main:tms.slice(0,3),seenId={},altMates=[];
     mainMates.forEach(function(r){if(r&&r.s)seenId[String(r.s.id)]=1});
     tms.slice(3).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     recs.forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
