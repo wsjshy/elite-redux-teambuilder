@@ -723,12 +723,22 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   .anslots{grid-template-columns:repeat(2,minmax(0,1fr))}
   .evsegs{min-width:90px}
 }
+/* ===== v4.41：特性/招式反查的「形态筛选开关」+ 精灵图卡网格（纯展示层）===== */
+.lkfilter{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:6px 0 8px; font-size:12px; color:var(--sub)}
+.lkfilter label{display:inline-flex; align-items:center; gap:4px; white-space:nowrap; cursor:pointer;
+  border:1px solid var(--line); border-radius:8px; padding:3px 9px; background:var(--card); color:var(--text)}
+.lkfilter label:hover{border-color:var(--accent)}
+.lkfilter input[type=checkbox]{width:14px; height:14px; margin:0; accent-color:var(--accent)}
+.lkfilter .lkstat{color:var(--sub)}
+.lkcard .mcnm{white-space:normal}   /* 长名换行不截断（招式卡还带「学习方式」一行） */
+.mcx2{font-size:10px; font-weight:400; color:var(--sub); line-height:1.3}
+@media (max-width:768px){ .lkfilter label{min-height:44px; padding:6px 10px} }   /* 移动端触控目标 ≥44px */
 </style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.40</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.41</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -876,6 +886,12 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <section id="tab-abi" class="tab">
   <div class="bar">
     <input type="text" id="abiSearch" placeholder="搜索特性：中文 / 英文 / 描述关键词">
+  </div>
+  <!-- v4.41：持有者过滤开关（默认与核心配队全局开关同值：仅最终形态 / Mega 形态优先 = 开） -->
+  <div class="lkfilter" id="abiFilterBar">
+    <label><input type="checkbox" id="abiFiltFinal" checked onchange="abiFilterToggle()"> 仅最终形态</label>
+    <label><input type="checkbox" id="abiFiltMega" checked onchange="abiFilterToggle()"> Mega 形态优先（过滤可 Mega 的非 Mega）</label>
+    <span class="lkstat" id="abiFiltStat"></span>
   </div>
   <div id="abiResult"></div>
 </section>
@@ -2761,6 +2777,50 @@ function renderMv(){
   if(emptyTip)emptyTip.style.display=shown?'none':'block';
 }
 function closeMv(){$('mvDrawer').classList.remove('open')}
+/* ===== v4.41：招式反查「谁能学」= 精灵图卡网格（与特性反查持有者同款 .mxgrid/.mxc/.mcnm/.mcx）=====
+   · 图片优先：sprRaw(s.id) 精灵图 + 中文名 + 属性徽标；学习方式（升级 Lv / 教学）为卡内小字 + title 全文
+   · 开关：仅最终形态 / Mega 形态优先（本区块独立状态，默认与核心配队全局开关同值）；切换即时重渲染
+   · >60 只折叠提示；空态文案与计数保留（计数 = 过滤后的真实数量，口径同特性反查卡「N 只」）
+   · 命中语义沿用旧实现：s.lv（升级，取最高 Lv）或 s.tut（教学）二者命中其一即计入 */
+var _mvCur=null;
+function mvLearnersOf(m){
+  var out=[];
+  ERDATA.species.forEach(function(s){
+    if(!isValidSp(s))return;
+    if(!lkKeep(s,optMvFinal,optMvMega))return;
+    var lv=-1,isTut=false;
+    (s.lv||[]).forEach(function(p){if(p[1]===m[0])lv=p[0]});
+    if((s.tut||[]).indexOf(m[0])>-1)isTut=true;
+    if(lv>-1||isTut)out.push({s:s,lv:lv,tut:isTut});
+  });
+  return out;
+}
+function mvLookupRender(fromUI){
+  var m=_mvCur,box=$('mvLearners');if(!m||!box)return;
+  if(fromUI){   /* 仅由开关 onchange 读 UI（初始渲染走状态默认值，Node 打桩环境下也确定） */
+    var f=$('mvFiltFinal'),g=$('mvFiltMega');
+    if(f)optMvFinal=!!f.checked;
+    if(g)optMvMega=!!g.checked;
+  }
+  var list=mvLearnersOf(m),h='';
+  if(!list.length)h+='<div style="color:var(--sub)">该招式没有宝可梦可学（可能仅限特定形态/事件；也可能已被上方开关过滤）</div>';
+  else{
+    h+='<div class="mxgrid" style="max-height:320px;overflow:auto">';
+    list.slice(0,60).forEach(function(o){
+      var s=o.s,tp=s.t1+(s.t2&&s.t2!==s.t1?'·'+s.t2:'');
+      var way=(o.lv>-1?'Lv'+o.lv:'')+(o.tut?(o.lv>-1?'/':'')+'教学':'');
+      h+='<div class="mxc lkcard" data-sid="'+s.id+'" title="'+escq(s.zh+' #'+s.id+' '+s.t1+(s.t2&&s.t2!==s.t1?'/'+s.t2:'')+' · '+(o.lv>-1?'升级 Lv'+o.lv:'')+(o.tut?(o.lv>-1?' / ':'')+'教学':''))+'">'+
+        sprRaw(s.id)+'<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(tp)+'</div><div class="mcx2">'+esc(way)+'</div></div>';
+    });
+    h+='</div>';
+    if(list.length>60)h+='<div class="mini" style="color:var(--sub)">已显示前 60 只 · 共 '+list.length+' 只（可用上方开关收窄）</div>';
+  }
+  box.innerHTML=h;
+  Array.prototype.forEach.call(box.querySelectorAll('.mxc[data-sid]'),function(el){
+    el.onclick=function(){var s=speciesById(el.getAttribute('data-sid'));if(s){openSp(s);closeMv()}};
+  });
+  var c=$('mvLkCnt');if(c)c.textContent='共 '+list.length+' 只';
+}
 /* v4.x UI 定稿：招式详情改居中 modal → 遮罩点击关闭 */
 (function(){var d=$('mvDrawer');if(d)d.onclick=function(ev){if(ev.target===d)closeMv()}})();
 function openMv(m){
@@ -2782,24 +2842,13 @@ function openMv(m){
   if(mid===432)html+='<div style="margin:4px 0;font-size:12px">除钉范围：清双方钉子（已按游戏源码核对）· 墙仅对手侧 · 降闪避 1 级（用户确认，定稿）</div>';
   if(cst.tags.length)html+='<div style="margin:4px 0;font-size:12px"><b>代价标签：</b>'+cst.tags.map(function(x){return '<span class="badge badge-pend">'+esc(x)+'</span>'}).join(' ')+
     (cst.note?'<div style="font-size:11px;color:var(--sub)">'+esc(cst.note)+'</div>':'')+'</div>';
-  html+='<div class="sec"><h3>谁能学</h3><div id="mvLearners"></div></div>';
+  html+='<div class="sec"><h3>谁能学 <span style="font-weight:400;font-size:11px;color:var(--sub)" id="mvLkCnt"></span></h3>'+
+    '<div class="lkfilter"><label><input type="checkbox" id="mvFiltFinal"'+(optMvFinal?' checked':'')+' onchange="mvLookupRender(true)"> 仅最终形态</label>'+
+    '<label><input type="checkbox" id="mvFiltMega"'+(optMvMega?' checked':'')+' onchange="mvLookupRender(true)"> Mega 形态优先（过滤可 Mega 的非 Mega）</label></div>'+
+    '<div id="mvLearners"></div></div>';
   var _mvt=$('mvDrawerTitle'); if(_mvt)_mvt.textContent=String(m[1]||'招式详情'); /* v4.6-C：弹窗标题显示所选招式名 */
   $('mvDetail').innerHTML=html;
-  var box=$('mvLearners');
-  var cnt=0;
-  ERDATA.species.forEach(function(s){
-    var lv=-1,isTut=false;
-    s.lv.forEach(function(p){if(p[1]===m[0])lv=p[0]});
-    if(s.tut.indexOf(m[0])>-1)isTut=true;
-    if(lv>-1||isTut){
-      var c=document.createElement('div');c.className='card';c.style.marginBottom='6px';
-      c.innerHTML='<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+'</div>'+
-        '<div style="margin-top:3px;font-size:12px">'+(lv>-1?'升级 Lv'+lv+' · ':'')+(isTut?'教学':'')+'</div>';
-      c.onclick=function(){openSp(s);closeMv()};
-      box.appendChild(c);cnt++;
-    }
-  });
-  if(!cnt)box.innerHTML='<div style="color:var(--sub)">该招式没有宝可梦可学（可能仅限特定形态/事件）</div>';
+  _mvCur=m;mvLookupRender();   /* v4.41：谁能学 = 精灵图卡网格 + 形态筛选开关（渲染逻辑见 mvLookupRender） */
   $('mvDrawer').classList.add('open');
 }
 
@@ -3674,6 +3723,24 @@ function abiOwners(){
   });
   _abiOwners=o;return o;
 }
+/* ===== v4.41：反查持有者「形态筛选」——纯展示层过滤，不触碰引擎推荐（deriveBuilds / buildEvs / NM2ID / EV 写入）=====
+   · 两处各自独立开关：特性反查 abiFiltFinal/abiFiltMega、招式反查 mvFiltFinal/mvFiltMega；
+     默认与「核心配队」全局开关同值（optFinalOnly / optMegaOnly 默认 true —— 见 coreFinal/coreMega 的 checked）。
+   · 「仅最终形态」= isFinalForm(s)（ER CanEvolve 派生的 nonFinalER 判定）；
+     「Mega 形态优先」= hasMegaForm(s)（可 Mega 的非 Mega 形态；ER 可永久 Mega，故默认收窄到 Mega 形态本身）。
+   · 判定完全复用既有函数，不新增数据口径：过滤只影响列表呈现，不写回任何持久状态。 */
+var optAbiFinal=true,optAbiMega=true;   /* 特性反查持有者 */
+var optMvFinal=true,optMvMega=true;     /* 招式反查「谁能学」 */
+function lkKeep(s,onlyFinal,megaOnly){
+  if(!s)return false;
+  if(onlyFinal&&!isFinalForm(s))return false;   /* 非最终进化型 */
+  if(megaOnly&&hasMegaForm(s))return false;     /* 可 Mega 的非 Mega 形态 */
+  return true;
+}
+function lkFilter(list,onlyFinal,megaOnly){
+  if(!list)return [];
+  return list.filter(function(s){return lkKeep(s,onlyFinal,megaOnly)});
+}
 function abiOwnerCol(title,list){
   /* v4.x UI 定稿：持有者用「精灵图 + 中文名 + 属性徽标」紧凑卡片网格（图片优先、少文字），点卡片跳详情 */
   var h='<div><div style="font-weight:600;font-size:12px;margin-bottom:4px">'+esc(title)+' <b>'+list.length+'</b> 只</div>';
@@ -3681,7 +3748,7 @@ function abiOwnerCol(title,list){
   else{
     h+='<div class="mxgrid" style="max-height:260px;overflow:auto">';
     list.slice(0,60).forEach(function(s){
-      h+='<div class="mxc" data-sid="'+s.id+'" onclick="openSpById(\''+s.id+'\')" title="'+escq(s.zh+' #'+s.id+' '+s.t1+(s.t2&&s.t2!==s.t1?'/'+s.t2:''))+'">'+
+      h+='<div class="mxc lkcard" data-sid="'+s.id+'" onclick="openSpById(\''+s.id+'\')" title="'+escq(s.zh+' #'+s.id+' '+s.t1+(s.t2&&s.t2!==s.t1?'/'+s.t2:''))+'">'+
         sprRaw(s.id)+
         '<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(s.t1+(s.t2&&s.t2!==s.t1?'·'+s.t2:''))+'</div></div>';
     });
@@ -3690,10 +3757,22 @@ function abiOwnerCol(title,list){
   }
   return h+'</div>';
 }
+function abiFilterToggle(){   /* v4.41：开关切换 → 即时重渲染（展开态由 renderAbi 记住并恢复） */
+  var f=$('abiFiltFinal'),g=$('abiFiltMega');
+  if(f)optAbiFinal=!!f.checked;
+  if(g)optAbiMega=!!g.checked;
+  renderAbi();
+}
 function renderAbi(){
   var q=$('abiSearch').value.trim();
-  var box=$('abiResult');box.innerHTML='';
-  var cnt=0,own=abiOwners();
+  var box=$('abiResult');
+  var _open=[];   /* v4.41：先记住已展开的卡（按特性 id），重渲染后原样恢复——避免「一切开关就全收起」 */
+  if(box)Array.prototype.forEach.call(box.querySelectorAll('.abicard'),function(c){
+    var mn=c.querySelector('.abimain');
+    if(mn&&mn.style.display==='block')_open.push(''+((c.dataset&&c.dataset.abid)||''));
+  });
+  box.innerHTML='';
+  var cnt=0,_hidN=0,own=abiOwners();
   ERDATA.abilities.forEach(function(a){
     var zh=a[2]||'',en=a[1]||'',desc=abiDescZhOf(a[0]);
     if(a[0]==='0')return;
@@ -3702,7 +3781,10 @@ function renderAbi(){
     if(!fzAny(q,[a[0],zh,en,desc])&&!(q&&abiIdList(q).indexOf(''+a[0])>=0))return;
     if(cnt>=60)return;
     cnt++;
-    var grp=own[a[0]]||{ab:[],inn:[]};
+    /* v4.41：持有者列表按本区块开关过滤（标题徽标「可选 N / 天性 N」与两列列表同源，故数字随过滤变化） */
+    var _g0=own[a[0]]||{ab:[],inn:[]};
+    var grp={ab:lkFilter(_g0.ab,optAbiFinal,optAbiMega),inn:lkFilter(_g0.inn,optAbiFinal,optAbiMega)};
+    _hidN+=(_g0.ab.length-grp.ab.length)+(_g0.inn.length-grp.inn.length);
     var tl=[];
     try{tl=abiTagLines(a[0])}catch(e){tl=[];console.warn('abiTagLines('+a[0]+')',e)}
     var card=document.createElement('div');card.className='abicard';
@@ -3729,6 +3811,8 @@ function renderAbi(){
       if(t&&t.closest&&(t.closest('.abimain')||t.closest('button')))return;
       abiToggle(card);if(ev&&ev.stopPropagation)ev.stopPropagation();
     };
+    if(card.dataset)card.dataset.abid=''+a[0];   /* v4.41 修正 1：改用 dataset（verify_v1 打桩 DOM 无 setAttribute） */
+    if(_open.indexOf(''+a[0])>=0)abiToggle(card,true);   /* v4.41：恢复重渲染前的展开态 */
     card.querySelectorAll('.mxrow[data-sid]').forEach(function(el){
       el.onclick=function(){var s=speciesById(el.dataset.sid);if(s)openSp(s)};
     });
@@ -3744,6 +3828,9 @@ function renderAbi(){
     note.textContent='已显示前 60 个匹配，请细化关键词';
     box.appendChild(note);
   }
+  /* v4.41：开关条就地统计（匹配卡数 + 被开关隐藏的持有者条目数） */
+  var _st=$('abiFiltStat');
+  if(_st)_st.textContent='匹配 '+cnt+' 个特性 · 开关隐藏 '+_hidN+' 个持有者条目';
 }
 /* F⑪：特性详情卡展开/收起（返回展开态；force=true 展开 / false 收起） */
 function abiToggle(card,force){
@@ -10566,7 +10653,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.40';
+var ER_ENGINE_VER='v4.41';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -11480,7 +11567,7 @@ import sys as _sys
 import tempfile as _tf
 import subprocess as _sp
 import shutil as _sh2
-_GUARD_JS = r'''/* ER 配招助手 v4.40 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
+_GUARD_JS = r'''/* ER 配招助手 v4.41 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
 'use strict';
 var fs = require('fs'), vm = require('vm'), path = require('path');
 var INDEX = process.argv[2], DATA = process.argv[3];
@@ -11559,14 +11646,14 @@ console.log('  S5m 回收利用(278) 配一次性消耗件：受检='+r.checkedM
 console.log('  S5n 杂技(512) 配一次性消耗件：受检='+r.checkedN+'  违例='+r.viol.m6);
 ['a','b1','b2','m5','m6'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
-if(r.total>0||r.errors>0){console.error('[FAIL] v4.40 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
-console.log('[OK] v4.40 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0（全量 '+r.builds+' 流派）');
+if(r.total>0||r.errors>0){console.error('[FAIL] v4.41 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
+console.log('[OK] v4.41 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0（全量 '+r.builds+' 流派）');
 '''
 _gate_path = os.path.join(_tf.gettempdir(), 'er_guard_check_%d.cjs' % os.getpid())
 with open(_gate_path, 'w', encoding='utf-8') as _gf:
     _gf.write(_GUARD_JS)
 _node = _sh2.which('node') or _sh2.which('node.exe')
-print('--- v4.40 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
+print('--- v4.41 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
 if not _node:
     print('[FATAL] 守门自检需要 Node.js，但 PATH 中找不到 node —— 构建中止（v4.36 起守门=构建硬门闩）')
     _sys.exit(1)
@@ -11582,6 +11669,6 @@ if _so.strip():
 if _se.strip():
     print('[node stderr]\n' + _se.rstrip())
 if _r.returncode != 0:
-    print('[FATAL] v4.40 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
+    print('[FATAL] v4.41 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
     _sys.exit(1)
-print('[BUILD OK] v4.40 守门自检 exit 0（0 违规）')
+print('[BUILD OK] v4.41 守门自检 exit 0（0 违规）')
