@@ -356,7 +356,8 @@ textarea.savebox{width:100%; min-height:90px; font-family:Consolas,monospace; fo
 .toastmsg{background:rgba(17,24,39,.94); color:#fff; border-radius:8px; padding:10px 14px; font-size:12.5px; line-height:1.5; max-width:min(92vw,560px); box-shadow:0 6px 18px rgba(0,0,0,.28); white-space:pre-wrap; word-break:break-word}
 @media (max-width:640px){
   .grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
-  .spcard{width:56px; height:56px}
+  /* v4.39 R-5：原 .spcard{56px} 与本文件下方同条件（max-width:640px）的 .spcard{88px} 冲突，
+     同特异性下后者胜出、此处为死代码；已删除以统一口径（实测生效值 = 88px，删除前后 computed 同值）。 */
   nav{width:100%; margin-left:0}
   nav button{flex:1}
   header h1{font-size:15px}
@@ -376,7 +377,7 @@ textarea.savebox{width:100%; min-height:90px; font-family:Consolas,monospace; fo
   details.big>summary{font-size:14px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px}
   .poolgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px}
-  .spcard{width:56px; height:56px}
+  /* v4.39 R-5：此处原有 .spcard{56px} 为死代码（见上方同条件 88px 规则），已删除统一。 */
   .teamwrap{flex-direction:column}
   .teambox{width:100% !important; flex:1 1 auto !important}
   .drawer{width:100%}
@@ -673,12 +674,61 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   .acc>summary::before{transition:none}
   .lmod{transition:none}
 }
+/* ===== v4.39 第八 tab「队伍分析」UI 增强（六槽位 / 图鉴级选择器 / 带图结果 / 详情）· 只追加不删 ===== */
+.anslots{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px; margin:8px 0}
+.anslots .slot{margin-bottom:0; min-height:56px; cursor:pointer; flex-wrap:wrap; overflow:hidden; row-gap:2px}
+.anslots .slot.empty{min-height:56px; font-size:12px; justify-content:center}
+.anslots .slot .spslot{width:34px; height:34px; flex:0 0 34px}
+.anslots .slot .nm{font-size:12px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.anslots .slot .roltag{margin-left:0}
+.anslots .slot .x{min-width:44px; min-height:44px; font-size:16px; margin-left:auto}
+.anmemline,.animline{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
+.anmem{display:inline-flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:8px;
+  padding:2px 6px; cursor:pointer; min-height:44px; background:var(--card); max-width:100%}
+.anmem .spinl{width:40px; height:40px; margin-right:2px}
+.anmem .spthumb{width:28px; height:28px}
+.anmemnm{font-size:12px; overflow-wrap:anywhere}
+.anspcard{display:block; cursor:pointer; min-height:44px}
+.anspcard:hover{background:#f7faff}
+.anspcard .spinl{width:44px; height:44px; margin:0 6px 4px 0}
+.ansprpair{display:inline-flex; align-items:center; gap:4px; margin:0 4px; vertical-align:middle; flex-wrap:wrap}
+.ansprn{display:inline-flex; align-items:center; gap:3px; cursor:pointer; border:1px solid var(--line);
+  border-radius:8px; padding:1px 4px; min-height:44px; background:var(--card)}
+.ansprn .spmid{width:40px; height:40px}
+.anarrow{color:var(--sub)}
+.ancand{display:inline-flex; align-items:center; gap:3px; cursor:pointer; border:1px solid var(--line);
+  border-radius:8px; padding:1px 6px; margin:1px 2px; min-height:44px; background:var(--card)}
+.ancand .mcspr{width:28px; height:28px}
+#anPicker .anpickbox{max-width:760px; max-height:84vh}
+#anDetail .andetbox{max-width:680px; max-height:84vh}
+.anpbar{display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:4px 0}
+.anpbar input[type=text]{flex:1 1 180px; min-width:120px}
+#anPicker .poolcard{padding:6px 4px}
+.andethead{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px}
+.andethead .spinl{width:48px; height:48px; margin-right:2px}
+.anslots .slot,.anmem,.anspcard,.ansprn,.ancand{overflow-wrap:anywhere; word-break:break-word}
+@media (max-width:768px){
+  .anslots{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .anslots .slot .spslot{width:30px; height:30px; flex:0 0 30px}
+  #anPicker .anpickbox,#anDetail .andetbox{max-width:100%; max-height:88vh}
+  #anPicker .poolcard,#anPicker input,#anPicker select,#anPicker button{min-height:44px}
+  .anslots .slot,.anslots .slot .x{min-height:44px}
+}
+@media (max-width:640px){
+  .anslots{gap:4px}
+  .anslots .slot .roltag{font-size:10px; padding:1px 4px}
+  #anPicker .poolgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px}
+}
+@media (max-width:480px){
+  .anslots{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .evsegs{min-width:90px}
+}
 </style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.38</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.39</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -691,16 +741,40 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   </nav>
 </header>
 <main>
-<!-- ===== 队伍分析（v4.38 C 线 · 第八 tab） ===== -->
+<!-- ===== 队伍分析（v4.39 UI 增强 · 第八 tab：六槽位 + 图鉴级选择器 + 带图结果 + 详情） ===== -->
 <section id="tab-analyze" class="tab">
-  <div class="bar">
-    <input type="text" id="anSearch" placeholder="输入 6 只（编号/中文/英文，逗号或换行分隔；留空 = 用「队伍构建」当前队伍）">
-    <button id="anRun">分析队伍</button>
-  </div>
-  <div class="tip" id="anRuleTip">💡 队伍分析：只展示引擎推荐（deriveBuilds → finalizeBuild → evNatureLinkV437），队伍级建议只作微调提示</div>
+  <div class="tip" id="anRuleTip">💡 队伍分析：点下方槽位从图鉴级选择器挑 6 只（与「队伍构建」共享同一队伍）；结果只展示引擎推荐（deriveBuilds → finalizeBuild → evNatureLinkV437），点任意精灵看推荐详情</div>
+  <div class="anslots" id="anSlots"></div>
   <div id="anOut"></div>
-  <div id="ruleBoxAn"></div>
 </section>
+<!-- 图鉴级选择器（v4.39 R-2：轻量 modal，居中浮层非全屏；移动端全宽。过滤谓词与「图鉴/队伍构建」同源 spMatch） -->
+<div id="anPicker" class="lmod" role="dialog" aria-modal="true" aria-label="选择宝可梦">
+  <div class="lmodbox anpickbox">
+    <div class="mhd"><b id="anPickTitle">选择宝可梦</b><button class="close" type="button" onclick="closeAnPicker()" aria-label="关闭">×</button></div>
+    <div class="anpbar">
+      <input type="text" id="anpSearch" placeholder="搜索：编号 / 中文 / 英文">
+      <select id="anpSort"><option value="id">编号</option><option value="bst">种族总值</option><option value="atk">攻击</option><option value="spe">速度</option></select>
+    </div>
+    <div class="anpbar">
+      <span class="mini">属性：</span><div class="chips" id="anpTypeChips"></div>
+    </div>
+    <div class="anpbar">
+      <span class="mini">定位：</span>
+      <select id="anpRole"><option value="">全部</option><option value="物攻手">物攻手</option><option value="特攻手">特攻手</option><option value="盾">盾</option><option value="速攻">速攻</option><option value="空间向">空间向</option></select>
+      <span class="mini">特性：</span><input type="text" id="anpAbi" placeholder="特性名模糊搜索">
+      <button class="btn-mini" type="button" onclick="anPickerReset()">清空筛选</button>
+    </div>
+    <div class="poolgrid" id="anpGrid"></div>
+    <div class="mini" id="anpCount" style="text-align:center;color:var(--sub);padding:6px"></div>
+  </div>
+</div>
+<!-- 精灵推荐详情（v4.39 R-4：轻量 modal；bd = anBuildOf(s,team) 按需重算，六区块投影零改动） -->
+<div id="anDetail" class="lmod" role="dialog" aria-modal="true" aria-label="推荐详情">
+  <div class="lmodbox andetbox">
+    <div class="mhd"><b id="anDetailT">推荐详情</b><button class="close" type="button" onclick="closeAnDetail()" aria-label="关闭">×</button></div>
+    <div id="anDetailB"></div>
+  </div>
+</div>
 <!-- ===== 宝可梦 ===== -->
 <section id="tab-poke" class="tab">
   <div class="bar">
@@ -1849,7 +1923,31 @@ function anRowOf(s,b){
     ev:ev,evTpl:tpl,nat:nn,why:(function(){try{return evWhyTxt(tpl)}catch(e){return ''}})(),
     raw:raw,natPos:natPos,wxSpd:wxSpd,isSp:isSp};
 }
-function anWeakTally(mem,at){var n0=0;mem.forEach(function(s){if(anEff(s,at)>=2)n0++});return n0}
+/* v4.39 R-7（P0 口径一致）：第八 tab 的防守口径 = 队伍体检（defProfiles L2790）**同一函数 + 同一规则**
+   ——「勾选可选特性 → 生效口径 opt；未勾选 → 天性口径 inn」（defCellTrio）。故「队伍构建」Tab 里
+   点选的可选特性会立即影响第八 tab 的 ② 共性弱点 / 免疫轴 / DIAG 同弱计数，两个 tab 不再互相矛盾。 */
+function anPickOf(s,info){
+  try{var ii=(info||((typeof teamInfo!=='undefined')?teamInfo:{}))[s.id];return (ii&&ii.pick)?ii.pick:null}catch(e){return null}
+}
+function anDefVal(s,at,info){
+  try{var c=defCellTrio(s,at,anPickOf(s,info));return c.pick?c.opt:c.inn}catch(e2){return 1}
+}
+function anWeakTally(mem,at,info){var n0=0;mem.forEach(function(s){if(anDefVal(s,at,info)>=2)n0++});return n0}
+/* v4.39 R-7（修正轮）：免疫轴归因——找出**能解释该属性免疫的特性名**（优先天性，其次可选池；
+   标签取自 ERDATA.abiTags，即与 defCellTrio 取值同一来源），找不到则返回 '' 由调用方兜底。 */
+function anImmAbiNameOf(s,at){
+  var nm='';
+  try{
+    var lists=[s.inns||[],s.abis||[]],li,i;
+    for(li=0;li<lists.length&&!nm;li++){
+      for(i=0;i<lists[li].length;i++){
+        var g=null;try{g=abiTagOf(lists[li][i])}catch(e0){g=null}
+        if(g&&g.im&&g.im.indexOf(at)>-1){nm=lists[li][i];break}
+      }
+    }
+  }catch(e1){nm=''}
+  return nm;
+}
 function anCoverN(rows){
   var seen={},n0=0;
   rows.forEach(function(r){r.moves.forEach(function(id){
@@ -1918,8 +2016,11 @@ function anDiag(R,mem,rows,wxSys,wxSpdIn){
     D.push({id:'DIAG-10',sev:'中',txt:'体系互斥：同时开空间又依赖天气提速（v4.37 R2-C 口径）',need:''});
   return D;
 }
-function teamReport(ids,label){
+function teamReport(ids,label,info){
   anAliasBake();
+  /* v4.39 R-7：第三参 = 队伍信息（teamInfo）；缺省回退全局 teamInfo。
+     作用：让「队伍构建 Tab 勾选的可选特性（pickAbi 路径）」与第八 tab 分析推荐口径一致。 */
+  var _info=info||((typeof teamInfo!=='undefined')?teamInfo:{});
   var mem=[],i;for(i=0;i<(ids||[]).length;i++){var s=anSpOf(ids[i]);if(s)mem.push(s)}
   var R={label:label||'',n:mem.length,members:mem.map(function(s){return {id:s.id,zh:s.zh}}),
     sys:{counts:{},wx:[],field:[],hasSpace:false,hasTailwind:false,hasHazard:0,hasWall:0,rmvN:0,recN:0,pivotN:0,archetype:''},
@@ -1954,14 +2055,33 @@ function teamReport(ids,label){
     if(anSetHas(r,anMvList('rec',[105,202,234,235,236,303,355,409])))R.sys.recN++;
     if(r.moves.some(function(id){return WALL_MV_SET[id]}))R.sys.hasWall++;
     AN_WXSPD_ABI.forEach(function(p){if(r.wxSpd&&wxSpdIn.indexOf(p[0])<0)wxSpdIn.push(p[0])});
-    AN_IMM_ABI.forEach(function(p){if(anAbiHit(s,p[1]))R.weak.immuneAxis.push({id:s.id,zh:s.zh,by:'特性',src:p[1],immune:p[0]})});
+    /* v4.39 R-7（修正轮）：免疫轴**不再**按「特性名录」白名单直接声明，改为统一由生效口径取值归因
+       （见下方 anTypes 循环）。原 AN_IMM_ABI 直推版本会对「名录命中但取值层并不归零」的特性过度声明免疫
+       （实测：蓄水器/漂浮 未进 ERDATA.abiTags → defCellTrio 仍为 0.5×），与 ② 共弱矩阵 / defProfiles 冲突。 */
   });
   R.side={phys:0,spec:0,mixed:0,total:rows.length};
   rows.forEach(function(r){if(r.side==='物理')R.side.phys++;else if(r.side==='特殊')R.side.spec++;else R.side.mixed++});
   R.speed.list=rows.map(function(r){return {id:r.id,zh:r.zh,raw:r.raw,eff:Math.round(r.raw*(r.wxSpd&&wxSpdIn.length?1.5:1)*(R.sys.hasTailwind?2:1)),ev5:r.ev?(+r.ev[5]||0):0,natPos:r.natPos}}).sort(function(a,b){return b.eff-a.eff});
-  anTypes().forEach(function(at){mem.forEach(function(s){if(anEff(s,at)===0)
-    R.weak.immuneAxis.push({id:s.id,zh:s.zh,by:'属性',src:at+'系攻击',immune:at})})});
-  var co=[];anTypes().forEach(function(at){var c=anWeakTally(mem,at);if(c>=2)co.push({type:at,n:c})});
+  /* v4.39 R-7：免疫轴**唯一来源** = 生效口径（anDefVal === 0，与 ② 共弱矩阵 / defProfiles 同函数同规则）。
+     归因三态：属性（类型本身即 0 倍）/ 天性（天性特性带来 0 倍）/ 特性（仅靠队伍构建勾选的可选特性才归零）。
+     src 落到能解释该免疫的特性名（anImmAbiNameOf），便于溯源与 ⑤ NA-04 叙事引用。 */
+  anTypes().forEach(function(at){mem.forEach(function(s){
+    if(anDefVal(s,at,_info)!==0)return;
+    var by='天性',srch=at+'系攻击';
+    try{
+      if(anEff(s,at)===0){by='属性'}
+      else{
+        var _innC=defCellTrio(s,at,null).inn;
+        if(String(_innC)==='0'){by='天性';srch=anImmAbiNameOf(s,at)||'天性特性'}
+        else{
+          var _pk=anPickOf(s,_info);
+          if(_pk){by='特性';srch=_pk}
+          else{by='天性';srch=anImmAbiNameOf(s,at)||'天性特性'}
+        }
+      }
+    }catch(e6){}
+    R.weak.immuneAxis.push({id:s.id,zh:s.zh,by:by,src:srch,immune:at})})});
+  var co=[];anTypes().forEach(function(at){var c=anWeakTally(mem,at,_info);if(c>=2)co.push({type:at,n:c})});
   R.weak.coWeak=co.sort(function(a,b){return b.n-a.n});
   R.diag=anDiag(R,mem,rows,wxSys,wxSpdIn);
   R.sys.archetype=(wxSys.length?'天气队':(R.sys.hasSpace?'空间队':''))+
@@ -1979,7 +2099,9 @@ function teamReport(ids,label){
     if(!cl&&r&&(r.roleTag==='输出'||r.side==='物理'||r.side==='特殊'))cl=s});
   if(hz&&cl)R.narr.push({id:'NA-02',A:{id:hz.id,zh:hz.zh},B:{id:cl.id,zh:cl.zh},field:'推荐配招含钉 ∧ 含清场手',
     txt:'因你〔'+hz.zh+'〕先埋钉，所以对方换入即扣血，你〔'+cl.zh+'〕收割更省招'});
-  R.weak.immuneAxis.filter(function(x){return x.by==='特性'}).forEach(function(im){
+  /* v4.39 R-7（修正轮）：NA-04 用「特性/天性」这类**由特性带来的**免疫（by!=='属性'）触发；
+     纯类型免疫（属性）不算「特性抵消队友弱点」。 */
+  R.weak.immuneAxis.filter(function(x){return x.by!=='属性'}).forEach(function(im){
     var tgt=null;mem.forEach(function(s){if(tgt||''+s.id===''+im.id)return;if(anEff(s,im.immune)>=2)tgt=s});
     if(tgt)R.narr.push({id:'NA-04',A:{id:im.id,zh:im.zh},B:{id:tgt.id,zh:tgt.zh},field:'免疫轴含['+im.src+'→'+im.immune+'] ∧ 队友 '+tgt.zh+' 弱'+im.immune,
       txt:'因你〔'+im.zh+'〕持〔'+im.src+'〕免疫'+im.immune+'，所以队友〔'+tgt.zh+'〕的'+im.immune+'系弱点被抵消'})});
@@ -2047,7 +2169,7 @@ function anCard(t){return '<div class="card" style="margin:6px 0;padding:8px">'+
 function anHead(t){return '<div style="font-weight:600;margin:10px 0 4px">'+t+'</div>'}
 function anChips(arr){return arr.map(function(x){return '<span class="badge" style="margin-right:4px">'+esc(String(x))+'</span>'}).join('')}
 function anRender(R){
-  if(!R||!R.n)return '<div class="tip">未解析到有效成员（请输入 6 只的编号 / 中文 / 英文名）</div>';
+  if(!R||!R.n)return '<div class="tip">未选择成员：点上方槽位「点击选择」，从图鉴级选择器挑 1~6 只（与「队伍构建」共享同一队伍）</div>';
   var h='';
   h+=anHead('① 队伍构成画像');
   var sysList=Object.keys(R.sys.counts).map(function(k){return k+'×'+R.sys.counts[k]});
@@ -2059,48 +2181,312 @@ function anRender(R){
     '<div class="tip">角色可兼任，不视为硬性配方</div>');
   h+=anCard('<b>物理/特殊配比</b>：物理 '+R.side.phys+' ／ 特殊 '+R.side.spec+' ／ 双刀 '+R.side.mixed+
     '　<b>速度线</b>：原始最高 '+R.speed.top+' · 有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）');
+  /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
+  if(R.members&&R.members.length){
+    h+=anCard('<b>成员一览</b>（点图看该只推荐详情）<div class="anmemline">'+R.members.map(function(m){
+      var _ok=false;try{_ok=!!speciesById(m.id)}catch(e0){_ok=false}
+      return _ok?('<span class="anmem" role="button" tabindex="0" onclick="anSpDetail('+m.id+')" title="点击看推荐详情">'+sprImg(m.id,'spinl')+'<span class="anmemnm">'+esc(m.zh)+'</span></span>')
+                :('<span class="anmem"><span class="anmemnm">'+esc(m.zh)+'</span></span>');
+    }).join('')+'</div>');
+  }
   h+=anHead('② 联防 / 弱点矩阵');
   h+=anCard('<b>共性弱点（≥2 只同弱）</b>：'+(R.weak.coWeak.length?anChips(R.weak.coWeak.map(function(x){return x.type+'×'+x.n})):'无')+
-    '<div class="tip">免疫轴：'+(R.weak.immuneAxis.length?esc(R.weak.immuneAxis.map(function(x){return x.zh+'('+x.by+':'+x.src+'→'+x.immune+')'}).slice(0,10).join('、')):'空')+'</div>');
+    '<div class="tip">免疫轴'+(R.weak.immuneAxis.length?('（共 '+R.weak.immuneAxis.length+' 条，列出前 10 条）'):'：空')+'</div>'+
+    (R.weak.immuneAxis.length?('<div class="animline">'+R.weak.immuneAxis.slice(0,10).map(function(x){
+      var _ok=false;try{_ok=!!speciesById(x.id)}catch(e1){_ok=false}
+      var _lb='<span class="anmemnm">'+esc((x.by==='特性'?'特性：':(x.by==='天性'?'天性：':'属性：'))+'免疫 '+x.immune)+'</span>';
+      return _ok?('<span class="anmem" role="button" tabindex="0" onclick="anSpDetail('+x.id+')" title="'+escq(x.zh+'（'+x.by+':'+x.src+'→'+x.immune+'）')+'">'+sprRaw(x.id,'spthumb')+'<span class="anmemnm">'+esc(x.zh)+'</span>'+_lb+'</span>')
+                :('<span class="anmem"><span class="anmemnm">'+esc(x.zh)+'</span>'+_lb+'</span>');
+    }).join('')+'</div>'):''));
   h+=anHead('③ 打击面覆盖');
   h+=anCard('覆盖 <b>'+R.cover.covN+'/'+(R.cover.nTot||18)+'</b>：'+anChips(R.cover.types)+
     (R.cover.blind.length?'<div class="tip">整队盲区（全员有免疫/抵抗）：'+esc(R.cover.blind.join('、'))+'</div>':'<div class="tip">无整队盲区</div>'));
   h+=anHead('④ 每只精灵推荐（引擎 deriveBuilds 主推流派，逐字段展示）');
   R.builds.forEach(function(b){
-    h+=anCard('<b>'+esc(b.zh)+'</b>（#'+b.id+'）· '+esc(b.name)+'　<span class="badge">'+esc(b.roleTag||'')+'/'+esc(b.side||'')+'</span>'+
+    /* v4.39 R-3④：卡首 sprite + 整卡可点（点击 = 该只推荐详情）。注意：只在精灵主体挂 onclick，
+       不污染 anCard 原语（⑤ 叙事条 / ⑥ 诊断条不受影响）。 */
+    h+=anCard('<div class="anspcard" role="button" tabindex="0" onclick="anSpDetail('+b.id+')" title="点击看推荐详情（推荐特性/天性/道具/配招/EV/性格 + 为什么这样配）">'+
+      sprImg(b.id,'spinl')+'<b>'+esc(b.zh)+'</b>（#'+b.id+'）· '+esc(b.name)+'　<span class="badge">'+esc(b.roleTag||'')+'/'+esc(b.side||'')+'</span>'+
       '<div>配招：'+esc(b.movesZh.join(' / '))+'</div>'+
       '<div>特性：'+esc(b.abi||'—')+'　道具：'+esc(b.item||'—')+'</div>'+
       '<div>EV：'+esc(b.ev?b.ev.join('/'):'—')+'（'+esc(b.evTpl||'')+'）　性格：'+esc(b.nat||'—')+'</div>'+
-      (b.why?'<div class="tip">'+esc(b.why)+'</div>':''));
+      (b.why?'<div class="tip">'+esc(b.why)+'</div>':'')+'</div>');
   });
   h+=anHead('⑤ 联动叙事（成对因果 · 可判定字段）');
-  h+=R.narr.length?R.narr.map(function(x){return anCard('<span class="badge">'+x.id+'</span> '+esc(x.txt)+
-    '<div class="tip">可判定字段：'+esc(x.field)+'</div>')}).join(''):'<div class="tip">未触发叙事模板</div>';
+  /* v4.39 R-3⑤：叙事两端各配 sprite（A/B 同 id、B={zh:'全队'}、A/B=null 三种形态由 anSprOfNarr 容错：不渲染图） */
+  h+=R.narr.length?R.narr.map(function(x){return anCard('<span class="badge">'+x.id+'</span> '+
+    ((anSprOfNarr(x.A)||anSprOfNarr(x.B))?('<span class="ansprpair">'+anSprOfNarr(x.A)+'<span class="anarrow">→</span>'+anSprOfNarr(x.B)+'</span>'):'')+
+    esc(x.txt)+'<div class="tip">可判定字段：'+esc(x.field)+'</div>')}).join(''):'<div class="tip">未触发叙事模板</div>';
   h+=anHead('⑥ 诊断与优化（只建议不剔除）');
   if(!R.diag.length)h+='<div class="tip">未命中结构性问题</div>';
   R.diag.forEach(function(d){
     var c=(R.cands[d.id]||[]);
     h+=anCard('<span class="badge" style="color:#c33">'+d.id+'</span> <span class="badge">'+d.sev+'</span> '+esc(d.txt)+
-      (c.length?'<div class="tip">候选替换 Top'+c.length+'：'+esc(c.map(function(x){return x.zh+'#'+x.id}).join('、'))+'</div>':''));
+      (c.length?'<div class="tip">候选替换 Top'+c.length+'：'+esc(c.map(function(x){return x.zh+'#'+x.id}).join('、'))+'</div>'+
+        '<div class="animline">'+c.map(function(x){
+          var _ok=false;try{_ok=!!speciesById(x.id)}catch(e5){_ok=false}
+          var _sc=(x.score===null||x.score===undefined)?'':('（+'+esc(String(x.score))+'）');
+          return _ok?('<span class="ancand" role="button" tabindex="0" onclick="anSpDetail('+x.id+')" title="点击看该候选的推荐详情">'+sprRaw(x.id,'spthumb')+'<span class="anmemnm">'+esc(x.zh)+'</span><span class="dim">#'+x.id+'</span>'+_sc+'</span>')
+                    :('<span class="ancand"><span class="anmemnm">'+esc(x.zh)+'</span><span class="dim">#'+x.id+'</span>'+_sc+'</span>');
+        }).join('')+'</div>':''));
   });
   if(R.ev.notes.length)h+=anCard('<b>队伍级 EV 微调建议（不覆盖引擎结论）</b>'+R.ev.notes.map(function(x){return '<div>'+x.id+'：'+esc(x.txt)+'</div>'}).join(''));
   return h;
 }
 function renderAnTab(){
   var box=$('anOut');if(!box)return;
-  var q=($('anSearch')&&$('anSearch').value||'').trim();
-  var ids=[];
-  if(q)ids=q.split(/[\s,，;；\/]+/).filter(Boolean);
-  else ids=(typeof team!=='undefined'&&team?team.map(function(s){return s.id}):[]);
+  /* v4.39 R-6：输入统一 —— 槽位（= 全局 team[]）为唯一输入路径（原 #anSearch 文本框 / #anRun 按钮已移除） */
+  var ids=(typeof team!=='undefined'&&team?team.map(function(s){return s.id}):[]);
+  var info=(typeof teamInfo!=='undefined'&&teamInfo)?teamInfo:null;   /* v4.39 R-7：第三参读 teamInfo（勾选的可选特性生效） */
+  renderAnSlots();
   var R=null;
-  try{R=teamReport(ids,'自组队伍')}catch(e){box.innerHTML='<div class="tip">分析失败：'+esc(String(e&&e.message||e))+'</div>';return}
+  try{R=teamReport(ids,'自组队伍',info)}catch(e){box.innerHTML='<div class="tip">分析失败：'+esc(String(e&&e.message||e))+'</div>';return}
+  anLastR=R;anRoleCache={};
+  (R.builds||[]).forEach(function(b){if(b&&b.roleTag)anRoleCache[String(b.id)]=b.roleTag});
+  renderAnSlots();   /* 引擎打法标签（roleTag）覆盖槽位廉价标签（spRoleTags） */
   box.innerHTML=anRender(R);
+}
+/* ==================== v4.39 第八 tab UI 增强（R-1~R-7）====================
+   规格：ER配招助手_v4.39_队伍分析器UI增强_交互设计书.md（六槽位 §1.1 / 图鉴级选择器 §1.2 /
+   带图 §1.3 / 详情 §1.4 / 移动端 §1.5）。裁决：任务书 §二 R-1~R-7（承载 = 轻量 modal）。
+   · R-1 六槽位：team[] 为单一真值源（与「队伍构建」同一队伍）；空态「点击选择」；点击 = 选择器（替换）；× = 移除（紧凑前移）
+   · R-2 选择器：轻量 modal + 与图鉴/队伍构建**同源谓词 spMatch + 同一过滤链 spQuery** + 图片网格 + 分页（6 项卡片信息）
+   · R-3 带图：① 成员一览 / ② 免疫轴逐条 / ④ 卡首 / ⑤ 两端 / ⑥ 候选（只在精灵主体挂点击，不动 anCard 原语）
+   · R-4 详情：轻量 modal，D-1~D-7 逐字段复用既有渲染件（abiModal / itemNote / evBarHtml / oneLiner / mateWhyNarr）
+   ======================================================================= */
+var anPickSlot=-1,anpFilter={types:[],shown:0,step:60},anRoleCache={},anLastR=null;
+function anSlotRoleOf(s){
+  var r='';
+  try{var t=spRoleTags(s);if(t&&t.length)r=t[0]}catch(e){}
+  return r;
+}
+function renderAnSlots(){
+  var box=$('anSlots');if(!box)return;
+  var h='';
+  for(var i=0;i<6;i++){
+    var s=((typeof team!=='undefined')&&team)?team[i]:null;
+    if(s){
+      var role=anRoleCache[String(s.id)]||anSlotRoleOf(s);
+      h+='<div class="slot anslot" role="button" tabindex="0" onclick="anSlotPick('+i+')" title="点击替换（打开图鉴级选择器）">'+
+        sprImg(s.id,'spslot')+'<span class="nm">'+esc(s.zh)+'</span>'+
+        (role?'<span class="roltag">'+esc(role)+'</span>':'')+
+        '<button class="x" type="button" onclick="event.stopPropagation();anSlotRemove('+i+')" title="移除（后续槽位前移补位）" aria-label="移除">×</button></div>';
+    }else{
+      h+='<div class="slot empty anslot" role="button" tabindex="0" onclick="anSlotPick('+i+')" title="点击从图鉴级选择器挑一只">点击选择</div>';
+    }
+  }
+  box.innerHTML=h;
+}
+function anSlotPick(i){anPickSlot=i;openAnPicker()}
+function anSlotRemove(i){
+  var s=((typeof team!=='undefined')&&team)?team[i]:null;
+  if(!s)return;
+  try{removeFromTeam(s)}catch(e){try{team.splice(i,1)}catch(e2){}}
+  renderAnTab();
+}
+/* —— R-2 图鉴级选择器（轻量 modal；过滤谓词 spMatch / 过滤链 spQuery 与队伍构建逐字同源）—— */
+function openAnPicker(){
+  var p=$('anPicker');if(!p)return;
+  anpFilter.types=[];anpFilter.shown=0;
+  if($('anpSearch'))$('anpSearch').value='';
+  if($('anpAbi'))$('anpAbi').value='';
+  if($('anpRole'))$('anpRole').value='';
+  if($('anpSort'))$('anpSort').value='id';
+  var box=$('anpTypeChips');
+  if(box){
+    if(!box.getAttribute('data-baked')){
+      box.setAttribute('data-baked','1');
+      ERDATA.types.forEach(function(t){
+        box.appendChild(tchip(t,false,function(){
+          this.classList.toggle('on');
+          anpFilter.types=[];
+          box.querySelectorAll('button.on').forEach(function(b){anpFilter.types.push(b.textContent)});
+          renderAnPickerGrid(true);
+        }));
+      });
+    }else{
+      box.querySelectorAll('button').forEach(function(b){b.classList.remove('on')});
+    }
+  }
+  renderAnPickerGrid(true);
+  if(p.classList)p.classList.add('open');
+}
+function closeAnPicker(){var p=$('anPicker');if(p&&p.classList)p.classList.remove('open')}
+function anPickerReset(){
+  anpFilter.types=[];
+  var box=$('anpTypeChips');if(box)box.querySelectorAll('button').forEach(function(b){b.classList.remove('on')});
+  if($('anpSearch'))$('anpSearch').value='';
+  if($('anpAbi'))$('anpAbi').value='';
+  if($('anpRole'))$('anpRole').value='';
+  if($('anpSort'))$('anpSort').value='id';
+  renderAnPickerGrid(true);
+}
+function renderAnPickerGrid(reset){
+  var g=$('anpGrid');if(!g)return;
+  var q=($('anpSearch')&&$('anpSearch').value||'').trim();
+  var role=($('anpRole')&&$('anpRole').value)||'';
+  var abi=($('anpAbi')&&$('anpAbi').value||'').trim();
+  var sort=($('anpSort')&&$('anpSort').value)||'id';
+  var arr=spQuery(q,anpFilter.types,role,abi,sort);   /* v4.39 R-2：与队伍构建同一过滤链（spMatch） */
+  if(reset){anpFilter.shown=0;g.innerHTML=''}
+  var take=arr.slice(anpFilter.shown,anpFilter.shown+anpFilter.step);
+  anpFilter.shown+=take.length;
+  take.forEach(function(s){
+    var c=document.createElement('div');c.className='card poolcard';c.setAttribute('data-id',String(s.id));
+    c.innerHTML=sprImg(s.id)+
+      '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+'</div>'+
+      '<div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div>'+
+      '<div class="bs">种族总值 '+spBst(s)+'</div>';
+    c.onclick=function(){anPickerChoose(s.id)};
+    g.appendChild(c);
+  });
+  var cnt=$('anpCount');
+  var nowN=((typeof team!=='undefined')&&team)?team.length:0;
+  if(cnt)cnt.textContent=(arr.length&&anpFilter.shown<arr.length)?('已选 '+nowN+'/6 · 已显示 '+anpFilter.shown+'/'+arr.length+'，滚动加载更多')
+    :(arr.length?('已选 '+nowN+'/6 · 共 '+arr.length+' 只'):('已选 '+nowN+'/6 · 无匹配（换个搜索词或清空筛选）'));
+}
+function anPickerChoose(id){
+  var s=null;try{s=speciesById(id)}catch(e){}
+  if(!s)return;
+  var i=anPickSlot;
+  if(!((typeof team!=='undefined')&&team))return;
+  var inTeam=team.indexOf(s);
+  if(i>=0&&i<team.length){
+    var old=team[i];
+    if(old&&''+old.id===''+s.id){closeAnPicker();return}
+    if(inTeam>-1&&inTeam!==i){toast('该宝可梦已在队伍中');return}
+    if(old&&typeof teamInfo!=='undefined')delete teamInfo[old.id];
+    team[i]=s;
+    if(typeof teamInfo!=='undefined'&&!teamInfo[s.id])teamInfo[s.id]={fromSave:false};
+  }else{
+    if(inTeam>-1){closeAnPicker();return}
+    if(team.length>=6){toast('最多 6 只');return}
+    team.push(s);
+    if(typeof teamInfo!=='undefined'&&!teamInfo[s.id])teamInfo[s.id]={fromSave:false};
+  }
+  closeAnPicker();
+  try{renderTm(true)}catch(e1){}
+  try{renderSlots()}catch(e2){}
+  try{renderAnalyze()}catch(e3){}
+  try{saveTeam()}catch(e4){}
+  renderAnTab();
+}
+/* —— R-4 精灵推荐详情（轻量 modal；bd = anBuildOf(s,team) 按需重算；anRender 六区块零改动）—— */
+function anSprOfNarr(o){
+  try{
+    if(!o||o.id===undefined||o.id===null)return '';
+    var s=speciesById(o.id);if(!s)return '';
+    return '<span class="ansprn" role="button" tabindex="0" onclick="anSpDetail('+s.id+')" title="点击看该只推荐详情">'+
+      sprImgMid(s.id)+'<span class="anmemnm">'+esc(o.zh||s.zh)+'</span></span>';
+  }catch(e){return ''}
+}
+function anAbiChipH(n,kind){
+  return '<span class="abi" onclick="abiModal('+jsl(String(n))+','+jsl(String(kind||'特性'))+')" title="点看完整描述">'+esc(abiChipName(n))+'</span>';
+}
+function anSpDetail(id){
+  var s=null;try{s=speciesById(id)}catch(e){}
+  if(!s)return;
+  var bd=null;try{bd=anBuildOf(s,((typeof team!=='undefined')?team:null))}catch(e2){bd=null}
+  var R=anLastR;
+  if(!R){try{R=teamReport((((typeof team!=='undefined')&&team)?team.map(function(x){return x.id}):[]),'自组队伍',(typeof teamInfo!=='undefined'?teamInfo:null))}catch(e3){R=null}}
+  var box=$('anDetailB');if(!box)return;
+  var t=$('anDetailT');if(t)t.textContent=s.zh+' · 推荐详情';
+  box.innerHTML=anDetailHtml(s,bd,R);
+  var d=$('anDetail');if(d&&d.classList)d.classList.add('open');
+}
+function closeAnDetail(){var d=$('anDetail');if(d&&d.classList)d.classList.remove('open')}
+function anDetailHtml(s,bd,R){
+  var h='';
+  h+='<div class="andethead">'+sprImg(s.id,'spinl')+'<b>'+esc(s.zh)+'</b> <span class="dim">'+esc(s.en)+' #'+s.id+' · '+esc(s.t1)+(s.t2!==s.t1?(' / '+esc(s.t2)):'')+' · 种族总值 '+spBst(s)+'</span>'+
+    '<button class="btn-mini" type="button" onclick="closeAnDetail();openSpById('+s.id+')" title="打开图鉴详情（种族/特性/天性/可学招式）">图鉴详情 →</button></div>';
+  if(!bd){h+='<div class="tip">该成员暂无引擎推荐流派（deriveBuilds 未返回）</div>';return h}
+  /* ① 玩法流派一句话 */
+  h+='<div class="fld"><div class="fhd"><span class="fno">1</span>玩法流派</div><div><b>'+esc(bd.name||'')+'</b> '+
+    '<span class="dim">'+esc(bd.side||'')+'向 · '+esc(bd.roleTag||'')+'</span><div class="oltext">'+esc(oneLiner(bd))+'</div></div></div>';
+  /* D-1 推荐特性 + 为什么选它（bd.abi[].why；点特性名看完整描述） */
+  h+='<div class="fld"><div class="fhd"><span class="fno">2</span>推荐特性 + 理由</div>';
+  var _ab=(bd.abi||[]);
+  if(_ab.length){
+    _ab.slice(0,2).forEach(function(a){
+      h+='<div class="mvrow"><span class="mvnm">'+anAbiChipH(a.n,'特性')+mechBadgeForAbi(a.n)+'</span>'+
+        '<span class="mvuse">'+esc((a.why||[]).join('；'))+'</span></div>';
+    });
+  }else h+='<div class="dim">—（引擎未给出推荐特性）</div>';
+  h+='</div>';
+  /* D-2 天性（固定 3 个；点看描述） */
+  var _inns=(s.inns||[]);
+  h+='<div class="fld"><div class="fhd"><span class="fno">3</span>天性（固定拥有，点看描述）</div><div>'+
+    (_inns.length?_inns.map(function(n){return anAbiChipH(n,'天性')}).join(' '):'<span class="dim">—</span>')+'</div></div>';
+  /* D-4 配招 4 招 + 各招作用一句话 */
+  h+='<div class="fld"><div class="fhd"><span class="fno">4</span>配招（4 招 + 作用）</div><div class="mvlist">';
+  ((bd.mv&&bd.mv.main)||[]).forEach(function(sl,j){
+    var m=MV[sl.id];
+    var use=(ERDATA.movesNotes&&ERDATA.movesNotes[sl.id])?glossify(ERDATA.movesNotes[sl.id]):esc(sl.tag||'');
+    h+='<div class="mvrow"><span class="mvnm">'+(j+1)+'. '+esc(m?m[1]:sl.id)+'</span>'+
+      (m?('<span class="dim">'+tlabel(m[3])+' '+splitLabel(m[4])+' 威力 '+(m[5]||'-')+'</span>'):'')+
+      '<span class="mvuse">'+mechBadgeForMove(sl.id)+use+'</span></div>';
+  });
+  h+='</div></div>';
+  /* D-5 努力值分配（可视条）：直接复用 evBarHtml（含数值串 / 模板名 / 分配依据 ▸） */
+  h+=evBarHtml(bd);
+  /* D-6 性格 + 原因 */
+  h+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格 + 原因</div><div>'+
+    ((((bd.nat||[]).length))?(bd.nat.map(function(n){return '<span class="abi">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>'}).join('　')):'<span class="dim">—</span>')+'</div></div>';
+  /* D-3 道具 + 玩家向说明（itemNote） */
+  h+='<div class="fld"><div class="fhd"><span class="fno">6</span>道具（主推 + 备选）</div><div>';
+  var _it=(bd.it||[]);
+  if(_it.length){
+    _it.slice(0,3).forEach(function(x,xi){
+      h+=(xi===0?('<b>⭐'+esc(x[0])+'</b>'):('<span class="abi">'+esc(x[0])+'</span>'))+mechBadgeForItem(x[0])+
+        '<span class="dim"> '+esc(itemNote(x[0],x[1]))+'</span>　';
+    });
+    if(_it.length>3)h+='<span class="dim">（另有 '+(bd.it.length-3)+' 项备选）</span>';
+  }else h+='<span class="dim">—</span>';
+  h+='</div></div>';
+  /* D-7 为什么这样配（成对因果；与本 id 相关的 NA 条目 + mateWhyNarr 同源文案 + oneLiner 兜底） */
+  var _narr=[],_seen={};
+  try{((R&&R.narr)||[]).forEach(function(x){
+    var _hit=((x.A&&''+x.A.id===''+s.id)||(x.B&&''+x.B.id===''+s.id));
+    if(!_hit)return;
+    var k=x.id+'|'+(x.A?x.A.id:'')+'|'+(x.B?x.B.id:'');
+    if(_seen[k])return;_seen[k]=1;_narr.push(x);
+  })}catch(e9){}
+  var _why=[];
+  try{
+    var _core=(((typeof team!=='undefined')&&team&&team.length)?team[0]:null);
+    if(_core)_why=mateWhyNarr(_core,s,null,{team:team})||[];
+  }catch(eA){_why=[]}
+  h+='<div class="fld"><div class="fhd"><span class="fno">7</span>为什么这样配（成对因果）</div>';
+  if(_narr.length)_narr.slice(0,3).forEach(function(x){
+    h+='<div class="mtcfg" style="max-width:none">'+esc(x.id)+'：'+esc(x.txt)+'</div>';
+  });
+  if(_why.length)_why.slice(0,2).forEach(function(t){
+    h+='<div class="mtcfg" style="max-width:none">'+esc(t)+'</div>';
+  });
+  if(!_narr.length&&!_why.length)h+='<div class="oltext">'+esc(oneLiner(bd))+'</div>';
+  h+='</div>';
+  return h;
 }
 (function(){
   var b=(typeof document!=='undefined')?document.querySelector('nav button[data-tab="analyze"]'):null;
   if(b)b.onclick=function(){switchTab('analyze');try{renderAnTab()}catch(e){}};
-  var rb=(typeof document!=='undefined')?document.getElementById('anRun'):null;
-  if(rb)rb.onclick=function(){try{renderAnTab()}catch(e){}};
+  if(typeof document==='undefined')return;
+  try{
+    /* v4.39：选择器控件（与队伍构建筛选同源：spMatch + spQuery） */
+    var ps=document.getElementById('anpSearch');if(ps)ps.oninput=function(){try{renderAnPickerGrid(true)}catch(e){}};
+    var pa=document.getElementById('anpAbi');if(pa)pa.oninput=function(){try{renderAnPickerGrid(true)}catch(e){}};
+    var pr=document.getElementById('anpRole');if(pr)pr.onchange=function(){try{renderAnPickerGrid(true)}catch(e){}};
+    var po=document.getElementById('anpSort');if(po)po.onchange=function(){try{renderAnPickerGrid(true)}catch(e){}};
+    var pb=document.querySelector('#anPicker .anpickbox');
+    if(pb)pb.onscroll=function(){try{if(pb.scrollTop+pb.clientHeight>=pb.scrollHeight-48)renderAnPickerGrid(false)}catch(e){}};
+    var pk=document.getElementById('anPicker');
+    if(pk&&pk.addEventListener)pk.addEventListener('click',function(ev){if(ev.target===pk)closeAnPicker()});
+    var pd=document.getElementById('anDetail');
+    if(pd&&pd.addEventListener)pd.addEventListener('click',function(ev){if(ev.target===pd)closeAnDetail()});
+    if(document.addEventListener)document.addEventListener('keydown',function(ev){
+      if(ev.key==='Escape'){try{closeAnPicker()}catch(e){}(function(){try{closeAnDetail()}catch(e){}})()}
+    });
+  }catch(e0){}
 })();
 
 /* ============ 宝可梦列表 ============ */
@@ -2136,6 +2522,16 @@ function spMatch(s,q,sel,role,abi){
   if(role&&spRoleTags(s).indexOf(role)<0)return false;
   if(abi&&!fzAny(abi,s.abis.concat(s.inns)))return false;
   return true;
+}
+/* v4.39 R-2：筛选/排序单一真源 —— 图鉴 + 队伍构建 + 第八 tab 选择器共用一条过滤链
+   （谓词 spMatch、纯数字查询精确编号置顶、sortedSp 排序逐字一致）→ 保证「图鉴级」结果集奇偶一致（G3）。 */
+function spQuery(q,sel,role,abi,sortK){
+  var arr=ERDATA.species.filter(function(s){return spMatch(s,q,sel,role,abi)});
+  if(/^\d+$/.test(String(q||''))){
+    var exact=null;arr.forEach(function(s){if(String(s.id)===String(q)&&!exact)exact=s});
+    if(exact){arr=arr.filter(function(s){return s!==exact});arr.unshift(exact);}
+  }
+  return sortedSp(arr,sortK);
 }
 function spBst(s){return s.base[0]+s.base[1]+s.base[2]+s.base[3]+s.base[4]+s.base[5]}
 function sortedSp(arr,k){
@@ -2505,13 +2901,7 @@ function renderTm(reset){
   var q=$('tmSearch').value.trim();
   var role=$('tmRole')?$('tmRole').value:'';
   var abi=$('tmAbi')?$('tmAbi').value.trim():'';
-  var arr=ERDATA.species.filter(function(s){return spMatch(s,q,tmTypeSel,role,abi)});
-  /* v4.33 N11：纯数字查询时精确编号命中者置顶 */
-  if(/^\d+$/.test(q)){
-    var exact=null;arr.forEach(function(s){if(String(s.id)===q&&!exact)exact=s});
-    if(exact){arr=arr.filter(function(s){return s!==exact});arr.unshift(exact);}
-  }
-  arr=sortedSp(arr,$('tmSort').value);
+  var arr=spQuery(q,tmTypeSel,role,abi,$('tmSort').value);   /* v4.39 R-2：过滤链单一真源（与第八 tab 选择器同源） */
   if(reset){tmShown=0;$('tmGrid').innerHTML=''}
   var take=arr.slice(tmShown,tmShown+tmStep);
   tmShown+=take.length;
@@ -2683,7 +3073,7 @@ function abiImHf(s){
   return {im:im,hf:hf,nt:nt,phy:phy};
 }
 /* 成员防守三口径：基础 / 天性修正（仅固定天性生效）/ 生效口径（勾选→按勾选特性；未勾选→可选池最优提示） */
-function defCellTrio(s,at){
+function defCellTrio(s,at,pickOv){
   var t=effTypesOf(s);
   var base=defMult(t.base,at);
   var inn=defMult(t.base.concat(t.inn),at);
@@ -2691,10 +3081,10 @@ function defCellTrio(s,at){
   /* 天性口径：只应用固定天性（inns）的免疫/减半 */
   if(ih.im[at]==='天性')inn=0;
   else if(ih.hf[at]==='天性')inn*=0.5;
-  /* 生效口径 */
+  /* 生效口径（v4.39 R-7：pickOv 显式给出时以此为准——分析器按传入 info 判定；未给出 = 沿用全局 teamInfo，逐字向后兼容） */
   var opt,pick=null;
-  var info=teamInfo[s.id];
-  if(info&&info.pick)pick=info.pick;
+  if(pickOv!==undefined){pick=pickOv||null}
+  else{var info=teamInfo[s.id];if(info&&info.pick)pick=info.pick}
   if(pick){
     /* B1：勾选可选特性只覆盖"同池其它可选特性"，不顶掉天性。
        生效口径 = base + 天性全部修正（im/hf/add 均生效）+ 勾选特性修正（叠加） */
@@ -10144,7 +10534,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.38';
+var ER_ENGINE_VER='v4.39';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -11058,7 +11448,7 @@ import sys as _sys
 import tempfile as _tf
 import subprocess as _sp
 import shutil as _sh2
-_GUARD_JS = r'''/* ER 配招助手 v4.38 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
+_GUARD_JS = r'''/* ER 配招助手 v4.39 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
 'use strict';
 var fs = require('fs'), vm = require('vm'), path = require('path');
 var INDEX = process.argv[2], DATA = process.argv[3];
@@ -11137,14 +11527,14 @@ console.log('  S5m 回收利用(278) 配一次性消耗件：受检='+r.checkedM
 console.log('  S5n 杂技(512) 配一次性消耗件：受检='+r.checkedN+'  违例='+r.viol.m6);
 ['a','b1','b2','m5','m6'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
-if(r.total>0||r.errors>0){console.error('[FAIL] v4.38 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
-console.log('[OK] v4.38 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0（全量 '+r.builds+' 流派）');
+if(r.total>0||r.errors>0){console.error('[FAIL] v4.39 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
+console.log('[OK] v4.39 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0（全量 '+r.builds+' 流派）');
 '''
 _gate_path = os.path.join(_tf.gettempdir(), 'er_guard_check_%d.cjs' % os.getpid())
 with open(_gate_path, 'w', encoding='utf-8') as _gf:
     _gf.write(_GUARD_JS)
 _node = _sh2.which('node') or _sh2.which('node.exe')
-print('--- v4.38 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
+print('--- v4.39 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
 if not _node:
     print('[FATAL] 守门自检需要 Node.js，但 PATH 中找不到 node —— 构建中止（v4.36 起守门=构建硬门闩）')
     _sys.exit(1)
@@ -11160,6 +11550,6 @@ if _so.strip():
 if _se.strip():
     print('[node stderr]\n' + _se.rstrip())
 if _r.returncode != 0:
-    print('[FATAL] v4.38 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
+    print('[FATAL] v4.39 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
     _sys.exit(1)
-print('[BUILD OK] v4.38 守门自检 exit 0（0 违规）')
+print('[BUILD OK] v4.39 守门自检 exit 0（0 违规）')
