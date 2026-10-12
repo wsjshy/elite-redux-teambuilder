@@ -31,7 +31,7 @@ Invoke-Git checkout master | Out-Null
 $dirty = (& $Git -C $Repo status --porcelain) -join "`n"
 # 有改动则提交（master 是开发分支，正常流程是提交后部署）
 if ($dirty.Trim().Length -gt 0) {
-    Invoke-Git add -A | Out-Null
+    Invoke-Git add --all | Out-Null
     Invoke-Git commit -m "$Message" | Out-Null
     Invoke-Git push github master | Out-Null
     Write-Host "[1/6] master committed & pushed"
@@ -76,7 +76,7 @@ Copy-Item (Join-Path $Temp "*") (Join-Path $Repo ".") -Recurse -Force
 Write-Host "[4/6] old cleared, new copied"
 
 # 步骤5：提交并推送 gh-pages（--force 覆盖历史部署，孤儿分支/更新通用）
-Invoke-Git add -A | Out-Null
+Invoke-Git add --all | Out-Null
 Invoke-Git commit -m "$Message" | Out-Null
 $rc = Invoke-Git push github gh-pages --force
 if ($rc -ne 0) {
