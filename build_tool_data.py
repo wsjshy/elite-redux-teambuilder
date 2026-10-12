@@ -171,6 +171,47 @@ NONFINAL = [str(s['id']) for s in GD['species']
             if any((e or {}).get('kd') in (0, 3, 4) for e in (s.get('evolutions') or []))]
 print('nonFinal:', len(NONFINAL))
 gd_abi = {a['id']: a for a in GD['abilities']}
+
+# ── v4.40：物种「可选特性 / 天性」原始 id 数组（输出 species.abiIds / species.innIds）──────
+# 动机（v4.40 修复的 bug 根因）：数据层此前只保留中文名，而中文译名存在重合——Stench(1) 与
+#   Malodor(808) 同译「恶臭」（共 7 组 16 个 id）。引擎反查索引 abiOwners() 用 NM2ID（名→单 id，
+#   重复名后者覆盖）把物种中文名翻回 id ⇒ 同名组持有者**全部**错挂到后一个 id（Stench 卡 0/0）。
+#   故在数据层保留 id 语义：中文名 abis/inns 仍只用于显示，id 由 abiIds/innIds 承载。
+# 口径：直接取 gameData species.stats.abis / stats.inns 的原始 id 数组。与 CSV 中文名列**逐位同源**
+#   （CSV 由 build_movesets.py 用 ab_zh(stats.abis[:3]) 按同序逐位翻译而来；实测 1906/1906 物种
+#   两字段长度全等），因此「第 k 个名字 ↔ 第 k 个 id」由构造保证。
+# 门控：长度不一致 / gameData 无此物种 → **不写**该字段（引擎逐条回退既有名字路径，绝不猜测）。
+_GD_SP_BY_ID = {str(_s['id']): _s for _s in GD['species']}
+_IDS_OK = _IDS_PART = 0
+for _sid, _sp in species.items():
+    _g = _GD_SP_BY_ID.get(_sid)
+    if _g is None:
+        _IDS_PART += 1
+        print('  [abiIds 跳过] %s %s：gameData 无此物种' % (_sid, _sp['zh']))
+        continue
+    _st = _g.get('stats') or {}
+    _pa = [str(_x) for _x in (_st.get('abis') or [])]
+    _pi = [str(_x) for _x in (_st.get('inns') or [])]
+    _both = True
+    if len(_pa) == len(_sp['abis']):
+        _sp['abiIds'] = _pa
+    else:
+        _both = False
+        print('  [abiIds 跳过] %s %s：abis 长度 CSV=%d vs gameData=%d' % (_sid, _sp['zh'], len(_sp['abis']), len(_pa)))
+    if len(_pi) == len(_sp['inns']):
+        _sp['innIds'] = _pi
+    else:
+        _both = False
+        print('  [innIds 跳过] %s %s：inns 长度 CSV=%d vs gameData=%d' % (_sid, _sp['zh'], len(_sp['inns']), len(_pi)))
+    if _both:
+        _IDS_OK += 1
+    else:
+        _IDS_PART += 1
+_N_ABIIDS = sum(1 for _sp in species.values() if 'abiIds' in _sp)
+_N_INNIDS = sum(1 for _sp in species.values() if 'innIds' in _sp)
+print('v4.40 自检: abiIds %d 物种 / innIds %d 物种 / species 共 %d | 完整写入 %d | 跳过或部分写入 %d'
+      % (_N_ABIIDS, _N_INNIDS, len(species), _IDS_OK, _IDS_PART))
+assert _N_ABIIDS >= 1800 and _N_INNIDS >= 1800, ('abiIds/innIds 覆盖过低', _N_ABIIDS, _N_INNIDS)
 def load_abi_zh(path):
     wb2 = openpyxl.load_workbook(path, read_only=True, data_only=True)
     ws2 = wb2['特性']

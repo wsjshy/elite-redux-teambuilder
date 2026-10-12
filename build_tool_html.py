@@ -728,7 +728,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.39</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.40</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3628,19 +3628,49 @@ function importSaveBox(){
 var NM2ID={};
 ERDATA.abilities.forEach(function(a){NM2ID[a[1]]=a[0];if(a[2])NM2ID[a[2]]=a[0]});
 ERDATA.abiAlias&&Object.keys(ERDATA.abiAlias).forEach(function(k){if(NM2ID[k]===undefined)NM2ID[k]=ERDATA.abiAlias[k]});
+/* v4.40 修复：名字 → **全部**候选 id（同名返回多个；如「恶臭」→['1','808']、「体现形态」→
+   ['795','796','797','798']）。NM2ID 保持单值语义不变（既有调用点零行为回归，见 v4.40 报告 §1）；
+   本表专供「搜索词 → 候选特性卡」的展示路径，与 abiOwners() 的 id 级归位配套：
+   搜同名特性须两张卡都出现，且各自持有者集合正确。 */
+var NM2IDS={};
+(function(){
+  function _add(n,id){if(!n)return;var L=NM2IDS[n]||(NM2IDS[n]=[]),v=''+id;if(L.indexOf(v)<0)L.push(v)}
+  ERDATA.abilities.forEach(function(a){_add(a[1],a[0]);_add(a[2],a[0])});
+  ERDATA.abiAlias&&Object.keys(ERDATA.abiAlias).forEach(function(k){_add(k,ERDATA.abiAlias[k])});
+})();
+function abiIdList(n){
+  var L=(NM2IDS[n]||[]).slice(0),one=NM2ID[n];
+  if(one!==undefined&&one!==null&&L.indexOf(''+one)<0)L.push(''+one);
+  return L;
+}
 (function(){
   $('abiSearch').oninput=function(){renderAbi()};
   renderAbi();
 })();
-/* v4.x F⑪：特性持有者索引（懒构建，避免加载期依赖 NM2ID 定义顺序） */
+/* v4.x F⑪：特性持有者索引（懒构建，避免加载期依赖 NM2ID 定义顺序）
+   ★ v4.40 修复（同名特性反查错位）：中文译名重合的 7 组 16 个 id（Stench(1)/Malodor(808) 均译
+   「恶臭」等）此前经 NM2ID（名→单 id，重复名后者覆盖）把物种中文名翻回 id ⇒ 同名组持有者**全部**
+   错挂到后一个 id（Stench 卡 0/0、Malodor 卡收下 16 只）。现改为按 id 真值归位：
+     ① 数据层新增 species.abiIds / innIds（= gameData stats.abis/inns 原始 id 数组，与 abis/inns 逐位同源）；
+     ② 无该字段 / 长度不符 → 逐条回退既有名字路径（与 v4.39 行为逐字一致，零回归）；
+     ③ 同一物种在同一 id 下只登记一次：gameData 实况存在 abis=[121,121,121]（阿尔宙斯）类重复位，
+        旧实现按出现次数计数会让卡片「N 只」虚高至 3 倍；去重后 N = 真实物种数（与标签「N 只」语义一致）。 */
 var _abiOwners=null;
+function _abiOwnersPush(o,id,s,key){
+  var g=o[id]||(o[id]={ab:[],inn:[]}),L=g[key];
+  for(var i=0;i<L.length;i++)if(L[i]===s)return;
+  L.push(s);
+}
 function abiOwners(){
   if(_abiOwners)return _abiOwners;
   var o={};
   ERDATA.species.forEach(function(s){
     if(!isValidSp(s))return;
-    s.abis.forEach(function(n){var id=NM2ID[n];if(id===undefined||id===null)return;(o[id]=o[id]||{ab:[],inn:[]}).ab.push(s)});
-    s.inns.forEach(function(n){var id=NM2ID[n];if(id===undefined||id===null)return;(o[id]=o[id]||{ab:[],inn:[]}).inn.push(s)});
+    var ab=s.abis||[],inn=s.inns||[];
+    var abIds=(s.abiIds&&s.abiIds.length===ab.length)?s.abiIds:null;
+    var inIds=(s.innIds&&s.innIds.length===inn.length)?s.innIds:null;
+    ab.forEach(function(n,k){var id=abIds?abIds[k]:NM2ID[n];if(id===undefined||id===null||id===''||id==='0')return;_abiOwnersPush(o,''+id,s,'ab')});
+    inn.forEach(function(n,k){var id=inIds?inIds[k]:NM2ID[n];if(id===undefined||id===null||id===''||id==='0')return;_abiOwnersPush(o,''+id,s,'inn')});
   });
   _abiOwners=o;return o;
 }
@@ -3667,7 +3697,9 @@ function renderAbi(){
   ERDATA.abilities.forEach(function(a){
     var zh=a[2]||'',en=a[1]||'',desc=abiDescZhOf(a[0]);
     if(a[0]==='0')return;
-    if(!fzAny(q,[a[0],zh,en,desc]))return;
+    /* v4.40：搜索词 = 某规范名/别名时，其**全部**候选 id 的卡都算命中（同名特性 1/808 两卡都出）；
+       只在原匹配之外加命中，绝不减少（既有搜索行为零回归）。 */
+    if(!fzAny(q,[a[0],zh,en,desc])&&!(q&&abiIdList(q).indexOf(''+a[0])>=0))return;
     if(cnt>=60)return;
     cnt++;
     var grp=own[a[0]]||{ab:[],inn:[]};
@@ -10534,7 +10566,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.39';
+var ER_ENGINE_VER='v4.40';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -11448,7 +11480,7 @@ import sys as _sys
 import tempfile as _tf
 import subprocess as _sp
 import shutil as _sh2
-_GUARD_JS = r'''/* ER 配招助手 v4.39 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
+_GUARD_JS = r'''/* ER 配招助手 v4.40 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
 'use strict';
 var fs = require('fs'), vm = require('vm'), path = require('path');
 var INDEX = process.argv[2], DATA = process.argv[3];
@@ -11527,14 +11559,14 @@ console.log('  S5m 回收利用(278) 配一次性消耗件：受检='+r.checkedM
 console.log('  S5n 杂技(512) 配一次性消耗件：受检='+r.checkedN+'  违例='+r.viol.m6);
 ['a','b1','b2','m5','m6'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
-if(r.total>0||r.errors>0){console.error('[FAIL] v4.39 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
-console.log('[OK] v4.39 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0（全量 '+r.builds+' 流派）');
+if(r.total>0||r.errors>0){console.error('[FAIL] v4.40 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
+console.log('[OK] v4.40 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0（全量 '+r.builds+' 流派）');
 '''
 _gate_path = os.path.join(_tf.gettempdir(), 'er_guard_check_%d.cjs' % os.getpid())
 with open(_gate_path, 'w', encoding='utf-8') as _gf:
     _gf.write(_GUARD_JS)
 _node = _sh2.which('node') or _sh2.which('node.exe')
-print('--- v4.39 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
+print('--- v4.40 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
 if not _node:
     print('[FATAL] 守门自检需要 Node.js，但 PATH 中找不到 node —— 构建中止（v4.36 起守门=构建硬门闩）')
     _sys.exit(1)
@@ -11550,6 +11582,6 @@ if _so.strip():
 if _se.strip():
     print('[node stderr]\n' + _se.rstrip())
 if _r.returncode != 0:
-    print('[FATAL] v4.39 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
+    print('[FATAL] v4.40 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
     _sys.exit(1)
-print('[BUILD OK] v4.39 守门自检 exit 0（0 违规）')
+print('[BUILD OK] v4.40 守门自检 exit 0（0 违规）')
