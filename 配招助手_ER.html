@@ -460,10 +460,11 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.37</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.38</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
+    <button data-tab="analyze">队伍分析</button>
     <button data-tab="poke">宝可梦</button>
     <button data-tab="move">招式反查</button>
     <button data-tab="type">属性克制</button>
@@ -472,6 +473,16 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   </nav>
 </header>
 <main>
+<!-- ===== 队伍分析（v4.38 C 线 · 第八 tab） ===== -->
+<section id="tab-analyze" class="tab">
+  <div class="bar">
+    <input type="text" id="anSearch" placeholder="输入 6 只（编号/中文/英文，逗号或换行分隔；留空 = 用「队伍构建」当前队伍）">
+    <button id="anRun">分析队伍</button>
+  </div>
+  <div class="tip" id="anRuleTip">💡 队伍分析：只展示引擎推荐（deriveBuilds → finalizeBuild → evNatureLinkV437），队伍级建议只作微调提示</div>
+  <div id="anOut"></div>
+  <div id="ruleBoxAn"></div>
+</section>
 <!-- ===== 宝可梦 ===== -->
 <section id="tab-poke" class="tab">
   <div class="bar">
@@ -1534,6 +1545,345 @@ function switchTab(name){
 document.querySelectorAll('nav button').forEach(function(b){
   b.onclick=function(){switchTab(b.dataset.tab)};
 });
+
+/* ==================== v4.38 C 线：第八 tab「队伍分析」（自组队伍分析器）====================
+   规格：ER配招助手_v4.38_自组队伍分析器设计书.md（六区块 §1.2 / 六维 §3 / EV 队伍级 §4.2 / NA-01~12 §5.2 / DIAG-01~10 §6.1）
+   立场（§7.3-2）：**只展示引擎推荐**——每只的流派/配招/特性/道具/EV/性格取自 deriveBuilds(s,整队) 主推流派
+      （引擎内部已 finalizeBuild → evNatureLinkV437 → buildEvs）；分析器不另生推荐；队伍级建议 C-EV-1/2 只作提示。
+   口径：① 体系 = spSys；角色 = mateRoleOf(s, 完整天气轴集合)（故两遍扫描——首只核心也能判出「天气手」）；
+        ② 钉/除钉/中转/回复/状态一律按**推荐配招集**（set-based）+ FUNC_MV 表判定，与队员卡展示的 4 招同源；
+        ③ 免疫轴 = 特性（anAbiHit，别名安全）+ 属性（t1/t2 归零）；
+        ④ DIAG-06 速度线以**有效实速**（raw × 天气提速1.5 × 顺风2）对比中速档满投；空间/围巾豁免。
+   来源：Smogon Teambuilding/Frameworks/Speed Tiers · Calculatrex Coverage · pokemons.io Roles/Defense ·
+        PokémonDB 免疫 · Bulbapedia Defense · v4.37 S1~S5 联动（设计书 §3.7 / §6 逐条登记）。 */
+/* 特性三套命名归一（R6；data.js 零改动）：物种池 ER 译名（干旱/挖沙/储水…）↔ abilities 表规范名（日照/拨沙/蓄水器…）↔ mechLib 第三套（电力引擎…）。
+   引擎已有的 id 级桥 = abiIdByZhOrEn（NM2ID = 特性表中文 ∪ 英文 ∪ ERDATA.abiAlias）→ abiSame/anyAbiId 别名安全。
+   实测（alias_probe_out.txt）：干旱→70 / 挖沙→146 / 储水→11 / 蓄水器→749 / 电气引擎→78 全部命中；
+   仅第三套译名缺桥者由本表补齐（电力引擎→电气引擎 等）。 */
+var AN_ALIAS_EXT={'电力引擎':'电气引擎','沙暴':'扬沙','炎热岩石':'炽热岩石'};
+var _anAliasDone=false;
+function anAliasBake(){
+  if(_anAliasDone)return;_anAliasDone=true;
+  try{Object.keys(AN_ALIAS_EXT).forEach(function(k){
+    var v=AN_ALIAS_EXT[k],id=null;try{id=abiIdByZhOrEn(v)}catch(e){id=null}
+    if(id!==null&&id!==undefined){if(NM2ID[k]===undefined)NM2ID[k]=id;
+      try{if(ERDATA.abiAlias&&ERDATA.abiAlias[k]===undefined)ERDATA.abiAlias[k]=id}catch(e2){}}
+  })}catch(e3){}
+}
+function anAbiHit(s,nm){
+  anAliasBake();
+  try{if(anyAbiId(s,nm))return true}catch(e){}
+  return (s.abis||[]).concat(s.inns||[]).some(function(x){try{return abiSame(x,nm)}catch(e2){return x===nm}});
+}
+var AN_WX_ABI=[['晴','日照','干旱'],['雨','降雨'],['沙','扬沙','沙暴'],['雪','降雪']];
+var AN_WXSPD_ABI=[['雨','悠游自如'],['晴','叶绿素'],['沙','拨沙','挖沙'],['雪','拨雪']];
+var AN_IMM_ABI=[['水','引水'],['水','蓄水器'],['水','储水'],['电','避雷针'],['电','电气引擎'],['草','食草'],['地面','漂浮']];
+var AN_PRIO_ABI=['恶作剧之心','疾风之翼'];
+var AN_WX_SYS=['晴','雨','沙','雪'];
+var AN_STATUS_MV=[92,261,188,191];
+function anMvList(kind,fb){try{var v=FUNC_MV&&FUNC_MV[kind];return (v&&v.length)?v:fb}catch(e){return fb}}
+function anMvType(id){var m=MV[id];return m?(m[3]||''):''}
+function anMvCat(id){var m=MV[id];return m?(m[4]||''):''}
+function anMvZh(id){var m=MV[id];return m?(m[1]||('#'+id)):('#'+id)}
+function anSetHas(r,ids){return !!r&&ids.some(function(x){return r.moves.indexOf(x)>-1})}
+function anTypes(){return (ERDATA.types||[]).filter(function(x){return x!=='无'&&x!=='?'})}
+function anEff(sp,at){
+  try{
+    var i=ERDATA.types.indexOf(at);if(i<0)return 1;
+    var m=ERDATA.matchup;if(!m)return 1;
+    function mul(c){return c===0?0:(c===2?2:(c===3?0.5:1))}
+    function cell(t){var ti=ERDATA.types.indexOf(t);if(ti<0)return 1;
+      var v=m[ti]?m[ti][i]:1;if(v===undefined||v===null)return 1;return mul(+v)}
+    var r=cell(sp.t1);if(sp.t2&&sp.t2!==sp.t1)r*=cell(sp.t2);
+    return r;
+  }catch(e){return 1}
+}
+function anSpOf(x){
+  if(x&&typeof x==='object'&&x.base&&x.id!==undefined)return x;
+  var k=String(x==null?'':x).trim();if(!k)return null;
+  var f=null;try{f=spAll().filter(function(s){return ''+s.id===k||s.zh===k||s.en===k||(''+s.key)===k})[0]}catch(e){f=null}
+  return f||null;
+}
+function anNatPos(nn){
+  try{var a=NATURES[nn];if(!a)return false;
+    for(var i=0;i<a.length;i++){var s=String(a[i]||'');
+      if(s.indexOf('速度')>-1&&!/[-−减]/.test(s))return true}
+  }catch(e){}
+  return false;
+}
+function anBuildOf(s,team){
+  var bs=[];try{bs=deriveBuilds(s,team||null)||[]}catch(e){bs=[]}
+  return bs.length?bs[0]:null;
+}
+function anRowOf(s,b){
+  var ev=(b&&b.ev&&b.ev.alloc)||null,ev5=ev?(+ev[5]||0):0;
+  var nn=b?normNatName((b.nat&&b.nat[0]&&b.nat[0][0])||''):'';
+  var natPos=anNatPos(nn);
+  var raw=0;try{raw=speedStat((s.base||[])[5],ev5,31,natPos)}catch(e){raw=0}
+  var tpl=(b&&b.ev&&b.ev.template)||'';
+  var wxSpd=false;
+  AN_WXSPD_ABI.forEach(function(p){for(var q=1;q<p.length;q++)if(anAbiHit(s,p[q]))wxSpd=true});
+  var isSp=false;try{isSp=!!pvIsSpaceLike(s,String((b&&b.roleTag)||''),String((b&&b.name)||''))}catch(e2){isSp=false}
+  return {id:s.id,zh:s.zh,name:(b&&b.name)||'（无推荐流派）',side:(b&&b.side)||'',roleTag:(b&&b.roleTag)||'',
+    moves:((b&&b.mv&&b.mv.main)||[]).map(function(x){return x.id}),
+    movesZh:((b&&b.mv&&b.mv.main)||[]).map(function(x){return anMvZh(x.id)}),
+    abi:(b&&b.abi&&b.abi[0]&&b.abi[0].n)||'',item:b?itemMainZh(b):'',
+    ev:ev,evTpl:tpl,nat:nn,why:(function(){try{return evWhyTxt(tpl)}catch(e){return ''}})(),
+    raw:raw,natPos:natPos,wxSpd:wxSpd,isSp:isSp};
+}
+function anWeakTally(mem,at){var n0=0;mem.forEach(function(s){if(anEff(s,at)>=2)n0++});return n0}
+function anCoverN(rows){
+  var seen={},n0=0;
+  rows.forEach(function(r){r.moves.forEach(function(id){
+    if(anMvCat(id)==='变化')return;var t=anMvType(id);if(!t||t==='?'||t==='无')return;
+    if(!seen[t]){seen[t]=1;n0++}})});
+  return {n:n0,types:Object.keys(seen)};
+}
+/* 打击面「覆盖率」口径（设计书 §3.6 / DIAG-04）：遍历 18 个防御属性，能被队内推荐配招中任一攻击招以 ≥2× 命中的计入覆盖；
+   盲区 = 无人 ≥2× 的防御属性（与设计书「存在 def 使全队 eff<2」同义）。matchup 索引方向与 anEff 一致（[被攻属性][攻击属性]）。 */
+function anCoverVs(rows){
+  var ts=anTypes(),blind=[];
+  ts.forEach(function(t){
+    var hit=false,i=ERDATA.types.indexOf(t);
+    rows.forEach(function(r){if(hit)return;r.moves.forEach(function(id){
+      if(hit)return;if(anMvCat(id)==='变化')return;
+      var mt=anMvType(id);if(!mt||mt==='?'||mt==='无')return;
+      var j2=ERDATA.types.indexOf(mt);if(i<0||j2<0)return;
+      var v=ERDATA.matchup?ERDATA.matchup[i][j2]:1;
+      var m=(v===0?0:(v===2?2:(v===3?0.5:1)));
+      if(m>=2)hit=true})});
+    if(!hit)blind.push(t);
+  });
+  return {n:ts.length-blind.length,types:ts.filter(function(t){return blind.indexOf(t)<0}),blind0:blind};
+}
+/* ⑥ 诊断（DIAG-01~10）——判定式严格按设计书 §6.1；need = 候选替换的目标角色 */
+function anDiag(R,mem,rows,wxSys,wxSpdIn){
+  var D=[],nDef=0,nSpDef=0,nPhys=0,nSpec=0,top=0,effTop=0;
+  mem.forEach(function(s){if((s.base||[])[2]>=110)nDef++;if((s.base||[])[4]>=110)nSpDef++});
+  rows.forEach(function(r){
+    if(r.side==='物理')nPhys++;else if(r.side==='特殊')nSpec++;
+    var m1=1;if(r.wxSpd&&wxSpdIn.length)m1*=1.5;if(R.sys.hasTailwind)m1*=2;
+    if(r.raw>top)top=r.raw;if(r.raw*m1>effTop)effTop=r.raw*m1;
+  });
+  var co=[],cwx=[];
+  anTypes().forEach(function(at){var c=anWeakTally(mem,at);
+    if(c>=3)co.push({type:at,n:c});
+    var cv=0;mem.forEach(function(s){if(anEff(s,at)>=2&&(s.base||[])[0]<=75)cv++});
+    if(cv>=3)cwx.push({type:at,n:cv})});
+  var cv=anCoverVs(rows);
+  R.cover.types=cv.types;R.cover.covN=cv.n;R.cover.blind=cv.blind0;R.cover.nTot=anTypes().length;
+  if(!nDef&&nPhys>=3)D.push({id:'DIAG-01',sev:'高',txt:'缺物盾（无 base 物防 ≥110 成员，且物理输出位 '+nPhys+'）',need:'盾'});
+  if(wxSys.length){
+    var openW=wxSys.filter(function(S){
+      var ok=false;
+      AN_WX_ABI.forEach(function(p){if(p[0]!==S)return;mem.forEach(function(s){
+        for(var q=1;q<p.length;q++)if(anAbiHit(s,p[q]))ok=true})});
+      if(!ok)mem.forEach(function(s){try{if(isAbilSet(s,S))ok=true}catch(e0){}});
+      return !ok});
+    if(openW.length)D.push({id:'DIAG-02',sev:'高',txt:'体系「'+openW.join('、')+'」在队但无成员持开手特性',need:'天气手'});
+  }
+  if(co.length)D.push({id:'DIAG-03',sev:'高',txt:'共弱严重：'+co.map(function(x){return x.type+'×'+x.n}).join('、'),need:''});
+  if(cv.n<14)D.push({id:'DIAG-04',sev:'高',txt:'打击面偏窄：覆盖 '+cv.n+'/18（<14）· 盲区 '+cv.blind0.join('、'),need:'输出'});
+  else if(cwx.length)D.push({id:'DIAG-04',sev:'中',txt:'脆皮共弱：'+cwx.map(function(x){return x.type+'×'+x.n}).join('、'),need:''});
+  if(R.sys.hasHazard>=1&&R.sys.rmvN===0)D.push({id:'DIAG-05',sev:'中',txt:'有钉无除钉（撒钉 '+R.sys.hasHazard+' 位 / 除钉 0 位）',need:'除钉'});
+  var tier=0;try{tier=speedStat(medSpe(),252,31,true)}catch(e){tier=0}
+  var scarf=rows.some(function(r){return String(r.item||'').indexOf('讲究围巾')>-1});
+  R.speed.top=top;R.speed.effTop=effTop;R.speed.tier=tier;
+  if(tier&&effTop<tier&&!R.sys.hasSpace&&!scarf)
+    D.push({id:'DIAG-06',sev:'中',txt:'速度线塌陷（有效实速 '+effTop+'（原始 '+top+'）< 中速档满投 '+tier+'，且无空间/顺风/围巾）',need:'控速'});
+  var tot=rows.length||1;
+  if(Math.max(nPhys,nSpec)/tot>0.7&&!nDef&&!nSpDef)
+    D.push({id:'DIAG-07',sev:'中',txt:'物理/特殊过度偏斜（'+Math.max(nPhys,nSpec)+'/'+tot+'）且无防御位',need:'盾'});
+  if(!(R.sys.recN||R.roles['回复']))D.push({id:'DIAG-08',sev:'中',txt:'缺回复/队医（推荐配招集与角色口径均无回复位）',need:'回复'});
+  if(!R.weak.immuneAxis.length)D.push({id:'DIAG-09',sev:'低',txt:'免疫轴为空（无特性/属性免疫）',need:''});
+  if(R.sys.hasSpace&&wxSpdIn.length&&wxSys.length)
+    D.push({id:'DIAG-10',sev:'中',txt:'体系互斥：同时开空间又依赖天气提速（v4.37 R2-C 口径）',need:''});
+  return D;
+}
+function teamReport(ids,label){
+  anAliasBake();
+  var mem=[],i;for(i=0;i<(ids||[]).length;i++){var s=anSpOf(ids[i]);if(s)mem.push(s)}
+  var R={label:label||'',n:mem.length,members:mem.map(function(s){return {id:s.id,zh:s.zh}}),
+    sys:{counts:{},wx:[],field:[],hasSpace:false,hasTailwind:false,hasHazard:0,hasWall:0,rmvN:0,recN:0,pivotN:0,archetype:''},
+    roles:{},side:{phys:0,spec:0,mixed:0,total:0},speed:{list:[],top:0,effTop:0,tier:0,medSpe:medSpe()},
+    weak:{coWeak:[],immuneAxis:[],threat:[]},cover:{types:[],blind:[],covN:0},
+    builds:[],narr:[],diag:[],cands:{},ev:{notes:[]}};
+  if(!mem.length)return R;
+  var rows=[],wxSys=[],wxSpdIn=[],perSys=[];
+  /* 第一遍：体系（首只核心也要拿到完整天气轴 → 第二遍才判角色） */
+  mem.forEach(function(s){
+    var sy=[];try{sy=spSys(s)||[]}catch(e){sy=[]}
+    perSys.push(sy);
+    sy.forEach(function(x){R.sys.counts[x]=(R.sys.counts[x]||0)+1;
+      if(AN_WX_SYS.indexOf(x)>-1&&wxSys.indexOf(x)<0)wxSys.push(x);
+      if(/场地/.test(x)&&R.sys.field.indexOf(x)<0)R.sys.field.push(x)});
+  });
+  R.sys.wx=wxSys.slice();
+  /* 第二遍：推荐流派（EP-6）+ 角色（mateRoleOf 需完整 wxSys）+ set-based 功能位统计 */
+  mem.forEach(function(s,si){
+    var sy=perSys[si]||[];
+    if(sy.indexOf('空间')>-1)R.sys.hasSpace=true;
+    var b=anBuildOf(s,mem),r=anRowOf(s,b);rows.push(r);
+    R.builds.push({id:r.id,zh:r.zh,name:r.name,side:r.side,roleTag:r.roleTag,moves:r.moves,movesZh:r.movesZh,
+      abi:r.abi,item:r.item,ev:r.ev,evTpl:r.evTpl,nat:r.nat,why:r.why});
+    var rl=[];try{rl=mateRoleOf(s,wxSys)}catch(e2){rl=[]}
+    rl.forEach(function(x){R.roles[x]=(R.roles[x]||0)+1});
+    if(r.isSp||/空间/.test(String(r.name||'')))R.sys.hasSpace=true;
+    if(anSetHas(r,[366])||/顺风/.test(String(r.name||'')))R.sys.hasTailwind=true;
+    if(anSetHas(r,anMvList('hazard',[191,390,446,564])))R.sys.hasHazard++;
+    if(anSetHas(r,anMvList('removal',[229,432])))R.sys.rmvN++;
+    if(anSetHas(r,anMvList('pivot',[369,521])))R.sys.pivotN++;
+    if(anSetHas(r,anMvList('rec',[105,202,234,235,236,303,355,409])))R.sys.recN++;
+    if(r.moves.some(function(id){return WALL_MV_SET[id]}))R.sys.hasWall++;
+    AN_WXSPD_ABI.forEach(function(p){if(r.wxSpd&&wxSpdIn.indexOf(p[0])<0)wxSpdIn.push(p[0])});
+    AN_IMM_ABI.forEach(function(p){if(anAbiHit(s,p[1]))R.weak.immuneAxis.push({id:s.id,zh:s.zh,by:'特性',src:p[1],immune:p[0]})});
+  });
+  R.side={phys:0,spec:0,mixed:0,total:rows.length};
+  rows.forEach(function(r){if(r.side==='物理')R.side.phys++;else if(r.side==='特殊')R.side.spec++;else R.side.mixed++});
+  R.speed.list=rows.map(function(r){return {id:r.id,zh:r.zh,raw:r.raw,eff:Math.round(r.raw*(r.wxSpd&&wxSpdIn.length?1.5:1)*(R.sys.hasTailwind?2:1)),ev5:r.ev?(+r.ev[5]||0):0,natPos:r.natPos}}).sort(function(a,b){return b.eff-a.eff});
+  anTypes().forEach(function(at){mem.forEach(function(s){if(anEff(s,at)===0)
+    R.weak.immuneAxis.push({id:s.id,zh:s.zh,by:'属性',src:at+'系攻击',immune:at})})});
+  var co=[];anTypes().forEach(function(at){var c=anWeakTally(mem,at);if(c>=2)co.push({type:at,n:c})});
+  R.weak.coWeak=co.sort(function(a,b){return b.n-a.n});
+  R.diag=anDiag(R,mem,rows,wxSys,wxSpdIn);
+  R.sys.archetype=(wxSys.length?'天气队':(R.sys.hasSpace?'空间队':''))+
+    (R.roles['盾']>=3?'·受队':(R.roles['输出']>=4?'·进攻队':'·平衡队'));
+  /* ⑤ 联动叙事 NA-01~NA-12（成对因果；每条 = 一个可判定字段） */
+  function findWx(S){var hit=null;mem.forEach(function(s){if(hit)return;AN_WX_ABI.forEach(function(p){if(p[0]!==S)return;
+    for(var q=1;q<p.length;q++)if(anAbiHit(s,p[q]))hit=s})});return hit}
+  function findBen(S){var hit=null;mem.forEach(function(s){if(hit)return;AN_WXSPD_ABI.forEach(function(p){if(p[0]===S&&anAbiHit(s,p[1]))hit=s})});return hit}
+  wxSys.forEach(function(S){var a=findWx(S),b=findBen(S);
+    if(a&&b)R.narr.push({id:'NA-01',A:{id:a.id,zh:a.zh},B:{id:b.id,zh:b.zh},field:'sysTags['+S+']=1 ∧ '+b.zh+' 持该天气提速特性',
+      txt:'因你〔'+a.zh+'〕开出了〔'+S+'〕，所以〔'+b.zh+'〕的天气提速特性才成立'})});
+  var hz=null,cl=null;
+  mem.forEach(function(s,si){var r=rows[si];
+    if(!hz&&anSetHas(r,anMvList('hazard',[191,390,446,564])))hz=s;
+    if(!cl&&r&&(r.roleTag==='输出'||r.side==='物理'||r.side==='特殊'))cl=s});
+  if(hz&&cl)R.narr.push({id:'NA-02',A:{id:hz.id,zh:hz.zh},B:{id:cl.id,zh:cl.zh},field:'推荐配招含钉 ∧ 含清场手',
+    txt:'因你〔'+hz.zh+'〕先埋钉，所以对方换入即扣血，你〔'+cl.zh+'〕收割更省招'});
+  R.weak.immuneAxis.filter(function(x){return x.by==='特性'}).forEach(function(im){
+    var tgt=null;mem.forEach(function(s){if(tgt||''+s.id===''+im.id)return;if(anEff(s,im.immune)>=2)tgt=s});
+    if(tgt)R.narr.push({id:'NA-04',A:{id:im.id,zh:im.zh},B:{id:tgt.id,zh:tgt.zh},field:'免疫轴含['+im.src+'→'+im.immune+'] ∧ 队友 '+tgt.zh+' 弱'+im.immune,
+      txt:'因你〔'+im.zh+'〕持〔'+im.src+'〕免疫'+im.immune+'，所以队友〔'+tgt.zh+'〕的'+im.immune+'系弱点被抵消'})});
+  var intim=null,wall=null;mem.forEach(function(s){if(!intim&&anAbiHit(s,'威吓'))intim=s;if(!wall&&(s.base||[])[2]>=110)wall=s});
+  if(intim&&wall)R.narr.push({id:'NA-05',A:{id:intim.id,zh:intim.zh},B:{id:wall.id,zh:wall.zh},field:'含威吓特性 ∧ 含物盾(base物防≥110)',
+    txt:'因你〔'+intim.zh+'〕压对方物攻，所以〔'+wall.zh+'〕能站住不被打穿'});
+  if(R.sys.pivotN>=1){var pv=null;mem.forEach(function(s,si){if(!pv&&anSetHas(rows[si],anMvList('pivot',[369,521])))pv=s});
+    if(pv)R.narr.push({id:'NA-06',A:{id:pv.id,zh:pv.zh},B:{id:pv.id,zh:pv.zh},field:'推荐配招含中转(VoltTurn) ∧ 含强化/清场',
+      txt:'因你〔'+pv.zh+'〕带折返把对手拖上来，所以队友打手获得免费换入强化的机会'})}
+  if(R.sys.hasSpace){var sp2=null;mem.forEach(function(s,si){if(!sp2&&rows[si]&&rows[si].isSp)sp2=s});
+    if(sp2)R.narr.push({id:'NA-07',A:{id:sp2.id,zh:sp2.zh},B:{id:sp2.id,zh:sp2.zh},field:'含空间手 ∧ pvIsSpaceLike 受益核',
+      txt:'因你〔'+sp2.zh+'〕开出戏法空间，所以慢速高攻核心得以先手清场'})}
+  var st=null;mem.forEach(function(s,si){if(!st&&anSetHas(rows[si],AN_STATUS_MV))st=s});
+  if(st&&R.sys.recN>=1){var rc=null;mem.forEach(function(s,si){if(!rc&&anSetHas(rows[si],anMvList('rec',[105,202,234,235,236,303,355,409])))rc=s});
+    if(rc)R.narr.push({id:'NA-08',A:{id:st.id,zh:st.zh},B:{id:rc.id,zh:rc.zh},field:'含状态施加 ∧ 含回复位',
+      txt:'因你〔'+st.zh+'〕叠毒消耗，所以〔'+rc.zh+'〕的回复位站得更久'})}
+  var tw=null;mem.forEach(function(s,si){if(!tw&&anSetHas(rows[si],AN_PRIO_ABI?[366,86,317]:[366]))tw=s});
+  var midN=rows.filter(function(r){return r.raw>=140&&r.raw<=250}).length;
+  if(tw&&midN>=2)R.narr.push({id:'NA-09',A:{id:tw.id,zh:tw.zh},B:{id:tw.id,zh:tw.zh},field:'推荐配招含顺风/降速 ∧ 中速位 '+midN+'≥2',
+    txt:'因你〔'+tw.zh+'〕拉出顺风/降速，所以全队中速位获得先手'});
+  var healer=null;mem.forEach(function(s,si){if(!healer&&rows[si]&&anSetHas(rows[si],anMvList('rec',[105,202,234,235,236,303,355,409]))&&(s.base||[])[0]>=100)healer=s});
+  if(healer)R.narr.push({id:'NA-11',A:{id:healer.id,zh:healer.zh},B:{id:healer.id,zh:healer.zh},field:'含队医（耐久≥100 且配招含回复）',
+    txt:'因你〔'+healer.zh+'〕愿意值班回复，所以弱状态的输出位不惧鬼火/剧毒'});
+  var mixed=rows.filter(function(r){return r.side==='双刀'}).length;
+  if(mixed&&R.side.phys>=2&&R.side.spec>=2)R.narr.push({id:'NA-12',A:{id:mem[0].id,zh:'双刀位'},B:{id:mem[0].id,zh:'全队'},
+    field:'存在 side=双刀 ∧ 物理≥2 ∧ 特殊≥2',txt:'因你双刀手兼顾物理/特殊，所以对方单一防御位无法同时挡住两条线'});
+  /* ⑥a 叙事兜底（v4.38 修正轮）：NA-01~NA-12 全不成立（无体系联动）时，至少输出基础联防 + 打击面/速度线叙事，
+     避免叙事区块空白（黑盒实测：手工队 B-2 速攻 narr=0，17 队唯一）。兜底条目标 id=NA-00，明确标注为兜底。 */
+  if(!R.narr.length){
+    var _cw=(R.weak.coWeak||[])[0],_im=(R.weak.immuneAxis||[])[0];
+    R.narr.push({id:'NA-00',A:null,B:null,field:'兜底·联防结构（本队无体系联动）',
+      txt:'本队未形成体系联动（无天气/场地/空间轴），按联防结构看：'+
+        (_cw?('最常见共性弱点为〔'+_cw.type+'〕（'+_cw.n+' 只同弱）'):'无 ≥2 只同弱')+
+        (_im?('；免疫轴可用〔'+_im.zh+'〕'+(String(_im.by)==='特性'?('的〔'+_im.src+'〕'):'的属性')+'免疫〔'+_im.immune+'〕挡下该系攻击'):'；免疫轴为空，建议补免疫位')});
+    R.narr.push({id:'NA-00',A:null,B:null,field:'兜底·打击面与速度线（本队无体系联动）',
+      txt:'打击面覆盖 '+R.cover.covN+'/'+(R.cover.nTot||18)+
+        ((R.cover.blind||[]).length?('，整队盲区：'+R.cover.blind.join('、')):'，无整队盲区')+
+        '；速度线原始最高 '+R.speed.top+'、有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）'});
+  }
+  /* ⑥b 候选替换（只建议不剔除；findTeammates + 定位匹配过滤；共弱/覆盖复算口径见设计书 §6.2） */
+  var core=mem[0];
+  R.diag.forEach(function(d){
+    if(!d.need||d.id==='DIAG-06'||d.id==='DIAG-10')return;
+    var recs=[];try{recs=findTeammates(core,'',d.need)||[]}catch(e4){recs=[]}
+    var outp=[],used={};mem.forEach(function(s){used[''+s.id]=1});
+    for(var ci=0;ci<recs.length&&outp.length<3;ci++){
+      var t=(recs[ci]&&recs[ci].s)?recs[ci].s:recs[ci];
+      if(!t||!t.id||used[''+t.id])continue;
+      var rl=[];try{rl=mateRoleOf(t,wxSys)}catch(e5){rl=[]}
+      if(['盾','除钉','天气手','回复'].indexOf(d.need)>-1&&rl.indexOf(d.need)<0)continue;
+      used[''+t.id]=1;
+      outp.push({id:t.id,zh:t.zh,roles:rl,score:(recs[ci]&&recs[ci].score)||null});
+    }
+    R.cands[d.id]=outp;
+  });
+  /* ④ 队伍级 EV 建议（C-EV-1/2；只提示，不改引擎值，冲突以引擎为准） */
+  if(R.speed.tier&&R.speed.effTop<R.speed.tier&&!R.sys.hasSpace&&!R.sys.hasTailwind)
+    R.ev.notes.push({id:'C-EV-1',txt:'速度线对齐：有效实速 '+R.speed.effTop+' 低于中速档满投 '+R.speed.tier+'，建议把「最需要抢先手」的那只 EV[5] 调到 evForSpeed(中速档)，其余不跟风'});
+  if(R.diag.some(function(d){return d.id==='DIAG-01'}))
+    R.ev.notes.push({id:'C-EV-2',txt:'缺物盾：建议队内最快打手之一用 evRebalance 把部分速度/攻击 EV 转入 HP/物防，转为半盾站场'});
+  return R;
+}
+/* —— 渲染（六区块；玩家友好多图少文） —— */
+function anCard(t){return '<div class="card" style="margin:6px 0;padding:8px">'+t+'</div>'}
+function anHead(t){return '<div style="font-weight:600;margin:10px 0 4px">'+t+'</div>'}
+function anChips(arr){return arr.map(function(x){return '<span class="badge" style="margin-right:4px">'+esc(String(x))+'</span>'}).join('')}
+function anRender(R){
+  if(!R||!R.n)return '<div class="tip">未解析到有效成员（请输入 6 只的编号 / 中文 / 英文名）</div>';
+  var h='';
+  h+=anHead('① 队伍构成画像');
+  var sysList=Object.keys(R.sys.counts).map(function(k){return k+'×'+R.sys.counts[k]});
+  h+=anCard('<b>原型</b>：'+esc(R.sys.archetype)+'　<b>体系识别</b>：'+anChips(sysList.length?sysList:['无体系'])+
+    (R.sys.hasSpace?'<span class="badge">空间</span>':'')+(R.sys.hasTailwind?'<span class="badge">顺风</span>':'')+
+    (R.sys.hasHazard?'<span class="badge">钉×'+R.sys.hasHazard+'</span>':'')+(R.sys.hasWall?'<span class="badge">墙×'+R.sys.hasWall+'</span>':'')+
+    '<div class="tip">天气轴：'+((R.sys.wx||[]).length?esc(R.sys.wx.join('、')):'无')+' ／ 场地：'+((R.sys.field||[]).length?esc(R.sys.field.join('、')):'无')+'</div>');
+  h+=anCard('<b>角色分布（可兼任）</b>：'+anChips(Object.keys(R.roles).map(function(k){return k+'×'+R.roles[k]}))+
+    '<div class="tip">角色可兼任，不视为硬性配方</div>');
+  h+=anCard('<b>物理/特殊配比</b>：物理 '+R.side.phys+' ／ 特殊 '+R.side.spec+' ／ 双刀 '+R.side.mixed+
+    '　<b>速度线</b>：原始最高 '+R.speed.top+' · 有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）');
+  h+=anHead('② 联防 / 弱点矩阵');
+  h+=anCard('<b>共性弱点（≥2 只同弱）</b>：'+(R.weak.coWeak.length?anChips(R.weak.coWeak.map(function(x){return x.type+'×'+x.n})):'无')+
+    '<div class="tip">免疫轴：'+(R.weak.immuneAxis.length?esc(R.weak.immuneAxis.map(function(x){return x.zh+'('+x.by+':'+x.src+'→'+x.immune+')'}).slice(0,10).join('、')):'空')+'</div>');
+  h+=anHead('③ 打击面覆盖');
+  h+=anCard('覆盖 <b>'+R.cover.covN+'/'+(R.cover.nTot||18)+'</b>：'+anChips(R.cover.types)+
+    (R.cover.blind.length?'<div class="tip">整队盲区（全员有免疫/抵抗）：'+esc(R.cover.blind.join('、'))+'</div>':'<div class="tip">无整队盲区</div>'));
+  h+=anHead('④ 每只精灵推荐（引擎 deriveBuilds 主推流派，逐字段展示）');
+  R.builds.forEach(function(b){
+    h+=anCard('<b>'+esc(b.zh)+'</b>（#'+b.id+'）· '+esc(b.name)+'　<span class="badge">'+esc(b.roleTag||'')+'/'+esc(b.side||'')+'</span>'+
+      '<div>配招：'+esc(b.movesZh.join(' / '))+'</div>'+
+      '<div>特性：'+esc(b.abi||'—')+'　道具：'+esc(b.item||'—')+'</div>'+
+      '<div>EV：'+esc(b.ev?b.ev.join('/'):'—')+'（'+esc(b.evTpl||'')+'）　性格：'+esc(b.nat||'—')+'</div>'+
+      (b.why?'<div class="tip">'+esc(b.why)+'</div>':''));
+  });
+  h+=anHead('⑤ 联动叙事（成对因果 · 可判定字段）');
+  h+=R.narr.length?R.narr.map(function(x){return anCard('<span class="badge">'+x.id+'</span> '+esc(x.txt)+
+    '<div class="tip">可判定字段：'+esc(x.field)+'</div>')}).join(''):'<div class="tip">未触发叙事模板</div>';
+  h+=anHead('⑥ 诊断与优化（只建议不剔除）');
+  if(!R.diag.length)h+='<div class="tip">未命中结构性问题</div>';
+  R.diag.forEach(function(d){
+    var c=(R.cands[d.id]||[]);
+    h+=anCard('<span class="badge" style="color:#c33">'+d.id+'</span> <span class="badge">'+d.sev+'</span> '+esc(d.txt)+
+      (c.length?'<div class="tip">候选替换 Top'+c.length+'：'+esc(c.map(function(x){return x.zh+'#'+x.id}).join('、'))+'</div>':''));
+  });
+  if(R.ev.notes.length)h+=anCard('<b>队伍级 EV 微调建议（不覆盖引擎结论）</b>'+R.ev.notes.map(function(x){return '<div>'+x.id+'：'+esc(x.txt)+'</div>'}).join(''));
+  return h;
+}
+function renderAnTab(){
+  var box=$('anOut');if(!box)return;
+  var q=($('anSearch')&&$('anSearch').value||'').trim();
+  var ids=[];
+  if(q)ids=q.split(/[\s,，;；\/]+/).filter(Boolean);
+  else ids=(typeof team!=='undefined'&&team?team.map(function(s){return s.id}):[]);
+  var R=null;
+  try{R=teamReport(ids,'自组队伍')}catch(e){box.innerHTML='<div class="tip">分析失败：'+esc(String(e&&e.message||e))+'</div>';return}
+  box.innerHTML=anRender(R);
+}
+(function(){
+  var b=(typeof document!=='undefined')?document.querySelector('nav button[data-tab="analyze"]'):null;
+  if(b)b.onclick=function(){switchTab('analyze');try{renderAnTab()}catch(e){}};
+  var rb=(typeof document!=='undefined')?document.getElementById('anRun'):null;
+  if(rb)rb.onclick=function(){try{renderAnTab()}catch(e){}};
+})();
 
 /* ============ 宝可梦列表 ============ */
 var spFilter={types:{}},spShown=0,spStep=120;
@@ -3034,6 +3384,7 @@ var SYS_MV_ADJ={
 /* 体系识别：模板 */
 function archOfTpl(t){
   var n=String(t.name||'')+String(t.theme||'');
+  if(/双轴/.test(n))return '双轴';   /* v4.38 A 线：T-31 空间雨天双轴（TR-Rain） */
   if(/空间/.test(n))return '空间';
   if(/双天气|天气双核/.test(n))return '双天气';
   if(/顺风/.test(n))return '顺风';
@@ -3174,7 +3525,7 @@ function tplNew(o){
     flow:o.flow||[],
     tips:(o.tips||[]).concat(['引擎侧模板下沉（v4.36；数据层 TEMPLATES 未改动，低分只排后不剔除）']),
     archKey:o.arch,dims:o.dims,trigger:o.trigger,slots:o.slots||[],trigTxt:o.trigTxt||'',
-    src:o.src,sysList:o.sysList||[],noSysGate:true,tplNewVer:'v4.36'};
+    src:o.src,sysList:o.sysList||[],noSysGate:true,tplNewVer:o.ver||'v4.36'};
   SYS_DIMS[o.arch]=o.dims.concat([SIDE_DIM]);
   SYS_DIM_RULE[o.arch]=o.rules||{};
   TPL_NEW.push(t);return t;
@@ -3398,6 +3749,35 @@ tplNew({arch:'反差强化',name:'反差强化轴',theme:'反差强化轴（唱�
   ],
   rules:{'唱反调（126）':'唱反调 → +5','自降招（近身战/蛮力/流星群/过热/飞叶风暴/精神突进）':'每个 +1（上限 +4）','掩护/回复位':'有回复或保命招 → +1','本系威力':'本系折算 ≥120 → +2'},
   src:'https://bulbapedia.bulbagarden.net/wiki/Contrary_(Ability) · https://www.smogon.com/dex/sv/pokemon/serperior/ · https://www.serebii.net/abilitydex/contrary.shtml'});
+/* —— T-31（v4.38 A 线 P0）空间雨天双轴（TR-Rain）：空间 5 回合 × 雨天 8→12 回合双窗口轮转 —— */
+tplNew({arch:'双轴',name:'空间雨天双轴（TR-Rain）',theme:'空间雨天双轴（TR-Rain · 空间 5 回合 × 雨天 8→12 回合双窗口轮转）',sysList:['雨'],ver:'v4.38',
+  roles:['空间手','雨天手','雨天打手','空间受益核','清场手','自由位'],
+  keys:[['招式','戏法空间'],['特性','降雨'],['招式','求雨'],['道具','潮湿岩石']],
+  match:{abis:['降雨','雨幕','悠游自如','雨盘','干燥皮肤'],moves:['戏法空间','求雨','打雷','暴风'],types:['水']},
+  counters:{types:['草','电','地面']},
+  trigTxt:'可学 戏法空间(433) 或 降雨/雨幕 天性；双轴弱条件（不要求同一只）',
+  trigger:function(s){return tplLearnN(s,[433,240])>0||tplAbiHit(s,'降雨')||tplAbiHit(s,'雨幕')},
+  slots:[{n:'①空间手',need:'可学 戏法空间(433)；优选 base 速 ≤50 + 高耐久 → 0 速 EV + 减速性格（满 HP + 主防 252）'},
+    {n:'②天气手（开雨）',need:'降雨/雨幕 天性 或 可学求雨(240)；必须实开本队天气；持 潮湿岩石(298) → 12 回合'},
+    {n:'③雨天打手',need:'水招主输出 或 雨体系受益（悠游自如/雨盘/干燥皮肤）；优配 打雷(87)/暴风(542) 雨天必中 → 走 S3 倍率降档'},
+    {n:'④空间受益核',need:'pvIsSpaceLike 为真（base 速 ≤50 + 空间向定位）→ 0 速 EV + 减速性格 + 252 输出'},
+    {n:'⑤清场手 / 非空间档',need:'与 ③ 同类但不投空间；优选 讲究围巾(285) → 走 S3 + B1 天花板（base≥110 输出核不降速）'},
+    {n:'⑥自由位',need:'联防/折返/先制收尾（常规）'}],
+  flow:['开局（T1–2）：空间手 + 反先制位先手铺空间（戏法空间 优先度 −7、5 回合；外部一手：Armor Tail 挡击掌奇袭 + 威吓位折返）',
+    '中期（T3–5 空间窗）：开雨 → 打手入场（水招 ×1.5；悠游自如 ×1.5 速度），低速高攻在反转顺序下先手 —— 此阶段打手走 S2（0 速 + 减速性格）',
+    '后期（空间窗结束）：切非空间档继续压制（讲究围巾满速档；对位更快的顺风队时把戏法空间当反制补位招）'],
+  tips:['空间 5 回合 vs 雨天 8 回合（持 潮湿岩石 12 回合）——两窗口时长不同步，轮转要按回合数预判',
+    '⚠ 空间会把雨天最强的速度优势反转成负担（Trick Room Reversal）：双轴复合核单值口径**默认取空间**（0 速 + 减速性格），雨窗为另一口径、二者不叠乘',
+    '空间手 ≠ 天气手：两职责可由不同成员承担（ER 内天然兼任者仅 437 青铜钟）——v4.35「天气手必须实开本队天气」闸门照常生效，双轴不豁免',
+    '同队两种天气来源 → 本提示降级不展示（复用 v4.34 跨天气闸门）；ER 天气归属 = 慢者主导（wxGrantOrder=slow）'],
+  dims:[{dim:'可开戏法空间(433)',w:3,j:function(s){return tplLearnN(s,[433])?{pts:3,t:'可开戏法空间(433)'}:null}},
+   {dim:'开雨手段',w:3,j:function(s){if(tplAbiHit(s,'降雨')||tplAbiHit(s,'雨幕'))return{pts:3,t:'出场开雨（降雨/雨幕）'};if(tplLearnN(s,[240]))return{pts:2,t:'可学求雨(240)'};return null}},
+   {dim:'雨体系受益',w:2,j:function(s){return (spSys(s).indexOf('雨')>-1)?{pts:2,t:'雨体系受益'}:null}},
+   {dim:'雨天必中招（打雷/暴风）',w:1,j:function(s){var n=tplLearnN(s,[87,542]);return n?{pts:2*n,t:'必中招 '+n+' 个'}:null}},
+   {dim:'低速（空间收益）',w:1,j:function(s){var v=tplBase(s,5);return v<=50?{pts:2,t:'低速 base '+v}:null}},
+   {dim:'耐久/回复',w:1,j:function(s){var f=funcProfile(s);return (f.rec||tplBulk(s)>=300)?{pts:1,t:'有回复/耐久 '+tplBulk(s)}:null}}],
+  rules:{'可开戏法空间(433)':'可学 433 → +3','开雨手段':'降雨/雨幕 天性 → +3；仅可学求雨 → +2','雨体系受益':'SYS_MAP 含雨 → +2','雨天必中招（打雷/暴风）':'每个 +2','低速（空间收益）':'base 速 ≤50 → +2','耐久/回复':'有回复招或耐久 ≥300 → +1'},
+  src:'https://stratagemvgc.app/en/guides/teams/champ-tr-rain · https://stratagemvgc.app/en/guides/speed-control · https://www.smogon.com/forums/threads/2010-kyogre-qc-1-1-gp-1-1.3786762/ · https://www.a810g.com/post/blastora-rain-vgc2026-reg-ma-p0k3m0n-4 · https://champions.gcxxblog.com/build/double-rain-trick-room-mega-mawile-raichu-y/ · https://www.pokestats.cc/guides/pokemon-champions-rain-team-guide · https://www.smogon.com/forums/threads/bw-uu-rain-dance-guide.3462905/ · https://bulbapedia.bulbagarden.net/w/index.php?title=Primordial_Sea_(Ability)'});
 /* 触发命中统计（模板卡展示用；按模板名缓存） */
 var _tplTrigCache={};
 function tplTriggerCount(t){
@@ -3977,7 +4357,9 @@ var MECH_RW_ZH={imposter_anchor:'变身者',foul_play_atk:'欺诈',body_press_de
   weather_speed:'天气提速（叶绿素/拨沙/拨雪）',weather_offense:'天气强攻（太阳之力/沙之力）',weather_recovery:'天气回复（雨盘/冰体）',
   dry_skin_weather:'干燥皮肤',type_immunity_absorb:'属性免疫吸收',water_bubble_shell:'水泡',water_veil_guard:'水幕',
   intimidate_weaken:'威吓',anti_intimidate:'反威吓',sheer_force_boost:'全力攻击',scrappy_ghost:'胆量',
-  light_metal_weight:'轻金属',huge_power_phys:'巨力',magician_steal:'魔术师'};
+  light_metal_weight:'轻金属',huge_power_phys:'巨力',magician_steal:'魔术师',
+  /* ---- v4.38 B 线新增 2 项（引擎侧流派，不依赖数据层 mechLib 词表）---- */
+  counter_mirror:'双倍奉还/镜面反射/金属爆炸',recycle_consumable:'回收利用（一次回收）'};
 function mechRwZh(rw){return MECH_RW_ZH[rw]||'机制'}
 function mechAbiZh(id){var a=ABI[id];return a?(a[2]||a[1]||('#'+id)):('#'+id)}
 function mechMvZh(id){var m=MV[id];return m?(m[1]||('#'+id)):('#'+id)}
@@ -4007,6 +4389,76 @@ function mechIsConsumable(id){
   if(MECH_CONSUM_ID[n])return true;
   var it=itemById(n);return !!(it&&itemOneShot(it[2]));
 }
+/* ==================== v4.38 B 线：机制招 × 特性 语义化（B1~B6） ====================
+   规格：ER配招助手_v4.38_设计书_A-B.md §3（B1~B6）+ §3.7 兼容性矩阵 + E0 §2.5 实测反例。
+   本轮只做三件「确定收益、不动 EV 数值口径」的事：
+     ① 道具门控 MECH_ITEM_GATE：机制必需件不得被墙规则/通用兜底覆盖
+        （E0 反例：杂技×光之黏土 5 条 / 硬撑×光之黏土 3 条；讲究系×杂技保持 0）
+     ② 性格语义化 MECH_NATURE：按「机制结算属性」给性格——欺诈/扑击/反伤核自身物攻零收益 → 减攻击性格
+     ③ 新增机制流 counter_mirror（反伤，优先度 −5）/ recycle_consumable（回收利用×一次性消耗件）
+   红线（§3.7 + v4.37 纪律延续）：只正向/前提改写，不硬剔除；不改 archOfSp 阈值、pvIsSpaceLike 门、
+        道具池、EV 写入路径；不引入新反模式。 */
+var MECH_EXTRA_RW=['counter_mirror','recycle_consumable'];   /* 引擎侧新增流派（mechLib 词表外） */
+/* 机制必需件（道具门控）：kind = 'consumable-only'（必须是一次性消耗件且非讲究系）/ 'status-orb'（异常宝珠） */
+var MECH_ITEM_GATE={
+  acrobatics_item:{kind:'consumable-only',item:'飞行宝石',
+    why:'杂技需无道具位（或已消耗的一次性件）才拿 1.5 倍（ER：75 → 112.5，非 ×2）——常驻道具=杂技空转'},
+  unburden_item:{kind:'consumable-only',item:'场地种子',
+    why:'轻装需道具**被消耗**后才提速 ×2——常驻道具=轻装空转'},
+  facade_status:{kind:'status-orb',item:'剧毒宝珠',
+    why:'硬撑需自身处于异常状态才 70 → 140——宝珠（剧毒宝珠/火焰宝珠）是点火开关'},
+  toxic_heal_item:{kind:'status-orb',item:'剧毒宝珠',
+    why:'毒疗需自身中毒才每回合回 1/8——剧毒宝珠是发作前提'},
+  recycle_consumable:{kind:'consumable-only',item:'文柚果',
+    why:'回收利用需一次性消耗件（果实/宝石/场地种子/披带）已被消耗——常驻道具与讲究系会让本招必定失败'}
+};
+function mechItemNameId(zh){var id=null;try{id=itemByZhOrEn(String(zh||''))}catch(e){id=null}
+  return (id===null||id===undefined)?null:(''+id)}
+function mechItemGateOk(rw,zh){
+  var g=MECH_ITEM_GATE[rw];if(!g)return true;
+  var s0=String(zh||'');if(!s0)return true;
+  if(g.kind==='status-orb')return /剧毒宝珠|火焰宝珠|剧毒珠|火焰珠/.test(s0);
+  if(g.kind==='consumable-only'){
+    if(/^讲究/.test(s0))return false;                 /* B1-1：讲究系必剥离（围巾×杂技自相矛盾） */
+    var id=mechItemNameId(s0);
+    if(id!==null)return mechIsConsumable(id);
+    return /宝石|种子|披带|果/.test(s0);
+  }
+  return true;
+}
+/* 机制性格语义化（不减益 + 不再给 +速度）：
+   foul_play_atk(492)：按**对方物攻**结算 → 自身物攻零收益 → 减攻击（大胆 / 沉着·慎重）
+   body_press_def(704)：按**自身物防**结算 → 加防御；（空间轴）悠闲 / 狂妄
+   counter_mirror(68/243/368)：优先度 −5 → 速度无意义 → 减攻击；（空间轴）悠闲 / 狂妄
+   facade_status(263)：攻击向核心 → 不改（池内有 毅力(62) 才固定 固执） */
+var MECH_NATURE={
+  foul_play_atk:{pick:'defByEv',why:'欺诈按**对方物攻**结算 → 自身物攻零收益，性格取减攻击'},
+  body_press_def:{pick:'defByEv',ifSpace:'relaxed',why:'扑击按**自身物防**结算 → 性格取加防御；空间/低速轴取加防减速'},
+  counter_mirror:{pick:'defByEv',ifSpace:'relaxed',why:'反伤（优先度 −5）：速度不影响出手顺序 → 性格取减攻击；空间/低速轴取加防减速'},
+  facade_status:{pick:'none',guts:'固执',why:'硬撑是攻击向核心 → 保持加攻击性格'}
+};
+function mechNaturePick(s,b){
+  if(!s||!b)return null;
+  var e=MECH_NATURE[b.mechRw];if(!e)return null;
+  if(e.pick==='none'){
+    if(e.guts&&mechHasAbi(s,'毅力')&&String((b.side)||'')!=='特殊')
+      return ['固执','毅力(62)+硬撑：异常态攻击 ×1.5 且威力 140 → 固定加攻击（v4.38 B4/NATURE）'];
+    return null;
+  }
+  var side=String(b.side||''),ev=(b.ev&&b.ev.alloc)||[];
+  var isSp=pvIsSpaceLike(s,String(b.roleTag||''),String(b.name||''));
+  var defMain=((+ev[2]||0)>=(+ev[4]||0))?'def':'spd';
+  var phys=(side!=='特殊'),nm;
+  if(isSp)nm=phys?'悠闲':'狂妄';
+  else if(phys)nm='大胆';
+  else nm=(defMain==='spd')?'沉着':'慎重';
+  var NEG=String(((NATURES[nm])||[])[1]||'').slice(1);
+  var ni=NEG?STAT_NM.indexOf(NEG):-1;
+  if(ni>0&&(+ev[ni]||0)>=252)return null;            /* 负项 = 已投满 EV 项 → 不改（避免 EV×性格三方冲突） */
+  if((nm==='悠闲'||nm==='狂妄')&&(+ev[5]||0)>=252)return null;
+  return [nm,(e.why||'机制性格语义化（v4.38 B 线）')+' → '+(NATURES[nm]||[]).join('')];
+}
+function mechNatureApply(s,b){try{var v=mechNaturePick(s,b);if(v)b.nat=[v].concat((b.nat||[]).slice(1))}catch(e){}return b}
 /* 该宝可梦的推荐道具 id（机制前提判定用；懒缓存，避免逐招重算） */
 var _MECH_ITEMCTX={};
 function mechRecItemId(s,side,tag){
@@ -4808,6 +5260,12 @@ function mechExtCombos(){
     effect:'雨窗（8 回合）水招 ×1.5 / 悠游自如 ×1.5 速度；空间窗（6 时段）转为慢者先手 —— 雨天提速核在空间窗内会**反向**失去先手，故 b[5]>=110 的速攻核不归空间（走 S3 倍率降档）',
     narr:'雨天手不必兼任空间手：空间窗开启时提速收益反转，两侧各留一手更稳（弱条件，不硬门）',
     src:'https://bulbapedia.bulbagarden.net/wiki/Swift_Swim · https://bulbapedia.bulbagarden.net/wiki/Priority · https://www.smogon.com/dp/articles/trick_room_guide'});
+  /* v4.38 A-1（P0）：T-21 完整玩法——五人分工 × 三阶段轮转（RULE-T21-1/2/3 裁决；弱条件，不硬门） */
+  add({key:'tr_rain_rotation',zh:'空间×雨天双轴轮转（五人分工 × 三阶段）',self:[{k:'m',n:'戏法空间'}],
+    with:[{k:'a',n:'降雨'},{k:'a',n:'雨幕'},{k:'m',n:'求雨'},{k:'m',n:'打雷'},{k:'m',n:'暴风'}],
+    effect:'RULE-T21-1 主轴优先（最高优先）：队伍体系判定复用引擎原生 archOfSp——主轴=空间 → 该成员走空间低速口径（0 速 EV + 减速性格）；主轴=雨/天气轴 → 走 S3 倍率降档（保留达标速度，空间仅作辅助轴）。RULE-T21-2 天花板：b[5]≥110 且 roleTag=输出 → 不降速（B1 亮点保护）。RULE-T21-3 兜底：双轴并存且无明确主轴时沿用默认取空间（0 速 EV + 减速性格），why 标注另一窗口，二者不叠乘（严禁 ev[5]=0 × 1.5 类伪运算）',
+    narr:'五人分工：① 空间手（会 戏法空间(433)，优选 base 速 ≤50 + 高耐久 → 0 速 EV + 减速性格）② 天气手/开雨（降雨·雨幕 天性 或 可学求雨(240)，持 潮湿岩石(298) → 12 回合；必须实开本队天气）③ 雨天打手（水招主输出 或 雨体系受益，优配 打雷(87)/暴风(542) 雨天必中 → S3 降档）④ 空间受益核（pvIsSpaceLike → S2 归零速）⑤ 清场手/非空间档（优选 讲究围巾(285) 满速 → S3 + B1）⑥ 自由位（联防/折返/先制收尾）。三阶段轮转：开局 T1–2 空间手 + 反先制位铺空间（空间 5 回合）→ 中期 T3–5 开雨 + 打手入场（雨天 8 回合 / 潮湿岩石 12 回合；空间窗内打手走 S2）→ 后期空间窗结束切非空间档继续压制。空间手 ≠ 天气手：不得绑定同一只（ER 内天然兼任者仅 437 青铜钟）；同队两种天气来源 → 本提示降级不展示（复用 v4.34 跨天气闸门）',
+    src:'https://stratagemvgc.app/en/guides/teams/champ-tr-rain · https://stratagemvgc.app/en/guides/speed-control · https://www.smogon.com/forums/threads/2010-kyogre-qc-1-1-gp-1-1.3786762/ · https://www.pokestats.cc/guides/pokemon-champions-rain-team-guide · https://www.smogon.com/forums/threads/bw-uu-rain-dance-guide.3462905/ · https://bulbapedia.bulbagarden.net/w/index.php?title=Primordial_Sea_(Ability)'});
   _MECH_EXT_CB=L;return L;
 
 }
@@ -5272,6 +5730,38 @@ function finalizeBuild(s,b){
       b.it=(b.it||[]).filter(function(e2){return !/^讲究/.test(String(e2[0]))});
       if(!b.it.length)b.it.push(fallbackItemFor(b));
     }
+    /* v4.38 B 线 MECH_ITEM_GATE：机制必需件不得被「墙规则 → 光之黏土」或通用兜底覆盖
+       E0 实测反例：杂技×光之黏土 5 条（144/1089/1818/2242/2245）、硬撑×光之黏土 3 条（87/899/2501）
+       口径：机制必需件被覆盖 → **回读机制件**（strip 覆盖件 + 重置主推为机制件），并记录 b.mechItemStripped */
+    try{
+      if(b.mechRw&&MECH_ITEM_GATE[b.mechRw]){
+        var _imz5=itemMainZh(b);
+        if(!mechItemGateOk(b.mechRw,_imz5)){
+          var _g5=MECH_ITEM_GATE[b.mechRw];
+          b.mechItemStripped=_imz5;
+          stripItemZh(b,_imz5);
+          b.it=(b.it||[]).filter(function(e6){return String(e6[0])!==_imz5});
+          b.it.unshift([_g5.item,_g5.why]);
+          if(!b.warn)b.warn='机制必需件被「'+_imz5+'」覆盖 → 已回读机制件「'+_g5.item+'」（v4.38 MECH_ITEM_GATE）';
+        }
+      }
+    }catch(e7){}
+    /* v4.38 修正轮：**非机制流**的杂技空转回检 —— 配招含杂技(512) 时主推道具必须是一次性消耗件（或无道具）：
+       常驻道具（生命宝珠/剩饭…）⇒ 杂技永远拿不到 1.5× = 75 威力空转。
+       实测反例（黑盒 v4.38 回归）：118 角金鱼「雨稳健联防」/ 119 金鱼王「雨增伤清场」主推=生命宝珠。 */
+    try{
+      if(!b.mechRw&&mv.some(function(x){return (''+x.id)==='512'})){
+        var _imz6=itemMainZh(b);
+        if(!mechItemGateOk('acrobatics_item',_imz6)){
+          var _g6=MECH_ITEM_GATE.acrobatics_item;
+          b.mechItemStripped=_imz6;
+          stripItemZh(b,_imz6);
+          b.it=(b.it||[]).filter(function(e8){return String(e8[0])!==_imz6});
+          b.it.unshift([_g6.item,_g6.why]);
+          if(!b.warn)b.warn='配招含杂技但主推道具「'+_imz6+'」为常驻（杂技 75 空转）→ 已回读一次性消耗件「'+_g6.item+'」（v4.38 杂技空转回检）';
+        }
+      }
+    }catch(e8){}
     /* v4.37 S4-B/S4-C/S4-D：空间核 × 提速/降速道具 互斥（讲究围巾 / 后攻之尾 / 先制之爪）→ 剔除并回退主推
        （空间核禁推 后攻之尾/先制之爪；空间提速件 客房服务/黑色铁球 不在 ITEM_POOL → P2 登记，本轮不新增候选池） */
     try{
@@ -5293,6 +5783,10 @@ function finalizeBuild(s,b){
       var ev=b.ev.alloc,base=s.base||[0,0,0,0,0,0];
       if(b.evKind||(!phys&&!spec)){                    /* 机制语义 EV / 无攻击招 → 耐久 */
         if(b.evKind==='slow'){ev=[252,0,4,0,0,0];ev[outIdx]=252;b.ev.template='空间低速'}
+        else if(b.evKind==='spdef'){ev=[252,0,4,0,0,0];ev[4]=252;ev[2]=4;b.ev.template='耐久'}   /* v4.38 B5：镜面反射 → 252HP + 252 特防 */
+        else if(b.evKind==='speed'&&(+b.wantSpeedMul||1)>1){ev=[4,0,0,0,0,252];ev[outIdx]=252;b.ev.template='速攻'}
+        /* v4.38 B1-2：只有「带速度倍率的轻装核（wantSpeedMul）」才走速攻模板（随后由 evNatureLinkV437
+           的倍率分支降档）；无倍率的 evKind='speed'（硬撑）保持既有耐久归宿不变（B4-4：耐久/站场定位不投速） */
         else{
           ev=[252,0,4,0,0,0];
           if(b.evKind==='physdef'||(base[2]||0)>=(base[4]||0)){ev[2]=252;ev[4]=4}
@@ -5332,6 +5826,7 @@ function mechBuildBase(s,side,name,rw,desc,roleTag){
     nat:null,it:[],abi:[],desc:desc||'',basis:[],ev:null,score:99,breakingRoute:'机制',mechRw:rw};
   try{b.nat=buildNature(s,b.side,b.roleTag)}catch(e){b.nat=null}
   try{b.ev=buildEvs(s,b.side,b.roleTag,name,b)}catch(e){b.ev=null}   /* v4.37：传入流派对象，提前接入 S1~S4 */
+  mechNatureApply(s,b);   /* v4.38 B 线 MECH_NATURE：机制性格语义化（只改性格名+why，不动 EV 数值/模板） */
   try{b.abi=pickAbiFor(s,b.side,b.roleTag)}catch(e){b.abi=[]}
   return b;
 }
@@ -5345,7 +5840,7 @@ var MECH_BUILD={
       '变身者特性：出场自动变身为对手（能力值/属性/特性一并复制）——自身种族值与技能池基本不参与评价，配招只保命/辅助');
     b.mv.main.push({id:144,kind:'tech',tag:'核心',why:['出场复制对手（变身者自动变身）','自身种族 48/48/48 无意义，战斗 = 对手的能力值']});
     b.core=[144];b.choiceExempt=1;   /* v4.34：核心招落地校验；围巾只提速不复制道具，属合法用法 → 豁免讲究×变化 */
-    if(mechHasMv(s,512))b.mv.main.push({id:512,kind:'attack',tag:'补位',why:['无道具时威力翻倍（112.5）——围巾/披带消耗后生效']});
+    if(mechHasMv(s,512))b.mv.main.push({id:512,kind:'attack',tag:'补位',why:['无道具时威力 ×1.5（75 → 112.5，ER 实值）——围巾/披带消耗后生效']});
     if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身挡状态/先读']});
     if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住防暴击']});
     b.it=[['讲究围巾','变身者复制对手速度后超速原主抢先出手（Smogon 百变怪标准配置；围巾只提速不复制道具）'],
@@ -5359,8 +5854,8 @@ var MECH_BUILD={
   acrobatics_item:function(s,cs){
     if(!mechHasMv(s,512))return null;
     var b=mechBuildBase(s,coreSide(s)==='物理'?'物理':'特殊','杂技爆发流','acrobatics_item',
-      '杂技在**无道具位**时威力翻倍（112.5 基准）——用消耗品（宝石/场地种子）起手爆发后自动进入无道具状态，杂技全程高威');
-    b.mv.main.push({id:512,kind:'attack',tag:'核心',why:['无道具时威力翻倍（112.5）','消耗品用尽后自动触发']});
+      '杂技在**无道具位**时威力 ×1.5（ER 实值：75 → 112.5，非 ×2）——用消耗品（宝石/场地种子）起手爆发后自动进入无道具状态，杂技全程高威');
+    b.mv.main.push({id:512,kind:'attack',tag:'核心',why:['无道具时威力 ×1.5（75 → 112.5，ER 实值）','消耗品用尽后自动触发']});
     b.core=[512];   /* v4.34 P0-1：核心招落地校验（净化/过滤不得清空杂技） */
     var extra=bestStabAtk(s,b.side,null);
     if(extra)b.mv.main.push(extra);
@@ -5371,7 +5866,8 @@ var MECH_BUILD={
     /* v4.34 P2-4：杂技 + 轻装「同回合双收益」合并成一套（吃道具 → 杂技翻倍 + 轻装提速；全库原 32 条轻装空转） */
     if((s.abis||[]).indexOf('轻装')>-1||(s.inns||[]).indexOf('轻装')>-1){
       b.abi=forceAbiByName(s,'轻装',b.abi);
-      b.name='杂技轻装爆发流';b.desc='杂技在**无道具位**时威力翻倍（112.5），轻装在道具消耗后**速度翻倍**——同一回合靠吃消耗品同时拿到增伤与提速两项收益（组合考古：Acrobatics + Unburden）';
+      b.name='杂技轻装爆发流';b.desc='杂技在无道具位时威力 ×1.5（ER：75 → 112.5，非 ×2），轻装在道具消耗后**速度翻倍**——同一回合靠吃消耗品同时拿到增伤与提速两项收益（组合考古：Acrobatics + Unburden）';
+      b.evKind='speed';b.wantSpeedMul=2;   /* v4.38 B1-2：轻装 ×2 → 速度 EV 按倍率降档（evNatureLinkV437 消费），再降到关键档位 */
       b.basis.push({k:'mech',txt:'组合 杂技×轻装（同回合双收益）——消耗品 = 引爆器 + 加速器'});
     }
     var seeds=[328,329,330,331];seeds.forEach(function(i){var it=itemById(i);if(it)b.it.push([it[2]||it[1],'场地种子：场地+1 防后消耗 → 杂技翻倍（一次性）'])});
@@ -5455,7 +5951,7 @@ var MECH_BUILD={
     var b=mechBuildBase(s,coreSide(s)==='物理'?'物理':'特殊','轻装速攻流','unburden_item',
       '轻装在道具消耗后速度翻倍——带一次性消耗品（场地种子/属性宝石/披带），第一回合吃完即超速全场');
     var extra=bestStabAtk(s,b.side,null);if(extra)b.mv.main.push(extra);
-    if(mechHasMv(s,512))b.mv.main.push({id:512,kind:'attack',tag:'联动',why:['杂技：消耗品用尽=无道具 → 杂技 112.5 + 轻装翻速，双机制叠加']});
+    if(mechHasMv(s,512))b.mv.main.push({id:512,kind:'attack',tag:'联动',why:['杂技：消耗品用尽=无道具 → 杂技 112.5（×1.5）+ 轻装翻速，双机制叠加']});
     var cov=bestCoverAtk(s,b.side);if(cov)b.mv.main.push(cov);
     b.it=[['场地种子','吃场地 +1 级防/速后消耗 → 轻装翻速（种子与轻装天然联动）'],['飞行宝石','本发 1.5 倍后消耗 → 轻装翻速']];
     b.abi=forceMechAbi(s,'unburden_item',b.abi);   /* v4.34 P1-3：轻装须由所选特性真正提供（原 32 条轻装速攻流未选轻装） */
@@ -5564,18 +6060,69 @@ var MECH_BUILD={
     b.basis.push({k:'mech',txt:'组合 免疫位 × 队友群攻（冲浪/放电/地震）：队友 AOE 反成回复源（报告 4.10）'});
     return b;
   },
-  /* 硬撑：异常状态下威力翻倍（112）→ 剧毒珠/火焰珠自异常 */
+  /* 硬撑：异常状态下威力翻倍（70 → 140，ER 实值）→ 剧毒宝珠/火焰宝珠自异常
+     v4.38 B4-1/B4-2：威力口径 112 → 140（与 ER 实值、自家 mech_lib、T-28 文案统一）；道具名规范化 剧毒宝珠(302)/火焰宝珠(303) */
   facade_status:function(s,cs){
     if(!mechHasMv(s,263))return null;
     if(!physOutOk(s))return null;   /* v4.30 P0-1：物攻侧不可玩（如攻击 10 的幸福蛋）不生成物理硬撑流 */
     var b=mechBuildBase(s,'物理','硬撑异常爆发','facade_status',
-      '硬撑在中毒/灼伤/麻痹时威力翻倍（112）——自挂异常（剧毒珠/火焰珠），第一回合开始就是满威力');
-    b.mv.main.push({id:263,kind:'attack',tag:'核心',why:['异常状态下威力 112（翻倍）——首回合即可满威']});
+      '硬撑在中毒/灼伤/麻痹时威力翻倍（70 → 140，ER 实值）——自挂异常（剧毒宝珠/火焰宝珠），第一回合开始就是满威力');
+    b.mv.main.push({id:263,kind:'attack',tag:'核心',why:['异常状态下威力 140（70 翻倍，ER 实值）——首回合即可满威']});
     b.core=[263];b.evKind='speed';   /* v4.34 P0-1/P0-2：核心招落地 + 速攻模板 EV */
     var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);
     if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
-    b.it=[['剧毒珠','回合开始自中毒 → 硬撑满威（无副作用）'],['火焰珠','灼伤自挂（注意：灼伤扣攻的精灵慎用）']];
-    b.basis.push({k:'mech',txt:'机制 硬撑（facade_status）——异常=武器，珠=点火开关'});
+    /* v4.38 B4-3 GATE-B4：异常宝珠只在「异常态能转成收益」时才推
+       （毒疗 90 → 中毒不掉血 / 魔法防守 98 → 免疫自挂伤害 / 毒激 137 → 攻击向增益 / 毅力 62 → 攻击 ×1.5 且无视灼伤降攻）；
+       都不命中 → 仍可给件，但必须 warn（自挂异常每回合掉血；灼伤削弱该核的**其他**物理招，硬撑本身不受影响） */
+    var _guts=mechHasAbi(s,'毅力'),_ph=mechHasAbi(s,'毒疗'),_mg=mechHasAbi(s,'魔法防守'),_tb=mechHasAbi(s,'毒激');
+    var _orbWhy=[];
+    if(_guts)_orbWhy.push('毅力(62)：异常时攻击 ×1.5 且无视灼伤降攻 → 宝珠=净增益');
+    if(_ph)_orbWhy.push('毒疗(90)：中毒态每回合回 1/8，抵消自挂异常掉血');
+    if(_mg)_orbWhy.push('魔法防守(98)：免疫自挂异常的每回合伤害');
+    if(_tb)_orbWhy.push('毒激(137)：中毒态攻击向增益');
+    if(!_orbWhy.length)b.warn='⚠ 自挂异常每回合掉血，且灼伤会削弱该核的**其他**物理招（硬撑本身不受影响）——池内无毒疗/毅力/魔法防守/毒激，属净自伤用法，请自行取舍';
+    b.it=[['剧毒宝珠',(_orbWhy.length?('回合开始自中毒 → 硬撑满威；'+_orbWhy.join('；')):'回合开始自中毒 → 硬撑满威（113 无副作用收益特性，属自伤用法）')],
+      ['火焰宝珠','灼伤会削弱该核的**其他**物理招；硬撑本身不受影响；有 毅力(62) 则完全免疫']];
+    b.basis.push({k:'mech',txt:'机制 硬撑（facade_status）——异常=武器，宝珠=点火开关（70 → 140）'});
+    return b;
+  },
+  /* 反伤：双倍奉还(68)/镜面反射(243)/金属爆炸(368) 优先度 −5 → 速度投入无意义（v4.38 B5 新增流派） */
+  counter_mirror:function(s,cs){
+    var bb=(s&&s.base)||[0,0,0,0,0,0];
+    var mv0=null;
+    if(mechHasMv(s,68))mv0=68;else if(mechHasMv(s,243))mv0=243;else if(mechHasMv(s,368))mv0=368;
+    if(mv0===null)return null;
+    if(!((bb[1]||0)<70||(bb[3]||0)<70))return null;              /* 自身攻击无用，才需要「被打才有输出」 */
+    if(!(((bb[0]||0)+(bb[2]||0)+(bb[4]||0))>=250))return null;  /* 耐久核才算成立（吃得住才反得痛） */
+    var sp=(mv0===243),nmt=mechMvZh(mv0);
+    var b=mechBuildBase(s,sp?'特殊':'物理','反伤后手流','counter_mirror',
+      '双倍奉还/镜面反射/金属爆炸按**受到的伤害**结算返还（优先度 −5 → 永远最后出手）——低攻高耐久核的能力值全押 HP+单防，靠「被打」反杀；速度投入无意义');
+    b.mv.main.push({id:mv0,kind:'attack',tag:'核心',why:['优先度 −5：速度不影响出手顺序，点数全给耐久',(sp?'按受到的特殊伤害返还':'按受到的物理伤害返还')]});
+    b.core=[mv0];b.evKind=sp?'spdef':'physdef';   /* B5-1：物理反伤 → 252HP+252物防；镜面反射 → 252HP+252特防 */
+    [68,243,368].forEach(function(id){if(id!==mv0&&mechHasMv(s,id)&&b.mv.main.length<4)
+      b.mv.main.push({id:id,kind:'attack',tag:'联动',why:['另一侧反伤招：物理/特殊通吃（金属爆炸 1.5 倍）']})});
+    if(mechHasMv(s,182)&&b.mv.main.length<4)b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住：诱使对手出招后再反伤']});
+    if(mechHasMv(s,269)&&b.mv.main.length<4)b.mv.main.push({id:269,kind:'tech',tag:'封锁',why:['挑衅：逼对手出攻击招（反伤流需要对方动手）']});
+    b.it=[['气势披带','吃下致命一击仍能反伤一次（反伤流标准配置）'],['剩饭','站场续航（耐久核的主食）'],['防岩果','防被克制属性一击带走']];
+    b.basis.push({k:'mech',txt:'机制 反伤（'+nmt+'）——被打才是输出手段，速度=废案'});
+    return b;
+  },
+  /* 回收利用：一次性消耗件循环（v4.38 B6；旧「回收×毒疗循环宝珠」经证据链证伪已放弃） */
+  recycle_consumable:function(s,cs){
+    if(!mechHasMv(s,278))return null;
+    var bb=(s&&s.base)||[0,0,0,0,0,0];
+    var bulky=false;try{var _r0=String((coreRole(s)||{}).role||'');bulky=(_r0==='肉盾'||_r0==='受队'||_r0==='辅助')}catch(e0){}
+    if(!((bb[1]||0)<70||(bb[3]||0)<70||bulky))return null;
+    var b=mechBuildBase(s,'物理','回收一次流','recycle_consumable',
+      '回收利用：把**已消耗**的一次性道具（果实/宝石/场地种子/气势披带）拿回来再用一次——持常驻道具或讲究系时本招必定失败（v4.38 B6 新定义）',bulky?'肉盾':'输出');
+    b.mv.main.push({id:278,kind:'tech',tag:'核心',why:['回收已消耗的一次性件 → 果实/宝石/披带再用一次','⚠ 持常驻道具时本招必定失败：本流派只配一次性消耗件']});
+    b.core=[278];b.recycleGate='consumable-only';
+    var rec=null;try{rec=bestRecMv(s)}catch(e1){}
+    if(rec)b.mv.main.push(rec);
+    if(mechHasMv(s,164)&&b.mv.main.length<4)b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：消耗件 + 替身回合换收益']});
+    if(mechHasMv(s,92)&&b.mv.main.length<4)b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：耐久核消耗配套']});
+    b.it=[['文柚果','消耗后回收再用一次（一次性保命 ×2）'],['飞行宝石','宝石本发 1.5 倍后回收再用'],['气势披带','吃一击后回收（披带二次生效）']];
+    b.basis.push({k:'mech',txt:'机制 回收利用（recycle_consumable）——一次性件循环；常驻道具=必定失败（S5m 守门）'});
     return b;
   }
 };
@@ -5613,8 +6160,12 @@ function mechBuildsOf(s){
      v4.34 P2-2：负面天性（懒惰=每两回合发呆一回合）→ 需连续出手的进攻型机制流一并剔除（报告 4.8） */
   var MECH_OFF={magic_guard_survival:1,acrobatics_item:1,huge_power_phys:1,sheer_force_boost:1,
     water_bubble_shell:1,scrappy_ghost:1,facade_status:1,gyro_ball_speed:1};
-  mechAll().forEach(function(mc){
-    var rw=mc&&mc.rewrite;if(!rw||!MECH_BUILD[rw]||seen[rw])return;seen[rw]=1;
+  var _rws=[];
+  mechAll().forEach(function(mc){var rw=mc&&mc.rewrite;if(rw&&MECH_BUILD[rw]&&_rws.indexOf(rw)<0)_rws.push(rw)});
+  /* v4.38 B 线：引擎侧新增流派（mechLib 词表外）一并枚举出流 */
+  (MECH_EXTRA_RW||[]).forEach(function(rw){if(MECH_BUILD[rw]&&_rws.indexOf(rw)<0)_rws.push(rw)});
+  _rws.forEach(function(rw){
+    if(seen[rw])return;seen[rw]=1;
     if((_lowP||_lazyS)&&MECH_OFF[rw])return;
     var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
     /* 配招空槽的机制流派不生成（如再生力流但全无 UT/VS/钉子/状态招）——空卡没有可玩性 */
@@ -9117,7 +9668,8 @@ function evNatureLinkV437(s,b){
   var tailwind=/顺风/.test(name+roleTag);
   var scarf=String(itemMainZh(b)).indexOf('讲究围巾')>-1;
   var wxMul=1;try{wxMul=pvWeatherSpeedMul(s)}catch(e2){wxMul=1}
-  var mul=(wxMul>1?1.5:1)*(tailwind?2:1)*(scarf?1.5:1);
+  var wsm=Math.max(1,+b.wantSpeedMul||1);   /* v4.38 B1-2：轻装 ×2 等机制速度倍率（与天气/顺风/围巾同口径降档） */
+  var mul=(wxMul>1?1.5:1)*(tailwind?2:1)*(scarf?1.5:1)*wsm;
   var tierRaw=speedStat(medSpe(),252,31,true);
   var natName=normNatName(b.nat&&b.nat[0]?b.nat[0][0]:'');
   var natPos=!!(NATURES[natName]&&String(NATURES[natName][0])==='+速度');
@@ -9374,7 +9926,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.37';
+var ER_ENGINE_VER='v4.38';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -10155,7 +10707,7 @@ function engineGuardSelfCheck(){
   })});
   var norm=function(x){return String(x==null?'':x).replace(/\([^)]*\)\s*$/,'').trim()};
   var SYS9=['雨','晴','沙','雪','电场','精神场地','青草场地','薄雾场地','剧毒场地'];
-  var va=[],vb1=[],vb2=[],nB3=0,checkedA=0,checkedB=0,nSp=0,nB=0,errors=0;
+  var va=[],vb1=[],vb2=[],vm5=[],vm6=[],nB3=0,checkedA=0,checkedB=0,checkedM=0,checkedN=0,nSp=0,nB=0,errors=0;
   (ERDATA.species||[]).forEach(function(s){
     nSp++;
     var auto={};try{(ownAutoSys(s)||[]).forEach(function(x){auto[x]=1})}catch(e){}
@@ -10169,6 +10721,25 @@ function engineGuardSelfCheck(){
         var rk=ROCK[S];if(!rk)return;checkedA++;
         if(items.indexOf(rk)>-1)va.push({id:s.id,zh:s.zh,build:b.name,item:rk,sys:S,autoBy:Object.keys(auto)});
       });
+      /* v4.38 S5m（B6 守门）：回收利用(278) 只能配一次性消耗件——常驻道具/讲究系 → 回收必定失败（伪机制） */
+      if((b.mv&&b.mv.main||[]).some(function(x){return ''+x.id==='278'})){
+        checkedM++;
+        var _imz5=(b.it&&b.it[0])?norm(b.it[0][0]):'';
+        var _iid5=null;try{_iid5=itemByZhOrEn(_imz5)}catch(em5){_iid5=null}
+        var _ok5=false;
+        if(_iid5!==null&&_iid5!==undefined){try{_ok5=mechIsConsumable(_iid5)}catch(em6){_ok5=false}}
+        if(!_ok5)vm5.push({id:s.id,zh:s.zh,build:b.name,item:_imz5});
+      }
+      /* v4.38 修正轮 S5n：杂技(512) 只能配一次性消耗件或无道具——常驻道具 ⇒ 杂技 75 空转（伪伤害） */
+      if((b.mv&&b.mv.main||[]).some(function(x){return (''+x.id)==='512'})){
+        checkedN++;
+        /* 判据直接复用引擎门控函数 mechItemGateOk（单一真源）：避免守门自建口径与引擎不一致
+           （s7 首测误报 18 条 = 轻装速攻流×场地种子：场地种子为真消耗件但未列入 MECH_CONSUM_ID，
+             引擎侧靠名称回退正则 /宝石|种子|披带|果/ 通过，守门侧只查 id 表故误报）。 */
+        var _imz7=itemMainZh(b);
+        var _ok7=false;try{_ok7=mechItemGateOk('acrobatics_item',_imz7)}catch(em9){_ok7=false}
+        if(!_ok7&&_imz7)vm6.push({id:s.id,zh:s.zh,build:b.name,item:_imz7});
+      }
       var ab0=(b.abi&&b.abi[0]&&b.abi[0].n)||'',abSet=false;
       try{abSet=!!abiSetExt(ab0)}catch(e){}
       var selfSet=abSet||innSet;
@@ -10187,10 +10758,10 @@ function engineGuardSelfCheck(){
       });
     });
   });
-  var total=va.length+vb1.length+vb2.length;
-  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length},
-    detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20)},
-    info:{b3:nB3},species:nSp,builds:nB,errors:errors,checkedA:checkedA,checkedB:checkedB,rock:ROCK};
+  var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length},
+    detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20),m5:vm5.slice(0,20),m6:vm6.slice(0,20)},
+    info:{b3:nB3},species:nSp,builds:nB,errors:errors,checkedA:checkedA,checkedB:checkedB,checkedM:checkedM,checkedN:checkedN,rock:ROCK};
 }
 initRuleBoxes();
 renderTpl();
