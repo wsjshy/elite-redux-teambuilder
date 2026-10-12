@@ -520,7 +520,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.41</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.42</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3474,6 +3474,12 @@ function abiIdList(n){
   if(one!==undefined&&one!==null&&L.indexOf(''+one)<0)L.push(''+one);
   return L;
 }
+/* v4.42 修复：开关声明上移至初始渲染（下方 IIFE 的 renderAbi()）之前。
+   原位置在 renderAbi 首次调用之后——var 提升使首次渲染读到 undefined（falsy）⇒
+   初始渲染不过滤（「开关隐藏 0 个持有者条目」+ 未进化型全量显示），
+   用户须点开关触发 abiFilterToggle 重渲染后才生效。 */
+var optAbiFinal=true,optAbiMega=true;   /* 特性反查持有者 */
+var optMvFinal=true,optMvMega=true;     /* 招式反查「谁能学」 */
 (function(){
   $('abiSearch').oninput=function(){renderAbi()};
   renderAbi();
@@ -3511,8 +3517,6 @@ function abiOwners(){
    · 「仅最终形态」= isFinalForm(s)（ER CanEvolve 派生的 nonFinalER 判定）；
      「Mega 形态优先」= hasMegaForm(s)（可 Mega 的非 Mega 形态；ER 可永久 Mega，故默认收窄到 Mega 形态本身）。
    · 判定完全复用既有函数，不新增数据口径：过滤只影响列表呈现，不写回任何持久状态。 */
-var optAbiFinal=true,optAbiMega=true;   /* 特性反查持有者 */
-var optMvFinal=true,optMvMega=true;     /* 招式反查「谁能学」 */
 function lkKeep(s,onlyFinal,megaOnly){
   if(!s)return false;
   if(onlyFinal&&!isFinalForm(s))return false;   /* 非最终进化型 */
@@ -10435,7 +10439,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.41';
+var ER_ENGINE_VER='v4.42';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
