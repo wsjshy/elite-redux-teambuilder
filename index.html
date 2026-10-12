@@ -418,6 +418,33 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   .lmodbox{max-width:100%}
   .mvrow{gap:4px}
   .l1hd{gap:6px}
+  /* ===== v4.36 F 移动端竖版修复（《手机竖版UI验证报告》P1-1/P1-2/P2-1/P2-2/P2-4；仅 CSS，零 JS 改动）===== */
+  /* F1 主推队友卡不再超宽被裁：单卡宽度受容器约束 → .mtmv 获得换行压力、overflow-wrap 生效。
+     横滑容器 .mateline 内的卡片仍可多张横滑（每卡 = 容器宽度 − 内边距），不再溢出视口。 */
+  .mateline .mate{width:100%; max-width:100%; min-width:0; flex-basis:auto}
+  .mateline .mate .mtmv,.mateline .mate .mtcfg{max-width:100%}
+  /* F2 进化链窄屏换行：.evoroute 改块级堆叠，.evoline/.evochip 允许收缩换行（Mega 形态不再被裁） */
+  .evoroute{display:block}
+  .evoroute .famlab{display:block; flex-basis:auto; padding-top:0; margin:0 0 4px}
+  .evoroute .evoline{min-width:0; max-width:100%}
+  .evochip{max-width:100%}
+  .evochip .evonm{overflow-wrap:anywhere; word-break:break-word}
+  /* F2b 进化链「单格」原子性破除（v4.36 实测 375×667 与 412×915：.evocell = 本体形态 chip + .evopends 双 Mega 形态
+     合计 392px，作为原子 inline-flex 无法内部换行 → 溢出行宽 392 > 容器 269/306、末位形态右缘 424 > 视口。
+     解法：窄屏下 .evocell/.evopends 自身可换行并受容器约束（仅 ≤768px，桌面布局不受影响）。 */
+  .evoroute .evocell{max-width:100%; min-width:0; flex-wrap:wrap}
+  .evoroute .evopends{max-width:100%; min-width:0; flex-wrap:wrap}
+  .evoroute .evocell .evochip{min-width:0}
+  .evoroute .evoarrow{flex:0 0 auto}
+  /* F3 触控命中区 ≥44px：候选切换链接 / 词条 / 属性克制结果内联 span（v4.6「触控目标」目标未覆盖项） */
+  a.cand{display:inline-block; min-height:44px; line-height:44px; padding:0 3px}
+  .candline{min-height:44px}
+  .gl{display:inline-block; min-height:44px; line-height:44px; padding:0 2px}
+  #atkResult span[onclick],#defResult span[onclick]{display:inline-block; min-height:44px; line-height:44px}
+  /* F5 弹层关闭按钮宽度补足（覆盖后置 index.html .modal .close 26px 规则）；F4 配置栏与卡片同宽（F1 后自然对齐，此处显式收口） */
+  .modal .close{width:44px; height:44px; font-size:20px; padding:0}
+  /* F7 长中文招名词内换行（防窄列溢出；与 .mtmv 既有口径一致） */
+  .mtmv,.mtcfg,.candline{overflow-wrap:anywhere; word-break:break-word}
 }
 @media (max-width:480px){
   .mategrid{grid-template-columns:1fr 1fr}
@@ -433,7 +460,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.35</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.36</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -812,6 +839,11 @@ function wxTip(x){
   s=s.replace(/（ER 无限天气）/,'（天气 '+WCONF.abilityDurTurns+' 回合）');
   s=s.replace(/\+\s*30%(（ER 沿用）)?/g,'×'+WCONF.terrainBoost+'（已按游戏源码核对：B_TERRAIN_TYPE_BOOST=GEN_8）');
   s=s.replace(/顺风仅 4 回合/,'顺风 '+WCONF.tailwindTurns+' 回合（已按游戏源码核对：常量 3 ⇒ 实际 4 个回合时段）');
+  /* v4.36 E（勘误加固）：数据层遗留「增伤从 50% 削到 20%」类文案的通用兜底改写。
+     原实现只匹配「ER 天气为无限回合（天气特性），但增伤从 50% 削到 20%」这一条完整串；
+     此处补「增伤削到 N%」的通用模式，防止数据层文案变体漏改（ER 实际为单档 ×1.5，不分手动/特性）。 */
+  s=s.replace(/增伤从\s*50%\s*削到\s*20%/g,'晴/雨增伤 ×'+(1+WCONF.boost)+'（已按游戏源码核对：单档，不分手动/特性）');
+  s=s.replace(/增伤削到\s*20%/g,'增伤 ×'+(1+WCONF.boost)+'（已按游戏源码核对：单档，不分手动/特性）');
   return s;
 }
 /* ============ 规格 v1.0 引擎辅助（B3/B4/B5/B7/B9 共用） ============ */
@@ -1163,6 +1195,8 @@ function isWxSys(x){return Object.keys(SYS_SET).some(function(n){return SYS_SET[
 function sysBenefitNames(sys){return Object.keys(SYS_MAP).filter(function(n){return SYS_MAP[n]===sys})}
 function sysSetterName(s,sys){var nm='';s.abis.concat(s.inns).forEach(function(n){if(!nm&&abiSetOf(n)===sys)nm=n});return nm}
 function tplSys(t){
+  /* v4.36 B：引擎侧新模板自带 sysList（即使为空数组也以其为准：空=不做体系主题榜硬过滤） */
+  if(t&&Object.prototype.toString.call(t.sysList)==='[object Array]')return t.sysList.slice();
   var out={},abis=(t.match&&t.match.abis)||[],mvs=(t.match&&t.match.moves)||[];
   abis.forEach(function(a){var v=abiSysOf(a);if(v)out[v]=1});
   mvs.forEach(function(n){var id=mvIdByZhOrEn(n);if(id!==null&&WEATHER_MV[id])out[WEATHER_MV[id]]=1});
@@ -2777,6 +2811,8 @@ var TPL_EXTRA=[
 function tplAll(){
   var t=(ERDATA.templates||[]).slice();
   if(t.length<18)t=t.concat(TPL_EXTRA.slice(0,Math.max(0,18-t.length)));
+  /* v4.36 B：引擎侧新模板正向追加（数据层 TEMPLATES 不动；低分只排后、不剔除） */
+  try{if(TPL_NEW&&TPL_NEW.length)t=t.concat(TPL_NEW)}catch(e){}
   return t;
 }
 function tplDataCount(){return (ERDATA.templates||[]).length}
@@ -3113,6 +3149,266 @@ function sysDimRule(arch,dim){
   var a=SYS_DIM_RULE[arch];
   return (a&&a[dim])||SYS_RULE_SHARED[dim]||'按维度权重表逐项判定（详见交付报告《v4.x 推荐评分体系化》）';
 }
+/* ==================================================================================
+   v4.36 B（P1·核心动作）：战术模板下沉 —— 引擎侧槽位模型（触发判定 + 组成 + 维度行）
+   规格：《ER配招助手_v4.36_个性化亮点强化设计书》§2（T-19~T-30）/ §5.1 闸门；
+   TEMPLATES 数据层**不动**（build_tool_data.py / data.js 零改动），与 TPL_EXTRA 同一兜底模式：
+   引擎侧数组 TPL_NEW，由 tplAll() 正向追加（低分只排后、不剔除）。
+   每条 = trigger(s)（触发判定，用于命中统计与卡片展示）+ slots[]（槽位模型=组成）+ dims[]（维度行=打分）。
+   noSysGate=true → 不做「体系主题榜」硬过滤，改由维度行排序（符合「不设死板规则/硬性剔除」）。
+   archKey 在 SYS_DIMS 注册新体系键，使维度行可解释、可被 sysTable/sysDimRule 复用。
+   src：设计书附录 A 检索 URL；无外部惯例者标「ER 特色发散」。
+   ================================================================================== */
+var TPL_NEW=[];
+var TPL_NEW_RULE={};
+function tplAbiHit(s,nm){return (s.abis||[]).concat(s.inns||[]).some(function(n){return abiSame(n,nm)})}
+function tplTerrainSetter(s){return (s.abis||[]).concat(s.inns||[]).some(function(n){var v=null;try{v=abiSetExt(n)}catch(e){}return !!v&&/场地|电场/.test(v)})}
+function tplBase(s,i){return (s.base&&s.base[i])||0}
+function tplBulk(s){return tplBase(s,0)+tplBase(s,2)+tplBase(s,4)}
+function tplLearnN(s,ids){var n=0;ids.forEach(function(id){if(learnHasAnyId(s,[id]))n++});return n}
+var TPL_IMM_ABI=['引水','避雷针','储水','食草','电气引擎'];
+var TPL_SELFDROP=['近身战','蛮力','流星群','过热','飞叶风暴','精神突进'];
+function tplNew(o){
+  var t={name:o.name,theme:o.theme,roles:o.roles||[],keys:o.keys||[],
+    match:o.match||{abis:[],moves:[],types:[]},counters:o.counters||{types:[]},
+    flow:o.flow||[],
+    tips:(o.tips||[]).concat(['引擎侧模板下沉（v4.36；数据层 TEMPLATES 未改动，低分只排后不剔除）']),
+    archKey:o.arch,dims:o.dims,trigger:o.trigger,slots:o.slots||[],trigTxt:o.trigTxt||'',
+    src:o.src,sysList:o.sysList||[],noSysGate:true,tplNewVer:'v4.36'};
+  SYS_DIMS[o.arch]=o.dims.concat([SIDE_DIM]);
+  SYS_DIM_RULE[o.arch]=o.rules||{};
+  TPL_NEW.push(t);return t;
+}
+/* —— T-22（必做）雨天必中炮台：必中招 × 雨天增伤 —— */
+tplNew({arch:'雨必中',name:'雨天必中炮台',theme:'雨天必中炮台（打雷/暴风必中轴）',sysList:['雨'],
+  roles:['雨手','必中炮台','输出位'],
+  keys:[['特性','降雨'],['特性','悠游自如'],['招式','打雷'],['招式','暴风'],['招式','求雨'],['道具','潮湿岩石']],
+  match:{abis:['降雨','雨幕','悠游自如'],moves:['打雷','暴风','求雨'],types:['水','电','飞行']},
+  counters:{types:['地面','草']},
+  trigTxt:'可学 打雷(87) 或 暴风(542) —— 不要求悠游自如（ER 差异化：必中轴可挂任意打手）',
+  trigger:function(s){return learnHasAnyId(s,[87,542])},
+  slots:[{n:'雨天手（起手）',need:'降雨/雨幕 天性 或 可学求雨(240)；携潮湿岩石延长至 12 回合'},{n:'必中炮台位',need:'打雷(87)/暴风(542) 任一（雨天 70→100 必中）'},{n:'输出位',need:'本系折算威力 ≥120'},{n:'联防位',need:'至少 1 名抗 地面/草'}],
+  flow:['开局：雨天手起手（携潮湿岩石 → 12 回合）','炮台位接场：打雷/暴风不再赌命中，雨天 ×1.5 增伤','对手改天气即换回雨天手（覆盖战）','残局：必中招配先制收残'],
+  tips:['ER 口径：雨增伤 ×1.5（WCONF.boost=0.5 → 1.5），非「增伤削到 20%」','打雷/暴风本身命中仅 70：没开雨前不要当必中招用'],
+  dims:[
+   {dim:'必中招（打雷/暴风）',w:3,j:function(s){var n=tplLearnN(s,[87,542]);return n?{pts:2*n,t:'必中招 '+n+' 个'}:null}},
+   {dim:'雨增伤本系（水/电/飞行）',w:1,j:function(s){return (isType(s,'水')||isType(s,'电')||isType(s,'飞行'))?{pts:2,t:'雨天增伤本系'}:null}},
+   {dim:'雨天手协同',w:1,j:function(s){if(isSetter(s,'雨'))return{pts:3,t:'自身可开雨'};if(learnHasAnyId(s,[240]))return{pts:2,t:'可学求雨'};return null}},
+   {dim:'力度（本系折算威力）',w:1,j:function(s){var p=bestPowOf(s,'双刀',convOf(s))||0;return p>=120?{pts:2,t:'本系威力 '+Math.round(p)}:(p>=100?{pts:1,t:'本系威力 '+Math.round(p)}:null)}},
+   {dim:'续航/保命',w:1,j:function(s){var f=funcProfile(s);return (f.rec||f.prot)?{pts:1,t:'有回复/保命招'}:null}}
+  ],
+  rules:{'必中招（打雷/暴风）':'可学 打雷(87)/暴风(542) → 每个 +2','雨增伤本系（水/电/飞行）':'水/电/飞行属性 → +2','雨天手协同':'自身可开雨 → +3；仅可学求雨 → +2','力度（本系折算威力）':'≥120 → +2；≥100 → +1','续航/保命':'有回复/保命招 → +1'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Weather · https://www.smogon.com/dex/sv/moves/thunder/ · https://www.serebii.net/games/weather.shtml'});
+/* —— T-26（必做）威吓折返轮转轴 —— */
+tplNew({arch:'威吓轮转',name:'威吓折返轮转轴',theme:'威吓折返轮转轴（降攻 × 轮转复利）',sysList:[],
+  roles:['威吓手','轮转位','输出位'],
+  keys:[['特性','威吓'],['招式','急速折返'],['招式','伏特替换'],['招式','隐形岩'],['道具','剩饭']],
+  match:{abis:['威吓'],moves:['急速折返','伏特替换'],types:[]},
+  counters:{types:['地面','岩石']},
+  trigTxt:'威吓（天性或可选池）+ 折返招（急速折返 369 / 伏特替换 521）任一',
+  trigger:function(s){return tplAbiHit(s,'威吓')&&learnHasAnyId(s,[369,521])},
+  slots:[{n:'威吓手（起手）',need:'威吓常驻 → 每次入场削对手物攻 1 级'},{n:'折返位',need:'急速折返(369)/伏特替换(521)'},{n:'回复位',need:'自我再生/羽栖/再生力 任一'},{n:'钉子位',need:'隐形岩(446)/撒菱 任一（配合轮转逼换）'}],
+  flow:['开局：威吓手入场削攻，铺钉','折返换人 → 下一位再吃威吓减伤，反复复利','残血用回复位回血，保持 6 人轮转不断链','输出位抓降攻窗口推进'],
+  tips:['威吓只削物理侧：对手特攻轴时别指望它','轮转怕钉子：先除钉再打长节奏'],
+  dims:[
+   {dim:'威吓（可常驻）',w:3,j:function(s){return tplAbiHit(s,'威吓')?{pts:4,t:'威吓'}:null}},
+   {dim:'折返招（急速折返/伏特替换）',w:2,j:function(s){var n=tplLearnN(s,[369,521]);return n?{pts:2*n,t:'折返招 '+n+' 个'}:null}},
+   {dim:'回复位',w:1,j:function(s){return funcProfile(s).rec?{pts:2,t:'自带回复'}:null}},
+   {dim:'钉子位',w:1,j:function(s){return funcProfile(s).haz?{pts:2,t:'自带撒钉'}:null}},
+   {dim:'物攻压制',w:1,j:function(s){var a=tplBase(s,1);return a>=110?{pts:2,t:'物攻 '+a}:(a>=95?{pts:1,t:'物攻 '+a}:null)}},
+   {dim:'耐久三角',w:1,j:function(s){return tplBulk(s)>=300?{pts:2,t:'耐久 '+tplBulk(s)}:null}}
+  ],
+  rules:{'威吓（可常驻）':'具威吓（天性/可选池）→ +4','折返招（急速折返/伏特替换）':'可学 369/521 → 每个 +2','回复位':'自带回复招 → +2','钉子位':'自带撒钉 → +2','物攻压制':'物攻 ≥110 → +2；≥95 → +1','耐久三角':'≥300 → +2'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Intimidate_(Ability) · https://www.smogon.com/dex/sv/moves/u-turn/ · https://www.serebii.net/abilitydex/intimidate.shtml'});
+/* —— T-19 沙暴特防轴：沙暴中岩石系特防 ×1.5 —— */
+tplNew({arch:'沙特防',name:'沙暴特防轴',theme:'沙暴特防轴（岩石特防 ×1.5）',sysList:['沙'],
+  roles:['扬沙手','岩石特盾','撒钉位'],
+  keys:[['特性','扬沙'],['特性','沙之力'],['招式','沙暴'],['招式','隐形岩'],['道具','光滑岩石']],
+  match:{abis:['扬沙','沙之力','拨沙','沙隐'],moves:['沙暴','隐形岩'],types:['岩石','钢','地面']},
+  counters:{types:['水','草','格斗']},
+  trigTxt:'岩石属性（沙暴特防 ×1.5）或 扬沙/沙之力/拨沙/沙隐 特性',
+  trigger:function(s){return isType(s,'岩石')||tplAbiHit(s,'扬沙')},
+  slots:[{n:'扬沙手',need:'扬沙天性 或 可学沙暴(201)；光滑岩石延长至 12 回合'},{n:'岩石系特盾位',need:'岩石属性（特防 ×1.5、免沙暴掉血）'},{n:'撒钉位',need:'隐形岩(446)/撒菱（沙暴 + 钉子双重压血）'},{n:'补盲位',need:'至少 1 名抗 水/草/格斗'}],
+  flow:['开局：扬沙手起手（携光滑岩石 → 12 回合）','岩石特盾位上场吃特攻，特防 ×1.5 挡关键招','铺钉压血线，逼对手换人吃沙暴','残局：地面/钢本系收残'],
+  tips:['沙暴对非岩/地/钢每回合扣 1/16：别把脆皮换进沙场','沙暴特防 ×1.5 只对**岩石**属性生效（非岩无此收益）'],
+  dims:[
+   {dim:'岩石系（沙暴特防 ×1.5）',w:3,j:function(s){return isType(s,'岩石')?{pts:4,t:'岩石属性'}:null}},
+   {dim:'扬沙手',w:2,j:function(s){if(tplAbiHit(s,'扬沙'))return{pts:4,t:'扬沙'};if(learnHasAnyId(s,[201]))return{pts:2,t:'可学沙暴'};return null}},
+   {dim:'沙暴受益特性',w:1,j:function(s){var n=[/沙之力/,/拨沙/,/沙隐/].filter(function(re){return (s.abis||[]).concat(s.inns||[]).some(function(x){return re.test(x)})}).length;return n?{pts:3,t:'沙暴受益特性'}:null}},
+   {dim:'特盾端（特防）',w:1,j:function(s){var d=tplBase(s,4);return d>=110?{pts:2,t:'特防 '+d}:(d>=95?{pts:1,t:'特防 '+d}:null)}},
+   {dim:'撒钉位',w:1,j:function(s){return funcProfile(s).haz?{pts:2,t:'自带撒钉'}:null}}
+  ],
+  rules:{'岩石系（沙暴特防 ×1.5）':'岩石属性 → +4','扬沙手':'扬沙 → +4；可学沙暴 → +2','沙暴受益特性':'沙之力/拨沙/沙隐 → +3','特盾端（特防）':'特防 ≥110 → +2；≥95 → +1','撒钉位':'自带撒钉 → +2'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Sandstorm_(weather_condition) · https://www.smogon.com/dex/sv/types/rock/ · https://www.serebii.net/games/weather.shtml'});
+/* —— T-20 雪天极光幕受核：极光幕 × 光之黏土 —— */
+tplNew({arch:'雪幕',name:'雪天极光幕受核',theme:'雪天极光幕受核（双墙 8 回合）',sysList:['雪'],
+  roles:['降雪手','开墙位','肉盾位'],
+  keys:[['特性','降雪'],['招式','极光幕'],['招式','冰雹'],['道具','光之黏土'],['特性','拨雪']],
+  match:{abis:['降雪','拨雪','冰冻之躯'],moves:['极光幕','冰雹'],types:['冰']},
+  counters:{types:['火','格斗','岩石','钢']},
+  trigTxt:'可学 极光幕(657) 或 降雪/拨雪/冰冻之躯 特性',
+  trigger:function(s){return learnHasAnyId(s,[657])||tplAbiHit(s,'降雪')},
+  slots:[{n:'降雪手',need:'降雪天性 或 可学冰雹(258)'},{n:'开墙位',need:'极光幕(657) + 光之黏土（5→8 回合）'},{n:'肉盾位',need:'耐久三角 ≥300（雪天 + 双墙吃满回合）'},{n:'除钉位',need:'高速旋转/清除浓雾（墙怕被除钉顺带清）'}],
+  flow:['开局：降雪手起手落雪（极光幕仅雪天可用）','开墙位接场上极光幕 + 光之黏土 → 8 回合物特双减伤','肉盾位站场消耗，雪天每回合压血','墙到期前补墙，保持减伤链'],
+  tips:['极光幕只在雪天生效：落雪前开不出来','光之黏土同时延长光墙/反射壁（8 回合）'],
+  dims:[
+   {dim:'降雪手',w:2,j:function(s){if(tplAbiHit(s,'降雪'))return{pts:4,t:'降雪'};if(learnHasAnyId(s,[258]))return{pts:2,t:'可学冰雹'};return null}},
+   {dim:'极光幕（657）',w:3,j:function(s){return learnHasAnyId(s,[657])?{pts:4,t:'可学极光幕'}:null}},
+   {dim:'冰系肉盾',w:2,j:function(s){var b=tplBulk(s);if(isType(s,'冰')&&b>=300)return{pts:4,t:'冰系耐久 '+b};return b>=300?{pts:2,t:'耐久 '+b}:null}},
+   {dim:'雪天受益特性',w:1,j:function(s){var n=[/拨雪/,/冰冻之躯/,/雪隐/].filter(function(re){return (s.abis||[]).concat(s.inns||[]).some(function(x){return re.test(x)})}).length;return n?{pts:3,t:'雪天受益特性'}:null}},
+   {dim:'除钉位',w:1,j:function(s){return funcProfile(s).rem?{pts:2,t:'自带除钉'}:null}}
+  ],
+  rules:{'降雪手':'降雪 → +4；可学冰雹 → +2','极光幕（657）':'可学极光幕 → +4','冰系肉盾':'冰系且耐久 ≥300 → +4；耐久 ≥300 → +2','雪天受益特性':'拨雪/冰冻之躯/雪隐 → +3','除钉位':'自带除钉 → +2'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Aurora_Veil_(move) · https://bulbapedia.bulbagarden.net/wiki/Light_Clay · https://www.smogon.com/dex/sv/moves/aurora-veil/'});
+/* —— T-23 腐蚀受队闭环（ER 特色：腐蚀=钢/毒也能被下毒）—— */
+tplNew({arch:'腐蚀受',name:'腐蚀受队闭环',theme:'腐蚀受队闭环（钢/毒亦可中毒）',sysList:['受'],
+  roles:['腐蚀手','消耗位','轮转位'],
+  keys:[['特性','腐蚀'],['招式','剧毒'],['招式','毒菱'],['道具','黑色污泥'],['道具','剩饭']],
+  match:{abis:['腐蚀'],moves:['剧毒','毒菱'],types:['毒']},
+  counters:{types:['钢','毒']},
+  trigTxt:'腐蚀(212) 特性（ER 特色：毒/钢免疫者也能被下毒）',
+  trigger:function(s){return tplAbiHit(s,'腐蚀')},
+  slots:[{n:'腐蚀手',need:'腐蚀特性 → 对毒/钢照样下剧毒'},{n:'消耗位',need:'剧毒(92)/毒菱(390)（毒菱对毒系无效，靠腐蚀补）'},{n:'回复位',need:'黑色污泥(毒系) / 剩饭 / 再生力'},{n:'轮转位',need:'急速折返/伏特替换，逼换后重新下毒'}],
+  flow:['开局：铺毒菱（对手毒系不吃 → 靠腐蚀手补剧毒）','腐蚀手下毒后换人，让毒伤滚动','钉子 + 毒双压血线，逼对手主动换人','长局用回复位续命，毒伤先杀'],
+  tips:['毒菱对毒系/飘浮无效：那一路只能靠腐蚀手点对点剧毒','腐蚀只影响「能否中毒」：毒伤数值不变（1/8 剧毒）'],
+  dims:[
+   {dim:'腐蚀（212）',w:3,j:function(s){return tplAbiHit(s,'腐蚀')?{pts:4,t:'腐蚀'}:null}},
+   {dim:'剧毒/毒菱消耗',w:2,j:function(s){var n=tplLearnN(s,[92,390]);return n?{pts:2*n,t:'消耗招 '+n+' 个'}:null}},
+   {dim:'黑色污泥回复（毒系）',w:1,j:function(s){return isType(s,'毒')?{pts:2,t:'毒系（黑色污泥）'}:null}},
+   {dim:'轮转位',w:1,j:function(s){if(tplAbiHit(s,'再生力'))return{pts:3,t:'再生力'};if(funcProfile(s).pivot)return{pts:2,t:'自带折返'};return null}},
+   {dim:'耐久三角',w:1,j:function(s){return tplBulk(s)>=300?{pts:2,t:'耐久 '+tplBulk(s)}:null}}
+  ],
+  rules:{'腐蚀（212）':'腐蚀 → +4','剧毒/毒菱消耗':'可学 剧毒(92)/毒菱(390) → 每个 +2','黑色污泥回复（毒系）':'毒系 → +2','轮转位':'再生力 → +3；自带折返 → +2','耐久三角':'≥300 → +2'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Corrosion_(Ability) · https://www.serebii.net/abilitydex/corrosion.shtml · https://bulbapedia.bulbagarden.net/wiki/Toxic_(move)'});
+/* —— T-24 场地延展器爆发轴 —— */
+tplNew({arch:'场展',name:'场地延展器爆发轴',theme:'场地延展器爆发轴（场地 ×1.3 / 12 回合）',sysList:['场地'],
+  roles:['场地手','输出位'],
+  keys:[['道具','地形延长器'],['特性','青草制造者'],['特性','电气制造者'],['特性','精神制造者'],['特性','薄雾制造者']],
+  match:{abis:['青草制造者','电气制造者','精神制造者','薄雾制造者'],moves:[],types:['电','超能力','草','妖精']},
+  counters:{types:['钢','毒']},
+  trigTxt:'出场开场地（青草/电气/精神/薄雾制造者）',
+  trigger:function(s){return tplTerrainSetter(s)},
+  slots:[{n:'场地手',need:'场地制造者天性；携地形延长器（326）→ 8→12 回合'},{n:'输出位',need:'本系折算威力 ≥120（场地内 ×1.3）'},{n:'覆盖位',need:'场地受益属性本系（电/超能力/草/妖精）'},{n:'除钉位',need:'高速旋转/清除浓雾'}],
+  flow:['开局：场地手起手开场地（携地形延长器 → 12 回合）','输出位接场，本系 ×1.3 增伤','对手开场地即覆盖：算好回合数再换回','场地到期前补开，士气不断'],
+  tips:['ER 口径：场地增伤 ×1.3（WCONF.terrainBoost），持续 12 回合（terrainExtenderTurns）','地形延长器=「场地货币」：非场地手拿它在手里没收益'],
+  dims:[
+   {dim:'场地制造者',w:2,j:function(s){return tplTerrainSetter(s)?{pts:4,t:'出场开场地'}:null}},
+   {dim:'本系大威力（场地 ×1.3）',w:1,j:function(s){var p=bestPowOf(s,'双刀',convOf(s))||0;return p>=120?{pts:2,t:'本系威力 '+Math.round(p)}:(p>=100?{pts:1,t:'本系威力 '+Math.round(p)}:null)}},
+   {dim:'场地受益属性本系',w:1,j:function(s){return (isType(s,'电')||isType(s,'超能力')||isType(s,'草')||isType(s,'妖精'))?{pts:2,t:'场地受益本系'}:null}},
+   {dim:'展延器持有（体系货币）',w:1,j:function(s){return {pts:1,t:'可为体系货位（地形延长器 8→12 回合）'}}},
+   {dim:'除钉/联防',w:1,j:function(s){var f=funcProfile(s);return (f.rem||f.haz)?{pts:1,t:'除钉/撒钉'}:null}}
+  ],
+  rules:{'场地制造者':'出场开场地 → +4','本系大威力（场地 ×1.3）':'本系折算 ≥120 → +2；≥100 → +1','场地受益属性本系':'电/超能力/草/妖精 → +2','展延器持有（体系货币）':'固定 +1（信息行）','除钉/联防':'除钉或撒钉 → +1'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Terrain_Extender · https://www.smogon.com/dex/sv/items/terrain-extender/ · https://www.serebii.net/itemdex/terrainextender.shtml'});
+/* —— T-25 免疫触发联防轴（引水/避雷针/储水/食草/电气引擎）—— */
+tplNew({arch:'免疫轴',name:'免疫触发联防轴',theme:'免疫触发联防轴（属性免疫 × 队友群攻）',sysList:['受'],
+  roles:['免疫位','群攻位','轮转位'],
+  keys:[['特性','引水'],['特性','避雷针'],['特性','储水'],['特性','食草'],['招式','冲浪'],['招式','放电']],
+  match:{abis:['引水','避雷针','储水','食草','电气引擎'],moves:['冲浪','放电'],types:[]},
+  counters:{types:['地面','超能力']},
+  trigTxt:'属性免疫特性任（引水 114 / 避雷针 31 / 储水 11 / 食草 157 / 电气引擎 78）',
+  trigger:function(s){return TPL_IMM_ABI.some(function(n){return tplAbiHit(s,n)})},
+  slots:[{n:'免疫位',need:'引水/避雷针/储水/食草/电气引擎 任一（替队友吃招）'},{n:'群攻位',need:'冲浪(57)/放电(435) 与免疫位**同属性**（反成补给）'},{n:'补盲位',need:'本系折算 ≥100'},{n:'轮转位',need:'急速折返/伏特替换'}],
+  flow:['开局：免疫位与群攻位同时上场','群攻位打自家 AOE → 免疫位 0 伤并吸收/回血','轮转保持双人共存，反复触发','补盲位抓免疫空档推进'],
+  tips:['免疫位与 AOE **必须同属性**（水电/电电/草草）才能吸收：写错属性就是自杀','免疫只挡单一属性：多属性攻击照常吃'],
+  dims:[
+   {dim:'属性免疫特性',w:3,j:function(s){var n=TPL_IMM_ABI.filter(function(x){return tplAbiHit(s,x)}).length;return n?{pts:4,t:'免疫特性 '+n+' 个'}:null}},
+   {dim:'同属性群攻招',w:2,j:function(s){var n=tplLearnN(s,[57,435]);return n?{pts:2*n,t:'群攻招 '+n+' 个'}:null}},
+   {dim:'补盲（本系威力）',w:1,j:function(s){var p=bestPowOf(s,'双刀',convOf(s))||0;return p>=100?{pts:1,t:'本系威力 '+Math.round(p)}:null}},
+   {dim:'轮转位',w:1,j:function(s){return funcProfile(s).pivot?{pts:2,t:'自带折返'}:null}},
+   {dim:'耐久三角',w:1,j:function(s){return tplBulk(s)>=300?{pts:1,t:'耐久 '+tplBulk(s)}:null}}
+  ],
+  rules:{'属性免疫特性':'命中任一免疫特性 → +4','同属性群攻招':'可学 冲浪(57)/放电(435) → 每个 +2','补盲（本系威力）':'本系折算 ≥100 → +1','轮转位':'自带折返 → +2','耐久三角':'≥300 → +1'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Water_Absorb_(Ability) · https://bulbapedia.bulbagarden.net/wiki/Lightning_Rod_(Ability) · https://www.smogon.com/dex/sv/moves/surf/'});
+/* —— T-27 变身者镜像轴（ER 特色：不按自身种族评闸门；**显式豁免**非输出速攻 EV 闸门）—— */
+tplNew({arch:'变身者轴',name:'变身者镜像轴',theme:'变身者镜像轴（复制对手 + 道具三选）',sysList:[],
+  roles:['变身者'],
+  keys:[['特性','变身者'],['道具','讲究围巾'],['道具','气势披带'],['招式','戏法空间']],
+  match:{abis:['变身者'],moves:['戏法空间'],types:[]},
+  counters:{types:[]},
+  trigTxt:'变身者(150) 特性（mechSpProfile().imposter）—— 显式豁免：不按自身种族/技能池评「非输出速攻 EV」闸门',
+  trigger:function(s){try{return !!mechSpProfile(s).imposter}catch(e){return false}},
+  slots:[{n:'变身者（核心）',need:'变身者天性；道具三选（讲究围巾/气势披带/脱壳忍者壳）'},{n:'速控位',need:'顺风/戏法空间，给复制后的速度兜底'},{n:'补盲位',need:'独立于对手的输出手段（复制不可靠时）'},{n:'联防位',need:'抗 一般/格斗'}],
+  flow:['开局：变身者先手复制对手基线（速度/招式）','按对手速度决定道具：讲究围巾（超速）/气势披带（保命）','对手改变形态/换人后重估复制对象','残局：用复制来的招式收残'],
+  tips:['【显式豁免】变身者核心不吃「非输出速攻 EV」闸门（速度/种族基线由复制决定，非自身种族）—— 登记项：v4.36 白名单第一条','变身者复制的是**对手当前形态**：对面换人后复制即失效'],
+  dims:[
+   {dim:'变身者（150）——不按自身种族评',w:3,j:function(s){var ok=false;try{ok=!!mechSpProfile(s).imposter}catch(e){}return ok?{pts:6,t:'变身者（种族/技能池不作主评分依据）'}:null}},
+   {dim:'道具三选（围巾/披带/壳）',w:1,j:function(s){return {pts:1,t:'体系货位：围巾 285 / 披带 287 / 脱壳忍者壳 308'}}},
+   {dim:'速控位（顺风/空间）',w:1,j:function(s){return (funcProfile(s).tw||learnHasAnyId(s,[433]))?{pts:2,t:'有速控手段'}:null}},
+   {dim:'补盲（本系威力）',w:1,j:function(s){var p=bestPowOf(s,'双刀',convOf(s))||0;return p>=100?{pts:1,t:'本系威力 '+Math.round(p)}:null}}
+  ],
+  rules:{'变身者（150）——不按自身种族评':'命中变身者 → +6（种族/技能池不参与主判据）','道具三选（围巾/披带/壳）':'固定 +1（信息行）','速控位（顺风/空间）':'有顺风或戏法空间 → +2','补盲（本系威力）':'本系折算 ≥100 → +1'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Imposter_(Ability) · https://www.smogon.com/dex/sv/pokemon/ditto/ · ER 特色发散（道具三选：讲究围巾/气势披带/脱壳忍者壳）'});
+/* —— T-28 毒疗站场轴（含异常态触发口子）—— */
+tplNew({arch:'毒疗轴',name:'毒疗站场轴',theme:'毒疗站场轴（剧毒宝珠 × 硬撑）',sysList:['受'],
+  roles:['毒疗位','轮转位'],
+  keys:[['特性','毒疗'],['道具','剧毒宝珠'],['招式','硬撑'],['招式','急速折返']],
+  match:{abis:['毒疗'],moves:['硬撑'],types:[]},
+  counters:{types:['超能力','地面']},
+  trigTxt:'毒疗(90) 特性；或「异常状态时/中毒时/陷入异常」类改写特性（条文运行时解析，非枚举）',
+  trigger:function(s){return tplAbiHit(s,'毒疗')||abiMentions({abis:s.abis||[],inns:s.inns||[]},/中毒时|异常状态时|陷入异常/)},
+  slots:[{n:'毒疗位',need:'毒疗(90) 天性 + 剧毒宝珠(302) → 每回合净回血'},{n:'输出位',need:'硬撑(263)（中毒态 70→140）'},{n:'轮转位',need:'急速折返/伏特替换，换下重下宝珠毒'},{n:'联防位',need:'抗 超能力/地面'}],
+  flow:['开局：毒疗位携剧毒宝珠入场（自身常驻剧毒）','硬撑在中毒态翻倍输出，边打边回','被压时折返换人，让状态与回复层重新就位','长局靠每回合净回复耗死对手'],
+  tips:['⚠ 互斥：毒疗需**有**道具（剧毒宝珠），配「杂技」会拿不到满威力 —— 二者不可同装','剧毒宝珠是自我施加：对手不能用它反过来针对你'],
+  dims:[
+   {dim:'毒疗（90）',w:3,j:function(s){if(tplAbiHit(s,'毒疗'))return{pts:4,t:'毒疗'};if(abiMentions({abis:s.abis||[],inns:s.inns||[]},/中毒时|异常状态时|陷入异常/))return{pts:2,t:'异常态触发特性'};return null}},
+   {dim:'剧毒宝珠（302）持有',w:2,j:function(s){return abiMentions({abis:s.abis||[],inns:s.inns||[]},/中毒时|异常状态时|陷入异常|剧毒/)||tplAbiHit(s,'毒疗')?{pts:3,t:'体系货位：剧毒宝珠'}:null}},
+   {dim:'硬撑输出（263）',w:1,j:function(s){return learnHasAnyId(s,[263])?{pts:2,t:'可学硬撑'}:null}},
+   {dim:'轮转位',w:1,j:function(s){return funcProfile(s).pivot?{pts:2,t:'自带折返'}:null}},
+   {dim:'耐久三角',w:1,j:function(s){return tplBulk(s)>=300?{pts:2,t:'耐久 '+tplBulk(s)}:null}}
+  ],
+  rules:{'毒疗（90）':'毒疗 → +4；异常态触发特性 → +2','剧毒宝珠（302）持有':'毒疗/异常态触发口 → +3','硬撑输出（263）':'可学硬撑 → +2','轮转位':'自带折返 → +2','耐久三角':'≥300 → +2'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Poison_Heal_(Ability) · https://bulbapedia.bulbagarden.net/wiki/Toxic_Orb · https://bulbapedia.bulbagarden.net/wiki/Facade_(move)'});
+/* —— T-29 防御转输出轴（扑击按物防结算）—— */
+tplNew({arch:'防转攻',name:'防御转输出轴',theme:'防御转输出轴（扑击 × 物防）',sysList:['强化'],
+  roles:['扑击输出位','防向强化位','联防位'],
+  keys:[['招式','扑击'],['招式','铁壁'],['招式','健美'],['招式','诅咒'],['特性','威吓']],
+  match:{abis:[],moves:['扑击','铁壁','健美','诅咒'],types:['钢','岩石','地面']},
+  counters:{types:['特殊攻击手','幽灵']},
+  trigTxt:'可学 扑击(704)（按自身物防结算伤害）',
+  trigger:function(s){return learnHasAnyId(s,[704])},
+  slots:[{n:'扑击输出位',need:'可学扑击(704)：伤害按**物防**结算'},{n:'防向强化位',need:'铁壁(334)/健美(339)/诅咒(174) 堆物防'},{n:'回复位',need:'自我再生/羽栖/剩饭'},{n:'联防位',need:'抗 特攻端（扑击位物防高但特防未必）'}],
+  flow:['开局：先手铁壁/健美堆物防（同时堆输出）','扑击输出：物防越高越痛，一套强化双收益','被特攻手盯上就换联防位','残局靠高物防硬顶物理收残'],
+  tips:['扑击按**物防**而非物攻结算：物防型坦克反而能打输出，别按物攻手配装评它','对幽灵无效（扑击为格斗属性）'],
+  dims:[
+   {dim:'扑击（704）',w:3,j:function(s){return learnHasAnyId(s,[704])?{pts:4,t:'可学扑击'}:null}},
+   {dim:'物防（扑击按物防结算）',w:2,j:function(s){var d=tplBase(s,2);return d>=110?{pts:4,t:'物防 '+d}:(d>=95?{pts:2,t:'物防 '+d}:null)}},
+   {dim:'防向强化招',w:1,j:function(s){var n=tplLearnN(s,[334,339,174]);return n?{pts:n,t:'防向强化 '+n+' 个'}:null}},
+   {dim:'回复位',w:1,j:function(s){return funcProfile(s).rec?{pts:1,t:'自带回复'}:null}},
+   {dim:'钉子/联防',w:1,j:function(s){return funcProfile(s).haz?{pts:1,t:'自带撒钉'}:null}}
+  ],
+  rules:{'扑击（704）':'可学扑击 → +4','物防（扑击按物防结算）':'物防 ≥110 → +4；≥95 → +2','防向强化招':'铁壁/健美/诅咒 每个 +1','回复位':'自带回复 → +1','钉子/联防':'自带撒钉 → +1'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Body_Press_(move) · https://www.smogon.com/dex/sv/moves/body-press/ · https://www.serebii.net/attackdex-sv/bodypress.shtml'});
+/* —— T-30 反差强化轴（唱反调 × 自降招）—— */
+tplNew({arch:'反差强化',name:'反差强化轴',theme:'反差强化轴（唱反调 × 自降招）',sysList:['强化'],
+  roles:['反差强化输出位','掩护位'],
+  keys:[['特性','唱反调'],['招式','流星群'],['招式','近身战'],['招式','过热'],['招式','飞叶风暴']],
+  match:{abis:['唱反调'],moves:['流星群','近身战','过热','飞叶风暴','精神突进','蛮力'],types:[]},
+  counters:{types:['钢','妖精']},
+  trigTxt:'唱反调(126) 特性（自降招的能力下降被反转为提升）',
+  trigger:function(s){return tplAbiHit(s,'唱反调')},
+  slots:[{n:'反差强化输出位',need:'唱反调 + 自降招（近身战/蛮力/流星群/过热/飞叶风暴/精神突进）'},{n:'掩护位',need:'替身/守住/光墙，撑过第一发'},{n:'回复位',need:'自我再生/羽栖'},{n:'联防位',need:'抗 钢/妖精'}],
+  flow:['开局：唱反调位直接打自降招（越打越强）','一回合拿强化（无需额外强化回合）','残血用回复位续航，强化层不丢','残局：高强化层 + 本系收残'],
+  tips:['自降招即强化招：省下强化回合，但**首回合仍会被打**——先备掩护','唱反调也会把对手给的降级反转成提升（如威吓对你无效反成 +1）'],
+  dims:[
+   {dim:'唱反调（126）',w:3,j:function(s){return tplAbiHit(s,'唱反调')?{pts:5,t:'唱反调'}:null}},
+   {dim:'自降招（近身战/蛮力/流星群/过热/飞叶风暴/精神突进）',w:2,j:function(s){var n=TPL_SELFDROP.filter(function(nm){return learnHasName(s,nm)}).length;return n?{pts:Math.min(4,n),t:'自降招 '+n+' 个'}:null}},
+   {dim:'掩护/回复位',w:1,j:function(s){var f=funcProfile(s);return (f.rec||f.prot)?{pts:1,t:'有回复/保命'}:null}},
+   {dim:'本系威力',w:1,j:function(s){var p=bestPowOf(s,'双刀',convOf(s))||0;return p>=120?{pts:2,t:'本系威力 '+Math.round(p)}:null}}
+  ],
+  rules:{'唱反调（126）':'唱反调 → +5','自降招（近身战/蛮力/流星群/过热/飞叶风暴/精神突进）':'每个 +1（上限 +4）','掩护/回复位':'有回复或保命招 → +1','本系威力':'本系折算 ≥120 → +2'},
+  src:'https://bulbapedia.bulbagarden.net/wiki/Contrary_(Ability) · https://www.smogon.com/dex/sv/pokemon/serperior/ · https://www.serebii.net/abilitydex/contrary.shtml'});
+/* 触发命中统计（模板卡展示用；按模板名缓存） */
+var _tplTrigCache={};
+function tplTriggerCount(t){
+  try{
+    var k=String(t.name||'');
+    if(_tplTrigCache[k]!==undefined)return _tplTrigCache[k];
+    var n=0;
+    ERDATA.species.forEach(function(s){try{if(t.trigger&&t.trigger(s))n++}catch(e){}});
+    _tplTrigCache[k]=n;return n;
+  }catch(e){return 0}
+}
 /* 体系化招式权重（1=中性） */
 function sysMvAdj(s,id,arch){
   var t=SYS_MV_ADJ[arch];if(!t)return {mul:1,name:''};
@@ -3167,7 +3463,7 @@ function tplRecs(t){
       if(!isFinalForm(s)&&!evioOk(s))return; /* v4.3.1：非最终形态若具奇石优势则计入推荐 */
       if(optMegaOnly&&hasMegaForm(s))return; /* v4.13：Mega 形态优先——可 Mega 的非 Mega 形态不进体系主题榜（开关可关） */
       if(!isValidSp(s))return; /* B7：占位/无效物种（base 全 0，如 2502）过滤 */
-      if(sys.length){
+      if(sys.length&&!t.noSysGate){
         var ben=sys.some(function(x){return spSys(s).indexOf(x)>-1||isSetter(s,x)});
         if(!ben)return; /* 体系主题榜正向定义：非本体系受益/设置手不进榜（非评分扣分） */
       }
@@ -3245,6 +3541,18 @@ function renderTplBody(i){
     html+='<div class="sec"><h3>开局流程</h3><div style="font-size:12px;line-height:1.9">';
     /* B8：开局流程同样过 wxTip（流程文案含「场地内 +30%」等旧写死值，须改写为 WCONF 口径 + 待实测徽标） */
     t.flow.forEach(function(f,j){html+='<div>'+'<b style="color:var(--accent)">'+(j+1)+'.</b> '+wxTip(f)+'</div>'});
+    html+='</div></div>';
+  }
+  /* v4.36 B：引擎侧模板槽位模型（触发判定 + 槽位组成 + 维度行）—— 仅引擎侧下沉模板（t.slots）渲染 */
+  if(t.slots&&t.slots.length){
+    html+='<div class="sec"><h3>槽位模型（引擎侧下沉）</h3><div style="font-size:12px;line-height:1.9">';
+    html+='<div><b>触发判定：</b>'+esc(t.trigTxt||'')+'</div>';
+    html+='<div><b>触发命中物种：</b>'+tplTriggerCount(t)+' 只（全库 ERDATA.species 逐只求值）</div>';
+    t.slots.forEach(function(x,j){html+='<div>'+(j+1)+'. <b>'+esc(x.n)+'</b>：'+esc(x.need||'')+'</div>'});
+    html+='<div style="margin-top:4px"><b>维度行（SYS_DIMS.'+esc(t.archKey)+'）：</b>'+
+      (SYS_DIMS[t.archKey]||[]).filter(function(d){return d.dim!=='侧向分工（本方流派联防）'})
+        .map(function(d){return esc(d.dim)+'（×'+(d.w||1)+'）'}).join('、')+'</div>';
+    html+='<div style="color:var(--sub);font-size:11px">来源：'+esc(t.src||'')+'</div>';
     html+='</div></div>';
   }
   /* 推荐宝可梦（v4.x 体系化：archOfTpl → 该体系「维度权重表」打分；drop 项单独列示） */
@@ -3682,6 +3990,7 @@ function mechObjZh(kind,id){
   if(kind==='ability')return mechAbiZh(id);
   if(kind==='move')return mechMvZh(id);
   if(kind==='item')return mechItemZh2(id);
+  if(kind==='type'){try{var ty=(ERDATA.types||[])[+id];if(ty)return ty}catch(e){} return '#'+id}
   return '#'+id;
 }
 var MECH_TYPE_ZH={steel:'钢',water:'水',fire:'火',grass:'草',electric:'电',ice:'冰',dragon:'龙',dark:'恶',fairy:'妖精',
@@ -4396,14 +4705,30 @@ function mechExtCombos(){
   function M(n){var v=null;try{v=mvIdByZhOrEn(n)}catch(e){}return (v===null||v===undefined)?null:+v}
   function add(spec){
     var objs=[],ws=[];
-    (spec.self||[]).forEach(function(o){var id=(o.k==='m'?M(o.n):A(o.n));if(id!==null)objs.push({kind:(o.k==='m'?'move':'ability'),id:id,n:o.n})});
-    (spec.with||[]).forEach(function(o){var id=(o.k==='m'?M(o.n):A(o.n));if(id!==null)ws.push({kind:(o.k==='m'?'move':'ability'),id:id,n:o.n})});
+    function O(o){       /* v4.36 A：对象解析扩展 —— i=道具 / t=属性（设计书 §3 需要以道具/属性为组合端点） */
+      if(o.k==='m')return M(o.n);
+      if(o.k==='i')return I(o.n);
+      if(o.k==='t')return T(o.n);
+      return A(o.n);
+    }
+    var KIND={m:'move',a:'ability',i:'item',t:'type'};
+    (spec.self||[]).forEach(function(o){var id=O(o);if(id!==null)objs.push({kind:KIND[o.k]||'ability',id:id,n:o.n})});
+    (spec.with||[]).forEach(function(o){var id=O(o);if(id!==null)ws.push({kind:KIND[o.k]||'ability',id:id,n:o.n})});
     if(!objs.length||!ws.length)return;
     ws.forEach(function(w){
       L.push({rewrite:'extcb_'+(spec.key||''),zh:spec.zh||'组合',objs:objs,w:{kind:w.kind,ids:[w.id]},
         effect:spec.effect||'',narr:spec.narr||'',src:spec.src||'ER 组合素材补登（报告 4.10）'});
     });
   }
+  /* v4.36 A：道具端点解析 —— ITEM_POOL 显示名优先（如「地形延长器」= Terrain Extender 326，其 ITM 中文名为「大地膜」），
+     其次 ITM 中文/英文名；同一 id 去重（不硬编码，避免漂移） */
+  function I(n){
+    try{var p=(ITEM_POOL||[]).filter(function(x){return x.zh===n})[0];if(p&&p.id)return +p.id}catch(e){}
+    var v=null;try{v=itemByZhOrEn(n)}catch(e){}
+    return (v===null||v===undefined)?null:+v;
+  }
+  /* v4.36 A：属性端点解析（tIdx → ERDATA.types 下标） */
+  function T(n){var i=-1;try{i=tIdx(n)}catch(e){i=-1}return (i===undefined||i<0)?null:i}
   /* ① 杂技 + 轻装：同回合双收益 */
   add({key:'acrobatics_unburden',zh:'杂技×轻装（同回合双收益）',self:[{k:'m',n:'杂技'}],with:[{k:'a',n:'轻装'}],
     effect:'吃消耗品 → 杂技威力翻倍（112.5）+ 轻装速度翻倍',narr:'同一回合既拿增伤又拿提速；飞行宝石/场地种子一次触发'});
@@ -4428,10 +4753,46 @@ function mechExtCombos(){
   /* ⑥ 再生力 + 轮转招 */
   add({key:'regenerator_pivot',zh:'再生力×轮转招',self:[{k:'a',n:'再生力'}],with:[{k:'m',n:'急速折返'},{k:'m',n:'伏特替换'}],
     effect:'换人回 1/3 + 折返主动换人 → 全程白嫖回复',narr:'轮转=回复，钉子/状态手的最佳底子'});
-  /* ⑦ 唱反调（=评估报告 4.10 的「反转」）× 自降招：能力下降被反转成提升 → 反差强化 */
+  /* ⑦ 唱反调（=评估报告 4.10 的「反转」）× 自降招：能力下降被反转成提升 → 反差强化
+     v4.36 A-6：核对设计书 §3.1 C-07 —— 端点集合一致（特性 唱反调 ∪ 招式 近身战/蛮力/流星群/过热/飞叶风暴/精神突进），
+     本条即 C-07 的落点，本轮**补登记 src**（不重复登记，避免换皮重复边）。 */
   add({key:'contrary_selfdrop',zh:'唱反调×自降招（反差强化）',self:[{k:'a',n:'唱反调'}],
     with:[{k:'m',n:'流星群'},{k:'m',n:'近身战'},{k:'m',n:'过热'},{k:'m',n:'飞叶风暴'},{k:'m',n:'精神突进'},{k:'m',n:'蛮力'}],
-    effect:'自降招的能力下降被反转成提升 → 越打越强（无「强化招」也能成型）',narr:'流星群/过热连打反而累积强化，反差流派成型'});
+    effect:'自降招的能力下降被反转成提升 → 越打越强（无「强化招」也能成型）',narr:'流星群/过热连打反而累积强化，反差流派成型',
+    src:'https://www.smogon.com/dex/sv/pokemon/serperior/ · https://www.serebii.net/abilitydex/contrary.shtml · https://bulbapedia.bulbagarden.net/wiki/Contrary_(Ability)'});
+  /* ============ v4.36 A（P0）：6 条新组合素材下沉（设计书 §3.1 C-02~C-07）============
+     全部用**已有可判字段**（属性/特性/招式/道具）做端点，不引入新硬门；id 一律名称折算。
+     C-02~C-06 为新增登记；C-07 见上（v4.34 ⑦ 已落库，本轮补 src 并复核端点一致）。 */
+  /* C-02 场地展延器 × 场地制造者 × 高威力本系（设计书 §3.1 C-02；道具 326，引擎显示名「地形延长器」） */
+  add({key:'terrain_extender_money',zh:'地形延长器×场地制造者（场地货币）',
+    self:[{k:'a',n:'青草制造者'},{k:'a',n:'电气制造者'},{k:'a',n:'精神制造者'},{k:'a',n:'薄雾制造者'}],
+    with:[{k:'i',n:'地形延长器'}],
+    effect:'场地持续 8→12 回合（ER 口径 terrainExtenderTurns=12，非官方 5→8）；场地内本系招 ×1.3（WCONF.terrainBoost）',
+    narr:'展延器=体系货币：场地手把它当主道具，全场同属性招都白拿 ×1.3；回合数翻半价值才追得上道具位',
+    src:'https://bulbapedia.bulbagarden.net/wiki/Terrain_Extender · https://www.smogon.com/dex/sv/items/terrain-extender/ · https://www.serebii.net/itemdex/terrainextender.shtml'});
+  /* C-03 极光幕 × 光之黏土（雪天双减伤）（设计书 §3.1 C-03；极光幕 657 / 光之黏土 294） */
+  add({key:'aurora_veil_light_clay',zh:'极光幕×光之黏土（雪天双减伤）',self:[{k:'m',n:'极光幕'}],with:[{k:'i',n:'光之黏土'}],
+    effect:'物/特双减伤（约 −1/3）；壁回合 5→8（WCONF.lightClayTurns.moveScreens）—— 极光幕仅雪天可用，需先落雪',
+    narr:'先落雪、再开极光幕、持黏土吃满 8 回合：一层壁同时压住物特两面，省一个槽位',
+    src:'https://bulbapedia.bulbagarden.net/wiki/Aurora_Veil_(move) · https://bulbapedia.bulbagarden.net/wiki/Light_Clay · https://www.smogon.com/dex/sv/moves/aurora-veil/'});
+  /* C-04 打雷 / 暴风 × 雨天（必中炮台）（设计书 §3.1 C-04） */
+  add({key:'rain_nomiss_cannon',zh:'打雷/暴风×雨天（必中炮台）',
+    self:[{k:'a',n:'降雨'},{k:'a',n:'雨幕'}],with:[{k:'m',n:'打雷'},{k:'m',n:'暴风'}],
+    effect:'雨天下 打雷/暴风 命中率 70→100%（必中）+ 雨增伤 ×1.5（WCONF.boost=0.5 → ×1.5，非 20%）',
+    narr:'70 命中的高威力招变稳定输出：省下命中道具位、敢换招、不赌运气',
+    src:'https://bulbapedia.bulbagarden.net/wiki/Weather · https://www.smogon.com/dex/sv/moves/thunder/ · https://www.serebii.net/games/weather.shtml'});
+  /* C-05 沙暴 × 岩石系（特防 ×1.5）（设计书 §3.1 C-05） */
+  add({key:'sand_rock_spd',zh:'沙暴×岩石系（特防 ×1.5）',
+    self:[{k:'a',n:'扬沙'},{k:'a',n:'沙之力'},{k:'a',n:'拨沙'},{k:'a',n:'沙隐'}],with:[{k:'t',n:'岩石'}],
+    effect:'沙暴中岩石系特防 ×1.5 且免疫沙暴每回合掉血 —— 岩石位可当特盾',
+    narr:'沙队里岩石位不只输出：特防 ×1.5 后能顶特攻手，顺带吃拨沙/沙之力的速度或增伤',
+    src:'https://bulbapedia.bulbagarden.net/wiki/Sandstorm_(weather_condition) · https://www.smogon.com/dex/sv/types/rock/ · https://www.serebii.net/games/weather.shtml'});
+  /* C-06 毒疗 × 硬撑 × 杂技（三件套密度；含**互斥提示**，设计书 §3.1 C-06） */
+  add({key:'poison_heal_facade_acrobatics',zh:'毒疗×硬撑×杂技（三件套密度）',self:[{k:'a',n:'毒疗'}],
+    with:[{k:'m',n:'硬撑'},{k:'m',n:'杂技'}],
+    effect:'硬撑在异常状态 70→140；杂技无道具 75×1.5=112.5',
+    narr:'⚠ 互斥：毒疗需携剧毒宝珠（有道具）才能每回合回血，而杂技需**无道具**才满威力 —— 二者不可同装。按「毒疗+硬撑」（宝珠位）或「无道具+杂技」二选其一；本条目只作密度提示，不作叠加依据',
+    src:'https://bulbapedia.bulbagarden.net/wiki/Poison_Heal_(Ability) · https://bulbapedia.bulbagarden.net/wiki/Facade_(move) · https://bulbapedia.bulbagarden.net/wiki/Acrobatics_(move)'});
   _MECH_EXT_CB=L;return L;
 }
 /* 组合联想器：按任意对象（kind+id）查 mechLib 的 combos —— 含「该对象自身机制条目触发的边」+
@@ -5730,16 +6091,47 @@ var COST_OF={'生命宝珠':'每回合自伤 1/10，不适合站场消耗','讲�
   '心灵香草':'一次性','白色香草':'一次性','力量香草':'一次性','电气种子':'需要场上已有电气场地','青草种子':'需要场上已有青草场地',
   '薄雾种子':'需要场上已有薄雾场地','精神种子':'需要场上已有精神场地','剩饭':'回复慢，不解决爆发','黑色污泥':'非毒系会反伤'};
 function itemCostOf(pi){return COST_OF[pi.zh]||'占道具位，机会成本'}
+/* ============ v4.36 D（P0）：道具层两处实测漏洞修复（《v436 特殊案例回归结论》）============
+   D1 角色×攻种族门控：防守位（攻种族 < 70 = 明确非输出位）禁推「攻击向道具」（生命宝珠/讲究系/攻击宝石），
+      职责改按「防御续航」四轴 → 改推防御向（**正向替换**，不是剔除候选池：仍列备选）。
+      验收：349 丑丑鱼 / 360 小果然 / 374 铁哑铃 item_main 生命宝珠 → 0（原被推 生命宝珠）。
+      「攻种族」口径 = atkBest(s) = max(base[1], base[3])（与 NEED_CFG.POWER_OK=95 的输出门同源指标）。
+      显式豁免登记：变身者（imposter）不按自身种族评力度（身份/速度由复制决定），永不被本门控命中。
+   D2 天气岩三态判定：① 自动天气（特性/天性设置手）→ 禁推（窗口已无偿提供）；
+      ② 手动天气招在场 → 允许推（岩石把 8 回合手动窗口拉到 12）；③ 两者皆无 → 禁推（无来源的天气岩=死道具）。
+      验收：591 败露球菇「雨强化清场」的无效 潮湿岩石 → 0；全库「无来源天气岩」= 0；手动天气招×对应岩石 > 0。 */
+var D1_ATK_ITEMS=['生命宝珠','讲究头带','讲究眼镜','讲究围巾','属性宝石'];
+var _d1Memo={};
+function itemDefPos(s){
+  try{
+    if(!s)return false;
+    var k=''+s.id;if(k==='undefined'||k==='null')return false;
+    if(_d1Memo[k]!==undefined)return _d1Memo[k];
+    var v=atkBest(s)<70;                                  /* 攻种族（力度指标）< 70 → 防守位 */
+    try{if(mechSpProfile(s).imposter)v=false}catch(ie){}   /* 变身者显式豁免（登记项） */
+    _d1Memo[k]=v;return v;
+  }catch(e){return false}
+}
+var WX_MANUAL_MV={'晴':[241],'雨':[240],'沙':[201],'雪':[258]};
+var WX_ROCK_SYS={'炽热岩石':'晴','潮湿岩石':'雨','光滑岩石':'沙','冰冷岩石':'雪'};
+function learnHasManualWx(s,sys){var ids=WX_MANUAL_MV[sys]||[];if(!ids.length)return false;return learnHasAnyId(s,ids)}
 /* 适用性闸（**不是否决**：只是这只宝可梦戴它无意义才不入候选） */
 function itemApplies(zh,s,p,tg,effSys){
+  /* v4.36 D1（P0）：防守位（攻种族<70 且非变身者）→ 禁推攻击向道具（生命宝珠/讲究系/攻击宝石），改推防御向 */
+  if(D1_ATK_ITEMS.indexOf(zh)>-1&&itemDefPos(s))return false;
   if(zh==='进化奇石')return !!evioAdv(s);                          /* v4.3.1 门控：仅非最终形态且权衡通过 */
   if(zh==='黑色污泥')return s.t1==='毒'||s.t2==='毒';
   if(zh==='剧毒珠'||zh==='剧毒宝珠'||zh==='火焰宝珠')return abiMentions(s,/中毒时|灼伤时|异常状态时|陷入异常/);   /* 毒疗/毅力类协同（启发式，已登记） */
   if(/岩石$/.test(zh)&&WX_ROCK[effSys||tg.sys0]!==zh)return false; /* 天气岩石：按**队伍体系**（ctx.sys，v433-2）或本物种窗口判定 */
-  /* v4.34 P1-1：物种自身由特性/天性自动开无限天气（ER 天气特性=无限天气）时禁推对应天气岩（报告 4.4.2） */
+  /* v4.36 D2（P0）：天气岩三态判定 —— ① 自动天气禁推 / ② 手动天气招允许推 / ③ 两者皆无禁推
+     （v4.34 只做了 ①；缺失 ③ 导致无来源天气岩（如 591 败露球菇不带求雨却拿潮湿岩石）漏网） */
   if(/^(炽热|潮湿|光滑|冰冷)岩石$/.test(zh)){
-    var _rk={'炽热岩石':'晴','潮湿岩石':'雨','光滑岩石':'沙','冰冷岩石':'雪'}[zh];
-    if(_rk&&ownSetsSys(s,_rk))return false;
+    var _rk=WX_ROCK_SYS[zh];
+    if(_rk){
+      if(ownSetsSys(s,_rk))return false;                     /* ① 特性/天性自动开天气 → 窗口已无偿提供 */
+      if(learnHasManualWx(s,_rk))return true;                /* ② 可学手动天气招（求雨/大晴天/沙暴/冰雹）→ 允许（延长手动窗口） */
+      return false;                                          /* ③ 既无自动天气也无手动天气招 → 死道具，禁推 */
+    }
   }
   if(zh==='光之黏土')return learnOf(s).some(function(x){return x===113||x===115||x===657})||!!autoWallAbi(s);   /* v4.34：真开墙 或 天性/特性自动开墙（极北之风/熔核） */
   if(zh==='地形延长器')return tg.sys.some(itemIsExtendableTerrain);
@@ -5777,6 +6169,8 @@ var ROLE_PAYLOAD={控速:['讲究围巾','嘉珍果','先制之爪'],速攻:['�
 var LOCK_ITEMS=['讲究围巾','讲究头带','讲究眼镜'];   /* v45-1b：锁招类（锁招=牺牲变招权） */
 function itemScored(s,side,tag,ctx){
   var p=profileOf(s),tg=oppTargets(s),d=itemDutyOf(tag,p,tg),res=[],ev=null;
+  /* v4.36 D1：防守位（攻种族<70 且非变身者）→ 职责四轴改按「防御续航」，改推防御向（与 itemApplies 的门控同判据） */
+  if(itemDefPos(s))d=AX_BY_CLS['防御续航'];
   try{ev=evioAdv(s)}catch(e){ev=null}
   var hazAct=tg.env.hazFrac>=0.25,boostAct=tg.env.boostFrac>=0.30;
   /* v433-2：队伍体系（ctx.sys）优先于本物种窗口——晴天队的「天气来源」位即便候选自身非设置手，也应取炽热岩石 */
@@ -8726,7 +9120,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.35';
+var ER_ENGINE_VER='v4.36';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -8831,9 +9225,104 @@ function mateAssemble(r,teamArr,coreSysList){
   }
   _MATE_ASM_CACHE[key]=out;return out;
 }
+/* ================= v4.36 C（P1）：队友理由个性化叙事（N-01~N-12 成对因果函数）=================
+   规格：《…个性化亮点强化设计书》§4。每条 = 「核心条件 × 队友能力」的**成对函数**，仅条件命中时输出。
+   读取字段一律取现有可判符号（learnHasName/learnHasAnyId/FUNC_MV./isSetterAny/spSys/bulkOf/spdOf/
+   bestPowOf/funcProfile/mechSpProfile/abiIdByZhOrEn），**不引入新硬门**、不产生任何剔除或降权。
+   mateCard 调用处最多取 2 句；本数组按「核心自身为叙事主语」的条目优先排列（设计书 §4 实现要点）。
+   src：设计书 §4 行内来源 / 附录 A 检索记录。 */
+function _mnAbiName(s,ids){try{if(!s)return null;var L=(s.abis||[]).concat(s.inns||[]);
+  for(var i=0;i<L.length;i++){var id=abiIdByZhOrEn(L[i]);if(id&&ids.indexOf(+id)>-1)return L[i]}}catch(e){}return null}
+function _mnMv(s,names){try{if(!s)return null;for(var i=0;i<names.length;i++){if(learnHasName(s,names[i]))return names[i]}}catch(e){}return null}
+var MATE_NARR=[
+ {id:'N-01',corePri:1,src:'https://bulbapedia.bulbagarden.net/wiki/Water_Absorb_(Ability)',
+  f:function(c,m){var an=_mnAbiName(c,[114,31,11,157,78]);if(!an)return null;
+    var mv=_mnMv(m,['冲浪','放电','喷水','大地之力']);if(!mv)return null;
+    var gain={'引水':'特攻 +1','避雷针':'特攻 +1','储水':'回 1/4','食草':'物攻 +1','电气引擎':'速度 +1'}[an]||'免疫并转收益';
+    return '因你具「'+an+'」免疫，'+m.zh+'的「'+mv+'」不但不伤己方、还替你回气（'+gain+'），群攻顺带补盲'}},
+ {id:'N-05',corePri:1,src:'https://bulbapedia.bulbagarden.net/wiki/Regenerator_(Ability)',
+  f:function(c,m){var an=_mnAbiName(c,[90,144]);if(!an)return null;
+    if(!learnHasAnyId(m,(FUNC_MV&&FUNC_MV.pivot)||[369,521]))return null;
+    var g=(an==='毒疗')?'每回合回 1/8':(an==='再生力'?'换下回 1/3':'回复');
+    return '队友 '+m.zh+'用折返把你反复送上场，「'+an+'」的'+g+'才能持续兑现（轮转=回复）'}},
+ {id:'N-07',corePri:1,src:'https://bulbapedia.bulbagarden.net/wiki/Corrosion_(Ability)',
+  f:function(c,m){
+    if(_mnAbiName(c,[212])){var mv=_mnMv(m,['剧毒','毒菱']);if(mv)return '因你具「腐蚀」，'+m.zh+'的「'+mv+'」对毒/钢也能生效——对方没有豁免位'}
+    if(_mnAbiName(m,[212])){var mv2=_mnMv(c,['剧毒','毒菱']);if(mv2)return m.zh+'的「腐蚀」让你那手「'+mv2+'」对毒/钢也能生效——对方没有豁免位'}
+    return null}},
+ {id:'N-11',corePri:1,src:'https://bulbapedia.bulbagarden.net/wiki/Imposter_(Ability)',
+  f:function(c){if(!c)return null;var im=false;try{im=!!mechSpProfile(c).imposter}catch(e){}
+    if(!im)return null;
+    return '因你（变身者）不按自身种族评强度，队友的速控/围巾位正好补上你的速度缺口——复制对手速度后即可反超'}},
+ {id:'N-12',corePri:1,src:'https://bulbapedia.bulbagarden.net/wiki/Body_Press_(move)',
+  f:function(c,m){if(!c)return null;
+    if(!learnHasAnyId(c,[704]))return null;
+    var d=(c.base&&c.base[2])||0;if(d<100)return null;
+    if(!(tplAbiHit(m,'威吓')||(((m.base&&m.base[2])||0)>=110)))return null;
+    return '队友 '+m.zh+'把对手物攻压住，你这位扑击手（物防 '+d+'）才有空间堆防御——物防越高压制越强'}},
+ {id:'N-03',corePri:1,src:'https://www.smogon.com/dex/sv/pokemon/pelipper/',
+  f:function(c,m){if(!c)return null;var sy=null;try{sy=isSetterAny(c)}catch(e){}
+    if(!sy)return null;
+    if((spSys(m)||[]).indexOf(sy)<0)return null;
+    return '你开'+sy+'，'+m.zh+'的本系直接吃'+sy+'增伤——同一张牌两个人吃'}},
+ {id:'N-08',corePri:1,src:'https://bulbapedia.bulbagarden.net/wiki/Terrain_Extender',
+  f:function(c,m){var nm=null;['青草制造者','电气制造者','精神制造者','薄雾制造者'].forEach(function(x){if(!nm&&tplAbiHit(m,x))nm=x});
+    if(!nm)return null;
+    var ter={'青草制造者':'青草场地','电气制造者':'电场','精神制造者':'精神场地','薄雾制造者':'薄雾场地'}[nm];
+    var p=0;try{p=bestPowOf(c,'双刀',convOf(c))||0}catch(e){}
+    if(p<120)return null;
+    return '队友 '+m.zh+'铺'+ter+'（延展器可达 '+WCONF.terrainExtenderTurns+' 回合），你的高威力本系吃到 ×'+WCONF.terrainBoost}},
+ {id:'N-04',corePri:1,src:'https://www.smogon.com/dex/sv/pokemon/excadrill/',
+  f:function(c,m){var st=null;try{st=isSetterAny(m)}catch(e){}
+    if(!st||!isWxSys(st))return null;
+    if((spSys(c)||[]).indexOf(st)<0)return null;
+    var nm='';try{nm=sysSetterName(m,st)||''}catch(e){}
+    return '队友 '+m.zh+(nm?('（'+nm+'）'):'')+'替你把'+st+'铺开，你的'+st+'受益特性才有用（窗口 '+WCONF.abilityDurTurns+' 回合）'}},
+ {id:'N-02',corePri:0,src:'https://bulbapedia.bulbagarden.net/wiki/Intimidate_(Ability)',
+  f:function(c,m){var own=_mnAbiName(c,[22])||_mnAbiName(m,[22]);if(!own)return null;
+    if(!learnHasAnyId(m,(FUNC_MV&&FUNC_MV.pivot)||[369,521]))return null;
+    return '威吓 × 折返可反复削攻：'+m.zh+'每次换入都再降对手物攻 1 级'}},
+ {id:'N-06',corePri:0,src:'https://bulbapedia.bulbagarden.net/wiki/Trick_Room_(move)',
+  f:function(c,m){if(!learnHasAnyId(m,[433]))return null;
+    var slow='';try{if(c&&spdOf(c)<=60)slow=c.zh;else if(m&&spdOf(m)<=60)slow=m.zh}catch(e){}
+    if(!slow)return null;
+    return '队友 '+m.zh+'先开戏法空间（'+WCONF.trickroomTurns+' 时段），'+slow+'的低速重炮先手且威力翻档'}},
+ {id:'N-09',corePri:0,src:'ER 组合素材补登（引擎内；钉伤按 WCONF.hazardRules）',
+  f:function(c,m){var f=null;try{f=funcProfile(m)}catch(e){}
+    if(!f||!f.haz)return null;
+    var p=0;try{p=bestPowOf(c,'双刀',convOf(c))||0}catch(e){}
+    if(p<100)return null;
+    return '队友 '+m.zh+'铺钉子压血线，你的本系（折算威力 '+Math.round(p)+'）更容易收残'}},
+ {id:'N-10',corePri:0,src:'https://bulbapedia.bulbagarden.net/wiki/Light_Clay',
+  f:function(c,m){var w=_mnMv(m,['光墙','反射壁','极光幕']);if(!w)return null;
+    var b=0;try{b=bulkOf(c)}catch(e){}
+    if(b>=270)return null;
+    return '队友 '+m.zh+'先手开「'+w+'」（光之黏土 5→'+WCONF.lightClayTurns.moveScreens.clay+' 回合），你这只薄皮打手顶一轮就能安全成形'}}
+];
+function mateWhyNarr(coreS,mateS,r,teamCtx){
+  var out=[];
+  try{
+    if(!mateS)return out;
+    var ord=MATE_NARR.filter(function(x){return x.corePri}).concat(MATE_NARR.filter(function(x){return !x.corePri}));
+    for(var i=0;i<ord.length;i++){
+      if(out.length>=2)break;
+      var n=ord[i],txt=null;
+      try{txt=n.f(coreS,mateS,r,teamCtx)}catch(e){txt=null}
+      if(txt&&out.indexOf(txt)<0)out.push(txt);
+    }
+  }catch(e){}
+  return out;
+}
 function mateCard(r,pool,isMain,cands,teamCtx){
   var s2=(r&&r.s)?r.s:r;if(!s2)return '';
-  var why='';try{why=(r.why||[]).slice(0,2).join('；')}catch(e6){}
+  var why='';
+  /* v4.36 C（P1）：mateCard.why 改为「核心条件 × 队友能力」成对因果叙事（N-01~N-12，设计书 §4）。
+     最多 2 句、**优先含核心自身的因果句**；未命中任一成对函数时回退 v4.35 现有徽章 why（逐字不变）。 */
+  try{
+    var _tm=(teamCtx&&teamCtx.team)||null,_core=(_tm&&_tm.length)?_tm[0]:null;
+    var _nr=mateWhyNarr(_core,s2,r,teamCtx);
+    why=_nr.length?_nr.slice(0,2).join('。'):(r&&r.why||[]).slice(0,2).join('；');
+  }catch(e6){why=(r&&r.why||[]).slice(0,2).join('；')}
   /* v4.35 P0-1：队友配置改由 mateAssemble 真实装配（priRole + 真实队伍 ctx + 复用单精灵层闸门），
      并新增「该队友在本队定位下的推荐招组」展示（≤4 槽；就地文本、无弹窗、窄屏不溢出）。 */
   var cfg='';
