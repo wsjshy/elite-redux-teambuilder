@@ -44,7 +44,8 @@ if ($dirty.Trim().Length -gt 0) {
 foreach ($f in $DeployFiles) {
     if (-not (Test-Path (Join-Path $Repo $f))) { throw "部署产物缺失: $f" }
 }
-if (-not (Test-Path (Join-Path $Repo "assets\sprites"))) { throw "部署产物缺失: assets\sprites" }
+if (-not (Test-Path (Join-Path $Repo "assets\sheets"))) { throw "部署产物缺失: assets\sheets" }
+# assets\sprites（旧精灵图源，gitignored 本地文件，v4.6.2 合图后零引用、gh-pages 不需）不作为部署前置条件；运行时只消费 assets\sheets
 Remove-Item -Recurse -Force $Temp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $Temp -Force | Out-Null
 foreach ($f in $DeployFiles) { Copy-Item (Join-Path $Repo $f) (Join-Path $Temp $f) -Force }
