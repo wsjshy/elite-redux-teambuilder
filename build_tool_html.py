@@ -767,7 +767,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.44</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.46a</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -6763,7 +6763,10 @@ function funcFillIds(){
   FUNC_FILL_IDS=a;return a;
 }
 /* ---------- 生成后统一纠偏（对 normal 与 mech 同口径；内部 try 兜底，异常则原样返回） ---------- */
-function finalizeBuild(s,b){
+/* v4.45 C-1：收口逻辑抽为**共用入口** finalizeBuildInPlace（原地修订 b 并返回 b）。
+   finalizeBuild 退化为一行委托 → 流派区调用语义逐字节等价（全量导出逐字段对照见实施报告）。
+   子区（needBuildHtml → subareaBuild445）直接复用本函数，杜绝「流派区已收口 / 子区未收口」的漂移（设计书 C 根因 R-Ⅰ）。 */
+function finalizeBuildInPlace(s,b){
   if(!b||!s||!b.mv||!b.mv.main)return b;
   try{
     var mv=b.mv.main,role=String(b.roleTag||''),side=String(b.side||''),i,k;
@@ -7020,6 +7023,22 @@ function finalizeBuild(s,b){
           }
         }
       }catch(eN3){}
+      /* ①-3c（v4.45 附项②/盲区 #2604 帝王拿波R「晴增伤清场」）：多自动天气持有者的**名首天气词 ↔ 本卡体系**一致性。
+         与 ①-3b 的分工：①-3b 只在「auto 不含名首天气」时改名，故 auto=[晴,雪] 的 #2604 两个规则都放过，
+         而它 basis 自述「体系 雪（自我设置）」却叫「晴增伤清场」（冰招主推，晴不增冰伤）。
+         判据 = 本卡 basis 的「体系 X（…）」声明（引擎自产、单一真源，非外部推断）→ 名首天气词须与之一致。 */
+      try{
+        var _ch3c=String(b.name||'').charAt(0);
+        if('雨晴沙雪'.indexOf(_ch3c)>-1){
+          var _bs3c=String((b.basis||[]).map(function(x){return String(x&&x.txt!==undefined?x.txt:x)}).join('；'));
+          var _m3c=_bs3c.match(/体系\s*([雨晴沙雪])/);
+          if(_m3c&&_m3c[1]!==_ch3c){
+            b.name=String(b.name||'').replace(_ch3c,_m3c[1]);
+            b.desc=String(b.desc||'').replace(_ch3c+'天',_m3c[1]+'天');
+            b.namedByMoves=1;b.nameMismatch=_ch3c+'→'+_m3c[1]+'（本卡 basis 声明体系）';
+          }
+        }
+      }catch(eN3c){}
       /* ①-4 钉子轴：名首含「钉子」但 4 槽无任何钉子招（FUNC_MV.hazard） */
       if(String(b.name||'').indexOf('钉子')===0&&
          !((b.mv.main||[]).some(function(x){return FUNC_MV.hazard.indexOf(+x.id)>-1}))){
@@ -7122,6 +7141,8 @@ function finalizeBuild(s,b){
   }catch(e){}
   return b;
 }
+/* v4.45 C-1：流派区调用点（deriveBuilds L8601 / L7530 / L11442）全部走本委托，行为 = finalizeBuildInPlace */
+function finalizeBuild(s,b){return finalizeBuildInPlace(s,b)}
 function mechBuildBase(s,side,name,rw,desc,roleTag){
   var b={name:name,side:side||coreSide(s),roleTag:roleTag||'输出',itemTag:'机制',mv:{main:[],funcs:[]},
     nat:null,it:[],abi:[],desc:desc||'',basis:[],ev:null,score:99,breakingRoute:'机制',mechRw:rw};
@@ -7255,17 +7276,17 @@ var MECH_BUILD={
     b.basis.push({k:'mech',txt:'机制 魔法防守（magic_guard_survival）——反作用免疫，宝珠=白嫖增伤'});
     return b;
   },
-  /* 毒疗：中毒状态下每回合回复 1/8（异常状态收益反转）→ 剧毒珠站场消耗 */
+  /* 毒疗：中毒状态下每回合回复 1/8（异常状态收益反转）→ 剧毒宝珠站场消耗 */
   toxic_heal_item:function(s,cs){
     if(!mechAbiRwHits(s,'toxic_heal_item'))return null;
     /* v4.31：side 改「物理」——毒疗消耗流主输出按物理侧取（天蝎王物攻 95 vs 特攻 45，原写死特殊会补特攻招如破坏光线=练废） */
     var b=mechBuildBase(s,'物理','毒疗站场流','toxic_heal_item',
-      '毒疗把「中毒」从负面反转成每回合 1/8 回复——带剧毒珠自中毒，替身/毒招/钉子消耗，几乎不掉血');
+      '毒疗把「中毒」从负面反转成每回合 1/8 回复——带剧毒宝珠自中毒，替身/毒招/钉子消耗，几乎不掉血');
     b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：中毒消耗对手（毒疗只回复自身，不影响输出）']});
     if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：毒疗回 1/8 ≈ 每回合白嫖一个替身']});
     var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);   /* v4.31：与 side 对齐（原 '特殊' 会给物攻核心补特攻招如破坏光线） */
     if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住拖毒疗回合']});
-    b.it=[['剧毒珠','自中毒 → 毒疗每回合回 1/8（异常收益反转，Smogon 毒疗标准配置）']];
+    b.it=[['剧毒宝珠','自中毒 → 毒疗每回合回 1/8（异常收益反转，Smogon 毒疗标准配置）']];   /* v4.45 C-5：道具名双写统一（剧毒珠→剧毒宝珠；以 道具表_完整.csv / data.js 实读为准，剧毒珠 计数=0） */
     b.abi=forceMechAbi(s,'toxic_heal_item',b.abi);   /* v4.34 P1-3：毒疗须由所选特性真正提供 */
     b.basis.push({k:'mech',txt:'机制 毒疗（toxic_heal_item）——中毒=回复源，替身每回合白嫖'});
     return b;
@@ -7972,6 +7993,9 @@ var DUTY={
   '游击':{burst:0.60,longevity:0.40,punish:0.50,tech:0.80},
   '控速':{burst:0.50,longevity:0.70,punish:0.30,tech:0.80},
   '肉盾':{burst:0.20,longevity:1.00,punish:0.80,tech:0.60},
+  /* v4.45 B-3：特盾（特殊联防位）——与「肉盾」同耐久基线但 tech 权重更高（特防件=技术型站场），
+     不并入 ['肉盾','受队','盾'] 的 haz/prio/rec 加成（设计书 C §3.5 B-3：头盔在 walls 上 1.18–1.36 → 0.93–1.11） */
+  '特盾':{burst:0.15,longevity:1.00,punish:0.35,tech:0.70},
   '受队':{burst:0.15,longevity:1.00,punish:0.70,tech:0.80},
   '盾':{burst:0.20,longevity:1.00,punish:0.80,tech:0.60},
   '天气':{burst:0.45,longevity:0.70,punish:0.30,tech:0.90},
@@ -8000,7 +8024,7 @@ var AX_BY_CLS={'输出':{burst:0.80,longevity:0,punish:0,tech:0.20},'防御续�
   '香草':{burst:0.35,longevity:0.15,punish:0,tech:0.50},'奇石':{burst:0,longevity:1.00,punish:0.10,tech:0.30}};
 var AX_OVR={'生命宝珠':{burst:1.00,longevity:-0.15,tech:0.20},'讲究头带':{burst:0.90,longevity:-0.10,tech:0.20},
   '讲究眼镜':{burst:0.90,longevity:-0.10,tech:0.20},'讲究围巾':{burst:0.70,longevity:-0.10,tech:0.90},
-  '突击背心':{burst:0.45,longevity:0.60,tech:0.35},'剩饭':{longevity:1.00,tech:0.30},
+  '突击背心':{burst:0.45,longevity:0.60,tech:0.35},'剩饭':{longevity:1.00,tech:0.30},   /* v4.46 U1 回滚：v4.45 曾把本表 longevity 0.60→0.85，但本表是**全局**唯一真源，而 B-2 的「含变化招硬门」只写在 itemScored 的 ctx.sub 分支 → 流派区被连带影响（黑盒实测 49 条流派区候选道具列表被换成突击背心，其中 47 套含变化招 = 与 ER「背心只能出攻击招」冲突，违反任务书 D-1「背心改动必须限定子区」）。现改为：全局表回滚 0.60（流派区与 v4.44 逐字节等价），背心的 0.85 只在 itemScored 的 ctx.sub 分支内局部生效（见该分支 _loxSub）。 */
   '黑色污泥':{longevity:1.00,tech:0.30},'文柚果':{longevity:0.70,tech:0.20},'凸凸头盔':{longevity:0.40,punish:1.00,tech:0.20},
   '红牌':{longevity:0.10,punish:1.00,tech:0.40},'逃脱按钮':{longevity:0.10,punish:0.60,tech:0.80},
   '弱点保险':{burst:0.70,tech:0.60},'气球':{tech:0.60},'厚底靴':{tech:0.80,longevity:0.50},'防尘护目镜':{tech:0.50},
@@ -8167,6 +8191,32 @@ function itemScored(s,side,tag,ctx){
     if(/宝石$/.test(c.zh)){sc+=0.40;ps.push('P5');beats.push('本系实际属性首击增伤')}
     if(c.id&&RESIST_BERRY_ALL[c.id]){sc+=0.35;ps.push('P5');beats.push('对准实际承受最大弱点')}
     if(/种子$/.test(c.zh)){sc+=0.25;ps.push('P5')}
+    /* ===== v4.45 B-1 / B-2（**仅子区**：ctx.sub 门控 —— D-1 保证 4680 流派逐字段零差异）=====
+       B-1 讲究头带/眼镜进主推：依据（设计书 C §3.6）生命宝珠 vs 讲究头带 的轴差仅 0.085
+           （AX_OVR burst 1.00 vs 0.90）→ ≥0.1 即可翻转，故取 **+0.30**；
+           **不得**用 ROLE_PAYLOAD_BONUS=1.8（会夺走讲究围巾的控速位，破坏「控速」职责载荷）。
+           条件：侧别匹配（与 itemApplies 同用 p.side）∧ 4 招全攻击 ∧ burst≥0.6 → +0.30；
+                含变化招 → −0.25（与 P1-1 讲究系×变化招门控同向，非硬门）。
+       B-2 突击背心进池：P6 特防兜底 —— 耐久类需求（walls/anti/haz/rec）∧ 4 招全攻击 ∧ d.longevity≥0.7 → **+0.55**
+           （验算：0.20×0.45+1.00×0.85+0.80×0+0.60×0.35+0.55 = 1.71 → 稳定进前 2；a 项见 AX_OVR）。
+       B-2(c) 背心硬门（放本函数内而非 itemApplies —— 后者签名无招组，设计书 C §3.5）：4 招含变化招 → 该件不可用。
+           ER 语义「突击背心只能出攻击招」⇒ 带变化招 = 功能招被禁，属**机制冲突**（同 noAtkItemGate 的硬冲突登记）。 */
+    if(ctx&&ctx.sub){
+      if(c.zh==='讲究头带'||c.zh==='讲究眼镜'){
+        var _b1s=(c.zh==='讲究头带')?(p.side!=='特殊'):(p.side!=='物理');
+        if(ctx.mvHasStatus===1){sc-=0.25;ps.push('P1');beats.push('锁招与变化招冲突（讲究系会锁住功能招，P1-1 同向）')}
+        else if(_b1s&&ctx.mvAllAtk===1&&ax.burst>=0.6){sc+=0.30;ps.push('P5');beats.push('4 招全攻击：讲究系直接放大主武器（锁招代价被全攻招组覆盖）')}
+      }
+      if(c.zh==='突击背心'){
+        if(ctx.mvHasStatus===1)return;   /* 硬门：只能出攻击招，带变化招 = 功能招被禁（机制冲突，非风格偏好） */
+        /* v4.46 U1：背心的 longevity 0.85 只在**子区**生效（B-2(a) 原实现写在全局 AX_OVR 表里 →
+           流派区连带被改，见 AX_OVR 处注释）；此处用局部有效值 _loxSub，全局表保持 v4.44 的 0.60。 */
+        var _loxSub=(d&&typeof d.longevity==='number'&&d.longevity<0.85)?0.85:d.longevity;
+        if(ctx.mvAllAtk===1&&_loxSub>=0.7&&['walls','anti','haz','rec'].indexOf(String(ctx.need||''))>-1){
+          sc+=0.55;ps.push('P5');beats.push('特防×1.5 补足特殊端缺口（4 招全攻击 × 耐久位需求）')
+        }
+      }
+    }
     if(!ps.length)ps.push('P1');   /* 仅四轴命中 → 基线对位权重（P1）；prin 不允许空，保证 why 可溯源 */
     /* v4.12 ② Smogon 先验软接入：该物种先验配备过的道具 → 小权重软优先（≤0.105，只作并列微排序；
        机制覆盖仍主导；SMOGON_PRIOR_ENABLED=false → 0）。机制前提：道具须在 ER 存在（见 smogonItemBonus） */
@@ -8266,7 +8316,16 @@ function mkBuild(s,side,name,spBest,phBest,roleTagEx,itemTagEx,ctx){
   /* v4.3.3：道具角色可与招式角色分离（如「天气手槽」招式按输出侧走、道具走天气岩石） */
   /* v4.17：光之黏土只在"推荐配招真带墙（光墙113/反射壁115/极光幕657）或特性自动开墙"时保留；
      无墙时光之黏土是废道具（只延长墙，不延长天气/场地）——从道具推荐中移除（修正"没带双墙却推光之黏土"） */
-  var _it=buildItem(s,side,itemTagEx||roleTag,ctx);
+  /* v4.45 B-1/B-2：把**招组载荷**注入子区 ctx（仅 ctx.sub）。
+     流派区 ctx（coreItemCtxOf 结果）可能被缓存复用 → 这里只读、浅拷贝后再传，**绝不写入原对象**。 */
+  var _ctxI=ctx;
+  if(ctx&&ctx.sub){
+    _ctxI={};for(var _ck in ctx)_ctxI[_ck]=ctx[_ck];
+    var _mi=mv.main||[];
+    _ctxI.mvAllAtk=(_mi.length>0&&_mi.every(function(x){var m=MV[x.id];return m&&m[4]!=='变化'}))?1:0;
+    _ctxI.mvHasStatus=(_mi.some(function(x){var m=MV[x.id];return m&&m[4]==='变化'}))?1:0;
+  }
+  var _it=buildItem(s,side,itemTagEx||roleTag,_ctxI);
   var _wallMv=mv.main.some(function(x){return x.id===113||x.id===115||x.id===657});
   var _wallAbi=abiMentions(s,/光墙|反射壁|极光幕/);
   if(!(_wallMv||_wallAbi))_it=_it.filter(function(e){return e[0]!=='光之黏土'});
@@ -9406,6 +9465,10 @@ var FIELD_SYS=['雨','晴','沙','雪','电场','精神场地','青草场地','�
 /* ============ v4.3 阈值（07 §4.5.2：必须可配置，禁止把魔数写进算法正文） ============ */
 var NEED_CFG={SPEED_HIGH:100,SPEED_LOW:60,BULK_HIGH:300,BULK_MID:270,MIXED_OK:70,POWER_OK:95,
   MULTI_ROLE_BONUS:3,STOP_PRIORITY:1,MAX_TEAM:6,
+  /* v4.45 A-1（设计书 C §3.1 伪码）：λ = 绝对实力项的**折扣系数常量**（不随需求变化）。
+     标定依据（设计书 C §9 P5/探针 simulate）：λ=0→41 distinct top-1 / 0.2→43 / **0.35→47** / 0.5→50；
+     取 0.35 —— 0.35→0.5 只 +3 distinct，折扣越小对既有排序的扰动越小（λ 是常量，D-5 裁决）。 */
+  LAMBDA_GEN:0.35,
   MULTI_MAX:2 /* 单只最多「顺带满足」的额外需求数——07 §4.5.3 未设上限；加此上限以保持 07 期望的 4~6 只队伍，
                  避免一只全能宝可梦一次清零十余条需求导致队伍缩到 2~3 只（实现口径已在交付报告登记） */};
 /* ============ v4.8（G2/G3）：目标队伍规模 = 产品级参数（默认 6 / 2 = v4.7 现行为） ============
@@ -10019,43 +10082,60 @@ function needCtx(core,o){
   return {core:core,sysKey:o.sysKey||'',sysKey2:o.sysKey2||'',need:o.need||[],holes:o.holes||[],
     team:o.team||[],L:o.L,names:o.names,conv:o.conv,axis:o.axis||null};
 }
+/* v4.45 A-1（设计书 C §3.1、根因 R-Ⅱ）：维度**两桶**判据 ——
+   core（与核心相关）= D1 体系设置/受益契合 · D9 替队吸收队内弱点 · D10 补核心盲点（三者都以核心画像为输入：cx.sysKey / cx.need / cx.holes）；
+   gen（与核心无关的绝对实力项）= 其余全部 D 维 + RS 规则偏移 + AX 轴协同。
+   实现取**集合式判据**（等价于在 DIM_IMPL 每条挂 gen 标记，但只改一处、无 40 处漂移面）。 */
+var CORE_DIM={D1:1,D9:1,D10:1};
+function genDim(id){return !CORE_DIM[id]}
 function needScore(s,need,cx){
   var def=need&&need.def;if(!def)return null;
   var g='';try{g=def.gate(s,cx,need.arg)}catch(e){g=''}
   if(!g)return null;
-  var total=0,cert=1,dims=[];
+  var total=0,cert=1,dims=[],corePts=0,genPts=0;
+  var LAM=(typeof NEED_CFG.LAMBDA_GEN==='number')?NEED_CFG.LAMBDA_GEN:0.35;
   (def.dims||[]).forEach(function(pair){
     var fn=DIM_IMPL[pair[0]];if(!fn)return;
     var r=null;try{r=fn(s,cx)}catch(e){r=null}
     if(!r||!r.pts)return;
     if(r.cert!==undefined)cert=Math.min(cert,r.cert);
-    var pts=r.pts*(pair[1]||1);total+=pts;
+    var pts=r.pts*(pair[1]||1);
+    if(genDim(pair[0]))genPts+=pts;else corePts+=pts;
     dims.push({id:pair[0],dim:SYS_DIM_LABEL[pair[0]]||pair[0],w:pair[1]||1,pts:pts,txt:r.txt});
   });
+  /* v4.45 A-1：score = corePts + (1−λ)·genPts（先按桶合成，再叠加 RS/AX 到 gen 桶） */
+  total=corePts+(1-LAM)*genPts;
   /* v433-2：窗口来源需求（wxsrc）只认「自动特性设置手」为首选；仅可学天气/场地招者=第二手
-     整体降权排后（仍是正向评分、不剔除：低分排后但可入选） */
+     整体降权排后（仍是正向评分、不剔除：低分排后但可入选）
+     v4.45 A-1：本折扣**归 corePts**（体系专属折扣 → 不走 λ 折扣，避免把体系位打折两次/打散） */
   if(need.kind==='wxsrc'&&cx&&cx.sysKey&&!isAbilSet(s,cx.sysKey)){
-    total*=0.72;
+    corePts*=0.72;total=corePts+(1-LAM)*genPts;
     dims.push({id:'X1',dim:'设置方式',w:1,pts:0,txt:'第二手：仅可学天气/场地招，非自动特性设置手 → 降权排后（不剔除）'});
   }
-  /* v4.7 规则偏移层：强度/健康维度（系数 = M5 真值标签拟合；RULE_SHIFT_ENABLED=false 一键回退） */
+  /* v4.7 规则偏移层：强度/健康维度（系数 = M5 真值标签拟合；RULE_SHIFT_ENABLED=false 一键回退）
+     v4.45 A-1：RS 归 gen 桶（绝对实力项）→ 计入 (1−λ) 折扣 */
   if(RULE_SHIFT_ENABLED){
     try{
       var rsv=rsL1Of(s,(cx&&cx.team)||[]);
       if(rsv&&isFinite(rsv.pts)&&Math.abs(rsv.pts)>0.001){
-        total+=rsv.pts;dims.push({id:'RS',dim:'规则偏移(实测系数)',w:1,pts:rsv.pts,txt:rsv.why});
+        genPts+=rsv.pts;total=corePts+(1-LAM)*genPts;
+        dims.push({id:'RS',dim:'规则偏移(实测系数)',w:1,pts:rsv.pts,txt:rsv.why});
       }
     }catch(eRS){}
   }
-  /* v4.9 阶段 2：轴方案 → 「轴协同」维度（正向加分；依据=轴库三态判定 + 数据层标签，非拍脑袋系数） */
+  /* v4.9 阶段 2：轴方案 → 「轴协同」维度（正向加分；依据=轴库三态判定 + 数据层标签，非拍脑袋系数）
+     v4.45 A-1：AX 归 gen 桶（同上） */
   if(cx&&cx.axis){
     try{
       var axr=axisSyncOf(s,cx.axis);
-      if(axr&&isFinite(axr.pts)&&axr.pts>0.001){total+=axr.pts;dims.push({id:'AX',dim:'轴协同',w:1,pts:axr.pts,txt:axr.why})}
+      if(axr&&isFinite(axr.pts)&&axr.pts>0.001){
+        genPts+=axr.pts;total=corePts+(1-LAM)*genPts;
+        dims.push({id:'AX',dim:'轴协同',w:1,pts:axr.pts,txt:axr.why});
+      }
     }catch(eAX){}
   }
   dims.sort(function(a,b){return b.pts-a.pts});
-  return {score:total*cert,raw:total,cert:cert,dims:dims,gate:(typeof g==='string'?g:def.role)};
+  return {score:total*cert,raw:total,cert:cert,core:corePts,gen:genPts,dims:dims,gate:(typeof g==='string'?g:def.role)};
 }
 function needSatisfied(s,need,cx){
   var def=need&&need.def;if(!def)return false;
@@ -10482,7 +10562,10 @@ function itemTagOfNeed(need){
   if(k==='trset')return '肉盾';
   if(k==='speed')return '控速';
   if(k==='sub'||k==='pass')return '强化';
-  if(['haz','clear','rec','wear','pivot','anti','wallp','walls','drain'].indexOf(k)>-1)return '肉盾';
+  /* v4.45 B-3：walls=特殊联防位（特盾）→ 道具 tag 独立为「特盾」（根因 R-Ⅳ：9 类耐久/功能需求全塌缩为「肉盾」
+     → 特盾/物盾在道具层不可区分，头盔在特盾位上白拿耐久加成）；wallp/haz/clear/anti 维持「肉盾」 */
+  if(k==='walls')return '特盾';
+  if(['haz','clear','rec','wear','pivot','anti','wallp','drain'].indexOf(k)>-1)return '肉盾';
   return '输出';
 }
 /* v433-1：队伍行核心的 tag 不再写死「输出」——按核心实际画像（受/肉盾 → 肉盾；强化 → 强化；设置手 → 天气）出装 */
@@ -10747,7 +10830,15 @@ function renderNeedPlan(s,vi){
   /* ① 需求清单 */
   var puid='nd'+(++PLAN_UID),ppool={};
   h+='<div class="sec" style="margin:8px 0"><h3>构建逻辑 · 队伍需求（'+plan.needs.length+' 条，随核心动态生成）</h3>';
+  /* v4.45 A-4（设计书 C §3.4）：需求清单按**六类**分组展示（need.def.kind 的六个取值）
+     —— 只加分组标题、**不改排序**（需求顺序仍由 needList/轴前置决定）；槽位徽标已显示「满足哪条需求」。 */
+  var NEED_GROUP_ZH={profile:'画像位（输出 / 联防）',field:'体系位（天气 / 场地）',speed:'控速位',
+    'function':'功能位（钉子 / 除钉 / 回复 / 轮转 / 接力 / 消耗）',glue:'兜底位（状态吸收 / 抗性）',fill:'补位（非需求驱动）'};
+  var _lastGk='';
   plan.needs.forEach(function(n,k){
+    var _gk=String((n.def&&n.def.kind)||'other');
+    if(_gk!==_lastGk){_lastGk=_gk;
+      h+='<div class="tip" style="margin:6px 0 2px;font-size:11px"><b>▸ '+esc(NEED_GROUP_ZH[_gk]||_gk)+'</b>　（按核心需求顺序排列，仅分组不改排序）</div>';}
     var st=n.status,badge='',cls='';
     if(st==='satisfied'){badge='<span class="badge">已满足</span>'+(n.byCore?'<span class="badge">核心自身</span>':'')+(n.byMulti?'<span class="badge">多功能</span>':'')}
     else if(st==='unmatched'){badge='<span class="badge" style="background:#ffe0b2">无候选</span>'}
@@ -10769,7 +10860,17 @@ function renderNeedPlan(s,vi){
         (top.s.id!==undefined?needBuildHtml(top.s,roleTagOfNeed(n),itemTagOfNeed(n),{sys:plan.sysKey,need:n.kind}):'')+
         '</div>';
     }else{
-      h+='<div class="mini" style="color:var(--sub)">'+(n.byCore?'核心自身已满足该需求':'全图鉴无正向候选（该需求上无候选拿到分）')+'</div>';
+      /* v4.45 C-4：正文文案**五分支**（消除「已满足 × 全图鉴无正向候选」同现；基线 falseBody 1391/2283 = 60.9%）
+         ① 候选行（top 存在 → 上面分支，未改动）② 核心自身 ③ 多功能顺带满足 ④ 低优先未凑人 ⑤ 真 unmatched
+         分支②⑤与 v4.44 文案**逐字一致**（保真回归）；新增③④把原先错落进⑤的两种情形归位。 */
+      var _nb='';
+      if(n.byCore)_nb='核心自身已满足该需求';
+      else if(n.byMulti)_nb='由 '+((n.satisfiedBy&&n.satisfiedBy.length)?n.satisfiedBy.join('+'):'队内成员')+'顺带满足（多功能，未单列候选）';
+      else if(st==='unmatched')_nb='全图鉴无正向候选（该需求上无候选拿到分）';
+      else if(st==='blocked')_nb='同族已在队（形态去重）——候选存在但同族已入选';
+      else if(st==='satisfied')_nb='已满足（由队内成员兑现）';
+      else _nb='未凑人（低优先；扩编或满编方案中会纳入）';
+      h+='<div class="mini" style="color:var(--sub)">'+esc(_nb)+'</div>';
     }
     if(pk&&pk.list&&pk.list.length>1){
       h+='<div style="font-size:11px;color:var(--sub);margin-top:2px">备选（同一需求池内按正向分排序，共 '+pk.list.length+' 只；低分排后但均可入选）：'+
@@ -10850,16 +10951,60 @@ function renderNeedPlan(s,vi){
   return h;
 }
 /* 成员/候选的配招建议块（招式/特性/道具可点击跳转） */
-function needBuildHtml(sp,roleTag,itemTag,ctx){
+/* v4.45 C-1：子区（队伍方案：核心槽 + 成员槽）**共用构建入口** —— 与流派区 deriveBuilds 同序收口：
+   mkBuild → 既有子区门控（全变化招道具 / 讲究系×变化招 / 硬撑×披带）→ buildEvs → finalizeBuildInPlace。
+   ★ 顺序与流派区逐字对齐：deriveBuilds 先 buildEvs（L8568）再统一 finalizeBuild（L8601）；
+     若颠倒（先 finalizeBuild 后 buildEvs），则 finalizeBuild 内 `if(b.ev&&b.ev.alloc)` 的 EV 复核块永不生效，
+     子区 EV 会与流派区不同源 —— 这正是设计书 C 根因 R-Ⅰ 要消除的漂移。
+   ★ 硬约束（任务书 §2 D-1）：本入口**只**服务子区 —— ctx 打 sub=1 标记，B-1/B-2 的招组载荷与背心门控
+     仅在该标记下生效；不接 coreItemCtxOf / 分析器路径 → 4680 流派零差异。 */
+function subareaBuild445(sp,roleTag,itemTag,ctx){
+  var _cx=null;
+  try{if(ctx&&typeof ctx==='object'){_cx={};for(var _k in ctx)_cx[_k]=ctx[_k]}else{_cx=ctx||null}}catch(eCX){_cx=ctx||null}
+  if(_cx)_cx.sub=1;
   var b=null;
-  try{b=mkBuild(sp,coreSide(sp),'队员配置',stabBest(sp,'特殊'),stabBest(sp,'物理'),roleTag||'输出',itemTag,ctx)}catch(e){return ''}
+  try{b=mkBuild(sp,coreSide(sp),'队员配置',stabBest(sp,'特殊'),stabBest(sp,'物理'),roleTag||'输出',itemTag,_cx)}catch(e){return null}
+  if(!b)return null;
+  /* v4.46a B 线回归修复（子区候选可见性）——黑盒 v4.46 点名 + 同仪器 STEP=60 复现：
+     · 实测（v4.44 → v4.46，192 方案 / 1060 槽）：候选=3 的槽位占比 85.9% → **50.0%**；
+       候选长度分布 {1:6,2:141,3:911,4:2} → {2:344,3:528,4:179,5:2,6:3}；「讲究头带/眼镜」出现在候选列表的次数 **358 → 0**。
+     · 根因（源码级）：v4.45 C-1 把 `finalizeBuildInPlace` 接进子区后，finalizeBuild 内两条**整片剔除/追加**被连带触发：
+       ① L6879-6881「讲究系 ×（变化招 | 受队 | 强化）硬互斥」把 `b.it` 里所有 `/^讲究/` **整片 filter 掉**
+          （原本只应剥掉主推）→ 讲究系候选归零；
+       ② L6872 / L6894 / L6910 的墙规则兜底、机制必需件回读、杂技空转回读走 `b.it.unshift(...)`（append-only、无 slice）
+          → 候选长度出现 4/5/6。
+       ③ v4.44 子区**不调** finalizeBuild（C-1 之前）故无此现象 —— 属 C-1 收口引入的**候选可见性回归**，
+          与 B-1 的 −0.25（软降权）/ B-2 的 +0.55 无关（同仪器实测 v4.44 与 v4.46 主推级讲究系均为 0）。
+     · 口径（铁律「候选全量可见」+ 设计书 B-judge-7 候选可见数=3）：**主推仍由收口链决定**（语义/门控不变，
+       B5/B6「讲究系/背心 × 变化招（主推级）」保持 0、流派区零差异），但候选列表 = 收口后列表 ∪ 收口前候选（去重、
+       主推保持在首位）后取前 3 ⇒ 候选恒 3 恢复、讲究系以「备选」身份可见。 */
+  var _itPre=null;try{_itPre=(b.it||[]).map(function(e){return [e[0],e[1]]})}catch(eIP){_itPre=null}
   /* v4.43 P0-A（裁决 1c）：队伍行的「队员配置」走同一道具门控（就地复用，不改推荐链/不改队伍构成） */
   try{if(noAtkItemGate(sp,b))b.warn='队员道具已按全变化招口径纠偏（换续航型道具）'}catch(eNAH){}
   /* v4.44 P1-1 / P1-7：子区（队伍方案核心槽 + 成员槽）接入与流派区**同源**的两条门控
      （设计书 C 根因 R-Ⅰ：needBuildHtml 不调 finalizeBuild → 流派区已收口、子区未收口） */
   try{choiceStatusGate(sp,b)}catch(eCSH){}
   try{facadeSashGate(sp,b)}catch(eFSH){}
-  /* v4.44 P1-2：核心槽/成员槽 ↔ 流派区对齐标注（展示层，只加注不改推荐/不改队形） */
+  /* v4.45 C-1 收口（顺序 = 流派区）：EV 分配/性格联动 → 全套流派级收口（含尾部的 EV 复核 + evNatureLinkV437，幂等） */
+  try{b.ev=buildEvs(sp,b.side,b.roleTag,b.name,b)}catch(eEVb){}
+  try{b=finalizeBuildInPlace(sp,b)}catch(eFB){}
+  try{evNatureLinkV437(sp,b)}catch(eNL){}
+  /* v4.46a：候选可见性恢复（见本函数顶部注释）——主推不变，仅把收口链剔除的候选补回（去重、上限 3） */
+  try{
+    if(_itPre&&_itPre.length){
+      var _itOut=[],_itSeen={};
+      var _pushIt=function(e){var z=String((e&&e[0])||'');if(!z||_itSeen[z])return;_itSeen[z]=1;_itOut.push(e)};
+      (b.it||[]).forEach(_pushIt);
+      _itPre.forEach(_pushIt);
+      if(_itOut.length)b.it=_itOut.slice(0,3);
+    }
+  }catch(eIT){}
+  return b;
+}
+function needBuildHtml(sp,roleTag,itemTag,ctx){
+  var b=subareaBuild445(sp,roleTag,itemTag,ctx);
+  if(!b)return '';
+  /* v4.44 P1-2 / v4.45 C-3：核心槽/成员槽 ↔ 流派区对齐标注（展示层，只加注不改推荐/不改队形） */
   var _aln='';try{_aln=alignBadgeV444(sp,b)}catch(eALN){_aln=''}
   var h='<div style="font-size:11px;margin:2px 0"><b>配招：</b>'+((b.mv.main||[]).map(function(m){
       var nm=MV[m.id]?MV[m.id][1]:String(m.id);
@@ -10867,11 +11012,15 @@ function needBuildHtml(sp,roleTag,itemTag,ctx){
     ((b.mv.backup||[]).length?('　<i style="color:var(--sub)">备选：</i>'+(b.mv.backup||[]).slice(0,3).map(function(id){
       var nm=MV[id]?MV[id][1]:String(id);
       return '<span class="abi" onclick="event.stopPropagation();gotoMv('+jsl(nm)+')">'+esc(nm)+'</span>';}).join(' ')):'')+'</div>';
+  var _n0w='';try{_n0w=String(((b.nat||[])[0]||[])[1]||'')}catch(eNW){_n0w=''}
   h+='<div style="font-size:11px;margin:2px 0"><b>特性：</b>'+(b.abi||[]).slice(0,2).map(function(a){
       return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(a.n)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(a.n)+'</span>'+mechBadgeForAbi(a.n);}).join(' ')+
     '　<b>道具：</b>'+(b.it||[]).slice(0,3).map(function(x,i){
       return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>'))+mechBadgeForItem(x[0])}).join(' ')+
-    '　<b>性格：</b>'+esc((b.nat||[]).map(function(n){return n[0]}).join(' / '))+_aln+'</div>';
+    '　<b>性格：</b>'+esc((b.nat||[]).map(function(n){return n[0]}).join(' / '))+
+    (_n0w?('<span style="font-size:10px;color:var(--sub)" title="'+escq(_n0w)+'">（依据）</span>'):'')+_aln+'</div>';
+  /* v4.45 C-2：子区补 EV 可视条（与流派区详情同一渲染件 evBarHtml：数值串 + 模板名 + 分配依据） */
+  h+=evBarHtml(b);
   return h;
 }
 /* v4.44 P1-2：子区槽位 ↔ 流派区主推流派 的对齐标注（纯展示层）
@@ -10896,8 +11045,8 @@ function alignBadgeV444(sp,b){
   var sameItem=!!(it&&m.item&&it===m.item),ov=0,i;
   for(i=0;i<ids.length;i++)if(m.ids.indexOf(ids[i])>-1)ov++;
   if(sameItem||ov>=3)
-    return ' <span class="badge" style="background:#e8f5e9" title="与同种物流派区主推「'+escq(m.name)+'」对齐（道具'+(sameItem?'一致':'不同')+'，招组重合 '+ov+'/4）">✓ 对齐流派 1</span>';
-  return ' <span class="badge" style="background:#fff8e1" title="本槽按队伍需求定位出装，与流派区主推「'+escq(m.name)+'」不同（道具不同、招组重合 '+ov+'/4）——这是分工差异，非错误">对齐流派 1（按需求微调）</span>';
+    return ' <span class="badge" style="background:#e8f5e9" title="本槽与同种物流派区主推「'+escq(m.name)+'」对齐（道具'+(sameItem?'一致 ✓':'不同 ✗')+'，招组重合 '+ov+'/4）">流派：'+esc(m.name)+' ✓</span>';
+  return ' <span class="badge" style="background:#fff8e1" title="本槽按队伍需求定位出装，与流派区主推「'+escq(m.name)+'」不同（道具'+(sameItem?'一致 ✓':'不同 ✗')+'、招组重合 '+ov+'/4）——这是分工差异，非错误">流派：'+esc(m.name)+' ✗（按需求微调）</span>';
 }
 /* ==============================================================================
    v4.11 详情页三层信息架构 · 展示层（L1 基础信息 / L2 流派玩法 / L3 引擎细节）
@@ -11375,7 +11524,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.44';
+var ER_ENGINE_VER='v4.46a';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12183,6 +12332,47 @@ function engineGuardSelfCheck(){
   var va=[],vb1=[],vb2=[],vm5=[],vm6=[],vna=[],vpr=[],vmg=[],vmv4=[],vci=[],vfs=[],vlk=[];
   var nB3=0,checkedA=0,checkedB=0,checkedM=0,checkedN=0,nSp=0,nB=0,errors=0,nFS=0,nLK=0;
   var nPV=0,nNM=0,nNA=0,nPR=0,nMG=0,nMV4=0,nNMEx=0,nNM2=0,nCI=0;   /* v4.43：新门闩受检计数 + 信息项（PV/NM/NM2 不作门闩，仅登记） */
+  /* v4.46 U1 新增：突击背心 × 变化招（流派区 + 子区各一套受检/违例计数；含受检计数以免「受检 0 被读作已检查」）*/
+  var nVest=0,vvest=[],nSubVestChk=0,nSubVestSt=0,vsub=[],nSubChoiceChk=0,nSubChoiceSt=0;
+  /* ===== v4.45 新增守门（子区；确定性采样 = 每 60 只取 1，方案变体 0、真实渲染 + 真实槽位构建）=====
+     · S5p（硬门闩）：「已满足/核心自身/多功能」徽标 × 正文「全图鉴无正向候选」同现 = 0（v4.45 C-4 五分支；
+       判据 = **真实 renderNeedPlan 输出的 needcard 分块**，不是结构重述）
+     · S5r（硬门闩）：子区槽位 EV 可用率 = 100%（v4.45 C-1 收口：mkBuild → 门控 → buildEvs → finalizeBuildInPlace）
+     · S5o（**信息项**，不作门闩）：子区主推道具去重数（设计书目标 ≥18；同采样 v4.44 探针口径=11）
+     · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
+     S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
+  var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[];
+  function guardSubarea(sp){
+    var plan=null;try{plan=buildTeamByNeeds(sp,{})}catch(e0){subErr++;return}
+    if(!plan)return;subPlans++;
+    try{
+      var html=String(renderNeedPlan(sp,0)||''),cards=html.split('<details class="needcard"');
+      for(var ci=1;ci<cards.length;ci++){
+        if(cards[ci].indexOf('已满足')>-1&&cards[ci].indexOf('全图鉴无正向候选')>-1)
+          vsp.push({id:sp.id,zh:sp.zh,seg:String(cards[ci]).replace(/<[^>]*>/g,'').slice(0,80)});
+      }
+    }catch(e1){}
+    (plan.team||[]).forEach(function(m){
+      if(!m||!m.s)return;
+      var rt=m.core?roleTagOfCore(plan,m.s):(m.fill?roleTagOfProf(profileOf(m.s)):roleTagOfNeed(m.need));
+      var it=m.core?itemTagOfCore(plan,m.s):(m.fill?coreItemTagOf(profileOf(m.s),m.s,plan.sysKey):itemTagOfNeed(m.need));
+      var b2=null;try{b2=subareaBuild445(m.s,rt,it,{sys:plan.sysKey,need:m.need&&m.need.kind})}catch(e2){b2=null}
+      if(!b2){subErr++;return}
+      subSlots++;
+      var evok=false;try{if(b2.ev&&b2.ev.alloc){var t6=0;for(var q=0;q<6;q++)t6+=(+b2.ev.alloc[q]||0);evok=t6>0}}catch(e3){}
+      if(evok)subEvOk++;
+      var imz='';try{imz=String((b2.it&&b2.it[0]&&b2.it[0][0])||'')}catch(e4){}
+      if(imz)subItem[imz]=(subItem[imz]||0)+1;
+      /* v4.46 U1/S5s·S5t：子区槽位（含队友卡）「背心 × 变化招」「讲究系 × 变化招」——ER 语义硬冲突 */
+      var _stSub=false;try{_stSub=(b2.mv&&b2.mv.main||[]).some(function(x){var m=MV[x.id];return m&&m[4]==='变化'})}catch(e5){}
+      if(imz==='突击背心'){nSubVestChk++;if(_stSub){nSubVestSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区背心×变化'})}}
+      if(/^讲究/.test(imz)){nSubChoiceChk++;if(_stSub){nSubChoiceSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区讲究×变化'})}}
+      if(!m.core){var mz=String(m.s.zh||m.s.id);subMate[mz]=(subMate[mz]||0)+1}
+    });
+    var _mset={};(plan.team||[]).forEach(function(m){if(m&&m.s&&!m.core)_mset[String(m.s.zh||m.s.id)]=1});
+    subPlanMates.push(Object.keys(_mset));
+  }
   (ERDATA.species||[]).forEach(function(s){
     nSp++;
     var auto={};try{(ownAutoSys(s)||[]).forEach(function(x){auto[x]=1})}catch(e){}
@@ -12256,6 +12446,14 @@ function engineGuardSelfCheck(){
             var _tkC=!b.choiceExempt&&_mvsG.some(function(x){return CHOICE_TRICK_IDS[''+x.id]||CHOICE_TRICK_ZH.indexOf(String(x.zh||''))>-1});
             if(_stC&&!_tkC)vci.push({id:s.id,zh:s.zh,build:b.name,item:_imzC,
               st:_mvsG.filter(function(x){var m=MV[x.id];return m&&m[4]==='变化'}).map(function(x){return String(x.zh||x.id)})});
+          }
+          /* v4.46 U1：突击背心 × 变化招（ER 语义：背心只能出攻击招）——流派区口径
+             背景：v4.45 把 AX_OVR['突击背心'].longevity 改成 0.85（**全局表**）而 B-2 硬门只写在 ctx.sub 分支
+             → 流派区连带被改（黑盒点名：49 条流派区候选道具列表被换成背心，其中 47 套含变化招）。
+             v4.46 已回滚全局表 + 子区局部覆写；本门闩把该缺陷类固化为常驻探测器，并打印**受检计数**。 */
+          if(String(_imzC||'')==='突击背心'){
+            nVest++;
+            if(_mvsG.some(function(x){var m=MV[x.id];return m&&m[4]==='变化'}))vvest.push({id:s.id,zh:s.zh,build:b.name,item:_imzC});
           }
         }catch(eCI){}
         /* GM-PV（信息项）：mainDir 与性格减项冲突（PV-1 定义） */
@@ -12337,15 +12535,45 @@ function engineGuardSelfCheck(){
         if(!lin)nB3++;
       });
     });
+    /* v4.45：子区守门（确定性采样 = 每 60 只取 1 → 与探针 STEP=60 同源） */
+    if((nSp-1)%60===0){try{guardSubarea(s)}catch(eSubS){subErr++}}
   });
-  var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length;
-  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length},
+  /* ---- v4.45 子区指标汇总（S5o / S5q / S5r）---- */
+  var subItemDistinct=Object.keys(subItem).length;
+  var _marr=[];Object.keys(subMate).forEach(function(k){_marr.push(subMate[k])});
+  _marr.sort(function(a,b){return b-a});
+  var _msum=0;for(var _mk=0;_mk<_marr.length;_mk++)_msum+=_marr[_mk];
+  var _mtop=_marr[0]||0,_m15=0;
+  for(var _mi=0;_mi<Math.min(15,_marr.length);_mi++)_m15+=_marr[_mi];
+  var subEvRate=subSlots?(Math.round(subEvOk*1000/subSlots)/10):100;
+  var subPresMax=_msum?(Math.round(_mtop*1000/_msum)/10):0;
+  var subTop15=_msum?(Math.round(_m15*1000/_msum)/10):0;
+  var _planCount={};subPlanMates.forEach(function(arr){arr.forEach(function(k){_planCount[k]=(_planCount[k]||0)+1})});
+  var _pmax=0;Object.keys(_planCount).forEach(function(k){if(_planCount[k]>_pmax)_pmax=_planCount[k]});
+  var subMatePlanRate=subPlans?(Math.round(_pmax*1000/subPlans)/10):0;   /* 方案分母口径，对齐探针 summary.matePresenceRateMax */
+  /* v4.45 决定（口径修正后）：仅 **S5r 计门闩**（结构性、口径无关）。
+     S5o/S5q 降级为**信息项**并在报告 §10 登记，理由三条：
+       ① 二者是分布型目标（去重 ≥18 / 集中度 ≤60%），本轮 A/B 线改变的是分布、不是逐条对错，
+          把设计目标硬编成门闩 → 构建在未达目标时直接失败（产物不可发布）；
+       ② 构建期采样规模（每 60 只）下，集中度指标存在小样本伪影（前 15 名占成员槽 90.3%
+          = 144 个成员槽的样本效应），与探针 318 物种/192 方案口径（76.8%）不可直接比较；
+       ③ 同口径 v4.44 基线无法在构建期取得（v4.44 引擎无 subarea 字段）→ 设不出可信红线。
+     达标判定改由探针（同仪器前后对照：base444 vs 产物）给出，构建日志只打印实测 + 目标。 */
+  var nSubViol=0;
+  if(subSlots&&subEvRate<100)nSubViol++;
+  var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
+    +vvest.length+nSubVestSt+nSubChoiceSt;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,
+      vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
     detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20),m5:vm5.slice(0,20),m6:vm6.slice(0,20),
       na:vna.slice(0,20),pr:vpr.slice(0,20),mg:vmg.slice(0,20),mv4:vmv4.slice(0,20),ci:vci.slice(0,20),
-      fs:vfs.slice(0,20),lk:vlk.slice(0,20)},
+      fs:vfs.slice(0,20),lk:vlk.slice(0,20),sp:vsp.slice(0,20)},
     info:{b3:nB3,pv:nPV,nm:nNM,nmEx:nNMEx,nm2:nNM2},
-    checked:  {na:nNA,pr:nPR,mg:nMG,mv4:nMV4,ci:nCI,fs:nFS,lk:nLK},
+    checked:  {na:nNA,pr:nPR,mg:nMG,mv4:nMV4,ci:nCI,fs:nFS,lk:nLK,vest:nVest,vestSub:nSubVestChk,choiceSub:nSubChoiceChk},
     infoChecked:{pv:nPV,nm:nNM,nm2:nNM2},
+    subarea:{plans:subPlans,slots:subSlots,evRate:subEvRate,itemDistinct:subItemDistinct,
+      matePresMax:subPresMax,mateTop15:subTop15,matePlanRate:subMatePlanRate,sampleErr:subErr,
+      targetMd:S5O_TARGET_MD,targetPres:S5Q_TARGET_PRES},
     species:nSp,builds:nB,errors:errors,checkedA:checkedA,checkedB:checkedB,checkedM:checkedM,checkedN:checkedN,rock:ROCK};
 }
 initRuleBoxes();
@@ -12425,7 +12653,7 @@ import sys as _sys
 import tempfile as _tf
 import subprocess as _sp
 import shutil as _sh2
-_GUARD_JS = r'''/* ER 配招助手 v4.44 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
+_GUARD_JS = r'''/* ER 配招助手 v4.46a 构建期守门自检（由 build_tool_html.py 自动生成，运行于临时目录；只读产物） */
 'use strict';
 var fs = require('fs'), vm = require('vm'), path = require('path');
 var INDEX = process.argv[2], DATA = process.argv[3];
@@ -12506,22 +12734,31 @@ console.log('  GM-NA 全变化招 × 伤害触发型道具：受检='+(r.checked
 console.log('  GM-PR 名含控场 × 零变化招：受检='+(r.checked&&r.checked.pr)+'  违例='+r.viol.pr);
 console.log('  GM-MG1 技术高手/完美主义者 全招>60：受检='+(r.checked&&r.checked.mg)+'  违例='+r.viol.mg);
 console.log('  GM-MV4 配招槽数恒=4（结构不变量）：受检='+(r.checked&&r.checked.mv4)+'  违例='+r.viol.mv4);
-console.log('  GM-CI 讲究系道具 × 变化招（锁死废格，= A5d 判据）：受检='+(r.checked&&r.checked.ci)+'  违例='+r.viol.ci);
-console.log('  GM-FS 硬撑(263) × 气势披带 且无异常来源：受检='+(r.checked&&r.checked.fs)+'  违例='+r.viol.fs);
+console.log('  GM-CI 讲究系道具 × 变化招（锁死废格，= A5d 判据）：受检='+(r.checked&&r.checked.ci)+'  违例='+r.viol.ci+'   【受检=0 = 流派区主推讲究系为 0（设计值）；此「0 违例」不可读作「已检查」】');
+console.log('  GM-FS 硬撑(263) × 气势披带 且无异常来源：受检='+(r.checked&&r.checked.fs)+'  违例='+r.viol.fs+'   【受检=0 = 4680 流派中无「硬撑主推 + 气势披带」同现（设计值）；不可读作已检查】');
+console.log('  S5s（硬门闩，v4.46 U1）突击背心 × 变化招：流派区受检='+(r.checked&&r.checked.vest)+' 违例='+r.viol.vest+'；子区/队友卡受检='+(r.checked&&r.checked.vestSub)+' 违例='+r.viol.vestSub);
+console.log('  S5t（硬门闩，v4.46）子区讲究系 × 变化招：受检='+(r.checked&&r.checked.choiceSub)+' 违例='+r.viol.choiceSub);
 console.log('  GM-LK 用户可见文案内部痕迹（报告N.N/考古/函数链/空括号/机制口径，断言扩容）：受检='+(r.checked&&r.checked.lk)+'  违例='+r.viol.lk);
 console.log('  GM-PV（信息项，不作门闩）主攻方向×性格减项冲突='+r.info.pv);
 console.log('  GM-NM（信息项，不作门闩）天气/钉子名实不符（同 ①-3/①-4 判据）='+r.info.nm+'（其中「自身即体系源」豁免='+(r.info.nmEx||0)+'）');
 console.log('  GM-NM2（信息项，不作门闩）名首天气词但与本卡体系不同轴（受益型/队友提供窗口命名）='+(r.info.nm2||0));
-['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
+var _sb=r.subarea||{};
+console.log('  S5p（硬门闩）子区「已满足」徽标 × 正文「全图鉴无正向候选」同现：受检方案='+_sb.plans+'  违例='+r.viol.sp);
+console.log('  S5r（硬门闩）子区槽位 EV 可用率：受检槽位='+_sb.slots+'  可用率='+_sb.evRate+'%（要求 100%）');
+console.log('  S5s/S5t 实测数值见上方「S5s/S5t」两行（v4.46 U1 收口后应恒为 0）；子区采样规模='+_sb.plans+' 方案 / '+_sb.slots+' 槽');
+console.log('  S5o（信息项，不作门闩）子区主推道具去重数='+_sb.itemDistinct+'（设计书目标 ≥'+_sb.targetMd+'；同采样 v4.44 探针口径=11）');
+console.log('  S5q（信息项，不作门闩）子区队友集中度：方案分母最高='+_sb.matePlanRate+'%（对齐探针口径；v4.44=77.6%）槽位分母最高='+_sb.matePresMax+'% 前15='+_sb.mateTop15+'%（设计目标 ≤'+_sb.targetPres+'%）');
+console.log('  子区采样异常='+_sb.sampleErr);
+['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk','sp'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
-if(r.total>0||r.errors>0){console.error('[FAIL] v4.44 守门自检不通过：违规合计='+r.total+' deriveBuilds 异常='+r.errors);process.exit(1)}
-console.log('[OK] v4.44 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0 GM-NA=0 GM-PR=0 GM-MG1=0 GM-MV4=0 GM-CI=0 GM-FS=0 GM-LK=0（全量 '+r.builds+' 流派）');
+if(r.total>0||r.errors>0){console.error('[FAIL] v4.46a 守门自检不通过：违规合计='+r.total+'(含子区项 '+(r.viol.sub||0)+') deriveBuilds 异常='+r.errors);process.exit(1)}
+console.log('[OK] v4.46a 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0 GM-NA=0 GM-PR=0 GM-MG1=0 GM-MV4=0 GM-CI=0 GM-FS=0 GM-LK=0 S5p=0 S5r=100% S5s=0 S5t=0（S5o/S5q 信息项：道具去重='+((r.subarea||{}).itemDistinct)+' 队友集中度(方案分母)='+((r.subarea||{}).matePlanRate)+'%）（全量 '+r.builds+' 流派 + 子区采样 '+((r.subarea||{}).plans||0)+' 方案）');
 '''
 _gate_path = os.path.join(_tf.gettempdir(), 'er_guard_check_%d.cjs' % os.getpid())
 with open(_gate_path, 'w', encoding='utf-8') as _gf:
     _gf.write(_GUARD_JS)
 _node = _sh2.which('node') or _sh2.which('node.exe')
-print('--- v4.44 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
+print('--- v4.46a 守门自检（engineGuardSelfCheck 全量 · 方案 A 门闩）---')
 if not _node:
     print('[FATAL] 守门自检需要 Node.js，但 PATH 中找不到 node —— 构建中止（v4.36 起守门=构建硬门闩）')
     _sys.exit(1)
@@ -12537,6 +12774,6 @@ if _so.strip():
 if _se.strip():
     print('[node stderr]\n' + _se.rstrip())
 if _r.returncode != 0:
-    print('[FATAL] v4.44 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
+    print('[FATAL] v4.46a 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
     _sys.exit(1)
-print('[BUILD OK] v4.44 守门自检 exit 0（0 违规）')
+print('[BUILD OK] v4.46a 守门自检 exit 0（0 违规）')
