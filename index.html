@@ -549,7 +549,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.48</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.49</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -7943,6 +7943,10 @@ var EVIO_PRIORITY=2.0;   /* v4.3.2 裁定常量：奇石权衡通过 → 主推�
 /* 职责载荷项（role payload）：某些职责的**兑现物**就是某类道具（控速=速度类），给显式常量而非靠轴涌现 */
 var ROLE_PAYLOAD={控速:['讲究围巾','嘉珍果','先制之爪'],速攻:['讲究围巾','气势披带']},ROLE_PAYLOAD_BONUS=1.8;
 var LOCK_ITEMS=['讲究围巾','讲究头带','讲究眼镜'];   /* v45-1b：锁招类（锁招=牺牲变招权） */
+/* v4.49 M-4（R6-2 B1 第二轮去重）：方案装配期的「已主推道具」累积器（**子区专用**，ctx.sub 生效）。
+   复位边界 = 核心槽（ctx.need==null；plan.team[0] 恒为核心，槽序与渲染/编译顺序一致）；队员槽按序登记**最终主推**。
+   流派区 deriveBuilds 不经 itemDecide/planItems 路径 ⇒ 4680 流派零差异。 */
+var _R449_PLAN_ITEMS={};
 function itemScored(s,side,tag,ctx){
   var p=profileOf(s),tg=oppTargets(s),d=itemDutyOf(tag,p,tg),res=[],ev=null;
   /* v4.36 D1：防守位（攻种族<70 且非变身者）→ 职责四轴改按「防御续航」，改推防御向（与 itemApplies 的门控同判据） */
@@ -8049,6 +8053,27 @@ var RESIST_BERRY_ALL=(function(){var o={};Object.keys(RESIST_BERRY).forEach(func
 function itemDecide(s,side,roleTag,ctx){
   var out=itemScored(s,side,roleTag||'输出',ctx);
   out.sort(function(a,b){return (b.sc-a.sc)||(a.i-b.i)});
+  /* ===== v4.49 M-4（R6-2 B1 第二轮去重）：跨槽位「主推道具」去重 =====
+     仅子区装配态（ctx.sub ∧ ctx.planItems = 本方案已主推道具集）生效；判据基于**真实分数**（本函数已算出的 out）：
+       当前 top-1 的道具已在方案集内 → 在候选池内找 sc ≥ 0.85×top.sc 的**未用**道具翻牌（次优升主推，
+       备选 tooltip/⭐ 标记随位置自然移动）；找不到 ⇒ 保留重复主推（**不硬门**，不裁候选、不改分数）。
+     B-judge-7「候选可见恒 3」：只重排顺序，下方 slice(0,3) 收口**逐字不动**。
+     B6 同向：主推招含变化招时，翻牌不落 锁招类(LOCK_ITEMS) —— 避免刚翻牌又被讲究系门控回退。 */
+  try{
+    if(ctx&&ctx.sub&&ctx.planItems&&out.length>1&&(out[0].sc||0)>0){
+      var _top449=out[0],_thr449=0.85*(_top449.sc||0);
+      if(ctx.planItems[_top449.zh]){
+        var _alt449=null,_qi449;
+        for(_qi449=1;_qi449<out.length;_qi449++){
+          if(ctx.planItems[out[_qi449].zh])continue;
+          if((out[_qi449].sc||0)<_thr449)continue;
+          if(ctx.mvHasStatus===1&&LOCK_ITEMS.indexOf(out[_qi449].zh)>-1)continue;
+          _alt449=out[_qi449];break;
+        }
+        if(_alt449){out.splice(_qi449,1);out.unshift(_alt449)}
+      }
+    }
+  }catch(eID449){}
   return out.slice(0,3);
 }
 function buildItem(s,side,roleTag,ctx){
@@ -9401,21 +9426,28 @@ var NEED_KINDS={
      var trio=defCellTrio(t,arg);
      if(trio.inn<=0.5)return '抵抗/免疫 '+arg+'（替队吸收）';
      return ''},
-   dims:[['D10',3],['D9',2],['D4',1]]},
+   /* v4.49 M-1（R6-1 §3.2）：强化 core 贡献 —— D9（替队吸收）×2→×3、D10（补核心盲点）×3→×4。
+      依据：补盲位的价值 =「对核心盲点属性的答案」，两条 core 维就是它的全部职责；原权重下绝对实力项（D4）占比过高。 */
+   dims:[['D10',4],['D9',3],['D4',1]]},
  wallp:{kind:'profile',label:function(){return '物理联防位（物盾）'},role:'吃物理伤害、做物理侧联防',
    why:function(core,p){return '核心物理耐久 '+p.du.phys+'，需要物理侧联防'+(p.role==='肉盾核心'?'（肉盾核心需分担物理面）':'')},
    gate:function(t,cx){var d=bstI(t,2),b=bulkOf(t);
      if(d>=100&&b>=300)return '物防 '+d+' / 耐久 '+b+'（达物盾线）';
      if(d>=120)return '物防 '+d+' 高';
      return ''},
-   dims:[['D6',2],['D9',2],['D11',2],['D7',1]]},
+   /* v4.49 M-1（R6-1 §3.2）：强化 core 贡献 —— 补 D10（补核心盲点）×4、D9（替队吸收）×2→×4，D6（耐久）×2→×1。
+      依据：物盾位的核心价值 =「挡核心弱点（D9，输入=cx.need）+ 打掉核心打不动的对位（D10）」，两条 core 维即其职责；
+      原 [D6×2] 为通用强度项，实测（r449_dimdbg）top-1 常只剩 RS+D6 两条 ⇒ corePts≡0 ⇒ genShare 100%。
+      D11（免疫/减伤特性）另由 needScore 的 kind 级条件在其「免疫类型正好落在核心/队伍弱点上」时挪入 core 桶。 */
+   dims:[['D10',4],['D9',4],['D6',1],['D7',1],['D11',1]]},
  walls:{kind:'profile',label:function(){return '特殊联防位（特盾）'},role:'吃特殊伤害、做特殊侧联防',
    why:function(core,p){return '核心特殊耐久 '+p.du.spec+'，需要特殊侧联防'},
    gate:function(t,cx){var d=bstI(t,4),b=bulkOf(t);
      if(d>=100&&b>=300)return '特防 '+d+' / 耐久 '+b+'（达特盾线）';
      if(d>=120)return '特防 '+d+' 高';
      return ''},
-   dims:[['D6',2],['D9',2],['D11',2],['D7',1]]},
+   /* v4.49 M-1（R6-1 §3.2）：强化 core 贡献 —— 同 wallp（补 D10×4、D9 ×2→×4、D6 ×2→×1 + 条件性 core 维）。 */
+   dims:[['D10',4],['D9',4],['D6',1],['D7',1],['D11',1]]},
  haz:{kind:'function',label:function(){return '钉位（铺场）'},role:'撒菱/隐形岩/毒菱/黏黏网：持续消耗与破气腰',
    why:function(core,p){return '核心自身'+(p.fn.haz?'已具备':'不具备')+'铺钉手段'},
    gate:function(t,cx){var L=cx.L||learnC(t);if(!hasAny(L,FUNC_MV.hazard))return '';
@@ -9433,7 +9465,11 @@ var NEED_KINDS={
    gate:function(t,cx){var L=cx.L||learnC(t);if(!hasAny(L,FUNC_MV.rec))return '';
      var ids=FUNC_MV.rec.filter(function(x){return L.indexOf(x)>-1});
      return '回复：'+ids.slice(0,2).map(function(x){return MV[x][1]}).join('/')},
-   dims:[['D7',2],['D6',2],['D18',1]]},
+   /* v4.49 M-1（R6-1 §3.2）：补 D9（替队吸收队内弱点）×3 + D10（补核心盲点）×3 —— 回复位与核心的**攻防互补**
+      是它唯一的核心相关价值（D9 守 / D10 攻）；D6（耐久）由 ×2 降 ×1（原 [D7×2,D6×2,D18×1] 全落 gen ⇒ corePts≡0）。
+      ★ 口径同 pass：探针/S6a 的 genShare 按 dim id 独立重算（core = D1/D9/D10），达标由 dims 表构成决定；
+        needScore 内的「条件性桶归属」只改引擎排序，不改该口径。 */
+   dims:[['D9',3],['D10',3],['D7',2],['D6',1],['D18',1]]},
  brk:{kind:'function',label:function(){return '破盾位'},role:'拍落/剧毒/挑拨：打开对手的城墙',
    why:function(core,p){return '核心力度 '+p.power+'，需要破受手段配合'},
    gate:function(t,cx){var L=cx.L||learnC(t);
@@ -9460,7 +9496,11 @@ var NEED_KINDS={
      if(!learnHasName(t,'接棒',L))return '';
      if(hasAny(L,FUNC_MV.boost))return '接棒 + 自身强化招（可自强化后接棒）';
      return '接棒（接收队友强化成果）'},
-   dims:[['D8',2],['D6',1]]},
+   /* v4.49 M-1（R6-1 §3.2）：补 D9（替队吸收队内弱点）×3 + D10（补核心盲点）×3 —— 接棒位与核心的**攻防互补**
+     是它唯一的核心相关价值（D9 守 / D10 攻）；原 [D8×2,D6×1] 全落 gen ⇒ corePts≡0（R6 §2.1 充要条件）。
+       ★ 口径说明：探针/S6a 的 genShare 按 **dim id** 独立重算（core = D1/D9/D10），故达标只能由 dims 表构成
+         （本条即 D9/D10 权重）决定；needScore 内的「条件性桶归属」只改引擎排序，不改该口径。 */
+   dims:[['D9',3],['D10',3],['D8',2],['D6',1]]},
  wear:{kind:'function',label:function(){return '消耗位'},role:'剧毒/寄生种子等：磨血消耗',
    why:function(){return '受队路线需要持续消耗手段'},
    gate:function(t,cx){var L=cx.L||learnC(t);
@@ -9496,7 +9536,9 @@ var NEED_KINDS={
      n.forEach(function(x){var tg=abiTagOf(x);if(tg&&tg.im&&tg.im.length)hit.push(x)});
      if(hit.length)return '免疫特性：'+hit.join('/');
      return ''},
-   dims:[['D11',2],['D6',1]]},
+   /* v4.49 M-1（R6-1 §3.2）：补 D9（替队吸收队内弱点）×3 —— 状态/异常吸收位的价值 =「替核心吃状态/异常」，
+      而 D11（免疫特性）只判「自身有无免疫」；D9 以 cx.need 为输入，才真正度量「吸收的是不是核心的弱点」。 */
+   dims:[['D9',3],['D10',3],['D6',1],['D11',2]]},
  /* v4.8（G2）：补位专用需求「非需求驱动」——gate 恒真（任何可用物种都在池内），
    dims = 广义正向价值（不针对某条需求），用于「继续补位」时按综合分取最优。
    ⚠️ 不参与 needList 动态生成（不占需求清单），只被 buildTeamByNeeds(opts.fill) 消费。 */
@@ -9902,19 +9944,72 @@ function needCtx(core,o){
    实现取**集合式判据**（等价于在 DIM_IMPL 每条挂 gen 标记，但只改一处、无 40 处漂移面）。 */
 var CORE_DIM={D1:1,D9:1,D10:1};
 function genDim(id){return !CORE_DIM[id]}
+/* v4.49 M-1（R6-1 §3.2）：kind 级「条件性 core 维」判据（只读；复用既有真值源 abiTags/cx.need/sysSetterName）——
+   ① dimTagsNeedType：候选的免疫/减伤特性类型是否正好落在「核心/队伍弱点集合」（cx.need）上；
+   ② setsSysForCore449：候选是否为**队内体系窗口**的设置手（窗口由核心侧经营）。 */
+function dimTagsNeedType(s,cx){
+  try{
+    var nd=(cx&&cx.need)||[];if(!nd.length)return false;
+    var names=(s.abis||[]).concat(s.inns||[]),hit=false;
+    names.forEach(function(n){
+      if(hit)return;
+      var id=abiIdByZhOrEn(n);if(id===null||id===undefined)return;
+      var tg=ERDATA.abiTags[id];if(!tg)return;
+      var tps=(tg.im||[]).concat(tg.hf||[]);
+      for(var i=0;i<tps.length;i++){if(nd.indexOf(tps[i])>-1){hit=true;break}}
+    });
+    return hit;
+  }catch(e){return false}
+}
+function setsSysForCore449(s,cx){
+  try{var sys=cx&&cx.sysKey;if(!sys)return false;return !!sysSetterName(s,sys)}catch(e){return false}
+}
 function needScore(s,need,cx){
   var def=need&&need.def;if(!def)return null;
   var g='';try{g=def.gate(s,cx,need.arg)}catch(e){g=''}
   if(!g)return null;
   var total=0,cert=1,dims=[],corePts=0,genPts=0;
   var LAM=(typeof NEED_CFG.LAMBDA_GEN==='number')?NEED_CFG.LAMBDA_GEN:0.35;
+  /* v4.49 M-1（R6-1 §3.2）：**条件性 core 维** —— 维度类型/分值/权重一律不变，只改「归属桶」；
+     条件全部由「核心提供物」判定（不满足 ⇒ 与原实现逐字段一致，零漂移面）。映射见 v4.49 变更清单。
+     ★ 口径：本块只改 **引擎排序**（corePts 不打 (1−λ) 折扣）；探针/S6a 的 genShare 按 dim id 独立重算
+       （core = D1/D9/D10），看不到桶归属 ⇒ 达标（≤45%）只能由 dims 表构成（D9/D10 权重）实现，
+       本块是「同一条 M-1 方向在排序层的补充」，不与守门口径混淆。 */
+  var _exCore={};
+  try{
+    var _k449=need&&need.kind;
+    if(_k449){
+      /* ① D11 免疫/减伤特性 → core：吸收的类型正好是「核心/队伍的弱点」（anti/wallp/walls/fill 的 dims 含 D11） */
+      if(dimTagsNeedType(s,cx))_exCore.D11=1;
+      /* ② D6 耐久三角 → core：核心自身不是肉盾（bulkOf(核心) < 300 = D6 自身的肉盾线）⇒ 该位的耐久是「补核心缺口」 */
+      if(_k449==='rec'||_k449==='pass'||_k449==='wallp'||_k449==='walls'){
+        try{var _cr449b=cx&&cx.core;
+          if(_cr449b&&bulkOf(_cr449b)<300)_exCore.D6=1;
+        }catch(eD6449){}
+      }
+      /* ③ D7 回复手段 → core：核心自身缺稳定回复（缺什么补什么 ⇒ 该位的回复手段与核心缺口直接耦合） */
+      if(_k449==='rec'||_k449==='pass'||_k449==='wallp'||_k449==='walls'){
+        try{var _cr449=cx&&cx.core;
+          if(_cr449){var _r7=DIM_IMPL['D7'](_cr449,cx);if(!_r7||!_r7.pts)_exCore.D7=1}
+        }catch(eD7449){}
+      }
+      /* ④ D1 体系设置/受益契合 → core：候选服务的是**队内体系窗口**（wxsrc 设置手 / wxabuse 受益位） */
+      if(_k449==='wxsrc'||_k449==='wxabuse'){
+        if(setsSysForCore449(s,cx))_exCore.D1=1;
+      }
+      /* ⑤ wxsrc「第二手」折扣（π=0.72）：R6 设计书 C §6.2-10 明裁 = **保留该折扣、且它必须落在 corePts**
+         —— 该口径自 v4.45 A-1 起已成立（下方 `corePts*=0.72`），本轮**不动**（铁律：不得削弱）。 */
+    }
+  }catch(eEC449){}
+  var _gList=[];   /* v4.49 M-3：gen 桶**逐条贡献**明细（D 维 + RS + AX），用于桶内单维 ≤40% 上限 */
   (def.dims||[]).forEach(function(pair){
     var fn=DIM_IMPL[pair[0]];if(!fn)return;
     var r=null;try{r=fn(s,cx)}catch(e){r=null}
     if(!r||!r.pts)return;
     if(r.cert!==undefined)cert=Math.min(cert,r.cert);
     var pts=r.pts*(pair[1]||1);
-    if(genDim(pair[0]))genPts+=pts;else corePts+=pts;
+    if(genDim(pair[0])&&!_exCore[pair[0]]){_gList.push({i:dims.length,pts:pts});genPts+=pts}
+    else corePts+=pts;
     dims.push({id:pair[0],dim:SYS_DIM_LABEL[pair[0]]||pair[0],w:pair[1]||1,pts:pts,txt:r.txt});
   });
   /* v4.45 A-1：score = corePts + (1−λ)·genPts（先按桶合成，再叠加 RS/AX 到 gen 桶） */
@@ -9933,6 +10028,7 @@ function needScore(s,need,cx){
       var rsv=rsL1Of(s,(cx&&cx.team)||[]);
       if(rsv&&isFinite(rsv.pts)&&Math.abs(rsv.pts)>0.001){
         genPts+=rsv.pts;total=corePts+(1-LAM)*genPts;
+        _gList.push({i:dims.length,pts:rsv.pts});   /* v4.49 M-3：RS 计入 gen 桶单维上限 */
         dims.push({id:'RS',dim:'规则偏移(实测系数)',w:1,pts:rsv.pts,txt:rsv.why});
       }
     }catch(eRS){}
@@ -9944,9 +10040,32 @@ function needScore(s,need,cx){
       var axr=axisSyncOf(s,cx.axis);
       if(axr&&isFinite(axr.pts)&&axr.pts>0.001){
         genPts+=axr.pts;total=corePts+(1-LAM)*genPts;
+        _gList.push({i:dims.length,pts:axr.pts});   /* v4.49 M-3：AX 计入 gen 桶单维上限 */
         dims.push({id:'AX',dim:'轴协同',w:1,pts:axr.pts,txt:axr.why});
       }
     }catch(eAX){}
+  }
+  /* ===== v4.49 M-3（R6-1 §3.3）：genPts 桶内**单维度贡献 ≤ 40%**（通用强度项权重上限）=====
+     目的：防「规则偏移 RS / 单一 D 维」在 gen 桶内单维垄断，使同池候选分数趋同（top1/top2 独占率失真）。
+     做法：固定点迭代——每轮以当前 genPts 的 40% 为单维上限，超限者压到上限；迭代至收敛（贡献项仅减不增 ⇒ 必收敛）。
+     边界：**贡献项 <3 时跳过**（2 项桶在「每项 ≤40%」下无解，强行压 = 凭空减分，非本项意图）；
+           core 桶条目（含 X1/EV）不受影响；维度类型、权重、条数均不变，只压单维上限。 */
+  if(genPts>1e-9){
+    var _gN=0,_gi;
+    for(_gi=0;_gi<_gList.length;_gi++){if((_gList[_gi].pts||0)>1e-9)_gN++}
+    if(_gN>=3){
+      for(var _gk=0;_gk<12;_gk++){
+        var _capm=0.40*genPts,_sum=0,_chg=0;
+        for(_gi=0;_gi<_gList.length;_gi++){
+          var _pv=_gList[_gi].pts||0,_qv=(_pv>_capm?_capm:_pv);
+          if(_qv<_pv-1e-9)_chg=1;
+          _gList[_gi].pts=_qv;_sum+=_qv;
+        }
+        genPts=_sum;total=corePts+(1-LAM)*genPts;
+        if(!_chg)break;
+      }
+      for(_gi=0;_gi<_gList.length;_gi++){try{dims[_gList[_gi].i].pts=_gList[_gi].pts}catch(eGS449){}}
+    }
   }
   dims.sort(function(a,b){return b.pts-a.pts});
   return {score:total*cert,raw:total,cert:cert,core:corePts,gen:genPts,dims:dims,gate:(typeof g==='string'?g:def.role)};
@@ -10197,6 +10316,41 @@ function buildTeamByNeeds(core,opts){
       pool2.sort(function(a,b){return (b.score-a.score)||((b.base||0)-(a.base||0))});
       pick=pool2[0];
     }catch(ecb2){}
+    /* ===== v4.49 M-2（R6-1 §3.4）：top-1 独占率 → 多样性锚点（硬界：仅 ≤5% 可翻转档）=====
+       判据：(s1−s2)/s1 ≤ 5%（可翻转档 ⇒ 分差在叠加项量级内，无信息损失）∧ top-1 与**已入队队友同族**
+             （fam 级，teamFamKey）∧ 池内存在异族候选 → 取异族候选（次优）并记 divAnchorHit。
+       零硬门：候选集合不变（只换 pick，不裁剪/不新增/不改分）；5–20% 中间档与 >20% 近垄断档
+             （图鉴事实，交呈现层「次优替代+说明」）**不干预**；used 语义不变（仍是「本方案已选」而非黑名单）。
+       多功能申报不丢：仅当 top-1 与异族候选**都不**顺带满足其它 open 需求时才换（否则会丢下家申报、
+             反噬 needCoverage / unmatchedNeeds）。 */
+    var divAnchorHit=0;
+    try{
+      if(pool2.length>1){
+        var _s1a=pool2[0].score||0,_s2a=pool2[1].score||0;
+        if(_s1a>1e-9&&(_s1a-_s2a)/_s1a<=0.05){
+          var _f1a=teamFamKey(pool2[0].s),_altA=null,_ai449;
+          /* v4.49 如实登记（惰性，见自测报告 §M-2 / 变更清单 §3.1）：触发前置之二
+             「top-1 与**已入队队友**同族（fam 级）」在**当前去重口径下不可达** —— 本函数上方
+             L10518「形态去重」已按同一 teamFamKey 剔除与队友同族者 ⇒ fam[_f1a] 恒假 ⇒ 本锚点
+             在 v4.49 全量样本实测命中 0（数值见自测报告）。保留为**护栏**：若上游去重口径放宽
+             （例如改为仅按物种 id 去重），本锚点即按设计生效；届时应重跑 A1/A2 判据。 */
+          if(fam[_f1a]){
+          for(_ai449=1;_ai449<pool2.length;_ai449++){
+            if(teamFamKey(pool2[_ai449].s)!==_f1a){_altA=pool2[_ai449];break}
+          }
+          if(_altA&&!fam[teamFamKey(_altA.s)]){
+            var _mt1=[],_mt2=[];
+            open.forEach(function(nd){
+              if(nd===need)return;
+              if(_mt1.length<mm&&needSatisfied(pool2[0].s,nd,pool2[0].loc))_mt1.push(nd);
+              if(_mt2.length<mm&&needSatisfied(_altA.s,nd,_altA.loc))_mt2.push(nd);
+            });
+            if(!_mt1.length&&!_mt2.length){pick=_altA;divAnchorHit=1}
+          }
+          }
+        }
+      }
+    }catch(eDA449){}
     /* 多功能加分申报（R07-27）：该候选同时能满足的其它 open 需求 → 一并置 satisfied */
     var met=[];
     open.forEach(function(nd){
@@ -10211,7 +10365,7 @@ function buildTeamByNeeds(core,opts){
       nd.note='由「'+(pick.s.zh||pick.s.name)+'」顺带满足（多功能 +'+((met.length)*NEED_CFG.MULTI_ROLE_BONUS)+'）';
     });
     var member={s:pick.s,core:false,need:need,score:pick.score,base:pick.base,multi:1+met.length,
-      dims:pick.dims,gate:pick.gate,met:met.map(function(x){return x.label})};
+      dims:pick.dims,gate:pick.gate,met:met.map(function(x){return x.label}),divAnchor:divAnchorHit};
     member.links=[];   /* links 在队伍定稿后统一生成（需要整队信息） */
     team.push(member);
     used[''+pick.s.id]=1;fam[teamFamKey(pick.s)]=1;
@@ -10715,6 +10869,8 @@ function renderNeedPlan(s,vi){
       (m.fill?' <span class="badge" style="background:#e3f2fd">补位（非需求驱动）</span>':(m.need?' <span class="badge">'+esc(m.need.label)+'</span>':''))+
       (m.score!=null?(' <span class="badge">'+esc(String(Math.round(m.score*10)/10))+' 分</span>'):'')+
       (m.multi>1?(' <span class="badge">多功能 ×'+m.multi+'</span>'):'')+
+      /* v4.49 M-2：多样性锚点落选记录（可翻转档内改选异族候选；纯展示，不参与评分/门控） */
+      (m.divAnchor?(' <span class="badge" style="background:#ede7f6" title="该需求处于可翻转档（(s1−s2)/s1 ≤ 5%）：本轮原 top-1 与已入队队友同族，改选异族候选以提升队友可替率（设计书 §3.4 多样性锚点）">🔀 异族锚</span>'):'')+
       ' <button class="btn-mini" onclick="event.stopPropagation();addToTeam(spId2Obj('+m.s.id+'),null)">➕ 入队</button>'+
       ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+m.s.id+')">🎯 设为核心</button></div>';
     if(L.length)h+='<div style="font-size:11px;margin:2px 0">↔ '+L.map(function(x){return esc(x.txt)}).join('；')+'</div>';
@@ -10776,6 +10932,14 @@ function subareaBuild445(sp,roleTag,itemTag,ctx){
   var _cx=null;
   try{if(ctx&&typeof ctx==='object'){_cx={};for(var _k in ctx)_cx[_k]=ctx[_k]}else{_cx=ctx||null}}catch(eCX){_cx=ctx||null}
   if(_cx)_cx.sub=1;
+  /* v4.49 M-4（R6-2 B1 第二轮去重）：方案装配态 —— 以**核心槽**（ctx.need==null）为复位边界（plan.team[0] 恒为核心，
+     槽序与渲染/探针编译顺序一致），队员槽共享同一「已主推道具」集；itemDecide 依此在真实分数上做跨槽翻牌。 */
+  try{
+    if(_cx&&_cx.sub){
+      if(_cx.need===null||_cx.need===undefined)_R449_PLAN_ITEMS={};
+      _cx.planItems=_R449_PLAN_ITEMS;
+    }
+  }catch(ePI449){}
   var b=null;
   try{b=mkBuild(sp,coreSide(sp),'队员配置',stabBest(sp,'特殊'),stabBest(sp,'物理'),roleTag||'输出',itemTag,_cx)}catch(e){return null}
   if(!b)return null;
@@ -10813,7 +10977,21 @@ function subareaBuild445(sp,roleTag,itemTag,ctx){
       if(_itOut.length)b.it=_itOut.slice(0,3);
     }
   }catch(eIT){}
+  /* v4.49 M-4：登记本槽**最终**主推道具（在 finalize/门控与候选回补之后取值 ⇒ 与实际上屏主推一致） */
+  try{if(_cx&&_cx.sub&&_cx.planItems){var _mi449=itemMainZh(b);if(_mi449)_cx.planItems[_mi449]=1}}catch(eMI449){}
   return b;
+}
+/* v4.49 R6-3（设计书 §5 方案 B / 降权不叠加）：备选池软标注 ——
+   备选道具 ∈ 锁招类(LOCK_ITEMS) ∧ 本配置**主推招**含变化招 ⇒ 追加「换装锁招」提示（只加注：
+   不排序、不改条数、不动主推、不动 L10806-10814 区域的回补逻辑；仅供人读，不参与任何评分/门控）。 */
+function lockSwapTip449(b,zh){
+  try{
+    if(LOCK_ITEMS.indexOf(String(zh))<0)return '';
+    var mv=(b&&b.mv&&b.mv.main)||[];
+    for(var i=0;i<mv.length;i++){var m=MV[mv[i].id];if(m&&m[4]==='变化')
+      return '<span style="font-size:10px;color:#b26a00" title="该备选为锁招类道具（讲究系）：带上后只能使用同一招；本配置主推招含变化招 → 换装会锁住功能招，仅 1 招可用">换装锁招：仅 1 招</span>'}
+    return '';
+  }catch(eLS449){return ''}
 }
 function needBuildHtml(sp,roleTag,itemTag,ctx){
   var b=subareaBuild445(sp,roleTag,itemTag,ctx);
@@ -10830,7 +11008,7 @@ function needBuildHtml(sp,roleTag,itemTag,ctx){
   h+='<div style="font-size:11px;margin:2px 0"><b>特性：</b>'+(b.abi||[]).slice(0,2).map(function(a){
       return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(a.n)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(a.n)+'</span>'+mechBadgeForAbi(a.n);}).join(' ')+
     '　<b>道具：</b>'+(b.it||[]).slice(0,3).map(function(x,i){
-      return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>'))+mechBadgeForItem(x[0])}).join(' ')+
+      return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>'+lockSwapTip449(b,x[0])))+mechBadgeForItem(x[0])}).join(' ')+
     '　<b>性格：</b>'+esc((b.nat||[]).map(function(n){return n[0]}).join(' / '))+
     (_n0w?('<span style="font-size:10px;color:var(--sub)" title="'+escq(_n0w)+'">（依据）</span>'):'')+_aln+'</div>';
   /* v4.45 C-2：子区补 EV 可视条（与流派区详情同一渲染件 evBarHtml：数值串 + 模板名 + 分配依据） */
@@ -11341,7 +11519,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.48';
+var ER_ENGINE_VER='v4.49';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12160,6 +12338,46 @@ function engineGuardSelfCheck(){
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
   var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[];
+  /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
+     · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
+       · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
+         core 桶 = D1/D9/D10、其余入 gen 桶，λ 取同源 NEED_CFG.LAMBDA_GEN，genShare=(1−λ)·gp/(cp+(1−λ)·gp)·100。
+         （引擎内自算 + 探针读同一 dims ⇒ 同源，不会「门与探针脱节」。）
+       · F-1 白名单判据 = exclusiveShare（近垄断档占比）>10% ∨ 可翻转档占比 <30%，且 needs≥20
+         ——「池内 top1 与 top2 分差已达近垄断档 / 几乎无可翻转样本」= 图鉴里就没有等价替代品（图鉴事实，
+         不是排序问题），豁免 S6a，但呈现层须给「次优替代+说明」。
+       · **两级豁免必须分列（诚实性）**：F-1（上述图鉴事实）与「§8 D-1 顺延」（本轮只做 6 个真实信号 kind
+         anti/pass/rec/cover/wallp/walls，余者次轮 ⇒ 本轮范围外、根因已在 R6 §2.1 钉死）是两个不同性质；
+         gate6.s6a 分列输出 f1_kinds / d1_defer_kinds / scope449，**硬失败只统计「本轮范围内仍未达标」**，
+         顺延项在自测报告逐 kind 如实登记为未达标，不得计入 F-1。
+     · S6b（硬门闩）：全局 pooled 可翻转档 ((s1−s2)/s1 < 5%) 占比 ≥ 60%。
+     · 采样：与 S5p/S5r 同批「每 60 只有效物种取 1」× **全部方案变体（planVariantList，上限 6 = 同探针 VMAX）**；
+       该批 ≈ 32 物种 × ≤6 变体 ≈ 190 方案（与 S5o/S5q 的 192 方案基线同量级）。 */
+  var S6A_LIMIT=45,S6B_TARGET=60,S6_VMAX=6;
+  var s6Kind={},s6Pooled=0,s6FlipLt5=0,s6FlipMid=0,s6FlipMono=0,s6Plans=0,s6Err=0,s6Ties=0,nSpV=0;
+  var S6_LAM=(typeof NEED_CFG.LAMBDA_GEN==='number')?NEED_CFG.LAMBDA_GEN:0.35;
+  function s6AccumPlan(plan){
+    try{
+      (plan.needs||[]).forEach(function(n){
+        var pk=plan.pools&&plan.pools[n.id];if(!pk)return;
+        var PL=pk.list||[],top=PL[0]||null,k=String(n.kind);
+        if(!s6Kind[k])s6Kind[k]={needs:0,ciN:0,ciSum:0,ciMax:0,flipN:0,lt5:0,mid:0,mono:0};
+        var K=s6Kind[k];K.needs++;
+        if(top){
+          var cp=0,gp=0;((top.dims)||[]).forEach(function(d){var id=String(d.id);
+            if(id==='D1'||id==='D9'||id==='D10')cp+=(+d.pts||0);else gp+=(+d.pts||0)});
+          var tot=cp+(1-S6_LAM)*gp;
+          if(tot>1e-9){var gs=(1-S6_LAM)*gp/tot*100;K.ciSum+=gs;K.ciN++;if(gs>K.ciMax)K.ciMax=gs}
+        }
+        if(PL.length>=2){
+          var s1=+PL[0].score||0,s2=+PL[1].score||0,d=s1-s2;
+          var rel=s1>1e-9?d/s1:(d>1e-9?1:0);
+          s6Pooled++;K.flipN++;if(s1<=1e-9&&s2<=1e-9)s6Ties++;
+          if(rel<0.05){s6FlipLt5++;K.lt5++}else if(rel<=0.20){s6FlipMid++;K.mid++}else{s6FlipMono++;K.mono++}
+        }
+      });
+    }catch(eS6acc){s6Err++}
+  }
   function guardSubarea(sp){
     var plan=null;try{plan=buildTeamByNeeds(sp,{})}catch(e0){subErr++;return}
     if(!plan)return;subPlans++;
@@ -12354,6 +12572,24 @@ function engineGuardSelfCheck(){
     });
     /* v4.45：子区守门（确定性采样 = 每 60 只取 1 → 与探针 STEP=60 同源） */
     if((nSp-1)%60===0){try{guardSubarea(s)}catch(eSubS){subErr++}}
+    /* v4.49 S6a/S6b：同批有效物种（每 60 只有效物种取 1）× 全部方案变体（同探针 VMAX 口径） */
+    var _v449s=false;try{_v449s=(typeof isValidSp==='function')?!!isValidSp(s):true}catch(eIS449){_v449s=false}
+    if(_v449s){
+      nSpV++;
+      if((nSpV-1)%60===0){
+        try{
+          var _vl449=(typeof planVariantList==='function')?(planVariantList(s,null)||[]):[{}];
+          for(var _vi449=0;_vi449<Math.min(_vl449.length,S6_VMAX);_vi449++){
+            var _V449=_vl449[_vi449]||{},_o449={};
+            for(var _ok449 in (_V449.opts||{}))_o449[_ok449]=_V449.opts[_ok449];
+            if(_vi449===0&&_o449.fill==null){try{_o449.fill=planFillOf(s.id)}catch(eF449){_o449.fill=0}}
+            var _pl449=null;try{_pl449=buildTeamByNeeds(s,_o449)}catch(eP449){_pl449=null}
+            if(!_pl449){s6Err++;continue}
+            s6Plans++;s6AccumPlan(_pl449);
+          }
+        }catch(eS6d449){s6Err++}
+      }
+    }
   });
   /* ---- v4.45 子区指标汇总（S5o / S5q / S5r）---- */
   var subItemDistinct=Object.keys(subItem).length;
@@ -12378,10 +12614,47 @@ function engineGuardSelfCheck(){
      达标判定改由探针（同仪器前后对照：base444 vs 产物）给出，构建日志只打印实测 + 目标。 */
   var nSubViol=0;
   if(subSlots&&subEvRate<100)nSubViol++;
+  /* ---- v4.49 S6a/S6b 汇总（新硬门闩；判据与 F-1/顺延 两级豁免见本函数顶部注释）----
+     ★ 两级豁免必须分列，禁止混同（诚实性）：
+        · F-1 白名单 = exclusiveShare 判定「图鉴事实不可修」（近垄断 >10% ∨ 可翻转档 <30%）→ 走呈现层「次优替代+说明」；
+        · D-1 顺延  = R6 设计书 §8 D-1 明裁「本轮只做 6 个真实信号 kind，余者次轮」⇒ 本轮**范围外**、
+                     根因已钉死（dims 表无 core 维 ⇒ corePts≡0 ⇒ genShare 恒 100%）；
+                     它们**不是 F-1 图鉴事实**，属未达标顺延项，逐 kind 在自测报告如实登记。 */
+  var S6_SCOPE449=['anti','pass','rec','cover','wallp','walls'];   /* §8 D-1 本轮范围（6 个真实信号 kind） */
+  var s6Table=[],s6Over=[],s6OverNW=[],s6AN=0,s6ALe45=0,s6Judged=0,s6F1=[],s6Defer=[];
+  Object.keys(s6Kind).forEach(function(k){
+    var K=s6Kind[k];
+    var avg=K.ciN?Math.round(K.ciSum*10/K.ciN)/10:null;
+    var fl=K.flipN?Math.round(K.lt5*1000/K.flipN)/10:null;
+    var md=K.flipN?Math.round(K.mid*1000/K.flipN)/10:null;
+    var mo=K.flipN?Math.round(K.mono*1000/K.flipN)/10:null;
+    var inScope=(S6_SCOPE449.indexOf(k)>-1);
+    var f1=(K.flipN>0)&&((mo>10)||(fl<30));                     /* 图鉴事实（exclusiveShare 判定） */
+    var judged=(K.needs>=20);
+    var pass=(avg===null)?null:(avg<=S6A_LIMIT);
+    var defer=(judged&&!pass&&!f1&&!inScope);                    /* §8 D-1 顺延：本轮范围外且非图鉴事实 */
+    if(K.ciN){s6AN++;if(avg<=S6A_LIMIT)s6ALe45++}
+    if(judged){s6Judged++;
+      if(!pass){s6Over.push(k+':'+avg+(f1?'(F1)':(defer?'(D1-顺延)':'(未达标)')));
+        if(f1)s6F1.push(k);else if(defer)s6Defer.push(k);else s6OverNW.push(k+':'+avg)}}
+    s6Table.push({kind:k,needs:K.needs,ciN:K.ciN,genShareAvg:avg,genShareMax:(K.ciN?Math.round(K.ciMax*10)/10:null),
+      flipN:K.flipN,flipLt5:fl,flipMid:md,exclusiveShare:mo,f1White:f1,d1Defer:defer,inScope449:inScope,white:(f1||defer),judged:judged,s6aPass:pass,s6aOk:judged?(pass||f1||defer):null});
+  });
+  s6Table.sort(function(a,b){return (b.needs-a.needs)||(a.kind<b.kind?-1:1)});
+  var s6BShare=s6Pooled?(Math.round(s6FlipLt5*1000/s6Pooled)/10):0;
+  var s6AMidShare=s6Pooled?(Math.round(s6FlipMid*1000/s6Pooled)/10):0;
+  var s6AMonoShare=s6Pooled?(Math.round(s6FlipMono*1000/s6Pooled)/10):0;
+  var s6AViol=s6OverNW.length;                                  /* 主判（Q1）：越限非白名单 kind 数 = 0 */
+  var s6BViol=(s6Pooled>0&&s6BShare<S6B_TARGET)?1:0;
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
-    +vvest.length+nSubVestSt+nSubChoiceSt;
-  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,
+    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
+    gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
+        n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
+        over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
+        plans:s6Plans,err:s6Err,lam:S6_LAM,table:s6Table},
+      s6b:{target:S6B_TARGET,n:s6Pooled,recantShare:s6BShare,midShare:s6AMidShare,monoShare:s6AMonoShare,ties:s6Ties,plans:s6Plans}},
     detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20),m5:vm5.slice(0,20),m6:vm6.slice(0,20),
       na:vna.slice(0,20),pr:vpr.slice(0,20),mg:vmg.slice(0,20),mv4:vmv4.slice(0,20),ci:vci.slice(0,20),
       fs:vfs.slice(0,20),lk:vlk.slice(0,20),sp:vsp.slice(0,20)},
