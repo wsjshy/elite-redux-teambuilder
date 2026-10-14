@@ -549,7 +549,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.47</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.48</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -11341,7 +11341,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.47';
+var ER_ENGINE_VER='v4.48';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12042,7 +12042,7 @@ function selectCore(id){
     return true;
   }
   function draw(){
-    var arr=ERDATA.species.filter(coreMatch);
+    var arr=ERDATA.species.filter(function(s){return coreMatch(s)}); /* v4.48 fix: filter 回调会传 (el,idx,arr)，直接传 coreMatch 会把 index 塞进 skipForm，导致除第 1 只外全部绕过形态过滤 */
     /* v4.33 N11：纯数字查询时精确编号命中者置顶（输入 1 → #1 在最前，不再 #1/#10/#11 混排） */
     var _q=String($('coreSearch').value||'').trim();
     if(/^\d+$/.test(_q)){
