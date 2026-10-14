@@ -549,7 +549,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.46a</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.47</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -848,12 +848,34 @@ var LEAK_RULES=[
         说明：引擎自身不生成「【…】」型内部标记；本规则的 9 条引擎用例均为**静态 HTML/提示**，不经过 scrubLeak。 */
   [/【[^】]*】/g,''],
   /* 6b. v4.44 P2-2：含内部依据词的**分句**整句剔除（词条正文的「原版…口径已废」「本项目模板旧文案…」等）。 */
-  [/[^。；！？]*?(源码|口径|实证|定稿|已废|已废弃|本项目|模板旧文案|旧文案)[^。；！？]*[。；！？]?/g,'']
+  [/[^。；！？]*?(源码|口径|实证|定稿|已废|已废弃|本项目|模板旧文案|旧文案)[^。；！？]*[。；！？]?/g,''],
+  /* 7. v4.47 A2：**裸**规则代号 —— v4.44 全部代号规则都锚定在「（…）」内，实测性格理由行 / 机制 basis
+        存在裸写（如 `S5l/R2-D 低攻防守位…`、`S1-A/R1-A …`、`S2-A/R2-A …`）→ 补裸形剥离。
+        形状约束「已知内部前缀 + 数字 [+ 字母] [+ / 或 - 后缀链]」，不触碰玩家可见文本
+        （中文/纯数字/小数/「EV 252」「HP 48」「×1.5」均无该形状）。**不含 P** —— P1…P5 是
+        `why` 里「原则 P5」的既有可见标记（非泄漏），剥掉会破坏文案。 */
+  [/\b(?:S|R|GM|PV|MG|NM|SP|NA|PR|EV|T)[-_]?\d{1,3}[a-zA-Z]?(?:[-_\/][A-Z0-9][A-Z0-9a-z]{0,3})*\b/g,''],
+  /* 8. v4.47 A2：小写下划线内部标识（body_press_def / recycle_consumable / gyro_ball_speed…）
+        —— 原规则 3 只覆盖**大写**开头（[A-Z][A-Z0-9]*_[A-Z0-9_]+），小写 snake 全部漏网。
+        只在「（…）」内剥：属性位 / onclick 参数可能携带 snake 值，括号外剥会破坏交互。 */
+  [/（[^）]*\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b[^）]*）/g,''],
+  /* 9. v4.47 A2：裸内部函数链（无括号形态，v4.44 规则 1c 只覆盖括号内）+ 含 P 类代号的括号整段
+        （`（P0-A）` 这类无 v 前缀者：原规则 2 的前缀集不含 P，故 `（P0-A）` 会漏） */
+  [/\b[a-z][A-Za-z0-9_]*(?:\s*→\s*[a-z][A-Za-z0-9_]*)+/g,'生成链路'],
+  [/（[^）]*\bP\d{1,2}[-_\/]?[A-Za-z0-9]{0,3}[^）]*）/g,''],
+  [/（[^）]*\b(?:S|R|GM|PV|MG|NM|SP|NA|PR|EV|T)[-_]?\d{1,3}[a-zA-Z]?[^）]*）/g,''],
+  /* 9b. v4.47 A2：剥离后的残渣收敛（规则 7/9 删掉代号后可能留下「  」、悬挂的「／」「-」） */
+  [/[（(]\s*[\/\-–—·]\s*[）)]/g,''],
+  [/^\s*[\/\-–—·|]+\s*/g,''],
+  [/\s*[\/\-–—·|]+\s*$/g,''],
+  [/\|\s*\|/g,'|']
 ];
 /* v4.44 P2-1：泄漏**判据**（守门 GM-LK 用；与 LEAK_RULES 同一族模式，但这里只判「剥离后仍命中」= 规则缺口）
    断言扩容口径（任务书实施范围 6）：禁「机制口径」四字 → 扩为禁全部内部模式
    （报告 N.N / 考古 / 内部函数链 ASCII→ASCII / 空括号 / 机制口径 / 定稿日期 / 待实测 / 口径表 / PEND）。 */
-var LEAK_SIG=/(?:评估|测评)?报告\s*\d|考古|（\s*）|\(\s*\)|机制口径|判定口径|内部口径|待实测|口径表|用户确认|PEND|[A-Za-z_][A-Za-z0-9_]*\s*→\s*[A-Za-z_]/;
+var LEAK_SIG=/(?:评估|测评)?报告\s*\d|考古|（\s*）|\(\s*\)|机制口径|判定口径|内部口径|待实测|口径表|用户确认|PEND|[A-Za-z_][A-Za-z0-9_]*\s*→\s*[A-Za-z_]|（[^）]*\bP\d{1,2}|[a-z][a-z0-9]*(?:_[a-z0-9]+)+|\b(?:S|R|GM|PV|MG|NM|SP|NA|PR|EV|T)[-_]?\d{1,3}[a-zA-Z]?\b/;
+/* v4.47 A2 断言扩容（GM-LK 词表）：+ 小写 snake 内部标识 / 裸规则代号 / 含 P 类代号的括号。
+   与 LEAK_RULES 7/8/9 同族 —— 剥离后仍命中即规则缺口（判据必须 ⊇ 规则覆盖面，否则永远追不上）。 */
 function scrubLeak(t){
   var x=String(t==null?'':t);
   if(!x)return x;
@@ -863,7 +885,7 @@ function scrubLeak(t){
      v4.44 P2-1：+ 报告/考古/「→ 函数链」/空括号，否则含这些痕迹的串会被快路径提前放行、规则永不生效。
      实测教训（本轮构建守门）：`速度非核心价值（）` 因快路径未含空括号 → scrubLeak 直接放行 → GM-LK 命中 227 条。
      故快路径的**触发集合必须 ⊇ 判据集合（LEAK_SIG）**，否则规则永远追不上判据。 */
-  if(!/([A-Z][A-Z0-9]*_[A-Z0-9_]+|v\d\.\d|用户确认|定稿|源码|口径|待实测|报告\s*\d|考古|实证|已废|本项目|【|→|（\s*）|\(\s*\)|GLOSSARY|WCONF|FUNC_MV|\.py|\.json|\.xlsx|L\d{2,5}|[（(][^）)]*[SRGMPVTMN]\d|[A-Za-z_]{4,}=|[A-Za-z_]+\(\))/.test(x))return x;
+  if(!/([A-Z][A-Z0-9]*_[A-Z0-9_]+|_[a-z]|[SRGMPVTMN][-_]?\d|[A-Z]{2}[-_]?\d|v\d\.\d|用户确认|定稿|源码|口径|待实测|报告\s*\d|考古|实证|已废|本项目|【|→|（\s*）|\(\s*\)|GLOSSARY|WCONF|FUNC_MV|\.py|\.json|\.xlsx|L\d{2,5}|[（(][^）)]*[SRGMPVTMN]\d|[A-Za-z_]{4,}=|[A-Za-z_]+\(\))/.test(x))return x;
   for(var i=0;i<LEAK_RULES.length;i++){try{x=x.replace(LEAK_RULES[i][0],LEAK_RULES[i][1])}catch(e){}
   }
   return x.replace(/^[\s·、,，;；:：]+/,'').replace(/[\s·]+$/,'');
@@ -2124,14 +2146,17 @@ function anRender(R){
   });
   h+=anHead('⑤ 联动叙事（成对因果 · 可判定字段）');
   /* v4.39 R-3⑤：叙事两端各配 sprite（A/B 同 id、B={zh:'全队'}、A/B=null 三种形态由 anSprOfNarr 容错：不渲染图） */
-  h+=R.narr.length?R.narr.map(function(x){return anCard('<span class="badge">'+x.id+'</span> '+
+  /* v4.47 A2：叙事条目代号（NA-0x）改经 esc→scrubLeak（规则 7 剥内部代号）；剥离后为空则不渲染徽标。
+     原实现直接拼接 x.id、绕过 esc 出口，故规则层改不动它（v4.47 页面级实测残留 6 处「规则代号」）。 */
+  h+=R.narr.length?R.narr.map(function(x){var _nid=esc(x.id);return anCard((_nid?'<span class="badge">'+_nid+'</span> ':'')+
     ((anSprOfNarr(x.A)||anSprOfNarr(x.B))?('<span class="ansprpair">'+anSprOfNarr(x.A)+'<span class="anarrow">→</span>'+anSprOfNarr(x.B)+'</span>'):'')+
     esc(x.txt)+'<div class="tip">可判定字段：'+esc(x.field)+'</div>')}).join(''):'<div class="tip">未触发叙事模板</div>';
   h+=anHead('⑥ 诊断与优化（只建议不剔除）');
   if(!R.diag.length)h+='<div class="tip">未命中结构性问题</div>';
   R.diag.forEach(function(d){
     var c=(R.cands[d.id]||[]);
-    h+=anCard('<span class="badge" style="color:#c33">'+d.id+'</span> <span class="badge">'+d.sev+'</span> '+esc(d.txt)+
+    var _did=esc(d.id); /* v4.47 A2：诊断卡代号改经 esc→scrubLeak（同叙事代号；剥离后为空则不渲染徽标） */
+    h+=anCard((_did?'<span class="badge" style="color:#c33">'+_did+'</span> ':'')+'<span class="badge">'+d.sev+'</span> '+esc(d.txt)+
       (c.length?'<div class="tip">候选替换 Top'+c.length+'：'+esc(c.map(function(x){return x.zh+'#'+x.id}).join('、'))+'</div>'+
         '<div class="animline">'+c.map(function(x){
           var _ok=false;try{_ok=!!speciesById(x.id)}catch(e5){_ok=false}
@@ -2736,9 +2761,13 @@ function openMv(m){
                 标注「英文原文 · 中文暂缺」。信息「只降级不删除」，不再以整行英文充当正文。 */
   var ld=String(m[10]||''),_zhDesc=null;
   try{_zhDesc=ERDATA.mvDescZh?ERDATA.mvDescZh[''+(m[0]*1)]:null}catch(eZ){_zhDesc=null}
-  if(ld)html+='<details class="rulebox"><summary>'+
-    (_zhDesc?'🈯 游戏内文本原文（英文，中文说明见上）':'🈯 官方机制文本（英文原文 · 中文译名暂缺，待汉化补译）')+
-    '</summary><div style="font-size:12px;line-height:1.7">'+esc(ld)+'</div></details>';
+  if(ld){
+    /* v4.47 A6：无中文说明的 ER 原创/新增招**不再平铺整行英文**（原「官方机制文本（英文原文·…）」块）。
+       口径：有中文说明 → 保留折叠的「游戏内文本原文（英文）」（v4.44 既有、设计已签）；
+             无中文说明 → 只出中文状态说明，**不臆造译文**（内容溯源：上游全部源均无这些招的中文名）。 */
+    if(_zhDesc)html+='<details class="rulebox"><summary>🈯 游戏内文本原文（英文，中文说明见上）</summary><div style="font-size:12px;line-height:1.7">'+esc(ld)+'</div></details>';
+    else html+='<div class="mini" style="color:var(--sub)">本招为 ER 新增招式，官方中文说明暂缺（译文不臆造；数值见上方表行）。</div>';
+  }
   var cst=costOf(null,m,true);
   var mid=m[0]*1;
   var hz=[];FUNC_MV.hazard.forEach(function(x){if(x===mid)hz.push('钉子')});
@@ -3182,7 +3211,7 @@ function renderAnalyze(){
   if(!team.length){box.innerHTML='';return}
   var html='<div class="sec"><h3>防守剖面：每只被谁克制（行=攻击属性，列=队伍）</h3><div class="scroll">';
   var dp=defProfiles();
-  html+='<div style="margin:4px 0;font-size:12px;color:var(--sub)">【特性修正已纳入】格值=基础→天性修正（天性固定生效）；"可选"=可选池可改善（未勾选不生效）。<b style="color:#2e7d32">队伍成员里点选可选特性可模拟生效，防守剖面与全队分析即时重算</b>。</div>';
+  html+='<div style="margin:4px 0;font-size:12px;color:var(--sub)">特性修正已纳入：格值=基础→天性修正（天性固定生效）；"可选"=可选池可改善（未勾选不生效）。<b style="color:#2e7d32">队伍成员里点选可选特性可模拟生效，防守剖面与全队分析即时重算</b>。</div>';
   html+='<table><thead><tr><th>攻击属性</th>';
   team.forEach(function(s){html+='<th>'+esc(s.zh)+'<br>'+rowAbiShort(s)+'</th>'});
   html+='<th>弱×N</th><th>抗×N</th><th>免×N</th></tr></thead><tbody>';
@@ -9250,7 +9279,10 @@ var NEED_CFG={SPEED_HIGH:100,SPEED_LOW:60,BULK_HIGH:300,BULK_MID:270,MIXED_OK:70
   /* v4.45 A-1（设计书 C §3.1 伪码）：λ = 绝对实力项的**折扣系数常量**（不随需求变化）。
      标定依据（设计书 C §9 P5/探针 simulate）：λ=0→41 distinct top-1 / 0.2→43 / **0.35→47** / 0.5→50；
      取 0.35 —— 0.35→0.5 只 +3 distinct，折扣越小对既有排序的扰动越小（λ 是常量，D-5 裁决）。 */
-  LAMBDA_GEN:0.35,
+  LAMBDA_GEN:0.50, /* v4.47 A1（任务书 §1 裁决①）：0.35 → 0.50。设计书 C §3.4 λ 标定表：λ=0.50 →
+                      mateDistinct 50 / mateMaxShare 20.6% / needCoverage 77.2%（λ=0 基线 41/21.6%/76.9%）。
+                      **常量**而非可配置项 —— 保 rsTeamCard 强度校准回退语义（设计书 C D-5）。
+                      A-3（分档轮转）本轮**未启用**：P7 复算 plans=0（仪器故障，见实施报告 §1）。 */
   MULTI_MAX:2 /* 单只最多「顺带满足」的额外需求数——07 §4.5.3 未设上限；加此上限以保持 07 期望的 4~6 只队伍，
                  避免一只全能宝可梦一次清零十余条需求导致队伍缩到 2~3 只（实现口径已在交付报告登记） */};
 /* ============ v4.8（G2/G3）：目标队伍规模 = 产品级参数（默认 6 / 2 = v4.7 现行为） ============
@@ -11011,9 +11043,12 @@ function evNatureLinkV437(s,b){
      只在收口处改「速度 EV 一项」，不改 buildEvs 的耐久模板选择（避免把非违例流派整只重排、丢失 EV 预算）。 */
   var defPosHere=false;try{defPosHere=itemDefPos(s)}catch(e3){defPosHere=false}
   var nonOut=(defPosHere||roleTag==='肉盾'||roleTag==='受队'||roleTag==='辅助');
-  if(isSp){tgtEv=0;tplNew='空间低速';src='S2-A/R2-A 空间核不投速'}
-  else if(nonOut&&!B1){tgtEv=0;tplNew='非输出位降速';src='S5l/R2-D 低攻防守位·非输出位 → 速度 EV 归零'}
-  else if(actual&&cls==='A'&&cover&&!B1){tgtEv=0;tplNew='先制集约';src='S1-A/R1-A 无条件先制覆盖主输出 → 速度 EV 归零'}
+  /* v4.47 A2：src 文案去内部规则代号（原值 'S2-A/R2-A …' / 'S5l/R2-D …' / 'S1-A/R1-A …'
+     属开发协作编号，会经性格理由行进入用户可见文案 → 统一改用户可读表述；tplNew 标签原样不动
+     （渲染口径与判据锚点均只看 tplNew/节奏语义，不看 src 字符串）。 */
+  if(isSp){tgtEv=0;tplNew='空间低速';src='空间核不投速（低速轴）'}
+  else if(nonOut&&!B1){tgtEv=0;tplNew='非输出位降速';src='非输出位（低攻防守位/肉盾/辅助）→ 速度 EV 归零'}
+  else if(actual&&cls==='A'&&cover&&!B1){tgtEv=0;tplNew='先制集约';src='无条件先制覆盖主输出 → 速度 EV 归零'}
   else if(mul>1&&!B1){tgtEv=capEv;tplNew='倍率降档';src='队内速度倍率 ×'+mul+' → 速度 EV 收敛至 '+capEv}
   else if(actual&&cls==='B'&&!B1){
     var keyRaw=Math.max(tierRaw,(roleTag==='输出')?pvOutSpeedRaw(roleTag,base5):0);
@@ -11306,7 +11341,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.46a';
+var ER_ENGINE_VER='v4.47';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
