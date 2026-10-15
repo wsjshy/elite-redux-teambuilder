@@ -1171,8 +1171,11 @@ function costOf(s,m,hasRec){
   }
   /* v4.52 R9-E2：PP≤8 高威力只提示不否决 */
   if(m&&(m[7]||99)<=8&&(m[5]||0)>=100){tags.push('PP≤8 续航紧（提示不否决）')}
-  if(/recharg|Can only be used every-?other turn|must rest/i.test(d)){mul*=0.85;tags.push('僵直×0.85');note='僵直：使用后需歇一回合（双打 AOE 更亏，慎配）'}
-  else if(/on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(d)){mul*=0.85;tags.push('蓄力(2回合)×0.85');note='蓄力：首回合蓄力、次回合才命中（雨天/晴天等可即时发动的情形以游戏内实测为准）'}
+  /* v4.52 R9-E5：非即时输出招统一——僵直recharge/两回合蓄力在基础×0.85上，
+     高速打手(base5≥110)节奏错配额外×0.85；base5≤60/空间手不追加。无「忽略僵直」特性不硬造。 */
+  var _spE5=s?(s.base[5]||0):0;
+  if(/recharg|Can only be used every-?other turn|must rest/i.test(d)){mul*=0.85;tags.push('僵直×0.85');note='僵直：使用后需歇一回合（双打 AOE 更亏，慎配）';if(_spE5>=110){mul*=0.85;tags.push('高速打手带僵直节奏错配×0.85')}}
+  else if(/on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(d)){mul*=0.85;tags.push('蓄力(2回合)×0.85');note='蓄力：首回合蓄力、次回合才命中（雨天/晴天等可即时发动的情形以游戏内实测为准）';if(_spE5>=110){mul*=0.85;tags.push('高速打手带蓄力节奏错配×0.85')}}
   if(/recoil/i.test(d)){mul*=0.9;tags.push('反伤×0.9');if(!hasRec){mul*=0.9;tags.push('无回复再×0.9')}}
   if(/[Nn]ever misses/.test(d)){mul*=1.05;tags.push('必中×1.05')}
   if(/weather-?based|varies in power|depending on the weather/i.test(d)){
