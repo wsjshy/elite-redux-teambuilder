@@ -2653,9 +2653,9 @@ function abiDesc(el,id,box){
 }
 function renderMvSp(s){
   var q=$('mvInSp').value.trim(),ty=$('mvTypeSp').value,sp=$('mvSplitSp').value;
-  var rows=[];
-  s.lv.forEach(function(p){rows.push({way:'Lv'+p[0],mid:p[1],ord:p[0]})});
-  s.tut.forEach(function(m){rows.push({way:'教学',mid:m,ord:999})});
+  var rows=[];var _seenMid={};   /* v4.51 C3 P1-6：同一招在升级/教学重复出现时去重（保留先到者） */
+  s.lv.forEach(function(p){if(_seenMid[p[1]])return;_seenMid[p[1]]=1;rows.push({way:'Lv'+p[0],mid:p[1],ord:p[0]})});
+  s.tut.forEach(function(m){if(_seenMid[m])return;_seenMid[m]=1;rows.push({way:'教学',mid:m,ord:999})});
   rows.sort(function(a,b){return a.ord-b.ord});
   var html='';
   rows.forEach(function(r){
@@ -7067,6 +7067,7 @@ var MECH_BUILD={
     if(mechHasMv(s,174))b.mv.main.push({id:174,kind:'boost',tag:'强化',why:['每层 -1 速 → 陀螺球升档；同时 +攻防']});
     var rec=bestRecMv(s);if(rec)b.mv.main.push(rec);
     b.it=[['剩饭','低速站场续航'],['防岩果','防被克制一击']];
+    b.nat=[['勇敢','+攻击-速度（陀螺球越慢威力越高，减速即增伤）'],['固执','+攻击-特攻（次选不加速）']];   /* v4.51 C3 P1-4：陀螺球流禁爽朗(+速)自毁 */
     b.basis.push({k:'mech',txt:'机制 陀螺球（gyro_ball_speed）——慢即是重，诅咒双修'});
     return b;
   },
@@ -12173,13 +12174,16 @@ function renderCore(s){
     html+='</div>';
     /* ④ 推荐特性 + 理由（数值匹配分降级到 L3）；v4.44 盲区并入项：同名项合并展示 */
     html+='<div class="fld"><div class="fhd"><span class="fno">4</span>推荐特性 + 理由</div>';
+    /* v4.51 C3 P1-1：推荐区特性名经 id 反查 ABI 规范中文（与详情头特性池同源，消除双名）；回退原 a.n */
+    function _abZh(a){return (a&&a.id!=null&&a.id!==''&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):((a&&a.n)||'—')}
     var _abC=[],_abSeen={};
     bd.abi.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
     _abC.slice(0,2).forEach(function(a){
-      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(a.n)+'</span>'+mechBadgeForAbi(a.n)+'</span>'+
+      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'+mechBadgeForAbi(a.n)+'</span>'+
         '<span class="mvuse">'+esc((a.why||[]).join('；'))+'</span></div>';
     });
-    if(_abC.length>2)html+='<div class="dim">其余可选：'+_abC.slice(2).map(function(a){return '<span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(a.n)+'</span>'}).join(' ')+'（当前默认生效 = 可选池第 1 个）</div>';
+    if(_abC.length>2)html+='<div class="dim">其余可选：'+_abC.slice(2).map(function(a){return '<span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'}).join(' ')+'（当前默认生效 = 首选「'+esc(_abZh(_abC[0]))+'」）</div>';
+    else if(_abC.length)html+='<div class="dim">（当前默认生效 = 首选「'+esc(_abZh(_abC[0]))+'」）</div>';
     if(_abC.length<bd.abi.length)html+='<div class="dim">另有 '+(bd.abi.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
     html+='</div>';
     /* ⑤ 性格 */
