@@ -7417,15 +7417,25 @@ function mechBuildsOf(s){
    v4.43 P2（设计书 B §6.2⑥）：徽标正文前置全角分隔符「｜」——原实现是「道具/特性名 + 徽标」直连，
    纯文本抽取时读成「飞行宝石机制解读：属性宝石」这类**名字被吞并**的假象（片1 44 例 / 片3 14 例）。 */
 function mechChip(zh){return '<span class="badge badge-mech">｜机制解读：'+esc(zh)+'</span>'}
+var _mbUid=0;
+/* v4.52 P0 热修：机制徽标可点击内联展开（无弹窗遮挡，移动端适配）——点击 ▸ 就地展开该机制改写 why */
+function mechBadgeHtml(h){
+  if(!h||!h.length)return '';
+  var zs=_mechZs(h);
+  var why=h.map(function(x){return esc(mechRwZh(x.rewrite))+'：'+esc(x.why||'')+(x.warn?('（'+esc(x.warn)+'）'):'')}).join('；');
+  var uid='mb'+(++_mbUid);
+  return '<span class="badge badge-mech" style="cursor:pointer" onclick="var e=document.getElementById(\''+uid+'\');if(e)e.style.display=(e.style.display===\'none\'||!e.style.display)?\'inline\':\'none\'" title="展开机制解读">｜机制解读：'+esc(zs)+' ▸</span>'+
+    '<span id="'+uid+'" style="display:none;font-size:11px;color:var(--sub);margin-left:4px">'+why+'</span> ';
+}
 function _mechZs(h){var zs=[];h.forEach(function(x){var z=mechRwZh(x.rewrite);if(zs.indexOf(z)<0)zs.push(z)});return zs.join('/')}
-function mechBadgeForMove(id){var h=mechByMove(id);return h.length?('<span class="badge badge-mech">｜机制解读：'+esc(_mechZs(h))+'</span> '):''}
-function mechBadgeForAbi(n){var id=mechAbiId(n);if(!id)return '';var h=mechByAbility(id);return h.length?('<span class="badge badge-mech">｜机制解读：'+esc(_mechZs(h))+'</span> '):''}
+function mechBadgeForMove(id){return mechBadgeHtml(mechByMove(id))}
+function mechBadgeForAbi(n){var id=mechAbiId(n);if(!id)return '';return mechBadgeHtml(mechByAbility(id))}
 function mechBadgeForItem(n){
   /* UI 传的是道具显示名（ERDATA.items 的 zh；zh 为空时回落 en，见 mechItemZh2）——同时容忍直接传 id */
   var id=itemByZhOrEn(n);
   if((id===null||id===undefined)&&n!==undefined&&n!==null&&n!==''&&isFinite(+n)&&itemById(+n))id=''+n;
   if(id===null||id===undefined)return '';
-  var h=mechByItem(id);return h.length?('<span class="badge badge-mech">｜机制解读：'+esc(_mechZs(h))+'</span> '):''}
+  return mechBadgeHtml(mechByItem(id))}
 function mechCoreHtml(s,ctx){
   if(!mechOn()||!s)return '';
   var mp=mechSpProfile(s),abw=mechAbiWhy(s),co=mechCombosFor(s,ctx);
@@ -10990,6 +11000,22 @@ function renderNeedPlan(s,vi){
       h+='<div style="font-size:11px;color:var(--sub);margin-top:2px">备选（同一需求池内按正向分排序，共 '+pk.list.length+' 只；低分排后但均可入选）：'+
         pk.list.slice(1,7).map(function(x){return '<span class="abi" onclick="event.stopPropagation();selectCore('+x.s.id+')">'+esc(x.s.zh)+'('+esc(String(Math.round(x.score*10)/10))+')</span>'}).join(' ')+'</div>';
     }
+    /* v4.52 F-1（设计书 A5）：结构槽（胜任池浅的体系位）内联说明——为何无更好替代+次优替代+数据来源。
+       只展示不改算法（needScore/poolForNeed 输出逐字不变）。移动端截断 2 行+展开。 */
+    (function(){
+      try{
+        var _f1k={trset:1,truse:1,rec:1,clear:1,out:1,wxabuse:1,pivot:1,haz:1,tr:1,slow:1};
+        var _kind=String(n.kind||(n.def&&n.def.kind)||'');
+        var _cnt=(pk&&pk.list)?pk.list.length:0;
+        if(!_f1k[_kind]||_cnt>3||_cnt===0)return;
+        var _best=pk.list[0],_second=pk.list[1];
+        var _why='胜任池仅 '+_cnt+' 只合格者（结构位要求特定招式/体系，全图鉴天然稀缺），'+_best.s.zh+' 综合耐久/范围最优';
+        var _diff=Math.round((_best.score-_second.score)*10)/10;
+        var _subj=_second?('次优='+_second.s.zh+'（分差 '+_diff+'，职责/耐久略逊）'):'无次优（唯一合格者）';
+        h+='<details class="inline" style="margin-top:3px"><summary style="font-size:11px;color:var(--sub)">📐 结构槽说明：为何无更好替代</summary>'+
+          '<div style="font-size:11px;color:var(--sub);margin:2px 0">'+esc(_why)+'；'+esc(_subj)+'。数据来源：gameData 招式/种族表（池='+_cnt+' 只）。</div></details>';
+      }catch(eF1){}
+    })();
     if(pk&&pk.list&&pk.list.length>8){
       h+='<div class="poolbox"><button class="btn-mini" onclick="event.stopPropagation();poolAll(\''+puid+'\','+k+')">展开全部候选（'+pk.list.length+' 只，含中间位次）</button>'+
         '<input class="pin" id="pfin_'+puid+'_'+k+'" placeholder="按名定位：名称/英文/编号" onclick="event.stopPropagation()">'+
@@ -11417,7 +11443,7 @@ function evNatureLinkV437(s,b){
      （渲染口径与判据锚点均只看 tplNew/节奏语义，不看 src 字符串）。 */
   if(isSp){tgtEv=0;tplNew='空间低速';src='空间核不投速（低速轴）'}
   else if(nonOut&&!B1){tgtEv=0;tplNew='非输出位降速';src='非输出位（低攻防守位/肉盾/辅助）→ 速度 EV 归零'}
-  else if(mul>1&&!B1){tgtEv=capEv;tplNew='倍率降档';src='队内速度倍率 ×'+mul+' → 速度 EV 收敛至 '+capEv}
+  else if(mul>1&&!B1){tgtEv=capEv;tplNew='速度收敛(倍率达标)';src='队内速度倍率 ×'+mul+'（天气/顺风/围巾）→ 速度 EV 收敛至达标档 '+capEv+'，溢出点数挪向输出/耐久'}
   else if(actual&&(cls==='A'||cls==='B')&&!B1){
     /* v4.51 R8-E D-9：可靠性三档衰减（弃硬归零/硬降档刻板模板）。
        子区路径 b._r450_subOnly 用新分级(T1无条件/T2条件留底/T3窄招弱)；core 路径保留 v4.50 行为（4680 零变化，
@@ -11581,7 +11607,7 @@ function evWhyTxt(t){
   if(t==='空间低速')return '空间低速模板：252 HP + 252 主输出 + 4 余量（防御）。速度归零仅为建议，服务铃等机制可提速，请按自己队伍的调速需求再定。';
   if(t==='先制集约')return '先制集约模板（v4.37）：先制类特性已无条件覆盖主输出 → 速度 EV 归零，252 输出 + 252 HP + 4 主防。把速度预算换到生存与力度上，先手权由特性提供。';
   if(t==='先制降档')return '先制降档模板（v4.37）：条件先制（满血 / 首回合 / 首次使用）→ 速度 EV 收敛到关键档位，多余点数挪向输出与耐久，不再顶满 252。';
-  if(t==='倍率降档')return '倍率降档模板（v4.37）：队内已具备速度倍率（天气提速 ×1.5 / 顺风 ×2 / 讲究围巾 ×1.5）→ 速度 EV 只需达标即够，溢出部分挪向输出与耐久（速度 creep 收敛）。';
+  if(t==='速度收敛(倍率达标)'||t==='倍率降档')return '速度收敛模板（v4.52 改名，原「倍率降档」）：队内已具备速度倍率（天气提速 ×1.5 / 顺风 ×2 / 讲究围巾 ×1.5）→ 速度 EV 只需达标即够，溢出部分挪向输出与耐久（速度 creep 收敛）。';
   return '';
 }
 function evBarHtml(bd){
