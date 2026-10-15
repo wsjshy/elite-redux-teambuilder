@@ -549,7 +549,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.49</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.50</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4730,6 +4730,12 @@ var NATURES={
 var SYS_MAP={'降雨':'雨','雨幕':'雨','悠游自如':'雨','雨盘':'雨','干燥皮肤':'雨','日照':'晴','大叶子':'晴','叶绿素':'晴','太阳之力':'晴',
   '扬沙':'沙','拨沙':'沙','沙之力':'沙','沙隐':'沙','降雪':'雪','拨雪':'雪','冰冻之躯':'雪',
   '电气制造者':'电场','发电机':'电场','精神制造者':'精神场地','青草制造者':'青草场地','薄雾制造者':'薄雾场地'};
+/* v4.50 R7-A G6（路线甲裁决）：受益侧 207 冲浪之尾/1027 丛林热/862 热滑 与设置手 584/604/989
+   **不接入全局 SYS_MAP/SYS_SET** —— 实测（4680 导出 diff）它们经 coreAbiPick 的 sys 打分与 coreRole
+   流入 deriveBuilds 个体流派，改了 雷鸟龙/伦琴猫R-B 等的推荐特性与配招，违反路线甲 4680 零变化红线。
+   abiSysOf/abiSetOf 无 ctx 难以局部门控 ⇒ 登记待 R8：把 coreAbiPick sys 打分与 coreRole 设置手/受益识别
+   改为 ctx.sub 门控后再接入。子区速度倍率已由 PV_WX_SPEED_ABI_SUB（b._r450_subOnly 门控）覆盖。
+   627 缥缈奔腾(浓雾)：引擎无雾体系位，同登记待核。 */
 var SYS_SET={'降雨':'雨','雨幕':'雨','日照':'晴','扬沙':'沙','降雪':'雪','电气制造者':'电场','精神制造者':'精神场地','青草制造者':'青草场地','薄雾制造者':'薄雾场地'};
 /* v4.2（用户指令「Toxic Surge(834) 补进 SYS_SET，若数据层字段已有则引擎消费」）：
    数据层 `ERDATA.sysSet`（天气/场地设置手 id 白名单）= [2,45,70,117,226,227,228,229,584,604,834,989]，
@@ -8066,7 +8072,7 @@ function itemDecide(s,side,roleTag,ctx){
      B6 同向：主推招含变化招时，翻牌不落 锁招类(LOCK_ITEMS) —— 避免刚翻牌又被讲究系门控回退。 */
   try{
     if(ctx&&ctx.sub&&ctx.planItems&&out.length>1&&(out[0].sc||0)>0){
-      var _top449=out[0],_thr449=0.85*(_top449.sc||0);
+      var _top449=out[0],_thr449=0.75*(_top449.sc||0);   /* v4.50 R7-C：翻牌阈值 0.85→0.75（B1 21→24~26；锁招护栏/slice(0,3) 不动） */
       if(ctx.planItems[_top449.zh]){
         var _alt449=null,_qi449;
         for(_qi449=1;_qi449<out.length;_qi449++){
@@ -10332,18 +10338,14 @@ function buildTeamByNeeds(core,opts){
     try{
       if(pool2.length>1){
         var _s1a=pool2[0].score||0,_s2a=pool2[1].score||0;
-        if(_s1a>1e-9&&(_s1a-_s2a)/_s1a<=0.05){
-          var _f1a=teamFamKey(pool2[0].s),_altA=null,_ai449;
-          /* v4.49 如实登记（惰性，见自测报告 §M-2 / 变更清单 §3.1）：触发前置之二
-             「top-1 与**已入队队友**同族（fam 级）」在**当前去重口径下不可达** —— 本函数上方
-             L10518「形态去重」已按同一 teamFamKey 剔除与队友同族者 ⇒ fam[_f1a] 恒假 ⇒ 本锚点
-             在 v4.49 全量样本实测命中 0（数值见自测报告）。保留为**护栏**：若上游去重口径放宽
-             （例如改为仅按物种 id 去重），本锚点即按设计生效；届时应重跑 A1/A2 判据。 */
-          if(fam[_f1a]){
-          for(_ai449=1;_ai449<pool2.length;_ai449++){
-            if(teamFamKey(pool2[_ai449].s)!==_f1a){_altA=pool2[_ai449];break}
-          }
-          if(_altA&&!fam[teamFamKey(_altA.s)]){
+        if(_s1a>1e-9&&(_s1a-_s2a)/_s1a<=0.08){   /* v4.50 R7-B：可翻转档阈值 5%→8% */
+          var _f1a=teamFamKey(pool2[0].s),_f2a=teamFamKey(pool2[1].s);
+          /* v4.50 R7-B 复活 M-2：原死条件 `fam[_f1a]`（pool2 已在上方硬剔同族队友 ⇒ 恒假、全量命中 0）
+             改为「t2 家族 ≠ t1 家族 → 优先 t2 异家族」。L10518 团队家族硬剔语义不变。
+             目标：top-15 家族集中度 70.8% → ~61–63%（一阶估计，全量复测如实登记）。
+             保留多功能护栏：仅当 t1/t2 都不顺带满足其它 open 需求时才换（不丢 needCoverage）。 */
+          if(_f2a!==_f1a){
+            var _altA=pool2[1];
             var _mt1=[],_mt2=[];
             open.forEach(function(nd){
               if(nd===need)return;
@@ -10351,7 +10353,6 @@ function buildTeamByNeeds(core,opts){
               if(_mt2.length<mm&&needSatisfied(_altA.s,nd,_altA.loc))_mt2.push(nd);
             });
             if(!_mt1.length&&!_mt2.length){pick=_altA;divAnchorHit=1}
-          }
           }
         }
       }
@@ -10969,6 +10970,7 @@ function subareaBuild445(sp,roleTag,itemTag,ctx){
   try{choiceStatusGate(sp,b)}catch(eCSH){}
   try{facadeSashGate(sp,b)}catch(eFSH){}
   /* v4.45 C-1 收口（顺序 = 流派区）：EV 分配/性格联动 → 全套流派级收口（含尾部的 EV 复核 + evNatureLinkV437，幂等） */
+  b._r450_subOnly=1;   /* v4.50 路线甲：子区路径标记——本链 evNatureLinkV437 消费 R7-A 新规则（deriveBuilds 链不设，4680 零变化） */
   try{b.ev=buildEvs(sp,b.side,b.roleTag,b.name,b)}catch(eEVb){}
   try{b=finalizeBuildInPlace(sp,b)}catch(eFB){}
   try{evNatureLinkV437(sp,b)}catch(eNL){}
@@ -11086,14 +11088,27 @@ var PRIO_ABI={
  662:{n:'先行之力',cls:'D',scope:'先制'}, 259:{n:'速击',cls:'E',scope:''},
  567:{n:'尾甲',cls:'C'}, 214:{n:'女王的威严',cls:'C'}, 219:{n:'鲜艳之躯',cls:'C'},
  857:{n:'王室敕令',cls:'C'}, 482:{n:'沙漠守护',cls:'C'}, 585:{n:'晒太阳',cls:'C'},
- 805:{n:'棕褐色镜片',cls:'C'}, 227:{n:'精神制造者',cls:'C'}, 510:{n:'菌丝之力',cls:'C'}
+ 805:{n:'棕褐色镜片',cls:'C'}, 227:{n:'精神制造者',cls:'C'}, 510:{n:'菌丝之力',cls:'C'},
+ /* ===== v4.50 R7-A G1/G2（路线甲：全部 sub:1，仅子区路径 b._r450_subOnly 消费，4680 流派路径零变化）=====
+    G1 满血红先制七连（gameData 逐字「满HP时 X 招式+1优先级」）：拳类+5属性先制；
+    G2 370 取巧（对手<半血单目标+1，新 cond=oppHpBelowHalf）；288/623 仅登记 cls C 不降档。 */
+ 277:{n:'闪电拳击',cls:'B',scope:'拳',cond:'fullHp',sub:1},
+ 351:{n:'燃烧之魂',cls:'B',scope:'火',cond:'fullHp',sub:1},
+ 362:{n:'冰冻之魂',cls:'B',scope:'冰',cond:'fullHp',sub:1},
+ 430:{n:'伏特猛冲',cls:'B',scope:'电',cond:'fullHp',sub:1},
+ 522:{n:'墓地冲刺',cls:'B',scope:'幽灵',cond:'fullHp',sub:1},
+ 558:{n:'地狱冲刺',cls:'B',scope:'恶',cond:'fullHp',sub:1},
+ 560:{n:'潮汐加速',cls:'B',scope:'水',cond:'fullHp',sub:1},
+ 370:{n:'取巧',cls:'B',scope:'全',cond:'oppHpBelowHalf',sub:1},
+ 288:{n:'完美主义',cls:'C',sub:1}, 623:{n:'吓一跳',cls:'C',cond:'fog',sub:1}
 };
 /* 招类/属性 flag 口径（ER MV 无 flag 字段 → 名称正则；启发式，口径已登记） */
 var PV_TYPE_NAMES=['一般','格斗','飞行','毒','地面','岩石','虫','幽灵','钢','火','水','草','电','超能','冰','龙','恶','妖精'];
 var PV_SCOPE_RE={
  '声音':/声音|吼叫|吼|叫声|尖叫|唱歌|轮唱|回声|爆音波|噪声|咆哮|战吼|鸣叫|咏/,
  '咬':/咬|啃|牙/, '啃咬':/咬|啃|牙/,
- '切割':/刃|斩|切|剪|锯|刀/, '刃':/刃|斩|切|剪|锯|刀/
+ '切割':/刃|斩|切|剪|锯|刀/, '刃':/刃|斩|切|剪|锯|刀/,
+ '拳':/拳/  /* v4.50 R7-A：拳类招式（全库 27 招名均含「拳」，Iron Fist 族同口径；已探针核对无误伤） */
 };
 function pvScopeCovers(scope,mvZh,mvCat,mvType){
   scope=String(scope||'');if(!scope)return false;
@@ -11107,6 +11122,7 @@ function pvScopeCovers(scope,mvZh,mvCat,mvType){
 function pvAbiId(n){try{var v=abiIdByZhOrEn(n);return (v===null||v===undefined)?null:(''+v)}catch(e){return null}}
 function pvAbiSame(a,b){try{return abiSame(a,b)}catch(e){return String(a)===String(b)}}
 function prioAbiProfile(s,b){
+  var subOnly=!!(b&&b._r450_subOnly);   /* v4.50 路线甲：sub:1 新规则仅子区路径消费，4680 流派路径零变化 */
   var inns=(s&&s.inns)||[],abis=(s&&s.abis)||[];
   var hasInn={};inns.forEach(function(n){var i=pvAbiId(n);if(i)hasInn[i]=1});
   var sel=null;try{if(b&&b.abi&&b.abi.length&&b.abi[0]&&b.abi[0].n!=null)sel=String(b.abi[0].n)}catch(e){}
@@ -11114,6 +11130,7 @@ function prioAbiProfile(s,b){
   inns.concat(abis).forEach(function(n){
     var id=pvAbiId(n);if(!id)return;
     var ent=PRIO_ABI[id];if(!ent)return;
+    if(ent.sub&&!subOnly)return;   /* 路线甲守卫：非子区路径跳过 v4.50 新补条目 */
     var from=hasInn[id]?'inn':'abi',selected=false;
     if(from==='abi'&&sel!=null)selected=pvAbiSame(sel,n);
     items.push({n:n,id:id,from:from,selected:selected,cls:ent.cls,scope:ent.scope,cond:ent.cond||''});
@@ -11160,13 +11177,22 @@ function pvOutSpeedRaw(roleTag,base5){
   return speedStat(pvBandMax(medSpe()),252,31,true);
 }
 var PV_WX_SPEED_ABI=['悠游自如','叶绿素','拨沙','拨雪'];
-function pvWeatherSpeedMul(s){
+/* v4.50 R7-A G3：场地/雾/跨天气速度族（路线甲：仅子区路径 b._r450_subOnly 消费）
+   207 冲浪之尾(电气场地)/1027 丛林热(青草场地)/627 缥缈奔腾(浓雾)/862 热滑(晴或雹)；
+   与既有 4 条同口径——仅按特性在场判定，未叠加天气是否真上场（既有表亦如此）。627 浓雾体系上下文未建，登记待核。 */
+var PV_WX_SPEED_ABI_SUB=['冲浪之尾','丛林热','缥缈奔腾','热滑'];
+function pvWeatherSpeedMul(s,sub){
   var pool=((s&&s.inns)||[]).concat((s&&s.abis)||[]);
-  for(var i=0;i<pool.length;i++)for(var j=0;j<PV_WX_SPEED_ABI.length;j++){
-    try{if(abiSame(pool[i],PV_WX_SPEED_ABI[j]))return 1.5}catch(e){}
+  var lists=[PV_WX_SPEED_ABI];if(sub)lists.push(PV_WX_SPEED_ABI_SUB);
+  for(var li=0;li<lists.length;li++)for(var i=0;i<pool.length;i++)for(var j=0;j<lists[li].length;j++){
+    try{if(abiSame(pool[i],lists[li][j]))return 1.5}catch(e){}
   }
   return 1;
 }
+/* v4.50 R7-A G4 SPD_PENALTY_ABI：减伤换速度特性族（路线甲：仅子区路径消费，只动 EV/性格层，不动 D2 打分）
+   705 太晶宝藏(速度-20%)/889 厚脂(速度减半×0.5) 折损≥20% → 速度 EV 权重×0.5 且性格不选加速；
+   539 合金外壳(-10%)/296 铅质外壳(×0.9) 折损<20% → 速度 EV 轻微收敛。 */
+var SPD_PENALTY_ABI={'705':0.20,'889':0.50,'539':0.10,'296':0.10};
 /* 空间核判据（v4.37 **裁决 1 修正**：方向由「对齐门控」反转为「对齐命名轴」）：
    `isSpaceLike = (b[5]<=50) && (coreRole ∈ {慢速炮台（可空间）, 空间打手, 慢速炮台} || roleTag 含「空间」 || 流派名含「空间」)`
    —— 即**恢复设计书 §3-S2（L316）原文口径**（低速门控 b[5]<=50 不得去掉）。
@@ -11211,16 +11237,18 @@ function evNatureLinkV437(s,b){
   var isSp=pvIsSpaceLike(s,roleTag,name);
   var pp=null;try{pp=prioAbiProfile(s,b)}catch(e1){pp=null}
   var cls=pp?pp.cls:'',cover=!!(pp&&pp.coverMain),actual=!!(pp&&pp.actual);
+  var sub=!!(b&&b._r450_subOnly);   /* v4.50 路线甲：子区路径标记（deriveBuilds→finalize 链不设，4680 零变化） */
   var B1=(base5>=110&&roleTag==='输出');
   var tailwind=/顺风/.test(name+roleTag);
   var scarf=String(itemMainZh(b)).indexOf('讲究围巾')>-1;
-  var wxMul=1;try{wxMul=pvWeatherSpeedMul(s)}catch(e2){wxMul=1}
+  var wxMul=1;try{wxMul=pvWeatherSpeedMul(s,sub)}catch(e2){wxMul=1}
   var wsm=Math.max(1,+b.wantSpeedMul||1);   /* v4.38 B1-2：轻装 ×2 等机制速度倍率（与天气/顺风/围巾同口径降档） */
   var mul=(wxMul>1?1.5:1)*(tailwind?2:1)*(scarf?1.5:1)*wsm;
   var tierRaw=speedStat(medSpe(),252,31,true);
   var natName=normNatName(b.nat&&b.nat[0]?b.nat[0][0]:'');
   var natPos=!!(NATURES[natName]&&String(NATURES[natName][0])==='+速度');
   var tgtEv=-1,tplNew='',src='';
+  var _clsBKeyEv=-1;   /* v4.50 G5：cls B 降档后关键档 EV（子区性格对齐用） */
   var capEv=Math.min(252,evForSpeed(targetRaw(pvOutSpeedRaw(roleTag,base5),mul),base5,31,natPos));
   /* v4.37 S5l（收口口径，最小改动）：低攻防守位/肉盾/受队/辅助 = 非输出位 → 速度 EV 归零。
      只在收口处改「速度 EV 一项」，不改 buildEvs 的耐久模板选择（避免把非违例流派整只重排、丢失 EV 预算）。 */
@@ -11236,7 +11264,25 @@ function evNatureLinkV437(s,b){
   else if(actual&&cls==='B'&&!B1){
     var keyRaw=Math.max(tierRaw,(roleTag==='输出')?pvOutSpeedRaw(roleTag,base5):0);
     var keyEv=Math.min(252,evForSpeed(targetRaw(keyRaw,1),base5,31,natPos));
-    tgtEv=keyEv;tplNew='先制降档';src='S1-B/R1-B 条件先制 → 速度降至关键档位';
+    tgtEv=keyEv;tplNew='先制降档';src='条件先制 → 速度降至关键档位';
+    _clsBKeyEv=keyEv;
+  }
+  /* v4.50 R7-A G4 SPD_PENALTY_ABI（路线甲：仅子区路径 b._r450_subOnly，只 EV/性格层不动 D2）：
+     减伤换速度特性族 → 速度 EV 额外收敛；≥20% 折损 EV 权重×0.5，<20% 轻微收敛（-64 四舍五入）。 */
+  var spdPenCut=0;
+  if(sub){
+    var _ppool=(s.inns||[]).concat(s.abis||[]);
+    for(var spi=0;spi<_ppool.length;spi++){
+      var _spid=pvAbiId(_ppool[spi]);
+      if(_spid&&SPD_PENALTY_ABI[_spid]!=null)spdPenCut=Math.max(spdPenCut,SPD_PENALTY_ABI[_spid]);
+    }
+  }
+  if(spdPenCut>0){
+    var penEv=(spdPenCut>=0.20)?(Math.floor((+ev[5]||0)/2/4)*4):(Math.max(0,Math.floor(((+ev[5]||0)-64)/4)*4));
+    if(tgtEv<0||penEv<tgtEv){
+      tgtEv=penEv;tplNew='速度惩罚收敛';
+      src=(spdPenCut>=0.20)?('减伤换速度特性（折损≥20%）→ 速度 EV 减半'):('减伤换速度特性（折损<20%）→ 速度 EV 轻微收敛');
+    }
   }
   /* 组合口径（v4.37 登记）：链序 = 空间 → 非输出位 → 先制A → 倍率 → 先制B（前者优先）。
      S1-B 与 S3 同时适用时由「倍率」分支胜出 —— 与 min 等价（capEv ≤ keyEv），
@@ -11288,6 +11334,24 @@ function evNatureLinkV437(s,b){
       b.nat=[[want,wantWhy]].concat((b.nat||[]).slice(1));
       b.natFix={from:natName,to:want,why:(_blocked?'不得砍主用项':(_posBad?'正项未落在实际使用项':(_mechBad?'机制结算项优先':'速度 EV 归零 → 加速性格空转（C5a）')))};
     }
+  }
+  /* v4.50 R7-A G5/S7b（路线甲：仅子区路径 b._r450_subOnly，幂等）：
+     cls B 条件先制降档后关键档 EV≤64、或 SPD_PENALTY 折损≥20% → 加速性格空转，
+     统一改为主输出性格（内敛/固执）。与上方既有 _spdWaste 块幂等（已非+速度则 no-op）。 */
+  if(sub&&b.nat&&b.nat[0]&&!B1){
+    try{
+      var _cn2=normNatName(b.nat[0][0]);
+      var _cp2=String((NATURES[_cn2]||[])[0]||'');
+      var _lowSpd=((+ev[5])||0)===0||(_clsBKeyEv>=0&&_clsBKeyEv<=64)||spdPenCut>=0.20;
+      if(_cp2==='+速度'&&_lowSpd){
+        var _m2=mainDirOf(b);
+        var _w3=(_m2==='特殊')?'内敛':'固执';
+        var _w3neg=String((NATURES[_w3]||[])[1]||'').replace(/^[-+]/,'');
+        var _wi=STAT_NM.indexOf(_w3neg);
+        var _hurt=(_wi>=0&&((+ev[_wi])||0)>4&&_wi!==5);
+        if(NATURES[_w3]&&!_hurt){b.nat=[[_w3,'条件先制降档/减伤换速度 → 速度关键档低，加速性格空转，正项给主输出']].concat((b.nat||[]).slice(1))}
+      }
+    }catch(eG5){}
   }
   /* v4.44 P2-3：减速性格 × 速度 EV>0 的注记调和（只改文案，不动任何数值）
      背景（R2 清单 P2-3）：性格模板文案恒写「（配空间）」。当本套**确实投了速度 EV**时矛盾——
@@ -11539,7 +11603,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.49';
+var ER_ENGINE_VER='v4.50';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12357,7 +12421,7 @@ function engineGuardSelfCheck(){
      · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
-  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[];
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0;
   /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
      · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
        · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
@@ -12423,6 +12487,21 @@ function engineGuardSelfCheck(){
       var _stSub=false;try{_stSub=(b2.mv&&b2.mv.main||[]).some(function(x){var m=MV[x.id];return m&&m[4]==='变化'})}catch(e5){}
       if(imz==='突击背心'){nSubVestChk++;if(_stSub){nSubVestSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区背心×变化'})}}
       if(/^讲究/.test(imz)){nSubChoiceChk++;if(_stSub){nSubChoiceSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区讲究×变化'})}}
+      /* v4.50 S7b（硬门闩）：速度 EV=0 的子区槽，性格不得为加速性格（_spdWaste/G5 口径） */
+      try{
+        if(b2.ev&&b2.ev.alloc&&(+b2.ev.alloc[5]||0)===0&&b2.nat&&b2.nat[0]){
+          var _sn=normNatName(b2.nat[0][0]);
+          if(NATURES[_sn]&&String(NATURES[_sn][0])==='+速度'){n7b++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7b 速EV=0却加速性格',nat:_sn})}
+        }
+      }catch(e7b){}
+      /* v4.50 S7a（硬门闩）：带满血红先制族(277/351/362/430/522/558/560)的子区槽，EV 模板须 ∈{先制集约,先制降档}（B1 高攻输出位豁免，与 !B1 分支同口径） */
+      try{
+        var _prio7=['277','351','362','430','522','558','560'];
+        var _allIds=(m.s.innIds||[]).concat(m.s.abiIds||[]).map(String);
+        var _has7=_prio7.some(function(pid){return _allIds.indexOf(pid)>-1});
+        var _isB1=((+((m.s.base||[])[5])||0)>=110&&String(b2.roleTag||'')==='输出');
+        if(_has7&&!_isB1&&b2.ev){var _tp=String(b2.ev.template||'');if(_tp!=='先制集约'&&_tp!=='先制降档'&&_tp!==''){n7a++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7a 满血红先制族模板',tpl:_tp})}}
+      }catch(e7a){}
       if(!m.core){var mz=String(m.s.zh||m.s.id);subMate[mz]=(subMate[mz]||0)+1}
     });
     var _mset={};(plan.team||[]).forEach(function(m){if(m&&m.s&&!m.core)_mset[String(m.s.zh||m.s.id)]=1});
@@ -12689,9 +12768,10 @@ function engineGuardSelfCheck(){
   });
   var s7dViol=s7dMis;
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
-    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol;
-  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,
+    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
+    gate7ab:{n7a:n7a,n7b:n7b,mis:v7ab},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
