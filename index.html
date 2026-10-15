@@ -549,7 +549,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.49</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.50</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2004,11 +2004,11 @@ function teamReport(ids,label,info){
       if(anEff(s,at)===0){by='属性'}
       else{
         var _innC=defCellTrio(s,at,null).inn;
-        if(String(_innC)==='0'){by='天性';srch=anImmAbiNameOf(s,at)||'天性特性'}
+        if(String(_innC)==='0'){by='天性';srch=abiChipName(anImmAbiNameOf(s,at)||'天性特性')}
         else{
           var _pk=anPickOf(s,_info);
           if(_pk){by='特性';srch=_pk}
-          else{by='天性';srch=anImmAbiNameOf(s,at)||'天性特性'}
+          else{by='天性';srch=abiChipName(anImmAbiNameOf(s,at)||'天性特性')}
         }
       }
     }catch(e6){}
@@ -2315,8 +2315,10 @@ function anSprOfNarr(o){
       sprImgMid(s.id)+'<span class="anmemnm">'+esc(o.zh||s.zh)+'</span></span>';
   }catch(e){return ''}
 }
-function anAbiChipH(n,kind){
-  return '<span class="abi" onclick="abiModal('+jsl(String(n))+','+jsl(String(kind||'特性'))+')" title="点看完整描述">'+esc(abiChipName(n))+'</span>';
+function anAbiChipH(n,kind,id){
+  /* v4.50 P0：传入平行 id 时直接用 ABI 规范中文（消除 v0.3/v0.5 双译名）；否则回退 abiChipName 名字解析 */
+  var disp=(id!=null&&id!==''&&ABI[id])?(ABI[id][2]||ABI[id][1]||('#'+id)):abiChipName(n);
+  return '<span class="abi" onclick="abiModal('+jsl(String(n))+','+jsl(String(kind||'特性'))+')" title="点看完整描述">'+esc(disp)+'</span>';
 }
 function anSpDetail(id){
   var s=null;try{s=speciesById(id)}catch(e){}
@@ -2346,7 +2348,7 @@ function anDetailHtml(s,bd,R){
     var _abC=[],_abSeen={};
     _ab.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
     _abC.slice(0,2).forEach(function(a){
-      h+='<div class="mvrow"><span class="mvnm">'+anAbiChipH(a.n,'特性')+mechBadgeForAbi(a.n)+'</span>'+
+      h+='<div class="mvrow"><span class="mvnm">'+anAbiChipH(a.n,'特性',a.id)+mechBadgeForAbi(a.n)+'</span>'+
         '<span class="mvuse">'+esc((a.why||[]).join('；'))+'</span></div>';
     });
     if(_abC.length<_ab.length)h+='<div class="dim" style="font-size:11px">另有 '+(_ab.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
@@ -2355,7 +2357,7 @@ function anDetailHtml(s,bd,R){
   /* D-2 天性（固定 3 个；点看描述） */
   var _inns=(s.inns||[]);
   h+='<div class="fld"><div class="fhd"><span class="fno">3</span>天性（固定拥有，点看描述）</div><div>'+
-    (_inns.length?_inns.map(function(n){return anAbiChipH(n,'天性')}).join(' '):'<span class="dim">—</span>')+'</div></div>';
+    (_inns.length?_inns.map(function(n,ii){return anAbiChipH(n,'天性',(s.innIds||[])[ii])}).join(' '):'<span class="dim">—</span>')+'</div></div>';
   /* D-4 配招 4 招 + 各招作用一句话 */
   h+='<div class="fld"><div class="fhd"><span class="fno">4</span>配招（4 招 + 作用）</div><div class="mvlist">';
   ((bd.mv&&bd.mv.main)||[]).forEach(function(sl,j){
@@ -2554,15 +2556,17 @@ function openSp(s){
   html+='</div>';
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
   html+='<div class="sec"><h3>特性（'+s.abis.length+' 选 1，点击看描述）</h3>';
-  s.abis.forEach(function(n){
-    var id=abiIdByZhOrEn(n);
-    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(abiChipName(n))+'</span>';   /* v4.31：统一 ABI 表规范中文（消除「烈焰之魂/燃烧之魂」双名） */
+  s.abis.forEach(function(n,ai){
+    var _pid=(s.abiIds||[])[ai];
+    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(n);
+    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(speciesAbiZh(s,'abis',ai))+'</span>';   /* v4.50 P0：显示名经平行 id 反查 ABI 规范中文 */
   });
   html+='<div class="abid" id="abiDesc" style="display:none"></div></div>';
   html+='<div class="sec"><h3>天性（固定 3 个，点击看描述）</h3>';
-  s.inns.forEach(function(n){
-    var id=abiIdByZhOrEn(n);
-    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(abiChipName(n))+'</span>';   /* v4.31：同上统一 */
+  s.inns.forEach(function(n,ii){
+    var _pid=(s.innIds||[])[ii];
+    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(n);
+    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(speciesAbiZh(s,'inns',ii))+'</span>';   /* v4.50 P0：同上 */
   });
   html+='<div class="abid" id="spInnDesc" style="display:none"></div>'; /* A①：天性描述紧挂天性块内（勿落到特性块） */
   html+='<div class="mini" style="color:var(--sub);margin-top:4px">天性固定生效、不可更换；可选特性的免疫/减半与之叠加（B1）。</div>';
@@ -2962,12 +2966,12 @@ function renderSlots(){
       var _abUniq=[];(s.abis||[]).forEach(function(n){if(_abUniq.indexOf(n)<0)_abUniq.push(n)});
       if(s.abis&&s.abis.length&&_abUniq.length===1){
         html+='<div style="padding:0 10px 2px;font-size:11px;color:var(--sub)">可选特性（该物种三项同名 → <b>唯一特性</b>，无需选择）：</div>'+
-          '<div style="padding:0 10px 6px;display:flex;flex-wrap:wrap;gap:4px"><span class="badge badge-pick" title="数据层三项同名（不修改数据），此处合并展示为「唯一特性」">'+esc(_abUniq[0])+' ✦唯一</span></div>';
+          '<div style="padding:0 10px 6px;display:flex;flex-wrap:wrap;gap:4px"><span class="badge badge-pick" title="数据层三项同名（不修改数据），此处合并展示为「唯一特性」">'+esc(abiChipName(_abUniq[0]))+' ✦唯一</span></div>';
       }else if(s.abis&&s.abis.length){
         html+='<div style="padding:0 10px 2px;font-size:11px;color:var(--sub)">可选特性（<b style="color:#2e7d32">点选模拟生效</b>，单选）：</div><div style="padding:0 10px 6px;display:flex;flex-wrap:wrap;gap:4px">';
         for(var ai=0;ai<s.abis.length;ai++){
           var picked=info.pick===s.abis[ai];
-          html+='<span class="badge '+(picked?'badge-pick':'badge-pickable')+'" onclick="pickAbi('+s.id+','+ai+')" title="点选后该成员防守评估与全队分析即时重算">'+esc(s.abis[ai])+(picked?' ✓':'')+'</span>';
+          html+='<span class="badge '+(picked?'badge-pick':'badge-pickable')+'" onclick="pickAbi('+s.id+','+ai+')" title="点选后该成员防守评估与全队分析即时重算">'+esc(speciesAbiZh(s,'abis',ai))+(picked?' ✓':'')+'</span>';
         }
         html+='<span class="badge badge-neu" style="cursor:pointer" onclick="pickAbi('+s.id+',-1)" title="清除勾选">✕</span></div>';
       }
@@ -3120,17 +3124,18 @@ function defCellTrio(s,at,pickOv){
 /* 特性徽章 HTML（免疫/半伤/加属性/特殊备注） */
 function abiBadges(s){
   var html='',im={},hf={},add={},nts=[];
-  function scan(list,scope){
-    list.forEach(function(n){
+  function scan(list,scope,field){
+    list.forEach(function(n,i){
       var g=abiTagOf(n);if(!g)return;
       (g.im||[]).forEach(function(x){if(im[x]===undefined)im[x]=scope});
       (g.hf||[]).forEach(function(x){if(hf[x]===undefined)hf[x]=scope});
       (g.add||[]).forEach(function(x){if(add[x]===undefined)add[x]=scope});
-      /* v4.44 盲区并项：三项同名特性（全库 151~156 只，数据真值不动）→ 同名徽标只出现一次，避免重复三连 */
-      if(g.nt&&nts.indexOf(n)<0)nts.push(n);
+      /* v4.44 盲区并项：三项同名特性（全库 151~156 只，数据真值不动）→ 同名徽标只出现一次，避免重复三连
+         v4.50 P0：备注特性名经平行 id 反查 ABI 规范中文（消除 v0.3/v0.5 双译名） */
+      if(g.nt){var dn=speciesAbiZh(s,field,i);if(nts.indexOf(dn)<0)nts.push(dn)}
     });
   }
-  scan(s.inns,'天性');scan(s.abis,'可选');
+  scan(s.inns,'天性','inns');scan(s.abis,'可选','abis');
   for(var t in im)html+='<span class="badge '+(im[t]==='天性'?'badge-imm':'badge-opt')+'" title="免疫'+t+'属性招式">'+t+'免疫·'+im[t]+'</span>';
   for(var t in hf)html+='<span class="badge '+(hf[t]==='天性'?'badge-res':'badge-opt')+'" title="'+t+'属性伤害减半">'+t+'半伤·'+hf[t]+'</span>';
   for(var t in add)html+='<span class="badge '+(add[t]==='天性'?'badge-add':'badge-opt')+'" title="出场添加'+t+'属性">+'+t+'·'+add[t]+'</span>';
@@ -4644,7 +4649,7 @@ function renderTplBody(i){
   if(t.counters){
     var c=t.counters;
     html+='<div class="sec"><h3>模板天敌警示</h3><div class="tip" style="background:#fff3e0;border-color:#d97706">怕属性：'+
-      (c.types||[]).map(tlabel).join(' ')+'　｜　核心招式可能被特性免疫：'+esc((c.abis||[]).join('、')||'（无）')+
+      (c.types||[]).map(tlabel).join(' ')+'　｜　核心招式可能被特性免疫：'+esc((c.abis||[]).map(abiChipName).join('、')||'（无）')+
       '</div></div>';
   }
   /* ER 调整说明（B8：数值文案统一改读 WCONF，删除写死的 20%/30%/8回合/无限天气旧文案） */
@@ -4725,6 +4730,12 @@ var NATURES={
 var SYS_MAP={'降雨':'雨','雨幕':'雨','悠游自如':'雨','雨盘':'雨','干燥皮肤':'雨','日照':'晴','大叶子':'晴','叶绿素':'晴','太阳之力':'晴',
   '扬沙':'沙','拨沙':'沙','沙之力':'沙','沙隐':'沙','降雪':'雪','拨雪':'雪','冰冻之躯':'雪',
   '电气制造者':'电场','发电机':'电场','精神制造者':'精神场地','青草制造者':'青草场地','薄雾制造者':'薄雾场地'};
+/* v4.50 R7-A G6（路线甲裁决）：受益侧 207 冲浪之尾/1027 丛林热/862 热滑 与设置手 584/604/989
+   **不接入全局 SYS_MAP/SYS_SET** —— 实测（4680 导出 diff）它们经 coreAbiPick 的 sys 打分与 coreRole
+   流入 deriveBuilds 个体流派，改了 雷鸟龙/伦琴猫R-B 等的推荐特性与配招，违反路线甲 4680 零变化红线。
+   abiSysOf/abiSetOf 无 ctx 难以局部门控 ⇒ 登记待 R8：把 coreAbiPick sys 打分与 coreRole 设置手/受益识别
+   改为 ctx.sub 门控后再接入。子区速度倍率已由 PV_WX_SPEED_ABI_SUB（b._r450_subOnly 门控）覆盖。
+   627 缥缈奔腾(浓雾)：引擎无雾体系位，同登记待核。 */
 var SYS_SET={'降雨':'雨','雨幕':'雨','日照':'晴','扬沙':'沙','降雪':'雪','电气制造者':'电场','精神制造者':'精神场地','青草制造者':'青草场地','薄雾制造者':'薄雾场地'};
 /* v4.2（用户指令「Toxic Surge(834) 补进 SYS_SET，若数据层字段已有则引擎消费」）：
    数据层 `ERDATA.sysSet`（天气/场地设置手 id 白名单）= [2,45,70,117,226,227,228,229,584,604,834,989]，
@@ -4873,7 +4884,7 @@ function coreAbiPick(s){
     if(r.indexOf('攻')>-1&&tag&&tag.im){sc+=1;why.push('攻手自保')}
     if(r.indexOf('盾')>-1&&tag&&tag.hf){sc+=1;why.push('盾位减伤')}
     if(sc===0&&s.abis.length===1){sc=0;why.push('唯一可选')}
-    out.push({n:n,sc:sc,why:why});
+    out.push({n:n,id:id,sc:sc,why:why});
   });
   out.sort(function(a,b){return b.sc-a.sc});
   return out;
@@ -8061,7 +8072,7 @@ function itemDecide(s,side,roleTag,ctx){
      B6 同向：主推招含变化招时，翻牌不落 锁招类(LOCK_ITEMS) —— 避免刚翻牌又被讲究系门控回退。 */
   try{
     if(ctx&&ctx.sub&&ctx.planItems&&out.length>1&&(out[0].sc||0)>0){
-      var _top449=out[0],_thr449=0.85*(_top449.sc||0);
+      var _top449=out[0],_thr449=0.75*(_top449.sc||0);   /* v4.50 R7-C：翻牌阈值 0.85→0.75（B1 21→24~26；锁招护栏/slice(0,3) 不动） */
       if(ctx.planItems[_top449.zh]){
         var _alt449=null,_qi449;
         for(_qi449=1;_qi449<out.length;_qi449++){
@@ -8136,7 +8147,7 @@ function pickAbiFor(s,side,roleTag,ctx){
       if(tag.nt){sc+=1;why.push('关键耐性')}
     }
     if(sc===0&&names.length===1){sc=0;why.push('唯一可选')}
-    out.push({n:n,sc:sc,why:why});
+    out.push({n:n,id:id,sc:sc,why:why});
   });
   out.sort(function(a,b){return b.sc-a.sc});
   return out;
@@ -10327,18 +10338,14 @@ function buildTeamByNeeds(core,opts){
     try{
       if(pool2.length>1){
         var _s1a=pool2[0].score||0,_s2a=pool2[1].score||0;
-        if(_s1a>1e-9&&(_s1a-_s2a)/_s1a<=0.05){
-          var _f1a=teamFamKey(pool2[0].s),_altA=null,_ai449;
-          /* v4.49 如实登记（惰性，见自测报告 §M-2 / 变更清单 §3.1）：触发前置之二
-             「top-1 与**已入队队友**同族（fam 级）」在**当前去重口径下不可达** —— 本函数上方
-             L10518「形态去重」已按同一 teamFamKey 剔除与队友同族者 ⇒ fam[_f1a] 恒假 ⇒ 本锚点
-             在 v4.49 全量样本实测命中 0（数值见自测报告）。保留为**护栏**：若上游去重口径放宽
-             （例如改为仅按物种 id 去重），本锚点即按设计生效；届时应重跑 A1/A2 判据。 */
-          if(fam[_f1a]){
-          for(_ai449=1;_ai449<pool2.length;_ai449++){
-            if(teamFamKey(pool2[_ai449].s)!==_f1a){_altA=pool2[_ai449];break}
-          }
-          if(_altA&&!fam[teamFamKey(_altA.s)]){
+        if(_s1a>1e-9&&(_s1a-_s2a)/_s1a<=0.08){   /* v4.50 R7-B：可翻转档阈值 5%→8% */
+          var _f1a=teamFamKey(pool2[0].s),_f2a=teamFamKey(pool2[1].s);
+          /* v4.50 R7-B 复活 M-2：原死条件 `fam[_f1a]`（pool2 已在上方硬剔同族队友 ⇒ 恒假、全量命中 0）
+             改为「t2 家族 ≠ t1 家族 → 优先 t2 异家族」。L10518 团队家族硬剔语义不变。
+             目标：top-15 家族集中度 70.8% → ~61–63%（一阶估计，全量复测如实登记）。
+             保留多功能护栏：仅当 t1/t2 都不顺带满足其它 open 需求时才换（不丢 needCoverage）。 */
+          if(_f2a!==_f1a){
+            var _altA=pool2[1];
             var _mt1=[],_mt2=[];
             open.forEach(function(nd){
               if(nd===need)return;
@@ -10346,7 +10353,6 @@ function buildTeamByNeeds(core,opts){
               if(_mt2.length<mm&&needSatisfied(_altA.s,nd,_altA.loc))_mt2.push(nd);
             });
             if(!_mt1.length&&!_mt2.length){pick=_altA;divAnchorHit=1}
-          }
           }
         }
       }
@@ -10964,6 +10970,7 @@ function subareaBuild445(sp,roleTag,itemTag,ctx){
   try{choiceStatusGate(sp,b)}catch(eCSH){}
   try{facadeSashGate(sp,b)}catch(eFSH){}
   /* v4.45 C-1 收口（顺序 = 流派区）：EV 分配/性格联动 → 全套流派级收口（含尾部的 EV 复核 + evNatureLinkV437，幂等） */
+  b._r450_subOnly=1;   /* v4.50 路线甲：子区路径标记——本链 evNatureLinkV437 消费 R7-A 新规则（deriveBuilds 链不设，4680 零变化） */
   try{b.ev=buildEvs(sp,b.side,b.roleTag,b.name,b)}catch(eEVb){}
   try{b=finalizeBuildInPlace(sp,b)}catch(eFB){}
   try{evNatureLinkV437(sp,b)}catch(eNL){}
@@ -11081,14 +11088,27 @@ var PRIO_ABI={
  662:{n:'先行之力',cls:'D',scope:'先制'}, 259:{n:'速击',cls:'E',scope:''},
  567:{n:'尾甲',cls:'C'}, 214:{n:'女王的威严',cls:'C'}, 219:{n:'鲜艳之躯',cls:'C'},
  857:{n:'王室敕令',cls:'C'}, 482:{n:'沙漠守护',cls:'C'}, 585:{n:'晒太阳',cls:'C'},
- 805:{n:'棕褐色镜片',cls:'C'}, 227:{n:'精神制造者',cls:'C'}, 510:{n:'菌丝之力',cls:'C'}
+ 805:{n:'棕褐色镜片',cls:'C'}, 227:{n:'精神制造者',cls:'C'}, 510:{n:'菌丝之力',cls:'C'},
+ /* ===== v4.50 R7-A G1/G2（路线甲：全部 sub:1，仅子区路径 b._r450_subOnly 消费，4680 流派路径零变化）=====
+    G1 满血红先制七连（gameData 逐字「满HP时 X 招式+1优先级」）：拳类+5属性先制；
+    G2 370 取巧（对手<半血单目标+1，新 cond=oppHpBelowHalf）；288/623 仅登记 cls C 不降档。 */
+ 277:{n:'闪电拳击',cls:'B',scope:'拳',cond:'fullHp',sub:1},
+ 351:{n:'燃烧之魂',cls:'B',scope:'火',cond:'fullHp',sub:1},
+ 362:{n:'冰冻之魂',cls:'B',scope:'冰',cond:'fullHp',sub:1},
+ 430:{n:'伏特猛冲',cls:'B',scope:'电',cond:'fullHp',sub:1},
+ 522:{n:'墓地冲刺',cls:'B',scope:'幽灵',cond:'fullHp',sub:1},
+ 558:{n:'地狱冲刺',cls:'B',scope:'恶',cond:'fullHp',sub:1},
+ 560:{n:'潮汐加速',cls:'B',scope:'水',cond:'fullHp',sub:1},
+ 370:{n:'取巧',cls:'B',scope:'全',cond:'oppHpBelowHalf',sub:1},
+ 288:{n:'完美主义',cls:'C',sub:1}, 623:{n:'吓一跳',cls:'C',cond:'fog',sub:1}
 };
 /* 招类/属性 flag 口径（ER MV 无 flag 字段 → 名称正则；启发式，口径已登记） */
 var PV_TYPE_NAMES=['一般','格斗','飞行','毒','地面','岩石','虫','幽灵','钢','火','水','草','电','超能','冰','龙','恶','妖精'];
 var PV_SCOPE_RE={
  '声音':/声音|吼叫|吼|叫声|尖叫|唱歌|轮唱|回声|爆音波|噪声|咆哮|战吼|鸣叫|咏/,
  '咬':/咬|啃|牙/, '啃咬':/咬|啃|牙/,
- '切割':/刃|斩|切|剪|锯|刀/, '刃':/刃|斩|切|剪|锯|刀/
+ '切割':/刃|斩|切|剪|锯|刀/, '刃':/刃|斩|切|剪|锯|刀/,
+ '拳':/拳/  /* v4.50 R7-A：拳类招式（全库 27 招名均含「拳」，Iron Fist 族同口径；已探针核对无误伤） */
 };
 function pvScopeCovers(scope,mvZh,mvCat,mvType){
   scope=String(scope||'');if(!scope)return false;
@@ -11102,6 +11122,7 @@ function pvScopeCovers(scope,mvZh,mvCat,mvType){
 function pvAbiId(n){try{var v=abiIdByZhOrEn(n);return (v===null||v===undefined)?null:(''+v)}catch(e){return null}}
 function pvAbiSame(a,b){try{return abiSame(a,b)}catch(e){return String(a)===String(b)}}
 function prioAbiProfile(s,b){
+  var subOnly=!!(b&&b._r450_subOnly);   /* v4.50 路线甲：sub:1 新规则仅子区路径消费，4680 流派路径零变化 */
   var inns=(s&&s.inns)||[],abis=(s&&s.abis)||[];
   var hasInn={};inns.forEach(function(n){var i=pvAbiId(n);if(i)hasInn[i]=1});
   var sel=null;try{if(b&&b.abi&&b.abi.length&&b.abi[0]&&b.abi[0].n!=null)sel=String(b.abi[0].n)}catch(e){}
@@ -11109,6 +11130,7 @@ function prioAbiProfile(s,b){
   inns.concat(abis).forEach(function(n){
     var id=pvAbiId(n);if(!id)return;
     var ent=PRIO_ABI[id];if(!ent)return;
+    if(ent.sub&&!subOnly)return;   /* 路线甲守卫：非子区路径跳过 v4.50 新补条目 */
     var from=hasInn[id]?'inn':'abi',selected=false;
     if(from==='abi'&&sel!=null)selected=pvAbiSame(sel,n);
     items.push({n:n,id:id,from:from,selected:selected,cls:ent.cls,scope:ent.scope,cond:ent.cond||''});
@@ -11155,13 +11177,22 @@ function pvOutSpeedRaw(roleTag,base5){
   return speedStat(pvBandMax(medSpe()),252,31,true);
 }
 var PV_WX_SPEED_ABI=['悠游自如','叶绿素','拨沙','拨雪'];
-function pvWeatherSpeedMul(s){
+/* v4.50 R7-A G3：场地/雾/跨天气速度族（路线甲：仅子区路径 b._r450_subOnly 消费）
+   207 冲浪之尾(电气场地)/1027 丛林热(青草场地)/627 缥缈奔腾(浓雾)/862 热滑(晴或雹)；
+   与既有 4 条同口径——仅按特性在场判定，未叠加天气是否真上场（既有表亦如此）。627 浓雾体系上下文未建，登记待核。 */
+var PV_WX_SPEED_ABI_SUB=['冲浪之尾','丛林热','缥缈奔腾','热滑'];
+function pvWeatherSpeedMul(s,sub){
   var pool=((s&&s.inns)||[]).concat((s&&s.abis)||[]);
-  for(var i=0;i<pool.length;i++)for(var j=0;j<PV_WX_SPEED_ABI.length;j++){
-    try{if(abiSame(pool[i],PV_WX_SPEED_ABI[j]))return 1.5}catch(e){}
+  var lists=[PV_WX_SPEED_ABI];if(sub)lists.push(PV_WX_SPEED_ABI_SUB);
+  for(var li=0;li<lists.length;li++)for(var i=0;i<pool.length;i++)for(var j=0;j<lists[li].length;j++){
+    try{if(abiSame(pool[i],lists[li][j]))return 1.5}catch(e){}
   }
   return 1;
 }
+/* v4.50 R7-A G4 SPD_PENALTY_ABI：减伤换速度特性族（路线甲：仅子区路径消费，只动 EV/性格层，不动 D2 打分）
+   705 太晶宝藏(速度-20%)/889 厚脂(速度减半×0.5) 折损≥20% → 速度 EV 权重×0.5 且性格不选加速；
+   539 合金外壳(-10%)/296 铅质外壳(×0.9) 折损<20% → 速度 EV 轻微收敛。 */
+var SPD_PENALTY_ABI={'705':0.20,'889':0.50,'539':0.10,'296':0.10};
 /* 空间核判据（v4.37 **裁决 1 修正**：方向由「对齐门控」反转为「对齐命名轴」）：
    `isSpaceLike = (b[5]<=50) && (coreRole ∈ {慢速炮台（可空间）, 空间打手, 慢速炮台} || roleTag 含「空间」 || 流派名含「空间」)`
    —— 即**恢复设计书 §3-S2（L316）原文口径**（低速门控 b[5]<=50 不得去掉）。
@@ -11206,16 +11237,18 @@ function evNatureLinkV437(s,b){
   var isSp=pvIsSpaceLike(s,roleTag,name);
   var pp=null;try{pp=prioAbiProfile(s,b)}catch(e1){pp=null}
   var cls=pp?pp.cls:'',cover=!!(pp&&pp.coverMain),actual=!!(pp&&pp.actual);
+  var sub=!!(b&&b._r450_subOnly);   /* v4.50 路线甲：子区路径标记（deriveBuilds→finalize 链不设，4680 零变化） */
   var B1=(base5>=110&&roleTag==='输出');
   var tailwind=/顺风/.test(name+roleTag);
   var scarf=String(itemMainZh(b)).indexOf('讲究围巾')>-1;
-  var wxMul=1;try{wxMul=pvWeatherSpeedMul(s)}catch(e2){wxMul=1}
+  var wxMul=1;try{wxMul=pvWeatherSpeedMul(s,sub)}catch(e2){wxMul=1}
   var wsm=Math.max(1,+b.wantSpeedMul||1);   /* v4.38 B1-2：轻装 ×2 等机制速度倍率（与天气/顺风/围巾同口径降档） */
   var mul=(wxMul>1?1.5:1)*(tailwind?2:1)*(scarf?1.5:1)*wsm;
   var tierRaw=speedStat(medSpe(),252,31,true);
   var natName=normNatName(b.nat&&b.nat[0]?b.nat[0][0]:'');
   var natPos=!!(NATURES[natName]&&String(NATURES[natName][0])==='+速度');
   var tgtEv=-1,tplNew='',src='';
+  var _clsBKeyEv=-1;   /* v4.50 G5：cls B 降档后关键档 EV（子区性格对齐用） */
   var capEv=Math.min(252,evForSpeed(targetRaw(pvOutSpeedRaw(roleTag,base5),mul),base5,31,natPos));
   /* v4.37 S5l（收口口径，最小改动）：低攻防守位/肉盾/受队/辅助 = 非输出位 → 速度 EV 归零。
      只在收口处改「速度 EV 一项」，不改 buildEvs 的耐久模板选择（避免把非违例流派整只重排、丢失 EV 预算）。 */
@@ -11231,7 +11264,25 @@ function evNatureLinkV437(s,b){
   else if(actual&&cls==='B'&&!B1){
     var keyRaw=Math.max(tierRaw,(roleTag==='输出')?pvOutSpeedRaw(roleTag,base5):0);
     var keyEv=Math.min(252,evForSpeed(targetRaw(keyRaw,1),base5,31,natPos));
-    tgtEv=keyEv;tplNew='先制降档';src='S1-B/R1-B 条件先制 → 速度降至关键档位';
+    tgtEv=keyEv;tplNew='先制降档';src='条件先制 → 速度降至关键档位';
+    _clsBKeyEv=keyEv;
+  }
+  /* v4.50 R7-A G4 SPD_PENALTY_ABI（路线甲：仅子区路径 b._r450_subOnly，只 EV/性格层不动 D2）：
+     减伤换速度特性族 → 速度 EV 额外收敛；≥20% 折损 EV 权重×0.5，<20% 轻微收敛（-64 四舍五入）。 */
+  var spdPenCut=0;
+  if(sub){
+    var _ppool=(s.inns||[]).concat(s.abis||[]);
+    for(var spi=0;spi<_ppool.length;spi++){
+      var _spid=pvAbiId(_ppool[spi]);
+      if(_spid&&SPD_PENALTY_ABI[_spid]!=null)spdPenCut=Math.max(spdPenCut,SPD_PENALTY_ABI[_spid]);
+    }
+  }
+  if(spdPenCut>0){
+    var penEv=(spdPenCut>=0.20)?(Math.floor((+ev[5]||0)/2/4)*4):(Math.max(0,Math.floor(((+ev[5]||0)-64)/4)*4));
+    if(tgtEv<0||penEv<tgtEv){
+      tgtEv=penEv;tplNew='速度惩罚收敛';
+      src=(spdPenCut>=0.20)?('减伤换速度特性（折损≥20%）→ 速度 EV 减半'):('减伤换速度特性（折损<20%）→ 速度 EV 轻微收敛');
+    }
   }
   /* 组合口径（v4.37 登记）：链序 = 空间 → 非输出位 → 先制A → 倍率 → 先制B（前者优先）。
      S1-B 与 S3 同时适用时由「倍率」分支胜出 —— 与 min 等价（capEv ≤ keyEv），
@@ -11283,6 +11334,24 @@ function evNatureLinkV437(s,b){
       b.nat=[[want,wantWhy]].concat((b.nat||[]).slice(1));
       b.natFix={from:natName,to:want,why:(_blocked?'不得砍主用项':(_posBad?'正项未落在实际使用项':(_mechBad?'机制结算项优先':'速度 EV 归零 → 加速性格空转（C5a）')))};
     }
+  }
+  /* v4.50 R7-A G5/S7b（路线甲：仅子区路径 b._r450_subOnly，幂等）：
+     cls B 条件先制降档后关键档 EV≤64、或 SPD_PENALTY 折损≥20% → 加速性格空转，
+     统一改为主输出性格（内敛/固执）。与上方既有 _spdWaste 块幂等（已非+速度则 no-op）。 */
+  if(sub&&b.nat&&b.nat[0]&&!B1){
+    try{
+      var _cn2=normNatName(b.nat[0][0]);
+      var _cp2=String((NATURES[_cn2]||[])[0]||'');
+      var _lowSpd=((+ev[5])||0)===0||(_clsBKeyEv>=0&&_clsBKeyEv<=64)||spdPenCut>=0.20;
+      if(_cp2==='+速度'&&_lowSpd){
+        var _m2=mainDirOf(b);
+        var _w3=(_m2==='特殊')?'内敛':'固执';
+        var _w3neg=String((NATURES[_w3]||[])[1]||'').replace(/^[-+]/,'');
+        var _wi=STAT_NM.indexOf(_w3neg);
+        var _hurt=(_wi>=0&&((+ev[_wi])||0)>4&&_wi!==5);
+        if(NATURES[_w3]&&!_hurt){b.nat=[[_w3,'条件先制降档/减伤换速度 → 速度关键档低，加速性格空转，正项给主输出']].concat((b.nat||[]).slice(1))}
+      }
+    }catch(eG5){}
   }
   /* v4.44 P2-3：减速性格 × 速度 EV>0 的注记调和（只改文案，不动任何数值）
      背景（R2 清单 P2-3）：性格模板文案恒写「（配空间）」。当本套**确实投了速度 EV**时矛盾——
@@ -11361,13 +11430,28 @@ function evWhy(btn){
   try{btn.setAttribute('aria-expanded',box.hasAttribute('hidden')?'false':'true')}catch(e1){}
 }
 /* L1 特性/天性 chip：点击直接弹轻量 modal（完整描述 + 战斗意义 + 机制词条），不做就地展开 */
-function abiChipName(n){ /* v4.31：显示名统一优先「汉化图鉴名」（游戏内实际显示，如 烈焰之魂），
-    仅当 n 非中文（xlsm 未收录、回退英文/别名）时改用 ABI 表中文 —— 与 AGENTS §7「中文名以 xlsm 汉化图鉴为准」对齐，
-    消除「烈焰之魂/燃烧之魂」双名（raw=汉化名、ABI[2]=NextDex 名，以汉化名为准） */
-  if(/[\u4e00-\u9fff]/.test(String(n)))return n;
+function abiChipName(n){ /* v4.50 P0：显示名统一反查 ABI 表规范中文（v0.5 正式名优先）——
+    不再因「含中文」短路返回原串（v0.3 图鉴中文名与 v0.5 ABI[2] 全量 4258 条不一致，如 惊吓→恐吓、前锋→猛踢）。
+    回退链：abiIdByZhOrEn(精确 zh/en→v0.3 alias)→ABI zh→原串。数据层 species.abis/inns 与引擎名称匹配不动。 */
+  if(n==null||n==='')return '';
   var id=abiIdByZhOrEn(n);
   if(id===null||id===undefined)return n;
   var a=ABI[id];return (a&&a[2])?a[2]:n;
+}
+/* v4.50 P0：物种特性/天性显示名反查——优先平行 id（abiIds/innIds，数据层逐位同源 gameData），
+   消除「v0.3 名恰好等于另一特性 v0.5 名」的碰撞（如 加速:pid474 应显示 加速度，却被精确命中 id3 的 加速）。
+   回退链：平行 id→ABI zh→ABI en→名字解析(精确 zh/en→alias)→原串。'#'+id 回退预期 0（S7d 守门登记）。 */
+function speciesAbiZh(s,field,i){
+  var ids=(field==='inns')?(s.innIds||[]):(s.abiIds||[]);
+  var id=(ids&&ids[i]!=null&&ids[i]!=='')?(''+ids[i]):null;
+  if(id&&ABI[id])return ABI[id][2]||ABI[id][1]||('#'+id);
+  var names=s[field]||[],n=names[i];
+  if(n!=null){
+    var rid=abiIdByZhOrEn(n);
+    if(rid&&ABI[rid])return ABI[rid][2]||ABI[rid][1]||('#'+rid);
+    return String(n);
+  }
+  return '';
 }
 function abiModal(abiName,kind){
   var id=abiIdByZhOrEn(abiName);
@@ -11519,7 +11603,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.49';
+var ER_ENGINE_VER='v4.50';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -11595,7 +11679,7 @@ function mateAssemble(r,teamArr,coreSysList){
        由 pickAbiFor 强降权（场地类不判、同系开手不判，见该函数内注释）。 */
     var cwx=[];try{cwx=(coreSysList||[]).filter(function(x){return WX_SYS.indexOf(x)>-1})}catch(ec0){cwx=[]}
     try{abi=pickAbiFor(s2,side,pick.roleTag,{allowSys:tss,own:ownSet,coreWx:cwx})}catch(e6){abi=null}
-    if(!abi||!abi.length){try{abi=pickAbiFor(s2,side,pick.roleTag)}catch(e7){abi=[{n:(s2.abis||[])[0]||'',sc:0,why:[]}]}}
+    if(!abi||!abi.length){try{abi=pickAbiFor(s2,side,pick.roleTag)}catch(e7){var _fbN=(s2.abis||[])[0]||'';abi=[{n:_fbN,id:abiIdByZhOrEn(_fbN),sc:0,why:[]}]}}
     /* 天气手位：必须实际能开天气（P0-2 / 验收⑤「天气手位无开天气手段」归零） */
     if(pri==='天气手'){
       try{
@@ -11883,16 +11967,16 @@ function renderCore(s){
   var _abUq=(function(a){if(!a||a.length<2)return null;for(var i=1;i<a.length;i++){if(a[i]!==a[0])return null}return a[0]})(s.abis);
   html+='<div class="chiprow"><span class="dim">特性（'+(_abUq?1:abiN)+' 选 1）：</span>'+((abiN)
     ? (_abUq
-        ? ('<button type="button" class="chip" onclick="abiModal('+jsl(_abUq)+',\'特性\')" title="该物种数据层三项同名 → 唯一特性，点开看作用详情">'+esc(abiChipName(_abUq))+' <b>✦唯一</b></button>'+
+        ? ('<button type="button" class="chip" onclick="abiModal('+jsl(_abUq)+',\'特性\')" title="该物种数据层三项同名 → 唯一特性，点开看作用详情">'+esc(speciesAbiZh(s,'abis',0))+' <b>✦唯一</b></button>'+
            '<span class="dim" style="margin-left:6px">（数据层三项同名，此处合并展示）</span>')
         : s.abis.map(function(n,ai){
-            return '<button type="button" class="chip" onclick="abiModal('+jsl(n)+',\'特性\')" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(abiChipName(n))+'</button>';
+            return '<button type="button" class="chip" onclick="abiModal('+jsl(n)+',\'特性\')" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(speciesAbiZh(s,'abis',ai))+'</button>';
           }).join(''))
     : '<span class="dim">无</span>')+'</div>';
   /* 天性（固定全部拥有）：点击 chip 直接弹轻量 modal */
   html+='<div class="chiprow"><span class="dim">天性（固定 '+innN+' 个·全部拥有）：</span>'+((innN)
     ? s.inns.map(function(n,ii){
-        return '<button type="button" class="chip chip-inn" onclick="abiModal('+jsl(n)+',\'天性\')" title="天性固定拥有，点开看作用详情">'+esc(abiChipName(n))+'</button>';
+        return '<button type="button" class="chip chip-inn" onclick="abiModal('+jsl(n)+',\'天性\')" title="天性固定拥有，点开看作用详情">'+esc(speciesAbiZh(s,'inns',ii))+'</button>';
       }).join('')
     : '<span class="dim">无</span>')+'</div>';
   html+='<span class="abi4rule">四特性体系：主特性 '+(_abUq?1:abiN)+' 选 1 生效；天性 '+innN+' 个固定全部拥有 —— 配队评估两者并计（免疫/半伤/添属性/联防）</span>';
@@ -11931,7 +12015,7 @@ function renderCore(s){
   });
   html+='</div><div id="'+wId+'">';
   builds.forEach(function(bd,i){
-    var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?abiChipName(bd.abi[0].n):'—';   /* v4.31：统一走 ABI 表规范中文（消除「烈焰之魂/燃烧之魂」双名） */
+    var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?((bd.abi[0].id!=null&&bd.abi[0].id!==''&&ABI[bd.abi[0].id])?(ABI[bd.abi[0].id][2]||ABI[bd.abi[0].id][1]||('#'+bd.abi[0].id)):abiChipName(bd.abi[0].n)):'—';   /* v4.50 P0：推荐特性名优先平行 id 反查 ABI 规范中文 */
     var tms=ftC(s,bd.side,bd.roleTag);
     /* v4.11：tabpanel 容器包裹流派卡 —— 首卡 details 的 class 固定为字面量 "big rec"（verify_v4 B④ 断言），
        切换只切外层 .bkp 的 .bkoff，不重建页面（展开态 / 滚动位置保留） */
@@ -12337,7 +12421,7 @@ function engineGuardSelfCheck(){
      · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
-  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[];
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0;
   /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
      · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
        · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
@@ -12403,6 +12487,21 @@ function engineGuardSelfCheck(){
       var _stSub=false;try{_stSub=(b2.mv&&b2.mv.main||[]).some(function(x){var m=MV[x.id];return m&&m[4]==='变化'})}catch(e5){}
       if(imz==='突击背心'){nSubVestChk++;if(_stSub){nSubVestSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区背心×变化'})}}
       if(/^讲究/.test(imz)){nSubChoiceChk++;if(_stSub){nSubChoiceSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区讲究×变化'})}}
+      /* v4.50 S7b（硬门闩）：速度 EV=0 的子区槽，性格不得为加速性格（_spdWaste/G5 口径） */
+      try{
+        if(b2.ev&&b2.ev.alloc&&(+b2.ev.alloc[5]||0)===0&&b2.nat&&b2.nat[0]){
+          var _sn=normNatName(b2.nat[0][0]);
+          if(NATURES[_sn]&&String(NATURES[_sn][0])==='+速度'){n7b++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7b 速EV=0却加速性格',nat:_sn})}
+        }
+      }catch(e7b){}
+      /* v4.50 S7a（硬门闩）：带满血红先制族(277/351/362/430/522/558/560)的子区槽，EV 模板须 ∈{先制集约,先制降档}（B1 高攻输出位豁免，与 !B1 分支同口径） */
+      try{
+        var _prio7=['277','351','362','430','522','558','560'];
+        var _allIds=(m.s.innIds||[]).concat(m.s.abiIds||[]).map(String);
+        var _has7=_prio7.some(function(pid){return _allIds.indexOf(pid)>-1});
+        var _isB1=((+((m.s.base||[])[5])||0)>=110&&String(b2.roleTag||'')==='输出');
+        if(_has7&&!_isB1&&b2.ev){var _tp=String(b2.ev.template||'');if(_tp!=='先制集约'&&_tp!=='先制降档'&&_tp!==''){n7a++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7a 满血红先制族模板',tpl:_tp})}}
+      }catch(e7a){}
       if(!m.core){var mz=String(m.s.zh||m.s.id);subMate[mz]=(subMate[mz]||0)+1}
     });
     var _mset={};(plan.team||[]).forEach(function(m){if(m&&m.s&&!m.core)_mset[String(m.s.zh||m.s.id)]=1});
@@ -12646,15 +12745,39 @@ function engineGuardSelfCheck(){
   var s6AMonoShare=s6Pooled?(Math.round(s6FlipMono*1000/s6Pooled)/10):0;
   var s6AViol=s6OverNW.length;                                  /* 主判（Q1）：越限非白名单 kind 数 = 0 */
   var s6BViol=(s6Pooled>0&&s6BShare<S6B_TARGET)?1:0;
+  /* ===== v4.50 P0 S7d（硬门闩）：特性/天性显示名统一全量对账 =====
+     全量 species×槽位：经显示路径 speciesAbiZh 解析的 zh 必须 ≡ ABI[parallel id] zh（回退除外）。
+     基线 v4.49：raw 名(v0.3 图鉴) vs ABI[pid] zh(v0.5 正式) 不一致 4258 条（413 组合）；
+     v4.50 显示层反查后该不一致在显示层清零。'#'+id 回退必须 0（任何 id 无 ABI 条目 = 数据缺口）。 */
+  var s7dTotal=0,s7dMis=0,s7dHashFb=0,s7dRawMis=0;var s7dMisList=[];
+  (ERDATA.species||[]).forEach(function(s){
+    [['inns','innIds'],['abis','abiIds']].forEach(function(pair){
+      var field=pair[0],idf=pair[1];
+      var names=s[field]||[],ids=s[idf]||[];
+      for(var i=0;i<names.length;i++){
+        s7dTotal++;
+        var pid=(ids[i]!=null&&ids[i]!=='')?(''+ids[i]):null;
+        var pa=pid?ABI[pid]:null;
+        var want=pa?(pa[2]||pa[1]||('#'+pid)):String(names[i]||'');
+        if(String(names[i])!==(pa?(pa[2]||pa[1]):String(names[i]||'')))s7dRawMis++;
+        var got='';try{got=speciesAbiZh(s,field,i)}catch(eS7d){got='__ERR__'}
+        if(got!==want){s7dMis++;if(s7dMisList.length<25)s7dMisList.push('sid='+s.id+' '+field+'['+i+'] raw='+names[i]+' pid='+pid+' want='+want+' got='+got)}
+        if(String(got).charAt(0)==='#')s7dHashFb++;
+      }
+    });
+  });
+  var s7dViol=s7dMis;
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
-    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol;
-  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,
+    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
+    gate7ab:{n7a:n7a,n7b:n7b,mis:v7ab},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
         plans:s6Plans,err:s6Err,lam:S6_LAM,table:s6Table},
       s6b:{target:S6B_TARGET,n:s6Pooled,recantShare:s6BShare,midShare:s6AMidShare,monoShare:s6AMonoShare,ties:s6Ties,plans:s6Plans}},
+    gate7d:{slots:s7dTotal,rawMis:s7dRawMis,displayMis:s7dMis,hashFb:s7dHashFb,mis:s7dMisList},
     detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20),m5:vm5.slice(0,20),m6:vm6.slice(0,20),
       na:vna.slice(0,20),pr:vpr.slice(0,20),mg:vmg.slice(0,20),mv4:vmv4.slice(0,20),ci:vci.slice(0,20),
       fs:vfs.slice(0,20),lk:vlk.slice(0,20),sp:vsp.slice(0,20)},
