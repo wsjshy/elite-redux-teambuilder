@@ -767,7 +767,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.50</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.51</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8303,6 +8303,17 @@ function itemDecide(s,side,roleTag,ctx){
       }
     }
   }catch(eID449){}
+  /* ===== v4.51 R8-E E6（core 路径例外，唯一改 4680 基线的点，D-9）：满血红先制持有者禁自损道具 =====
+     cond=fullHp 先制每回合掉血直接破坏满血红前提（2175 配生命宝珠自毁案例）。
+     top 为自损道具（生命宝珠；状态球 剧毒宝珠/火焰宝珠 有毒疗/毅力协同，不强行剥）→ 换首个非自损项。
+     登记：魔法防守/全力攻击免宝珠反伤物种若恰持满血红先制，会被一并换走（实测无此重叠，登记待 R9）。 */
+  try{
+    if(hasFullHpPrio(s)&&out.length&&out[0].zh==='生命宝珠'){
+      var _repl=null,_ri;
+      for(_ri=1;_ri<out.length;_ri++){if(['生命宝珠'].indexOf(out[_ri].zh)<0){_repl=out[_ri];break}}
+      if(_repl){out.splice(out.indexOf(_repl),1);out.unshift(_repl)}
+    }
+  }catch(eE6){}
   return out.slice(0,3);
 }
 function buildItem(s,side,roleTag,ctx){
@@ -8394,6 +8405,16 @@ function mkBuild(s,side,name,spBest,phBest,roleTagEx,itemTagEx,ctx){
   var _wallMv=mv.main.some(function(x){return x.id===113||x.id===115||x.id===657});
   var _wallAbi=abiMentions(s,/光墙|反射壁|极光幕/);
   if(!(_wallMv||_wallAbi))_it=_it.filter(function(e){return e[0]!=='光之黏土'});
+  /* v4.51 R8-E E6（core 路径终门，统一覆盖 itemTag/role 各路径）：满血红先制持有的主推道具
+     不得为自损的生命宝珠（自损直接破坏满血红前提，修 2175/疾风之翼类）。优先换首个非自损项；无备选则插入耐久项。 */
+  try{
+    if(hasFullHpPrio(s)&&_it.length&&_it[0][0]==='生命宝珠'){
+      var _altI=-1;
+      for(var _ai=1;_ai<_it.length;_ai++){if(_it[_ai][0]!=='生命宝珠'){_altI=_ai;break}}
+      if(_altI>-1){var _alt=_it.splice(_altI,1)[0];_it.unshift(_alt)}
+      else{_it=[['突击背心','满血红先制：自损道具破坏满血前提 → 换耐久项']].concat(_it.filter(function(x){return x[0]!=='生命宝珠'}))}
+    }
+  }catch(eE6b){}
   return {name:name,side:side,roleTag:roleTag,itemTag:itemTagEx||roleTag,mv:mv,nat:buildNature(s,side,roleTag),it:_it,abi:pickAbiFor(s,side,roleTag),desc:desc};
 }
 /* ============ v4.3：战术流派动态推导（07 §4.6；取代 v4.2 的 genBuilds 固定枚举） ============
@@ -8596,6 +8617,16 @@ function deriveBuilds(s,team){
     var b=mkBuild(s,side,nm,spBest,phBest,roleTag,itemTagOfCoreProf(p,s),coreItemCtxOf(s));
     b=sanitizeBuild(s,b);   /* v4.30 P0-1：派生流派三方一致性（EV×配招类别×性格）；v4.32 P1-3 内含低攻物理招净化 */
     b=fillMvSlots(s,b);     /* v4.32：净化/机制流不满 4 槽时补满（与 mechBuildsOf 同口径） */
+    /* v4.51 R8-E E6（core 路径终门，sanitize/fillMv 之后）：满血红先制持有的主推道具不得为自损生命宝珠
+       （自损破坏满血红前提）。优先换首个非自损项；无备选则插入耐久项。 */
+    try{
+      if(hasFullHpPrio(s)&&b.it&&b.it.length&&b.it[0][0]==='生命宝珠'){
+        var _ai2=-1;
+        for(var _aj=1;_aj<b.it.length;_aj++){if(b.it[_aj][0]!=='生命宝珠'){_ai2=_aj;break}}
+        if(_ai2>-1){var _alt2=b.it.splice(_ai2,1)[0];b.it.unshift(_alt2)}
+        else{b.it=[['突击背心','满血红先制：自损道具破坏满血前提 → 换耐久项']].concat(b.it.filter(function(x){return x[0]!=='生命宝珠'}))}
+      }
+    }catch(eE6c){}
     b.name=nm;b.side=side;b.roleTag=roleTag;
     var basis=[];
     if(p.atk.powBest)basis.push({k:'output',txt:'本系最高 '+(side==='特殊'?(p.atk.sp?MV[p.atk.sp.id][1]+'('+p.atk.sp.pow+')':''):(p.atk.ph?MV[p.atk.ph.id][1]+'('+p.atk.ph.pow+')':''))+'　力度 '+p.power});
@@ -8723,6 +8754,22 @@ function deriveBuilds(s,team){
   /* v4.34 阶段1/2/3 收口：对全部流派（含前置插入的机制流派）执行生成后统一纠偏
      —— EV×性格×配招一致（4.2）/ 讲究×变化互斥（4.3）/ 墙×黏土成套（4.6）/ 捕宠招剔除（4.7）/ EV ≤510 */
   for(var _fi=0;_fi<out.length;_fi++)out[_fi]=finalizeBuild(s,out[_fi]);
+  /* v4.51 R8-E E6（core 路径终门，finalize 之后）：满血红先制持有的主推道具不得为自损生命宝珠。
+     必须放在 finalizeBuild 之后——finalize 的 B6（讲究×变化）会滤掉讲究头带，使生命宝珠回顶。
+     优先换首个非自损项；无备选则插入耐久项。 */
+  if(hasFullHpPrio(s)){
+    for(var _fe=0;_fe<out.length;_fe++){
+      var _fb=out[_fe];
+      try{
+        if(_fb&&_fb.it&&_fb.it.length&&_fb.it[0][0]==='生命宝珠'){
+          var _ai3=-1;
+          for(var _aj3=1;_aj3<_fb.it.length;_aj3++){if(_fb.it[_aj3][0]!=='生命宝珠'){_ai3=_aj3;break}}
+          if(_ai3>-1){var _alt3=_fb.it.splice(_ai3,1)[0];_fb.it.unshift(_alt3)}
+          else{_fb.it=[['气势披带','满血红先制：自损道具破坏满血前提 → 换保命项']].concat(_fb.it.filter(function(x){return x[0]!=='生命宝珠'}))}
+        }
+      }catch(eE6d){}
+    }
+  }
   /* v4.11 F-1 修复：breakingRoute 原挂在返回数组上，bd.breakingRoute 恒 undefined；
      这里逐条回填到流派对象（只影响 UI 可展开内容，不改任何推荐结果） */
   for(var _brI=0;_brI<out.length;_brI++){out[_brI].breakingRoute=route}
@@ -11403,6 +11450,24 @@ function prioAbiProfile(s,b){
   }catch(e1){}
   return {items:items,cls:cls,actual:actual,coverMain:cover};
 }
+/* v4.51 R8-E E2：覆盖系数 cov = 主招里命中先制特性 scope 的招数占比。
+   scope=全/变化/回复 → 覆盖主招（cov=1）；单属性/拳/咬/切割窄族 → 按比例，天然偏低 ⇒ 弱衰减。 */
+function prioCov(s,b,pp){
+  var mv=(b&&b.mv&&b.mv.main)||[];if(!mv.length)return 0;
+  var best=null;(pp&&pp.items||[]).forEach(function(it){
+    if(it.cls==='A'&&(!best||best.cls!=='A'))best=it;else if(it.cls==='B'&&!best)best=it});
+  if(!best)return 0;
+  var hit=0;mv.forEach(function(sl){var m=MV[''+(+sl.id||0)];if(!m)return;if(pvScopeCovers(best.scope,m[1],m[4],m[3]))hit++});
+  return hit/mv.length;
+}
+/* v4.51 R8-E E6：cond=fullHp 先制持有者（G1 七连 + 疾风之翼/妖精先兆/急速乐曲）。
+   按数据层 inns/abis 名反查 id（不经 sub 守卫——这是 core 路径道具门，修 2175）。 */
+var FULLHP_PRIO_IDS={277:1,351:1,362:1,430:1,522:1,558:1,560:1,177:1,628:1,767:1};
+function hasFullHpPrio(s){
+  var ns=((s&&s.inns)||[]).concat((s&&s.abis)||[]);
+  for(var i=0;i<ns.length;i++){var id=pvAbiId(ns[i]);if(id&&FULLHP_PRIO_IDS[id])return true}
+  return false;
+}
 /* ---------- T-2 速度反解 ---------- */
 function speedStat(base,ev,iv,natPos){
   return Math.floor((2*(+base||0)+(iv===undefined?31:+iv)+Math.floor((+ev||0)/4)+5)*(natPos?1.1:1));
@@ -11513,13 +11578,36 @@ function evNatureLinkV437(s,b){
      （渲染口径与判据锚点均只看 tplNew/节奏语义，不看 src 字符串）。 */
   if(isSp){tgtEv=0;tplNew='空间低速';src='空间核不投速（低速轴）'}
   else if(nonOut&&!B1){tgtEv=0;tplNew='非输出位降速';src='非输出位（低攻防守位/肉盾/辅助）→ 速度 EV 归零'}
-  else if(actual&&cls==='A'&&cover&&!B1){tgtEv=0;tplNew='先制集约';src='无条件先制覆盖主输出 → 速度 EV 归零'}
   else if(mul>1&&!B1){tgtEv=capEv;tplNew='倍率降档';src='队内速度倍率 ×'+mul+' → 速度 EV 收敛至 '+capEv}
-  else if(actual&&cls==='B'&&!B1){
-    var keyRaw=Math.max(tierRaw,(roleTag==='输出')?pvOutSpeedRaw(roleTag,base5):0);
-    var keyEv=Math.min(252,evForSpeed(targetRaw(keyRaw,1),base5,31,natPos));
-    tgtEv=keyEv;tplNew='先制降档';src='条件先制 → 速度降至关键档位';
-    _clsBKeyEv=keyEv;
+  else if(actual&&(cls==='A'||cls==='B')&&!B1){
+    /* v4.51 R8-E D-9：可靠性三档衰减（弃硬归零/硬降档刻板模板）。
+       子区路径 b._r450_subOnly 用新分级(T1无条件/T2条件留底/T3窄招弱)；core 路径保留 v4.50 行为（4680 零变化，
+       唯一例外=E6 道具门）。E3 物种语境：低速(base5≤60)速度无用/中速留64/高速(base5≥110)留128；
+       E2 覆盖系数：窄族(拳/单属性 cov<0.5)弱衰减留大半速度。 */
+    if(sub){
+      var _cov=prioCov(s,b,pp);
+      var _spdVal=(base5>=110)?'high':((base5<=60)?'low':'mid');
+      if(cls==='A'){ /* T1 无条件先制 */
+        tgtEv=(_spdVal==='low')?0:((_spdVal==='mid')?64:128);
+        tplNew='先制集约';
+        src='无条件先制 → 速度价值分级(base5='+base5+')：'+(tgtEv===0?'低速手速度本无用→归零':(tgtEv===64?'中速手留64底线':'高速手留128对峙线，不硬归零'));
+      }else{ /* T2 条件先制 */
+        var _keyRaw=Math.max(tierRaw,(roleTag==='输出')?pvOutSpeedRaw(roleTag,base5):0);
+        var _keyEv=Math.min(252,evForSpeed(targetRaw(_keyRaw,1),base5,31,natPos));
+        if(_cov<0.5){
+          tgtEv=Math.max(_keyEv,128);tplNew='先制弱衰减';
+          src='条件先制但覆盖窄(cov≈'+Math.round(_cov*100)+'%)→保留大半速度(128+)，不为单一先制招把整只降成0速';
+        }else{
+          tgtEv=Math.max(_keyEv,64);tplNew='先制降档';
+          src='条件先制覆盖主输出 → 速度降至关键档(底线64)';
+        }
+        _clsBKeyEv=tgtEv;
+      }
+    }else{
+      /* v4.50 旧行为（core 路径，非子区，4680 基线） */
+      if(cls==='A'&&cover){tgtEv=0;tplNew='先制集约';src='无条件先制覆盖主输出 → 速度 EV 归零'}
+      else if(cls==='B'){var keyRaw=Math.max(tierRaw,(roleTag==='输出')?pvOutSpeedRaw(roleTag,base5):0);var keyEv=Math.min(252,evForSpeed(targetRaw(keyRaw,1),base5,31,natPos));tgtEv=keyEv;tplNew='先制降档';src='条件先制 → 速度降至关键档位';_clsBKeyEv=keyEv;}
+    }
   }
   /* v4.50 R7-A G4 SPD_PENALTY_ABI（路线甲：仅子区路径 b._r450_subOnly，只 EV/性格层不动 D2）：
      减伤换速度特性族 → 速度 EV 额外收敛；≥20% 折损 EV 权重×0.5，<20% 轻微收敛（-64 四舍五入）。 */
@@ -11562,7 +11650,7 @@ function evNatureLinkV437(s,b){
      非空间轴取「大胆」（加防 −攻击；扑击不吃攻击，减攻击无损失）。 */
   if(_has704&&_physN>0){want=isSp?'悠闲':'大胆';wantWhy='扑击按自身物防结算 → 性格取加防御'+(isSp?'（空间/低速轴 → 加防减速）':'')}
   else if(isSp){want=(side==='特殊')?'冷静':'勇敢';wantWhy='速度非核心价值（空间核）：性格取减速项换输出'}
-  else if(((+ev[5])||0)===0||(actual&&cls==='A'&&cover&&!B1)){
+  else if(((+ev[5])||0)===0||(actual&&cls==='A'&&cover&&!B1&&!sub)){  /* v4.51 R8-E E4：子区路径移除 clsA 一票否决（高速先制手保留128速则允许加速性格）；core 路径保留 v4.50 */
     want=(_md==='特殊')?'内敛':'固执';
     /* v4.44 P2-1：src 为空时不得渲染成空括号「（）」（GM-LK 断言扩容实测 227 条命中此串）。
        场景：速度 EV 本来就已是 0（上方五分支全不适用）→ 直接给「速度 EV 已为 0」这一自洽说法。 */
@@ -11857,7 +11945,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.50';
+var ER_ENGINE_VER='v4.51';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12675,7 +12763,7 @@ function engineGuardSelfCheck(){
      · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
-  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0;
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0;
   /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
      · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
        · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
@@ -12741,20 +12829,21 @@ function engineGuardSelfCheck(){
       var _stSub=false;try{_stSub=(b2.mv&&b2.mv.main||[]).some(function(x){var m=MV[x.id];return m&&m[4]==='变化'})}catch(e5){}
       if(imz==='突击背心'){nSubVestChk++;if(_stSub){nSubVestSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区背心×变化'})}}
       if(/^讲究/.test(imz)){nSubChoiceChk++;if(_stSub){nSubChoiceSt++;if(vsub.length<20)vsub.push({id:m.s.id,zh:m.s.zh,item:imz,kind:'子区讲究×变化'})}}
-      /* v4.50 S7b（硬门闩）：速度 EV=0 的子区槽，性格不得为加速性格（_spdWaste/G5 口径） */
+      /* v4.51 R8-E E7 S7b（硬门闩，阈值放宽）：子区槽速度 EV<64（新分级下很少真0）却性格为加速性格 → 违例 */
       try{
-        if(b2.ev&&b2.ev.alloc&&(+b2.ev.alloc[5]||0)===0&&b2.nat&&b2.nat[0]){
+        if(b2.ev&&b2.ev.alloc&&(+b2.ev.alloc[5]||0)<64&&b2.nat&&b2.nat[0]){
           var _sn=normNatName(b2.nat[0][0]);
-          if(NATURES[_sn]&&String(NATURES[_sn][0])==='+速度'){n7b++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7b 速EV=0却加速性格',nat:_sn})}
+          if(NATURES[_sn]&&String(NATURES[_sn][0])==='+速度'){n7b++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7b 速EV<64却加速性格',nat:_sn})}
         }
       }catch(e7b){}
-      /* v4.50 S7a（硬门闩）：带满血红先制族(277/351/362/430/522/558/560)的子区槽，EV 模板须 ∈{先制集约,先制降档}（B1 高攻输出位豁免，与 !B1 分支同口径） */
+      /* v4.51 R8-E E7 S7a（硬门闩）：带满血红先制族(277/351/362/430/522/558/560)的子区槽，
+         EV 模板须 ∈{先制集约,先制降档,先制弱衰减}（T1/T2 新分级；B1 高攻输出位豁免）。 */
       try{
         var _prio7=['277','351','362','430','522','558','560'];
         var _allIds=(m.s.innIds||[]).concat(m.s.abiIds||[]).map(String);
         var _has7=_prio7.some(function(pid){return _allIds.indexOf(pid)>-1});
         var _isB1=((+((m.s.base||[])[5])||0)>=110&&String(b2.roleTag||'')==='输出');
-        if(_has7&&!_isB1&&b2.ev){var _tp=String(b2.ev.template||'');if(_tp!=='先制集约'&&_tp!=='先制降档'&&_tp!==''){n7a++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7a 满血红先制族模板',tpl:_tp})}}
+        if(_has7&&!_isB1&&b2.ev){var _tp=String(b2.ev.template||'');if(_tp!=='先制集约'&&_tp!=='先制降档'&&_tp!=='先制弱衰减'&&_tp!==''){n7a++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7a 满血红先制族模板',tpl:_tp})}}
       }catch(e7a){}
       if(!m.core){var mz=String(m.s.zh||m.s.id);subMate[mz]=(subMate[mz]||0)+1}
     });
@@ -12770,6 +12859,10 @@ function engineGuardSelfCheck(){
     bs.forEach(function(b){
       nB++;
       var items=(b.it||[]).map(function(x){return norm(Array.isArray(x)?x[0]:x)});
+      /* v4.51 R8-E E7 S7e（硬门闩）：cond=fullHp 先制持有者主推道具不得为自损的生命宝珠（E6 门必须把它换掉）。 */
+      try{
+        if(hasFullHpPrio(s)&&items.length&&items[0]==='生命宝珠'){n7e++;if(v7e.length<30)v7e.push({id:s.id,zh:s.zh,build:b.name})}
+      }catch(e7e){}
       Object.keys(auto).forEach(function(S){
         var rk=ROCK[S];if(!rk)return;checkedA++;
         if(items.indexOf(rk)>-1)va.push({id:s.id,zh:s.zh,build:b.name,item:rk,sys:S,autoBy:Object.keys(auto)});
@@ -13022,10 +13115,10 @@ function engineGuardSelfCheck(){
   });
   var s7dViol=s7dMis;
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
-    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b;
-  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,
+    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b+n7e;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,s7e:n7e,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
-    gate7ab:{n7a:n7a,n7b:n7b,mis:v7ab},
+    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
@@ -13227,7 +13320,7 @@ console.log('  S6a/S6b 判据明细（可机读 JSON）: '+JSON.stringify({s6a:_
 var _g7d=r.gate7d||{};
 console.log('  S7d（硬门闩，v4.50 P0）特性/天性显示名全量对账：槽位='+_g7d.slots+'  raw不一致(v0.3 vs v0.5，基线4258)='+_g7d.rawMis+'  显示层不一致(应为0)='+_g7d.displayMis+'  #id回退(应为0)='+_g7d.hashFb+'  明细='+JSON.stringify(_g7d.mis||[]));
 var _g7ab=r.gate7ab||{};
-console.log('  S7a/S7b（硬门闩，v4.50 R7-A）：S7a 满血红先制族模板违例='+(_g7ab.n7a||0)+'  S7b 速EV=0却加速性格违例='+(_g7ab.n7b||0)+'  明细='+JSON.stringify(_g7ab.mis||[]));
+console.log('  S7a/S7b/S7e（硬门闩，v4.51 R8-E）：S7a 满血红先制族模板违例='+(_g7ab.n7a||0)+'  S7b 速EV<64却加速性格违例='+(_g7ab.n7b||0)+'  S7e 满血红先制持自损道具违例='+(_g7ab.n7e||0)+'  明细='+JSON.stringify((_g7ab.mis||[]).concat(_g7ab.mis7e||[])));
 ['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk','sp'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
 if(r.total>0||r.errors>0){console.error('[FAIL] v4.50 守门自检不通过：违规合计='+r.total+'(含子区项 '+(r.viol.sub||0)+' + S6a越限非豁免 '+((r.viol||{}).s6a||0)+' + S6b不达标 '+((r.viol||{}).s6b||0)+' + S7d显示不一致 '+((r.viol||{}).s7d||0)+') deriveBuilds 异常='+r.errors);process.exit(1)}
