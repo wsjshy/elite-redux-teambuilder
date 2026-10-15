@@ -10263,6 +10263,11 @@ function poolForNeed(core,cx0,need,team,used){
   out.sort(function(a,b){return (b.score-a.score)||(''+a.s.id<' '+b.s.id?-1:1)});
   return out;
 }
+/* v4.51 R8-A：全局同现频次冻结表 COOC_FREQ[sid]=该物种在 v4.50 全量探针的 mate 槽数。
+   来源：C:\temp\er-r8-design\harness\cooc_freq.json（165 个出现过的物种，离线冻结常量，运行只读、不在线迭代）。
+   用途：poolForNeed 子区链「档内(≤8%)全局最低频平局裁决」——结构性垄断种（trset/rec/clear 唯一胜任者）
+   频次本就低且档内无第二候选，band 只含它自己 ⇒ 自然不 flip（A3 实测 土台龟 16→16）。 */
+var COOC_FREQ={"865":8,"1656":48,"184":4,"1678":46,"1874":1,"2667":1,"2122":1,"2107":1,"2672":1,"2216":2,"1884":7,"1651":13,"2156":2,"2284":1,"1882":26,"457":3,"1536":3,"2203":283,"144":1,"62":1,"2303":241,"192":22,"788":197,"2144":100,"1659":2,"139":1,"493":25,"2593":9,"1538":84,"1650":477,"2128":8,"637":2,"2275":18,"2141":1,"2132":11,"251":90,"600":12,"383":30,"145":36,"2115":128,"618":109,"1652":23,"2279":56,"1877":5,"1658":1,"643":8,"2592":1,"893":1,"1079":10,"1532":9,"2138":1,"1813":16,"2571":5,"1856":1,"1542":77,"1501":2,"1507":5,"492":5,"454":1,"368":2,"1843":527,"1084":4,"785":444,"671":17,"1654":21,"871":1,"1514":7,"382":3,"1522":4,"787":3,"1653":35,"2577":44,"873":5,"1807":22,"243":24,"962":1,"2232":8,"1784":3,"134":7,"249":42,"927":5,"2139":59,"721":811,"1530":63,"1879":18,"2293":4,"2575":3,"715":2,"1042":1,"2243":8,"791":29,"367":3,"1842":11,"1521":108,"695":905,"1666":19,"2161":106,"1799":2,"1035":31,"1550":381,"250":26,"991":1,"2296":8,"2200":1,"1068":466,"1743":1,"786":12,"284":2,"1802":3,"1657":84,"2574":6,"1549":93,"1804":85,"1755":9,"1076":10,"1785":1,"135":2,"2180":4,"2136":19,"402":25,"845":1,"2228":419,"898":23,"1070":1,"2143":2,"2267":3,"377":12,"2206":13,"324":4,"1665":7,"2562":29,"384":4,"385":37,"1648":78,"644":44,"2666":20,"2106":295,"1903":2,"1524":3,"2594":266,"2199":3,"1905":8,"1679":6,"2172":157,"1044":14,"1875":2,"526":13,"136":1,"770":3,"1901":3,"2297":3,"2226":6,"947":3,"97":1,"1544":44,"1906":4,"1577":2,"2656":4,"1073":2,"1503":41,"1881":21,"1539":8,"645":45,"1680":9,"587":6};
 /* buildTeamByNeeds(core,opts)：需求驱动 → 完整队伍方案（体系总览 + 需求清单 + 成员） */
 function buildTeamByNeeds(core,opts){
   opts=opts||{};
@@ -10327,6 +10332,37 @@ function buildTeamByNeeds(core,opts){
       pool2.sort(function(a,b){return (b.score-a.score)||((b.base||0)-(a.base||0))});
       pick=pool2[0];
     }catch(ecb2){}
+    /* ===== v4.51 R8-A：档内(≤8%)全局最低频平局裁决（子区链排序层，deriveBuilds 零触碰）=====
+       band = pool2 内 (s1−t.score)/s1 ≤ 8% 的候选（与 M-2 同阈值）；band 内按 COOC_FREQ 冻结频次升序、
+       再 score 降序，把全局最低频者提到首位（仅当 top-1 与最低频者都不顺带满足其它 open 需求才换）。
+       结构性垄断种（trset/rec/clear 唯一胜任者）band 只含自己 ⇒ 不 flip（A3 实测 土台龟16→16）。
+       与 M-2 串联：本规则先把最低频顶头，M-2 再在其后做家族异质化；共用同一 8% 档、同一多功能护栏。 */
+    var coocHit=0;
+    try{
+      if(pool2.length>1){
+        var _s1c=pool2[0].score||0;
+        if(_s1c>1e-9){
+          var _band=pool2.filter(function(x){return (_s1c-(x.score||0))/_s1c<=0.08});
+          var _low=_band[0];
+          _band.forEach(function(x){
+            var _fx=(COOC_FREQ[''+x.s.id]||0),_fl=(COOC_FREQ[''+_low.s.id]||0);
+            if(_fx<_fl||(_fx===_fl&&(x.score||0)>(_low.score||0)))_low=x;
+          });
+          if(_low!==pool2[0]){
+            var _mt1c=[],_mtLc=[];
+            open.forEach(function(nd){
+              if(nd===need)return;
+              if(_mt1c.length<mm&&needSatisfied(pool2[0].s,nd,pool2[0].loc))_mt1c.push(nd);
+              if(_mtLc.length<mm&&needSatisfied(_low.s,nd,_low.loc))_mtLc.push(nd);
+            });
+            if(!_mt1c.length&&!_mtLc.length){
+              pick=_low;coocHit=1;
+              pool2=pool2.filter(function(x){return x!==pick});pool2.unshift(pick);
+            }
+          }
+        }
+      }
+    }catch(eR8A){}
     /* ===== v4.49 M-2（R6-1 §3.4）：top-1 独占率 → 多样性锚点（硬界：仅 ≤5% 可翻转档）=====
        判据：(s1−s2)/s1 ≤ 5%（可翻转档 ⇒ 分差在叠加项量级内，无信息损失）∧ top-1 与**已入队队友同族**
              （fam 级，teamFamKey）∧ 池内存在异族候选 → 取异族候选（次优）并记 divAnchorHit。
@@ -10371,7 +10407,7 @@ function buildTeamByNeeds(core,opts){
       nd.note='由「'+(pick.s.zh||pick.s.name)+'」顺带满足（多功能 +'+((met.length)*NEED_CFG.MULTI_ROLE_BONUS)+'）';
     });
     var member={s:pick.s,core:false,need:need,score:pick.score,base:pick.base,multi:1+met.length,
-      dims:pick.dims,gate:pick.gate,met:met.map(function(x){return x.label}),divAnchor:divAnchorHit};
+      dims:pick.dims,gate:pick.gate,met:met.map(function(x){return x.label}),divAnchor:divAnchorHit,cooc:coocHit};
     member.links=[];   /* links 在队伍定稿后统一生成（需要整队信息） */
     team.push(member);
     used[''+pick.s.id]=1;fam[teamFamKey(pick.s)]=1;
