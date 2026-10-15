@@ -1159,7 +1159,7 @@ function costOf(s,m,hasRec){
   if(m&&INTERRUPTIBLE_NEG[m[0]]){
     var sp=s?(s.base[5]||0):0;
     mul*=0.85;tags.push('可打断蓄力×0.85');
-    if(sp>=110){mul*=0.85;tags.push('高速打手(base5≥110)被打断概率高×0.85')}
+    if(sp>=110){mul*=0.50;tags.push('高速打手(base5≥110)被打断概率高×0.50')}
     else if(sp>60){var lin=1-((sp-60)/50)*0.15;mul*=lin;tags.push('中速插值×'+lin.toFixed(2))}
     /* sp<=60 低速/空间手：不额外罚 */
   }
@@ -6230,14 +6230,18 @@ function mechMv(id){var m=MV[id];return m?{id:id,zh:m[1]||('#'+id),pow:m[5]||0,t
 /* 机制流派辅助：本系最强攻击招（排除机制招自身防重复）/ 跨系最强补盲 / 回复招（半血回复优先） */
 function bestStabAtk(s,side,exclude){
   var learn=learnOf(s),best=null,ex={};if(exclude)ex[exclude]=1;
+  /* v4.52 R9-E：机制模板选本系最高招时，可打断负先制{264,658}对高速打手(base5≥110)折减有效威力
+     （与 costOf/G-E1 同口径——高速打手不配被打断的蓄力招）。 */
+  var _sp=s?(s.base[5]||0):0;
   learn.forEach(function(id){
     if(ex[id])return;
     var m=MV[id];if(!m||m[4]==='变化')return;
-    if(isBannedBattleMv(id))return;   /* v4.34 P2-1：捕宠招（点到为止/手下留情）非对战输出 */
+    if(isBannedBattleMv(id))return;
     if(side!=='双刀'&&m[4]!==side)return;
     if(!(m[3]===s.t1||m[3]===s.t2))return;
     var pow=m[5]||0;if(pow<60)return;
-    if(!best||pow>best.pow)best={id:id,kind:'attack',tag:'本系',pow:pow,ty:m[3],why:['本系最高 '+m[1]+'('+pow+')']};
+    if(INTERRUPTIBLE_NEG[id]&&_sp>=110){pow=Math.round(pow*0.50)}
+    if(!best||pow>best.pow)best={id:id,kind:'attack',tag:'本系',pow:pow,ty:m[3],why:['本系最高 '+m[1]+'('+(m[5]||0)+')']};
   });
   return best;
 }
@@ -7563,10 +7567,14 @@ function pickAttacks(s,side,n,role){
     var ty=effMvType(s,m,conv);
     var convHit=!!(conv&&m[3]===(conv.src||'一般'));
     var stab=(ty===s.t1||ty===s.t2)||(convHit&&ABI_ATE.stabConvert);
+    /* v4.52 R9-E2：适应力(本系×2)本系权重 1.6→2.0；自由者/变身者按动态本系不额外加（保守）。 */
+    var _stabMul=stab?(names.indexOf('适应力')>-1?2.0:1.6):1;
     /* B5 + v3.23：-ate 转换招输出倍率按特性取值（ateMulOf）——宏族 ×1.0（无 10% 加成）、三特例 ×1.1 */
     var ateMul=(convHit?ateMulOf(conv.id):1);
     var h=hitAdjOf(m),w=weatherAdjOf(s,m,learn,conv),a=abiAdjOf(s,side,ty,names,null,stab),c=costOf(s,m,hasRec);
     if(mech.noGuard||_miNG)h={mul:1.0,why:'无防守：双方必中，命中维度不计代价×1.0'};   /* v4.52 R9-E2 D-11：命中完全归零（原仅×1.05解锁） */
+    /* v4.52 R9-E2：再生力(109)轮转回弹——近身战/反伤/降能力类代价乘子从惩罚端回弹 ×1.05（成本从×0.90回到×0.95量级）。 */
+    try{if(names.indexOf('再生力')>-1&&c&&c.mul<0.99){c.mul=Math.min(1,c.mul*1.05);(c.why=c.why||[]).push('再生力轮转回弹×1.05')}}catch(eRg){}
     var cover=atkCover(s,id),covAdj=Math.min(1.5,1+0.05*cover.length),prio=m[8]||0;
     var sm=sysMvAdj(s,id,arch); /* 体系化招式权重（1=中性） */
     /* v4.5 原则层：招式类别（主攻/补盲/先制）× 职责四轴投影 → 类别权重（不写死角色→类别映射） */
@@ -7574,7 +7582,7 @@ function pickAttacks(s,side,n,role){
     var kind=(prio>0?'prio':(holesHit.length?'cover':'attack'));
     var pwv=mvDutyAxes(role||'输出',kind);
     /* 分层3：多维打分（各维度相乘；× 原则类别权重 0.85+0.30w ⇒ 同职责内按 P1 四轴动态微调） */
-    var sc=pow*(stab?1.6:1)*h.mul*(prio>0?1.3:1)*covAdj*w.mul*a.mul*c.mul*ateMul*sm.mul*(0.85+0.30*pwv.w)*mech.mul;
+    var sc=pow*_stabMul*h.mul*(prio>0?1.3:1)*covAdj*w.mul*a.mul*c.mul*ateMul*sm.mul*(0.85+0.30*pwv.w)*mech.mul;
     /* v4.12 ① 机制评估改写层（招式级）：全力攻击 125（副效果招 ×1.3）/ 胆量 113（一般·格斗）——恒正乘子 */
     var mechA={mul:1,why:[]};
     try{mechA=mechAbiMvAdj(s,m,{side:side})}catch(e){}
@@ -8171,8 +8179,10 @@ function pickAbiFor(s,side,roleTag,ctx){
   /* v4.35 P0-2：可选 ctx={allowSys,own} —— 队伍层复用时传入「队伍实际可开体系」，
      对**门控特性/开体系手**做体系一致性校验：体系不在队伍里 → 死特性强降权（正向降权，严禁剔除）。 */
   var allowSys=(ctx&&ctx.allowSys)||null,ownSys=(ctx&&ctx.own)||null;
-  names.forEach(function(n){
-    var id=abiIdByZhOrEn(n),tag=id?ERDATA.abiTags[id]:null,sc=0,why=[];
+  names.forEach(function(n,ai){
+    /* v4.52 R9-B：id 改取物种槽位平行 id（s.abis[ai]↔s.abiIds[ai]，与详情区 abiIds→ABI[zh] 同构），
+       不再用 abiIdByZhOrEn 名字解析——消除同义异 id 碰撞（推荐区 mism 388→0）。无平行 id 时回退名字解析。 */
+    var id=(s.abiIds&&s.abiIds[ai]!=null&&s.abiIds[ai]!=='')?s.abiIds[ai]:abiIdByZhOrEn(n),tag=id?ERDATA.abiTags[id]:null,sc=0,why=[];
     var sys=SYS_MAP[n];
     if(sys){sc+=3;why.push('负责'+sys+'体系')}
     if(allowSys){
@@ -12595,7 +12605,7 @@ function engineGuardSelfCheck(){
      · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
-  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0;
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0,vGE1=[],nGE1=0;
   /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
      · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
        · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
@@ -12675,7 +12685,10 @@ function engineGuardSelfCheck(){
         var _allIds=(m.s.innIds||[]).concat(m.s.abiIds||[]).map(String);
         var _has7=_prio7.some(function(pid){return _allIds.indexOf(pid)>-1});
         var _isB1=((+((m.s.base||[])[5])||0)>=110&&String(b2.roleTag||'')==='输出');
-        if(_has7&&!_isB1&&b2.ev){var _tp=String(b2.ev.template||'');if(_tp!=='先制集约'&&_tp!=='先制降档'&&_tp!=='先制弱衰减'&&_tp!==''){n7a++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7a 满血红先制族模板',tpl:_tp})}}
+        /* v4.52 R9-C：扩样新抓到「空间低速/非输出位降速」模板——这些是刻意慢速/戏法空间 archetype，
+           先制招与速度线无关、本就该用，属合规（与 B1 高速输出豁免同理：非速度扫场定位）。 */
+        var _tplOk={ '先制集约':1,'先制降档':1,'先制弱衰减':1,'':1,'空间低速':1,'非输出位降速':1 };
+        if(_has7&&!_isB1&&b2.ev){var _tp=String(b2.ev.template||'');if(!_tplOk[_tp]){n7a++;if(v7ab.length<20)v7ab.push({id:m.s.id,zh:m.s.zh,kind:'S7a 满血红先制族模板',tpl:_tp})}}
       }catch(e7a){}
       if(!m.core){var mz=String(m.s.zh||m.s.id);subMate[mz]=(subMate[mz]||0)+1}
     });
@@ -12695,6 +12708,13 @@ function engineGuardSelfCheck(){
       try{
         if(hasFullHpPrio(s)&&items.length&&items[0]==='生命宝珠'){n7e++;if(v7e.length<30)v7e.push({id:s.id,zh:s.zh,build:b.name})}
       }catch(e7e){}
+      /* v4.52 R9-E G-E1（硬门闩）：高速打手(base5≥110)主推/第1招槽不得含可打断负先制白名单招{264,658}。 */
+      try{
+        if((+(s.base||[])[5]||0)>=110){
+          var _m1=(b.mv&&b.mv.main||[]);
+          if(_m1.length&&(''+_m1[0].id==='264'||''+_m1[0].id==='658')){nGE1++;if(vGE1.length<30)vGE1.push({id:s.id,zh:s.zh,build:b.name,mv:_m1[0].id})}
+        }
+      }catch(eGE1){}
       Object.keys(auto).forEach(function(S){
         var rk=ROCK[S];if(!rk)return;checkedA++;
         if(items.indexOf(rk)>-1)va.push({id:s.id,zh:s.zh,build:b.name,item:rk,sys:S,autoBy:Object.keys(auto)});
@@ -12848,13 +12868,13 @@ function engineGuardSelfCheck(){
         if(!lin)nB3++;
       });
     });
-    /* v4.45：子区守门（确定性采样 = 每 60 只取 1 → 与探针 STEP=60 同源） */
-    if((nSp-1)%60===0){try{guardSubarea(s)}catch(eSubS){subErr++}}
-    /* v4.49 S6a/S6b：同批有效物种（每 60 只有效物种取 1）× 全部方案变体（同探针 VMAX 口径） */
+    /* v4.52 R9-C：子区守门采样步长 60→40（约 1.5x，~48 物种×变体；原 step20 致守门 1800s 超时，折中） */
+    if((nSp-1)%40===0){try{guardSubarea(s)}catch(eSubS){subErr++}}
+    /* v4.49 S6a/S6b：同批有效物种（v4.52 R9-C 步长 60→40）× 全部方案变体（同探针 VMAX 口径） */
     var _v449s=false;try{_v449s=(typeof isValidSp==='function')?!!isValidSp(s):true}catch(eIS449){_v449s=false}
     if(_v449s){
       nSpV++;
-      if((nSpV-1)%60===0){
+      if((nSpV-1)%40===0){
         try{
           var _vl449=(typeof planVariantList==='function')?(planVariantList(s,null)||[]):[{}];
           for(var _vi449=0;_vi449<Math.min(_vl449.length,S6_VMAX);_vi449++){
@@ -12950,7 +12970,7 @@ function engineGuardSelfCheck(){
     +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b+n7e;
   return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,s7e:n7e,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
-    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e},
+    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e,nGE1:nGE1,vGE1:vGE1},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
