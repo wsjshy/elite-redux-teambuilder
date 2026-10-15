@@ -2222,11 +2222,11 @@ function teamReport(ids,label,info){
       if(anEff(s,at)===0){by='属性'}
       else{
         var _innC=defCellTrio(s,at,null).inn;
-        if(String(_innC)==='0'){by='天性';srch=anImmAbiNameOf(s,at)||'天性特性'}
+        if(String(_innC)==='0'){by='天性';srch=abiChipName(anImmAbiNameOf(s,at)||'天性特性')}
         else{
           var _pk=anPickOf(s,_info);
           if(_pk){by='特性';srch=_pk}
-          else{by='天性';srch=anImmAbiNameOf(s,at)||'天性特性'}
+          else{by='天性';srch=abiChipName(anImmAbiNameOf(s,at)||'天性特性')}
         }
       }
     }catch(e6){}
@@ -2533,8 +2533,10 @@ function anSprOfNarr(o){
       sprImgMid(s.id)+'<span class="anmemnm">'+esc(o.zh||s.zh)+'</span></span>';
   }catch(e){return ''}
 }
-function anAbiChipH(n,kind){
-  return '<span class="abi" onclick="abiModal('+jsl(String(n))+','+jsl(String(kind||'特性'))+')" title="点看完整描述">'+esc(abiChipName(n))+'</span>';
+function anAbiChipH(n,kind,id){
+  /* v4.50 P0：传入平行 id 时直接用 ABI 规范中文（消除 v0.3/v0.5 双译名）；否则回退 abiChipName 名字解析 */
+  var disp=(id!=null&&id!==''&&ABI[id])?(ABI[id][2]||ABI[id][1]||('#'+id)):abiChipName(n);
+  return '<span class="abi" onclick="abiModal('+jsl(String(n))+','+jsl(String(kind||'特性'))+')" title="点看完整描述">'+esc(disp)+'</span>';
 }
 function anSpDetail(id){
   var s=null;try{s=speciesById(id)}catch(e){}
@@ -2564,7 +2566,7 @@ function anDetailHtml(s,bd,R){
     var _abC=[],_abSeen={};
     _ab.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
     _abC.slice(0,2).forEach(function(a){
-      h+='<div class="mvrow"><span class="mvnm">'+anAbiChipH(a.n,'特性')+mechBadgeForAbi(a.n)+'</span>'+
+      h+='<div class="mvrow"><span class="mvnm">'+anAbiChipH(a.n,'特性',a.id)+mechBadgeForAbi(a.n)+'</span>'+
         '<span class="mvuse">'+esc((a.why||[]).join('；'))+'</span></div>';
     });
     if(_abC.length<_ab.length)h+='<div class="dim" style="font-size:11px">另有 '+(_ab.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
@@ -2573,7 +2575,7 @@ function anDetailHtml(s,bd,R){
   /* D-2 天性（固定 3 个；点看描述） */
   var _inns=(s.inns||[]);
   h+='<div class="fld"><div class="fhd"><span class="fno">3</span>天性（固定拥有，点看描述）</div><div>'+
-    (_inns.length?_inns.map(function(n){return anAbiChipH(n,'天性')}).join(' '):'<span class="dim">—</span>')+'</div></div>';
+    (_inns.length?_inns.map(function(n,ii){return anAbiChipH(n,'天性',(s.innIds||[])[ii])}).join(' '):'<span class="dim">—</span>')+'</div></div>';
   /* D-4 配招 4 招 + 各招作用一句话 */
   h+='<div class="fld"><div class="fhd"><span class="fno">4</span>配招（4 招 + 作用）</div><div class="mvlist">';
   ((bd.mv&&bd.mv.main)||[]).forEach(function(sl,j){
@@ -2772,15 +2774,17 @@ function openSp(s){
   html+='</div>';
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
   html+='<div class="sec"><h3>特性（'+s.abis.length+' 选 1，点击看描述）</h3>';
-  s.abis.forEach(function(n){
-    var id=abiIdByZhOrEn(n);
-    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(abiChipName(n))+'</span>';   /* v4.31：统一 ABI 表规范中文（消除「烈焰之魂/燃烧之魂」双名） */
+  s.abis.forEach(function(n,ai){
+    var _pid=(s.abiIds||[])[ai];
+    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(n);
+    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(speciesAbiZh(s,'abis',ai))+'</span>';   /* v4.50 P0：显示名经平行 id 反查 ABI 规范中文 */
   });
   html+='<div class="abid" id="abiDesc" style="display:none"></div></div>';
   html+='<div class="sec"><h3>天性（固定 3 个，点击看描述）</h3>';
-  s.inns.forEach(function(n){
-    var id=abiIdByZhOrEn(n);
-    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(abiChipName(n))+'</span>';   /* v4.31：同上统一 */
+  s.inns.forEach(function(n,ii){
+    var _pid=(s.innIds||[])[ii];
+    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(n);
+    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(speciesAbiZh(s,'inns',ii))+'</span>';   /* v4.50 P0：同上 */
   });
   html+='<div class="abid" id="spInnDesc" style="display:none"></div>'; /* A①：天性描述紧挂天性块内（勿落到特性块） */
   html+='<div class="mini" style="color:var(--sub);margin-top:4px">天性固定生效、不可更换；可选特性的免疫/减半与之叠加（B1）。</div>';
@@ -3180,12 +3184,12 @@ function renderSlots(){
       var _abUniq=[];(s.abis||[]).forEach(function(n){if(_abUniq.indexOf(n)<0)_abUniq.push(n)});
       if(s.abis&&s.abis.length&&_abUniq.length===1){
         html+='<div style="padding:0 10px 2px;font-size:11px;color:var(--sub)">可选特性（该物种三项同名 → <b>唯一特性</b>，无需选择）：</div>'+
-          '<div style="padding:0 10px 6px;display:flex;flex-wrap:wrap;gap:4px"><span class="badge badge-pick" title="数据层三项同名（不修改数据），此处合并展示为「唯一特性」">'+esc(_abUniq[0])+' ✦唯一</span></div>';
+          '<div style="padding:0 10px 6px;display:flex;flex-wrap:wrap;gap:4px"><span class="badge badge-pick" title="数据层三项同名（不修改数据），此处合并展示为「唯一特性」">'+esc(abiChipName(_abUniq[0]))+' ✦唯一</span></div>';
       }else if(s.abis&&s.abis.length){
         html+='<div style="padding:0 10px 2px;font-size:11px;color:var(--sub)">可选特性（<b style="color:#2e7d32">点选模拟生效</b>，单选）：</div><div style="padding:0 10px 6px;display:flex;flex-wrap:wrap;gap:4px">';
         for(var ai=0;ai<s.abis.length;ai++){
           var picked=info.pick===s.abis[ai];
-          html+='<span class="badge '+(picked?'badge-pick':'badge-pickable')+'" onclick="pickAbi('+s.id+','+ai+')" title="点选后该成员防守评估与全队分析即时重算">'+esc(s.abis[ai])+(picked?' ✓':'')+'</span>';
+          html+='<span class="badge '+(picked?'badge-pick':'badge-pickable')+'" onclick="pickAbi('+s.id+','+ai+')" title="点选后该成员防守评估与全队分析即时重算">'+esc(speciesAbiZh(s,'abis',ai))+(picked?' ✓':'')+'</span>';
         }
         html+='<span class="badge badge-neu" style="cursor:pointer" onclick="pickAbi('+s.id+',-1)" title="清除勾选">✕</span></div>';
       }
@@ -3338,17 +3342,18 @@ function defCellTrio(s,at,pickOv){
 /* 特性徽章 HTML（免疫/半伤/加属性/特殊备注） */
 function abiBadges(s){
   var html='',im={},hf={},add={},nts=[];
-  function scan(list,scope){
-    list.forEach(function(n){
+  function scan(list,scope,field){
+    list.forEach(function(n,i){
       var g=abiTagOf(n);if(!g)return;
       (g.im||[]).forEach(function(x){if(im[x]===undefined)im[x]=scope});
       (g.hf||[]).forEach(function(x){if(hf[x]===undefined)hf[x]=scope});
       (g.add||[]).forEach(function(x){if(add[x]===undefined)add[x]=scope});
-      /* v4.44 盲区并项：三项同名特性（全库 151~156 只，数据真值不动）→ 同名徽标只出现一次，避免重复三连 */
-      if(g.nt&&nts.indexOf(n)<0)nts.push(n);
+      /* v4.44 盲区并项：三项同名特性（全库 151~156 只，数据真值不动）→ 同名徽标只出现一次，避免重复三连
+         v4.50 P0：备注特性名经平行 id 反查 ABI 规范中文（消除 v0.3/v0.5 双译名） */
+      if(g.nt){var dn=speciesAbiZh(s,field,i);if(nts.indexOf(dn)<0)nts.push(dn)}
     });
   }
-  scan(s.inns,'天性');scan(s.abis,'可选');
+  scan(s.inns,'天性','inns');scan(s.abis,'可选','abis');
   for(var t in im)html+='<span class="badge '+(im[t]==='天性'?'badge-imm':'badge-opt')+'" title="免疫'+t+'属性招式">'+t+'免疫·'+im[t]+'</span>';
   for(var t in hf)html+='<span class="badge '+(hf[t]==='天性'?'badge-res':'badge-opt')+'" title="'+t+'属性伤害减半">'+t+'半伤·'+hf[t]+'</span>';
   for(var t in add)html+='<span class="badge '+(add[t]==='天性'?'badge-add':'badge-opt')+'" title="出场添加'+t+'属性">+'+t+'·'+add[t]+'</span>';
@@ -4862,7 +4867,7 @@ function renderTplBody(i){
   if(t.counters){
     var c=t.counters;
     html+='<div class="sec"><h3>模板天敌警示</h3><div class="tip" style="background:#fff3e0;border-color:#d97706">怕属性：'+
-      (c.types||[]).map(tlabel).join(' ')+'　｜　核心招式可能被特性免疫：'+esc((c.abis||[]).join('、')||'（无）')+
+      (c.types||[]).map(tlabel).join(' ')+'　｜　核心招式可能被特性免疫：'+esc((c.abis||[]).map(abiChipName).join('、')||'（无）')+
       '</div></div>';
   }
   /* ER 调整说明（B8：数值文案统一改读 WCONF，删除写死的 20%/30%/8回合/无限天气旧文案） */
@@ -5091,7 +5096,7 @@ function coreAbiPick(s){
     if(r.indexOf('攻')>-1&&tag&&tag.im){sc+=1;why.push('攻手自保')}
     if(r.indexOf('盾')>-1&&tag&&tag.hf){sc+=1;why.push('盾位减伤')}
     if(sc===0&&s.abis.length===1){sc=0;why.push('唯一可选')}
-    out.push({n:n,sc:sc,why:why});
+    out.push({n:n,id:id,sc:sc,why:why});
   });
   out.sort(function(a,b){return b.sc-a.sc});
   return out;
@@ -8354,7 +8359,7 @@ function pickAbiFor(s,side,roleTag,ctx){
       if(tag.nt){sc+=1;why.push('关键耐性')}
     }
     if(sc===0&&names.length===1){sc=0;why.push('唯一可选')}
-    out.push({n:n,sc:sc,why:why});
+    out.push({n:n,id:id,sc:sc,why:why});
   });
   out.sort(function(a,b){return b.sc-a.sc});
   return out;
@@ -11579,13 +11584,28 @@ function evWhy(btn){
   try{btn.setAttribute('aria-expanded',box.hasAttribute('hidden')?'false':'true')}catch(e1){}
 }
 /* L1 特性/天性 chip：点击直接弹轻量 modal（完整描述 + 战斗意义 + 机制词条），不做就地展开 */
-function abiChipName(n){ /* v4.31：显示名统一优先「汉化图鉴名」（游戏内实际显示，如 烈焰之魂），
-    仅当 n 非中文（xlsm 未收录、回退英文/别名）时改用 ABI 表中文 —— 与 AGENTS §7「中文名以 xlsm 汉化图鉴为准」对齐，
-    消除「烈焰之魂/燃烧之魂」双名（raw=汉化名、ABI[2]=NextDex 名，以汉化名为准） */
-  if(/[\u4e00-\u9fff]/.test(String(n)))return n;
+function abiChipName(n){ /* v4.50 P0：显示名统一反查 ABI 表规范中文（v0.5 正式名优先）——
+    不再因「含中文」短路返回原串（v0.3 图鉴中文名与 v0.5 ABI[2] 全量 4258 条不一致，如 惊吓→恐吓、前锋→猛踢）。
+    回退链：abiIdByZhOrEn(精确 zh/en→v0.3 alias)→ABI zh→原串。数据层 species.abis/inns 与引擎名称匹配不动。 */
+  if(n==null||n==='')return '';
   var id=abiIdByZhOrEn(n);
   if(id===null||id===undefined)return n;
   var a=ABI[id];return (a&&a[2])?a[2]:n;
+}
+/* v4.50 P0：物种特性/天性显示名反查——优先平行 id（abiIds/innIds，数据层逐位同源 gameData），
+   消除「v0.3 名恰好等于另一特性 v0.5 名」的碰撞（如 加速:pid474 应显示 加速度，却被精确命中 id3 的 加速）。
+   回退链：平行 id→ABI zh→ABI en→名字解析(精确 zh/en→alias)→原串。'#'+id 回退预期 0（S7d 守门登记）。 */
+function speciesAbiZh(s,field,i){
+  var ids=(field==='inns')?(s.innIds||[]):(s.abiIds||[]);
+  var id=(ids&&ids[i]!=null&&ids[i]!=='')?(''+ids[i]):null;
+  if(id&&ABI[id])return ABI[id][2]||ABI[id][1]||('#'+id);
+  var names=s[field]||[],n=names[i];
+  if(n!=null){
+    var rid=abiIdByZhOrEn(n);
+    if(rid&&ABI[rid])return ABI[rid][2]||ABI[rid][1]||('#'+rid);
+    return String(n);
+  }
+  return '';
 }
 function abiModal(abiName,kind){
   var id=abiIdByZhOrEn(abiName);
@@ -11813,7 +11833,7 @@ function mateAssemble(r,teamArr,coreSysList){
        由 pickAbiFor 强降权（场地类不判、同系开手不判，见该函数内注释）。 */
     var cwx=[];try{cwx=(coreSysList||[]).filter(function(x){return WX_SYS.indexOf(x)>-1})}catch(ec0){cwx=[]}
     try{abi=pickAbiFor(s2,side,pick.roleTag,{allowSys:tss,own:ownSet,coreWx:cwx})}catch(e6){abi=null}
-    if(!abi||!abi.length){try{abi=pickAbiFor(s2,side,pick.roleTag)}catch(e7){abi=[{n:(s2.abis||[])[0]||'',sc:0,why:[]}]}}
+    if(!abi||!abi.length){try{abi=pickAbiFor(s2,side,pick.roleTag)}catch(e7){var _fbN=(s2.abis||[])[0]||'';abi=[{n:_fbN,id:abiIdByZhOrEn(_fbN),sc:0,why:[]}]}}
     /* 天气手位：必须实际能开天气（P0-2 / 验收⑤「天气手位无开天气手段」归零） */
     if(pri==='天气手'){
       try{
@@ -12101,16 +12121,16 @@ function renderCore(s){
   var _abUq=(function(a){if(!a||a.length<2)return null;for(var i=1;i<a.length;i++){if(a[i]!==a[0])return null}return a[0]})(s.abis);
   html+='<div class="chiprow"><span class="dim">特性（'+(_abUq?1:abiN)+' 选 1）：</span>'+((abiN)
     ? (_abUq
-        ? ('<button type="button" class="chip" onclick="abiModal('+jsl(_abUq)+',\'特性\')" title="该物种数据层三项同名 → 唯一特性，点开看作用详情">'+esc(abiChipName(_abUq))+' <b>✦唯一</b></button>'+
+        ? ('<button type="button" class="chip" onclick="abiModal('+jsl(_abUq)+',\'特性\')" title="该物种数据层三项同名 → 唯一特性，点开看作用详情">'+esc(speciesAbiZh(s,'abis',0))+' <b>✦唯一</b></button>'+
            '<span class="dim" style="margin-left:6px">（数据层三项同名，此处合并展示）</span>')
         : s.abis.map(function(n,ai){
-            return '<button type="button" class="chip" onclick="abiModal('+jsl(n)+',\'特性\')" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(abiChipName(n))+'</button>';
+            return '<button type="button" class="chip" onclick="abiModal('+jsl(n)+',\'特性\')" title="主特性从 '+abiN+' 个中选 1 生效，点开看作用详情">'+esc(speciesAbiZh(s,'abis',ai))+'</button>';
           }).join(''))
     : '<span class="dim">无</span>')+'</div>';
   /* 天性（固定全部拥有）：点击 chip 直接弹轻量 modal */
   html+='<div class="chiprow"><span class="dim">天性（固定 '+innN+' 个·全部拥有）：</span>'+((innN)
     ? s.inns.map(function(n,ii){
-        return '<button type="button" class="chip chip-inn" onclick="abiModal('+jsl(n)+',\'天性\')" title="天性固定拥有，点开看作用详情">'+esc(abiChipName(n))+'</button>';
+        return '<button type="button" class="chip chip-inn" onclick="abiModal('+jsl(n)+',\'天性\')" title="天性固定拥有，点开看作用详情">'+esc(speciesAbiZh(s,'inns',ii))+'</button>';
       }).join('')
     : '<span class="dim">无</span>')+'</div>';
   html+='<span class="abi4rule">四特性体系：主特性 '+(_abUq?1:abiN)+' 选 1 生效；天性 '+innN+' 个固定全部拥有 —— 配队评估两者并计（免疫/半伤/添属性/联防）</span>';
@@ -12149,7 +12169,7 @@ function renderCore(s){
   });
   html+='</div><div id="'+wId+'">';
   builds.forEach(function(bd,i){
-    var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?abiChipName(bd.abi[0].n):'—';   /* v4.31：统一走 ABI 表规范中文（消除「烈焰之魂/燃烧之魂」双名） */
+    var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?((bd.abi[0].id!=null&&bd.abi[0].id!==''&&ABI[bd.abi[0].id])?(ABI[bd.abi[0].id][2]||ABI[bd.abi[0].id][1]||('#'+bd.abi[0].id)):abiChipName(bd.abi[0].n)):'—';   /* v4.50 P0：推荐特性名优先平行 id 反查 ABI 规范中文 */
     var tms=ftC(s,bd.side,bd.roleTag);
     /* v4.11：tabpanel 容器包裹流派卡 —— 首卡 details 的 class 固定为字面量 "big rec"（verify_v4 B④ 断言），
        切换只切外层 .bkp 的 .bkoff，不重建页面（展开态 / 滚动位置保留） */
@@ -12864,15 +12884,38 @@ function engineGuardSelfCheck(){
   var s6AMonoShare=s6Pooled?(Math.round(s6FlipMono*1000/s6Pooled)/10):0;
   var s6AViol=s6OverNW.length;                                  /* 主判（Q1）：越限非白名单 kind 数 = 0 */
   var s6BViol=(s6Pooled>0&&s6BShare<S6B_TARGET)?1:0;
+  /* ===== v4.50 P0 S7d（硬门闩）：特性/天性显示名统一全量对账 =====
+     全量 species×槽位：经显示路径 speciesAbiZh 解析的 zh 必须 ≡ ABI[parallel id] zh（回退除外）。
+     基线 v4.49：raw 名(v0.3 图鉴) vs ABI[pid] zh(v0.5 正式) 不一致 4258 条（413 组合）；
+     v4.50 显示层反查后该不一致在显示层清零。'#'+id 回退必须 0（任何 id 无 ABI 条目 = 数据缺口）。 */
+  var s7dTotal=0,s7dMis=0,s7dHashFb=0,s7dRawMis=0;var s7dMisList=[];
+  (ERDATA.species||[]).forEach(function(s){
+    [['inns','innIds'],['abis','abiIds']].forEach(function(pair){
+      var field=pair[0],idf=pair[1];
+      var names=s[field]||[],ids=s[idf]||[];
+      for(var i=0;i<names.length;i++){
+        s7dTotal++;
+        var pid=(ids[i]!=null&&ids[i]!=='')?(''+ids[i]):null;
+        var pa=pid?ABI[pid]:null;
+        var want=pa?(pa[2]||pa[1]||('#'+pid)):String(names[i]||'');
+        if(String(names[i])!==(pa?(pa[2]||pa[1]):String(names[i]||'')))s7dRawMis++;
+        var got='';try{got=speciesAbiZh(s,field,i)}catch(eS7d){got='__ERR__'}
+        if(got!==want){s7dMis++;if(s7dMisList.length<25)s7dMisList.push('sid='+s.id+' '+field+'['+i+'] raw='+names[i]+' pid='+pid+' want='+want+' got='+got)}
+        if(String(got).charAt(0)==='#')s7dHashFb++;
+      }
+    });
+  });
+  var s7dViol=s7dMis;
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
-    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol;
-  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,
+    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol;
+  return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
         plans:s6Plans,err:s6Err,lam:S6_LAM,table:s6Table},
       s6b:{target:S6B_TARGET,n:s6Pooled,recantShare:s6BShare,midShare:s6AMidShare,monoShare:s6AMonoShare,ties:s6Ties,plans:s6Plans}},
+    gate7d:{slots:s7dTotal,rawMis:s7dRawMis,displayMis:s7dMis,hashFb:s7dHashFb,mis:s7dMisList},
     detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20),m5:vm5.slice(0,20),m6:vm6.slice(0,20),
       na:vna.slice(0,20),pr:vpr.slice(0,20),mg:vmg.slice(0,20),mv4:vmv4.slice(0,20),ci:vci.slice(0,20),
       fs:vfs.slice(0,20),lk:vlk.slice(0,20),sp:vsp.slice(0,20)},
@@ -13065,10 +13108,12 @@ console.log('      S6a 两级豁免（分列，不得混同）：F-1 图鉴事�
 console.log('      S6a 逐 kind（kind:needs:genShareAvg:genShareMax:flipLt5%:exclusiveShare%:f1:d1defer:inScope）='+JSON.stringify((_s6a.table||[]).map(function(x){return [x.kind,x.needs,x.genShareAvg,x.genShareMax,x.flipLt5,x.exclusiveShare,x.f1White?1:0,x.d1Defer?1:0,x.inScope449?1:0]})));
 console.log('  S6b（硬门闩，v4.49）可翻转档 ((s1−s2)/s1<5%) 占比='+_s6b.recantShare+'%（要求 ≥'+_s6b.target+'%）  中等档='+_s6b.midShare+'%  近垄断档='+_s6b.monoShare+'%  样本 pooled='+_s6b.n+'（并列='+_s6b.ties+'）  采样方案='+_s6b.plans);
 console.log('  S6a/S6b 判据明细（可机读 JSON）: '+JSON.stringify({s6a:_s6a,s6b:_s6b}));
+var _g7d=r.gate7d||{};
+console.log('  S7d（硬门闩，v4.50 P0）特性/天性显示名全量对账：槽位='+_g7d.slots+'  raw不一致(v0.3 vs v0.5，基线4258)='+_g7d.rawMis+'  显示层不一致(应为0)='+_g7d.displayMis+'  #id回退(应为0)='+_g7d.hashFb+'  明细='+JSON.stringify(_g7d.mis||[]));
 ['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk','sp'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
-if(r.total>0||r.errors>0){console.error('[FAIL] v4.49 守门自检不通过：违规合计='+r.total+'(含子区项 '+(r.viol.sub||0)+' + S6a 越限非豁免(本轮范围内未达标) '+((r.viol||{}).s6a||0)+' + S6b不达标 '+((r.viol||{}).s6b||0)+') deriveBuilds 异常='+r.errors);process.exit(1)}
-console.log('[OK] v4.49 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0 GM-NA=0 GM-PR=0 GM-MG1=0 GM-MV4=0 GM-CI=0 GM-FS=0 GM-LK=0 S5p=0 S5r=100% S5s=0 S5t=0 S6a=0 S6b=0（S5o/S5q 信息项：道具去重='+((r.subarea||{}).itemDistinct)+' 队友集中度(方案分母)='+((r.subarea||{}).matePlanRate)+'%）（全量 '+r.builds+' 流派 + 子区采样 '+((r.subarea||{}).plans||0)+' 方案 + S6 采样 '+((((r.gate6||{}).s6a)||{}).plans||0)+' 方案）');
+if(r.total>0||r.errors>0){console.error('[FAIL] v4.50 守门自检不通过：违规合计='+r.total+'(含子区项 '+(r.viol.sub||0)+' + S6a越限非豁免 '+((r.viol||{}).s6a||0)+' + S6b不达标 '+((r.viol||{}).s6b||0)+' + S7d显示不一致 '+((r.viol||{}).s7d||0)+') deriveBuilds 异常='+r.errors);process.exit(1)}
+console.log('[OK] v4.50 守门自检通过：4a=0 4b1=0 4b2=0 S5m=0 S5n=0 GM-NA=0 GM-PR=0 GM-MG1=0 GM-MV4=0 GM-CI=0 GM-FS=0 GM-LK=0 S5p=0 S5r=100% S5s=0 S5t=0 S6a=0 S6b=0 S7d显示不一致=0/#回退0（raw不一致 '+_g7d.rawMis+' 已在显示层清零）（S5o/S5q 信息项：道具去重='+((r.subarea||{}).itemDistinct)+' 队友集中度(方案分母)='+((r.subarea||{}).matePlanRate)+'%）（全量 '+r.builds+' 流派 + 子区采样 '+((r.subarea||{}).plans||0)+' 方案 + S6 采样 '+((((r.gate6||{}).s6a)||{}).plans||0)+' 方案）');
 '''
 _gate_path = os.path.join(_tf.gettempdir(), 'er_guard_check_%d.cjs' % os.getpid())
 with open(_gate_path, 'w', encoding='utf-8') as _gf:
