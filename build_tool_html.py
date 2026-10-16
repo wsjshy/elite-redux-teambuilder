@@ -775,7 +775,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.55</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.56</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -5083,14 +5083,18 @@ function pickFuncs(s,role,side,used){
         if(sy&&coreSys(s).indexOf(sy)<0){sc*=0.3;why.push('非本体系×0.3')}
       }
       if(cat==='removal')why.push('除钉：229 高速旋转清自身侧／432 清除浓雾清双方钉子 · 墙仅对手侧 · 降闪避 1 级');
-      /* v4.53 R9-F 项5：变化招理由逐流派生成——替身/守住按 role 实际语境给理由，弃通用「配合强化/受队」模板 */
+      /* v4.53 R9-F 项5 / v4.56 项1：变化招理由逐流派生成——替身/守住按 role × 硬撑机制给深理由，弃通用「挡状态/控血线」。
+         硬撑流(learn 含263)：替身=免被消去自异常(治愈铃/芳香治疗)/锁异常在身上保硬撑全程满威；守住=拖回合保自异常不被蹭掉/免被先制收掉。 */
       if(cat==='protect'){
+        var _isFade=(learn.indexOf(263)>-1);
         if(id===164){
-          if(role==='强化')why.push('替身：挡状态/先制后安全叠强化');
+          if(_isFade)why.push('替身：免疫位挡消异常招(治愈铃/芳香治疗)，把中毒/麻痹锁在身上保硬撑全程 140 满威')
+          else if(role==='强化')why.push('替身：挡状态/先制后安全叠强化');
           else if(role==='肉盾'||role==='受队')why.push('替身：控血线 + 耗对手关键招（毒/钉每回合磨）');
           else why.push('替身：挡异常状态与先制，保血线再出手');
         }else if(id===182){
-          if(role==='强化')why.push('守住：撑过对手爆发后再强化');
+          if(_isFade)why.push('守住：拖过对手爆发/先制收招，自异常不被蹭掉，保硬撑满威输出窗口')
+          else if(role==='强化')why.push('守住：撑过对手爆发后再强化');
           else if(role==='肉盾'||role==='受队')why.push('守住：拖回合耗招/安全轮转');
           else why.push('守住：先读保命，耗对手关键招');
         }
@@ -8498,10 +8502,14 @@ function pickAbiFor(s,side,roleTag,ctx){
     if(n==='压迫感'){sc+=1;why.push('压迫感：被对方击中时对方该招多耗 1 PP → 长站场消耗/PP 续航施压锚点')}
     else if(n==='厚脂肪'){why.push('厚脂肪：受到火/冰招伤害减半（站场减伤语境，与 tag.hf 同源）')}
     else if(n==='防尘'){why.push('防尘：免疫粉末类招式与沙暴/冰雹伤害（站场豁免语境，与 tag.im 同源）')}
-    /* v4.55 项1：狙击手(Sniper) 会心增伤——按 roleTag 差异化叙事，消除 4 流派雷同空 why。
-       gameData 原文：暴击时伤害 ×1.5。输出流=高威力会心收割；受队/肉盾=补刀会心收尾。 */
+    /* v4.55→v4.56 项1：狙击手(Sniper) 会心增伤——按 roleTag × 流派名机制三变体分化，消除流派1/2/3逐字雷同。
+       gameData 原文：暴击时伤害 ×1.5。杂技流=道具保血后会心爆发；硬撑流=异常增幅下会心收尾；顺风流=先制加速下会心收割；受队/肉盾=站场补刀。 */
     else if(n==='狙击手'){sc+=1;
-      if(roleTag==='肉盾'||roleTag==='受队')why.push('狙击手：会心伤害 ×1.5——站场补刀/残血收尾的会心兑现')
+      var _bn=(ctx&&ctx.buildName)||'';
+      if(_bn.indexOf('硬撑')>-1)why.push('狙击手：会心伤害 ×1.5——硬撑异常增幅下，会心一击收尾兑现满威')
+      else if(_bn.indexOf('顺风')>-1)why.push('狙击手：会心伤害 ×1.5——顺风先制加速抢到节奏后会心收割')
+      else if(_bn.indexOf('杂技')>-1)why.push('狙击手：会心伤害 ×1.5——杂技道具保血/回血后打出会心爆发')
+      else if(roleTag==='肉盾'||roleTag==='受队')why.push('狙击手：会心伤害 ×1.5——站场补刀/残血收尾的会心兑现')
       else why.push('狙击手：会心伤害 ×1.5——高威力招会心收割/爆发收尾的会心锚点')}
     out.push({n:n,id:id,sc:sc,why:why});
   });
@@ -8542,7 +8550,7 @@ function mkBuild(s,side,name,spBest,phBest,roleTagEx,itemTagEx,ctx){
       else{_it=[['突击背心','满血红先制：自损道具破坏满血前提 → 换耐久项']].concat(_it.filter(function(x){return x[0]!=='生命宝珠'}))}
     }
   }catch(eE6b){}
-  return {name:name,side:side,roleTag:roleTag,itemTag:itemTagEx||roleTag,mv:mv,nat:buildNature(s,side,roleTag),it:_it,abi:pickAbiFor(s,side,roleTag),desc:desc};
+  return {name:name,side:side,roleTag:roleTag,itemTag:itemTagEx||roleTag,mv:mv,nat:buildNature(s,side,roleTag),it:_it,abi:pickAbiFor(s,side,roleTag,{buildName:name}),desc:desc};
 }
 /* ============ v4.3：战术流派动态推导（07 §4.6；取代 v4.2 的 genBuilds 固定枚举） ============
    三条红线（07 §4.6.0）：① 命名不得用物特二分（禁「物攻队/特攻队/双刀队」作流派名）
@@ -12098,7 +12106,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.55';
+var ER_ENGINE_VER='v4.56';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12954,7 +12962,7 @@ function engineGuardSelfCheck(){
      · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
-  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0,vGE1=[],nGE1=0,comboTank=0,comboSubBoost=0,comboHazardRotor=0,comboDualWall=0,nGE3=0,vGE3=[],nGE4a=0,nGE4b=0,nGE4c=0,nGE4d=0,vGE4=[],nE5=0,vE5=[],nGE5=0,vGE5=[],_fearowDump=false,_fearowSample=null,_bldBySp={};
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0,vGE1=[],nGE1=0,comboTank=0,comboSubBoost=0,comboHazardRotor=0,comboDualWall=0,nGE3=0,vGE3=[],nGE4a=0,nGE4b=0,nGE4c=0,nGE4d=0,vGE4=[],nE5=0,vE5=[],nGE5=0,vGE5=[],nGE5b=0,vGE5b=[],_fearowDump=false,_fearowSample=null,_bldBySp={};
   /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
      · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
        · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
@@ -13322,6 +13330,28 @@ function engineGuardSelfCheck(){
         });
       }
     }catch(eGE5){}
+    /* v4.56 G-E5b（新子口径，与 G-E5 全 why 集签名并存、独立报告）：同物种不同流派，
+       同一特性名在两个流派卡的 why 串逐字相同 → 记违例（专治「狙击手 3 流派 why 雷同」这类单特性不分化）。 */
+    try{
+      if(bs.length>=2){
+        var _abWhyByAbi={};
+        bs.forEach(function(b){
+          (b.abi||[]).forEach(function(a){
+            var key=String(a.n||'')+'||'+((a.why||[]).join('¶'));
+            if(!key.split('||')[0])return;
+            if(!_abWhyByAbi[a.n])_abWhyByAbi[a.n]={};
+            if(!_abWhyByAbi[a.n][key])_abWhyByAbi[a.n][key]=[];
+            _abWhyByAbi[a.n][key].push(b.name);
+          });
+        });
+        Object.keys(_abWhyByAbi).forEach(function(an){
+          Object.keys(_abWhyByAbi[an]).forEach(function(key){
+            var arr=_abWhyByAbi[an][key];
+            if(arr.length>=2){nGE5b++;if(vGE5b.length<30)vGE5b.push({id:s.id,zh:s.zh,abi:an,builds:arr.join(' | ')})}
+          });
+        });
+      }
+    }catch(eGE5b){}
     if((nSp-1)%40===0){try{guardSubarea(s)}catch(eSubS){subErr++}}
     /* v4.49 S6a/S6b：同批有效物种（v4.52 R9-C 步长 60→40）× 全部方案变体（同探针 VMAX 口径） */
     var _v449s=false;try{_v449s=(typeof isValidSp==='function')?!!isValidSp(s):true}catch(eIS449){_v449s=false}
@@ -13427,7 +13457,7 @@ function engineGuardSelfCheck(){
   var _realAbiN=0; for(var _ak in ABI){ if(ABI[_ak]&&String(ABI[_ak][2]||'').trim())_realAbiN++; }
   return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,s7e:n7e,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
-    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e,nGE1:nGE1,vGE1:vGE1,comboTank:comboTank,comboSubBoost:comboSubBoost,comboHazardRotor:comboHazardRotor,comboDualWall:comboDualWall,nGE3:nGE3,vGE3:vGE3,zSpecies:(ERDATA.species||[]).length,yMoves:Object.keys(MV||{}).length,xAbi:_realAbiN,nGE4a:nGE4a,nGE4c:nGE4c,nGE4b:nGE4b,nGE4d:nGE4d,vGE4:vGE4,nE5:nE5,vE5:vE5,nGE5:nGE5,vGE5:vGE5,_fearowSample:_fearowSample},
+    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e,nGE1:nGE1,vGE1:vGE1,comboTank:comboTank,comboSubBoost:comboSubBoost,comboHazardRotor:comboHazardRotor,comboDualWall:comboDualWall,nGE3:nGE3,vGE3:vGE3,zSpecies:(ERDATA.species||[]).length,yMoves:Object.keys(MV||{}).length,xAbi:_realAbiN,nGE4a:nGE4a,nGE4c:nGE4c,nGE4b:nGE4b,nGE4d:nGE4d,vGE4:vGE4,nE5:nE5,vE5:vE5,nGE5:nGE5,vGE5:vGE5,nGE5b:nGE5b,vGE5b:vGE5b,_fearowSample:_fearowSample},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
@@ -13637,6 +13667,7 @@ console.log('  G-E3（v4.52 R9-E3，信息项待 v4.53 build-logic 硬门）高�
 console.log('  G-E4（v4.54）亮点引用未带招='+(_g7ab.nGE4a||0)+'  EV模板×定位对账(输出流配耐久模板)违例='+(_g7ab.nGE4c||0)+'  动作数≥3告警='+(_g7ab.nGE4b||0)+'  同物种流派配招雷同='+(_g7ab.nGE4d||0)+'  明细='+JSON.stringify(_g7ab.vGE4||[]));
 console.log('  E5（v4.54 信息项）高速打手(base5≥110)主推槽含非即时招(蓄力/僵直/可打断)残留='+(_g7ab.nE5||0)+'  明细='+JSON.stringify((_g7ab.vE5||[]).slice(0,10)));
 console.log('  G-E5（v4.55 信息项）同物种不同流派 why 文案逐字雷同组数='+(_g7ab.nGE5||0)+'  明细='+JSON.stringify((_g7ab.vGE5||[]).slice(0,15)));
+console.log('  G-E5b（v4.56 子口径）单特性 why 跨流派逐字雷同组数='+(_g7ab.nGE5b||0)+'  明细='+JSON.stringify((_g7ab.vGE5b||[]).slice(0,15)));
 console.log('  项2 大嘴雀(#22) why抽样='+JSON.stringify((_g7ab._fearowSample||[]).slice(0,4)));
 console.log('  R9-E4 三维覆盖一期（信息项）：物种='+(_g7ab.zSpecies||0)+'/1906  招式='+(_g7ab.yMoves||0)+'/1032  特性='+(_g7ab.xAbi||0)+'/1030');
 ['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk','sp'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
