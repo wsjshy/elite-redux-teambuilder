@@ -11460,7 +11460,8 @@ function needBuildHtml(sp,roleTag,itemTag,ctx){
       return '<span class="abi" onclick="event.stopPropagation();gotoMv('+jsl(nm)+')">'+esc(nm)+'</span>';}).join(' ')):'')+'</div>';
   var _n0w='';try{_n0w=String(((b.nat||[])[0]||[])[1]||'')}catch(eNW){_n0w=''}
   h+='<div style="font-size:11px;margin:2px 0"><b>特性：</b>'+(b.abi||[]).slice(0,2).map(function(a){
-      return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(a.n)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(a.n)+'</span>'+mechBadgeForAbi(a.n);}).join(' ')+
+      var _cn=(a.id!=null&&a.id!==''&&typeof ABI!=='undefined'&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):abiNameZh(a.n);
+      return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(_cn)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(_cn)+'</span>'+mechBadgeForAbi(_cn);}).join(' ')+
     '　<b>道具：</b>'+(b.it||[]).slice(0,3).map(function(x,i){
       return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>'+lockSwapTip449(b,x[0])))+mechBadgeForItem(x[0])}).join(' ')+
     '　<b>性格：</b>'+esc((b.nat||[]).map(function(n){return n[0]}).join(' / '))+
