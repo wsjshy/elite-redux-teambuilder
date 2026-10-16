@@ -1884,7 +1884,7 @@ function anRowOf(s,b){
   return {id:s.id,zh:s.zh,name:(b&&b.name)||'（无推荐流派）',side:(b&&b.side)||'',roleTag:(b&&b.roleTag)||'',
     moves:((b&&b.mv&&b.mv.main)||[]).map(function(x){return x.id}),
     movesZh:((b&&b.mv&&b.mv.main)||[]).map(function(x){return anMvZh(x.id)}),
-    abi:(b&&b.abi&&b.abi[0]&&b.abi[0].n)||'',item:b?itemMainZh(b):'',
+    abi:(function(){var _a=(b&&b.abi&&b.abi[0])||null;if(!_a)return '';if(_a.id!=null&&_a.id!==''&&typeof ABI!=='undefined'&&ABI[_a.id])return ABI[_a.id][2]||ABI[_a.id][1]||('#'+_a.id);try{return abiNameZh(_a.n)}catch(e){return _a.n||''}})(),item:b?itemMainZh(b):'',
     ev:ev,evTpl:tpl,nat:nn,why:(function(){try{return evWhyTxt(tpl)}catch(e){return ''}})(),
     raw:raw,natPos:natPos,wxSpd:wxSpd,isSp:isSp};
 }
@@ -11976,7 +11976,10 @@ function mateAssemble(r,teamArr,coreSysList){
     var mv=((pick.mv&&pick.mv.main)||[]).slice(0,4).map(function(sl){
       var m=MV[sl.id];return {id:sl.id,zh:(m?m[1]:String(sl.id)),ty:(m?m[3]:''),cat:(m?m[4]:'')};
     });
-    out={abi:abi,abiName:(abi&&abi[0]&&abi[0].n)||((s2.abis||[])[0]||''),
+    var _ab0=(abi&&abi[0])||null;
+    var _abName=_ab0?((_ab0.id!=null&&_ab0.id!==''&&typeof ABI!=='undefined'&&ABI[_ab0.id])?(ABI[_ab0.id][2]||ABI[_ab0.id][1]||('#'+_ab0.id)):(function(){try{return abiNameZh(_ab0.n)}catch(e){return _ab0.n||''}})()):'';
+    if(!_abName)_abName=(s2.abis||[])[0]||'';
+    out={abi:abi,abiName:_abName,
       item:(it?(Array.isArray(it)?it[0]:it):''),itemWhy:(it&&it[1])||'',ev:ev,
       roleTag:pick.roleTag,side:side,name:pick.name,moves:mv,priRole:pri,assembled:true};
   }else{
