@@ -8498,6 +8498,11 @@ function pickAbiFor(s,side,roleTag,ctx){
     if(n==='压迫感'){sc+=1;why.push('压迫感：被对方击中时对方该招多耗 1 PP → 长站场消耗/PP 续航施压锚点')}
     else if(n==='厚脂肪'){why.push('厚脂肪：受到火/冰招伤害减半（站场减伤语境，与 tag.hf 同源）')}
     else if(n==='防尘'){why.push('防尘：免疫粉末类招式与沙暴/冰雹伤害（站场豁免语境，与 tag.im 同源）')}
+    /* v4.55 项1：狙击手(Sniper) 会心增伤——按 roleTag 差异化叙事，消除 4 流派雷同空 why。
+       gameData 原文：暴击时伤害 ×1.5。输出流=高威力会心收割；受队/肉盾=补刀会心收尾。 */
+    else if(n==='狙击手'){sc+=1;
+      if(roleTag==='肉盾'||roleTag==='受队')why.push('狙击手：会心伤害 ×1.5——站场补刀/残血收尾的会心兑现')
+      else why.push('狙击手：会心伤害 ×1.5——高威力招会心收割/爆发收尾的会心锚点')}
     out.push({n:n,id:id,sc:sc,why:why});
   });
   out.sort(function(a,b){return b.sc-a.sc});
