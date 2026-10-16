@@ -2614,7 +2614,9 @@ function anDetailHtml(s,bd,R){
   h+='<div class="fld"><div class="fhd"><span class="fno">4</span>配招（4 招 + 作用）</div><div class="mvlist">';
   ((bd.mv&&bd.mv.main)||[]).forEach(function(sl,j){
     var m=MV[sl.id];
-    var use=(ERDATA.movesNotes&&ERDATA.movesNotes[sl.id])?glossify(ERDATA.movesNotes[sl.id]):esc(sl.tag||'');
+      /* v4.56 C5：per-build 招组 why（深理由，如硬撑替身免被消去自异常）优先显示，
+         仅当该招无流派级 why 时才回落 data.js 通用 movesNotes——此前通用注释逐流派雷同掩盖了深理由。 */
+      var use=(sl.why&&sl.why.length)?esc(sl.why.join('；')):((ERDATA.movesNotes&&ERDATA.movesNotes[sl.id])?glossify(ERDATA.movesNotes[sl.id]):esc(sl.tag||''));
     h+='<div class="mvrow"><span class="mvnm">'+(j+1)+'. '+esc(m?m[1]:sl.id)+'</span>'+
       (m?('<span class="dim">'+tlabel(m[3])+' '+splitLabel(m[4])+' 威力 '+(m[5]||'-')+'</span>'):'')+
       '<span class="mvuse">'+mechBadgeForMove(sl.id)+use+'</span></div>';
@@ -12547,7 +12549,9 @@ function renderCore(s){
     html+='<div class="fld"><div class="fhd"><span class="fno">3</span>配招（4 招 + 作用）</div><div class="mvlist">';
     bd.mv.main.forEach(function(sl,j){
       var m=MV[sl.id];
-      var use=(ERDATA.movesNotes&&ERDATA.movesNotes[sl.id])?glossify(ERDATA.movesNotes[sl.id]):esc(sl.tag||'');
+        /* v4.56 C5：per-build 招组 why（深理由，如硬撑替身免被消去自异常）优先显示，
+         仅当该招无流派级 why 时才回落 data.js 通用 movesNotes——此前通用注释逐流派雷同掩盖了深理由。 */
+      var use=(sl.why&&sl.why.length)?esc(sl.why.join('；')):((ERDATA.movesNotes&&ERDATA.movesNotes[sl.id])?glossify(ERDATA.movesNotes[sl.id]):esc(sl.tag||''));
       html+='<div class="mvrow"><span class="mvnm">'+(j+1)+'. '+esc(m?m[1]:sl.id)+'</span>'+
         (m?('<span class="dim">'+tlabel(m[3])+' '+splitLabel(m[4])+' 威力 '+(m[5]||'-')+'</span>'):'')+
         '<span class="mvuse">'+mechBadgeForMove(sl.id)+use+'</span></div>';
