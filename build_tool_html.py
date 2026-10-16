@@ -6488,7 +6488,7 @@ function bestStabAtk(s,side,exclude){
     if(!(m[3]===s.t1||m[3]===s.t2))return;
     var pow=m[5]||0;if(pow<60)return;
     if(INTERRUPTIBLE_NEG[id]&&_sp>=110){pow=Math.round(pow*0.50)}
-    if(!best||pow>best.pow)best={id:id,kind:'attack',tag:'本系',pow:pow,ty:m[3],why:['本系最高 '+m[1]+'('+(m[5]||0)+')']};
+    if(!best||pow>best.pow)best={id:id,kind:'attack',tag:'本系',pow:pow,ty:m[3],why:['本系最高可选 '+m[1]+'('+(m[5]||0)+')（实配见下，若不带可换同系次优）']};
   });
   return best;
 }
