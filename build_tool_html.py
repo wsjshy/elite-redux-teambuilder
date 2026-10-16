@@ -8506,10 +8506,11 @@ function pickAbiFor(s,side,roleTag,ctx){
        gameData 原文：暴击时伤害 ×1.5。杂技流=道具保血后会心爆发；硬撑流=异常增幅下会心收尾；顺风流=先制加速下会心收割；受队/肉盾=站场补刀。 */
     else if(n==='狙击手'){sc+=1;
       var _bn=(ctx&&ctx.buildName)||'';
+      var _isTank=(roleTag==='肉盾'||roleTag==='受队');
       if(_bn.indexOf('硬撑')>-1)why.push('狙击手：会心伤害 ×1.5——硬撑异常增幅下，会心一击收尾兑现满威')
-      else if(_bn.indexOf('顺风')>-1)why.push('狙击手：会心伤害 ×1.5——顺风先制加速抢到节奏后会心收割')
       else if(_bn.indexOf('杂技')>-1)why.push('狙击手：会心伤害 ×1.5——杂技道具保血/回血后打出会心爆发')
-      else if(roleTag==='肉盾'||roleTag==='受队')why.push('狙击手：会心伤害 ×1.5——站场补刀/残血收尾的会心兑现')
+      else if(_isTank)why.push('狙击手：会心伤害 ×1.5——受站场：站场叠防后会心补刀/残血收割')
+      else if(_bn.indexOf('顺风')>-1)why.push('狙击手：会心伤害 ×1.5——顺风先制抢到速度权后会心收割爆发')
       else why.push('狙击手：会心伤害 ×1.5——高威力招会心收割/爆发收尾的会心锚点')}
     out.push({n:n,id:id,sc:sc,why:why});
   });
