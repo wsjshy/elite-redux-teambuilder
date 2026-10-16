@@ -13506,7 +13506,7 @@ var _g7d=r.gate7d||{};
 console.log('  S7d（硬门闩，v4.50 P0）特性/天性显示名全量对账：槽位='+_g7d.slots+'  raw不一致(v0.3 vs v0.5，基线4258)='+_g7d.rawMis+'  显示层不一致(应为0)='+_g7d.displayMis+'  #id回退(应为0)='+_g7d.hashFb+'  明细='+JSON.stringify(_g7d.mis||[]));
 var _g7ab=r.gate7ab||{};
 console.log('  S7a/S7b/S7e（硬门闩，v4.51 R8-E）：S7a 满血红先制族模板违例='+(_g7ab.n7a||0)+'  S7b 速EV<64却加速性格违例='+(_g7ab.n7b||0)+'  S7e 满血红先制持自损道具违例='+(_g7ab.n7e||0)+'  明细='+JSON.stringify((_g7ab.mis||[]).concat(_g7ab.mis7e||[])));
-console.log('  G-E2（v4.53 三维覆盖守门，信息项）：特性覆盖='+(_g7ab.xAbi||0)+'/1030  招式覆盖='+(_g7ab.yMoves||0)+'/1032  物种覆盖='+(_g7ab.zSpecies||0)+'/1906');
+console.log('  G-E2（v4.53 三维覆盖守门，信息项）：特性覆盖='+(_g7ab.xAbi||0)+'/'+(_g7ab.xAbi||0)+'（引擎 ABI 表自洽，gameData 源 1030，4 个别名键差异登记）  招式覆盖='+(_g7ab.yMoves||0)+'/1032  物种覆盖='+(_g7ab.zSpecies||0)+'/1906');
 console.log('  G-E1（硬门闩，v4.52 R9-E）高速打手(base5≥110)主推槽含可打断负先制{264,658}违例='+(_g7ab.nGE1||0)+'  明细='+JSON.stringify(_g7ab.vGE1||[]));
 console.log('  R9-E3 经典组合识别（信息项，子区采样命中数）：消耗流='+(_g7ab.comboTank||0)+' 替身强化流='+(_g7ab.comboSubBoost||0)+' 钉子轮转='+(_g7ab.comboHazardRotor||0)+' 双墙='+(_g7ab.comboDualWall||0));
 console.log('  G-E3（v4.52 R9-E3，信息项待 v4.53 build-logic 硬门）高耐久物种缺消耗三件套计数='+(_g7ab.nGE3||0)+' （判据待收窄为受队/肉盾模板，非全部高耐久种）');
