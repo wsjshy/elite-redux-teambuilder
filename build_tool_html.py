@@ -775,7 +775,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.53</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.54</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8492,6 +8492,12 @@ function pickAbiFor(s,side,roleTag,ctx){
       if(tag.nt){sc+=1;why.push('关键耐性')}
     }
     if(sc===0&&names.length===1){sc=0;why.push('唯一可选')}
+    /* v4.54 项6 三维覆盖第二批（gameData 原文溯源，中文以 data.js ABI 实读为准）：
+       · 压迫感(Pressure,id46)：未在 abiTags 标签体系 → 补识别：被对方击中时对方该招多耗 1 PP → 长站场消耗锚点；
+       · 厚脂肪(Thick Fat,id47)/防尘(Overcoat,id142)：已由 abiTags 的 hf(火/冰减半)/im(免疫粉末·沙雹)覆盖，此处补站场语境。 */
+    if(n==='压迫感'){sc+=1;why.push('压迫感：被对方击中时对方该招多耗 1 PP → 长站场消耗/PP 续航施压锚点')}
+    else if(n==='厚脂肪'){why.push('厚脂肪：受到火/冰招伤害减半（站场减伤语境，与 tag.hf 同源）')}
+    else if(n==='防尘'){why.push('防尘：免疫粉末类招式与沙暴/冰雹伤害（站场豁免语境，与 tag.im 同源）')}
     out.push({n:n,id:id,sc:sc,why:why});
   });
   out.sort(function(a,b){return b.sc-a.sc});
@@ -12086,7 +12092,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.53';
+var ER_ENGINE_VER='v4.54';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12939,7 +12945,7 @@ function engineGuardSelfCheck(){
      · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
-  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0,vGE1=[],nGE1=0,comboTank=0,comboSubBoost=0,comboHazardRotor=0,comboDualWall=0,nGE3=0,vGE3=[],nGE4a=0,nGE4b=0,nGE4c=0,nGE4d=0,vGE4=[],_bldBySp={};
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0,vGE1=[],nGE1=0,comboTank=0,comboSubBoost=0,comboHazardRotor=0,comboDualWall=0,nGE3=0,vGE3=[],nGE4a=0,nGE4b=0,nGE4c=0,nGE4d=0,vGE4=[],nE5=0,vE5=[],_fearowDump=false,_fearowSample=null,_bldBySp={};
   /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
      · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
        · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
@@ -13071,6 +13077,30 @@ function engineGuardSelfCheck(){
           if(_m1.length&&(''+_m1[0].id==='264'||''+_m1[0].id==='658')){nGE1++;if(vGE1.length<30)vGE1.push({id:s.id,zh:s.zh,build:b.name,mv:_m1[0].id})}
         }
       }catch(eGE1){}
+      /* v4.54 E5（信息项，登记口径不强剔）：非即时输出招合并清单残留复核。
+         合并 = 两回合蓄力(eff=71:143神鸟/901电光束/988剧毒俯冲/972准备好了) + 僵直recharge(63/416/722/723/307/308/338/963/439)
+         + 可打断负先制{264真气拳,658陷阱甲壳}。高速打手(base5≥110)主推槽(main)含此类招即计数；
+         costOf 已对其折减(×0.85/×0.50)，此处仅如实登记残留规模，供判断是否需进一步降权。 */
+      try{
+        if((+(s.base||[])[5]||0)>=110){
+          var _e5main=(b.mv&&b.mv.main||[]);
+          var _e5hit=_e5main.some(function(x){
+            var mm=MV[x.id];if(!mm)return false;
+            if(INTERRUPTIBLE_NEG[x.id])return true;
+            var dd=String(mm[10]||'');
+            return /recharg|Can only be used every-?other turn|must rest/i.test(dd)||
+                   /on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(dd);
+          });
+          if(_e5hit){nE5++;if(vE5.length<20)vE5.push({id:s.id,zh:s.zh,build:b.name,mvs:_e5main.map(function(x){return x.id}).join(',')})}
+        }
+      }catch(eE5){}
+      /* v4.54 项2：大嘴雀(#22) why 覆盖抽样——收集每流派招式/特性/道具 why，验证非通用模板 */
+      if(''+s.id==='22'&&!_fearowDump){_fearowDump=true;try{
+        _fearowSample=bs.map(function(bb){return {build:bb.name,role:bb.roleTag,
+          mv:(bb.mv.main||[]).map(function(x){var mm=MV[x.id];return (mm?mm[1]:'#')+'['+(x.why||[]).join('/')+']'}),
+          abi:(bb.abi||[]).map(function(a){return a.n+':'+(a.why||[]).join('/')}),
+          it:(bb.it||[]).map(function(x){return (Array.isArray(x)?x[0]:x)+':'+(Array.isArray(x)?x[1]:'')})}});
+      }catch(eFs){}}
       /* v4.52 C5b G-E4：EV模板×定位对账——输出流(roleTag=输出)不得配耐久/站场模板 */
       try{
         var _rt=String(b.roleTag||''),_evT=String((b.ev&&b.ev.template)||'');
@@ -13368,7 +13398,7 @@ function engineGuardSelfCheck(){
   var _realAbiN=0; for(var _ak in ABI){ if(ABI[_ak]&&String(ABI[_ak][2]||'').trim())_realAbiN++; }
   return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,s7e:n7e,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
-    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e,nGE1:nGE1,vGE1:vGE1,comboTank:comboTank,comboSubBoost:comboSubBoost,comboHazardRotor:comboHazardRotor,comboDualWall:comboDualWall,nGE3:nGE3,vGE3:vGE3,zSpecies:(ERDATA.species||[]).length,yMoves:Object.keys(MV||{}).length,xAbi:_realAbiN,nGE4a:nGE4a,nGE4c:nGE4c,nGE4b:nGE4b,nGE4d:nGE4d,vGE4:vGE4},
+    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e,nGE1:nGE1,vGE1:vGE1,comboTank:comboTank,comboSubBoost:comboSubBoost,comboHazardRotor:comboHazardRotor,comboDualWall:comboDualWall,nGE3:nGE3,vGE3:vGE3,zSpecies:(ERDATA.species||[]).length,yMoves:Object.keys(MV||{}).length,xAbi:_realAbiN,nGE4a:nGE4a,nGE4c:nGE4c,nGE4b:nGE4b,nGE4d:nGE4d,vGE4:vGE4,nE5:nE5,vE5:vE5,_fearowSample:_fearowSample},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
@@ -13575,7 +13605,9 @@ console.log('  G-E2（v4.53 三维覆盖守门，信息项）：特性覆盖='+(
 console.log('  G-E1（硬门闩，v4.52 R9-E）高速打手(base5≥110)主推槽含可打断负先制{264,658}违例='+(_g7ab.nGE1||0)+'  明细='+JSON.stringify(_g7ab.vGE1||[]));
 console.log('  R9-E3 经典组合识别（信息项，子区采样命中数）：消耗流='+(_g7ab.comboTank||0)+' 替身强化流='+(_g7ab.comboSubBoost||0)+' 钉子轮转='+(_g7ab.comboHazardRotor||0)+' 双墙='+(_g7ab.comboDualWall||0));
 console.log('  G-E3（v4.52 R9-E3，信息项待 v4.53 build-logic 硬门）高耐久物种缺消耗三件套计数='+(_g7ab.nGE3||0)+' （判据待收窄为受队/肉盾模板，非全部高耐久种）');
-console.log('  G-E4（v4.53）亮点引用未带招='+(_g7ab.nGE4a||0)+'  EV模板×定位对账(输出流配耐久模板)违例='+(_g7ab.nGE4c||0)+'  动作数≥3告警='+(_g7ab.nGE4b||0)+'  同物种流派配招雷同='+(_g7ab.nGE4d||0)+'  明细='+JSON.stringify(_g7ab.vGE4||[]));
+console.log('  G-E4（v4.54）亮点引用未带招='+(_g7ab.nGE4a||0)+'  EV模板×定位对账(输出流配耐久模板)违例='+(_g7ab.nGE4c||0)+'  动作数≥3告警='+(_g7ab.nGE4b||0)+'  同物种流派配招雷同='+(_g7ab.nGE4d||0)+'  明细='+JSON.stringify(_g7ab.vGE4||[]));
+console.log('  E5（v4.54 信息项）高速打手(base5≥110)主推槽含非即时招(蓄力/僵直/可打断)残留='+(_g7ab.nE5||0)+'  明细='+JSON.stringify((_g7ab.vE5||[]).slice(0,10)));
+console.log('  项2 大嘴雀(#22) why抽样='+JSON.stringify((_g7ab._fearowSample||[]).slice(0,4)));
 console.log('  R9-E4 三维覆盖一期（信息项）：物种='+(_g7ab.zSpecies||0)+'/1906  招式='+(_g7ab.yMoves||0)+'/1032  特性='+(_g7ab.xAbi||0)+'/1030');
 ['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk','sp'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
