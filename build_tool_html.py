@@ -7679,7 +7679,10 @@ function mechBadgeHtml(h){
     '<span id="'+uid+'" style="display:none;font-size:11px;color:var(--sub);margin-left:4px">'+why+'</span> ';
 }
 function _mechZs(h){var zs=[];h.forEach(function(x){var z=mechRwZh(x.rewrite);if(zs.indexOf(z)<0)zs.push(z)});return zs.join('/')}
-function mechBadgeForMove(id){return mechBadgeHtml(mechByMove(id))}
+/* v4.56 C3：替身(164) 的通用「挺住/替身」mechLib 徽标（挡状态/控血线）逐流派雷同——
+   其角色已由 per-build 招组 why 承载（杂技=保血量/控节奏、硬撑=免被消去自异常保满威等），
+   招行不再叠加通用徽标，消除全页「挡状态/控血线」残留（mechCoreHtml 组合区不受影响）。 */
+function mechBadgeForMove(id){if(+id===164)return '';return mechBadgeHtml(mechByMove(id))}
 function mechBadgeForAbi(n){var id=mechAbiId(n);if(!id)return '';return mechBadgeHtml(mechByAbility(id))}
 function mechBadgeForItem(n){
   /* UI 传的是道具显示名（ERDATA.items 的 zh；zh 为空时回落 en，见 mechItemZh2）——同时容忍直接传 id */
