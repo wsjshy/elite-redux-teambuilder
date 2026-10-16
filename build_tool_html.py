@@ -8745,7 +8745,7 @@ function deriveBuilds(s,team){
     }catch(eE6c){}
     b.name=nm;b.side=side;b.roleTag=roleTag;
     var basis=[];
-    if(p.atk.powBest)basis.push({k:'output',txt:'本系最高 '+(side==='特殊'?(p.atk.sp?MV[p.atk.sp.id][1]+'('+p.atk.sp.pow+')':''):(p.atk.ph?MV[p.atk.ph.id][1]+'('+p.atk.ph.pow+')':''))+'　力度 '+p.power});
+    if(p.atk.powBest)basis.push({k:'output',txt:'本系最高可选 '+(side==='特殊'?(p.atk.sp?MV[p.atk.sp.id][1]+'('+p.atk.sp.pow+')':''):(p.atk.ph?MV[p.atk.ph.id][1]+'('+p.atk.ph.pow+')':''))+'　力度 '+p.power+'（实配 4 招见下，若不带可换同系次优）'});
     if(p.field.length&&ownAutoSys(s).length){
       /* v4.18：体系叙述跟随**推荐特性**（一个玩法一个体系）——推荐特性归属体系 = 本流派窗口；
          另一体系降为「备选特性转流」提示（如向日葵怪推荐叶绿素=晴，青草场地仅提示，不再并列）
