@@ -12781,9 +12781,10 @@ function engineGuardSelfCheck(){
         if(_mvZh.some(function(z){return /替身/.test(z)})&&_hasBoost&&_hasControl)comboSubBoost++;
         if(_hasHazard&&_hasPhaze)comboHazardRotor++;
         if(_hasWall&&_hasPhaze)comboDualWall++;
-        /* G-E3：受队/肉盾(耐久高)须含消耗三件套(守住/替身+剧毒/鬼火+回复)≥2，否则记违例 */
+        /* G-E3 v4.53 收窄：仅受队/耐久/肉盾流(roleTag)须含消耗三件套≥2，输出流高耐久不判 */
         var _hp=+((m.s.base||[])[2])||0,_df=+((m.s.base||[])[3])||0;
-        if(_hp+_df>=160){var _tankParts=[_hasProtect||_hasWall,_hasWear,_hasRec].filter(Boolean).length;if(_tankParts<2){nGE3++;if(vGE3.length<20)vGE3.push({id:m.s.id,zh:m.s.zh,kind:'G-E3 肉盾缺消耗三件套',parts:_tankParts})}}
+        var _isTankRt=/受|耐久|肉盾|中转|盾/.test(String(m.roleTag||m.priRole||''));
+        if(_isTankRt&&_hp+_df>=160){var _tankParts=[_hasProtect||_hasWall,_hasWear,_hasRec].filter(Boolean).length;if(_tankParts<2){nGE3++;if(vGE3.length<20)vGE3.push({id:m.s.id,zh:m.s.zh,kind:'G-E3 肉盾缺消耗三件套',parts:_tankParts})}}
       }catch(eGE3){}
       if(!m.core){var mz=String(m.s.zh||m.s.id);subMate[mz]=(subMate[mz]||0)+1}
     });
