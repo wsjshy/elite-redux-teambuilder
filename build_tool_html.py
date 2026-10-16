@@ -6943,7 +6943,7 @@ function finalizeBuildInPlace(s,b){
       var _wn0=autoWallAbi(s),_lock0=false;
       try{_lock0=!!(b.mechRw&&mechAbiNamesFor(s,b.mechRw).sel.indexOf(_abN0)>-1)}catch(eWL){_lock0=false}
       if(!_lock0&&_wn0&&(s.abis||[]).indexOf(_wn0)>-1){
-        b.abi=[{n:_wn0,sc:99,why:['开墙特性（'+_wn0+'）：与光之黏土成套，入场自动布下屏障']}];
+        b.abi=[{n:_wn0,sc:99,why:['开墙特性（'+abiNameZh(_wn0)+'）：与光之黏土成套，入场自动布下屏障']}];   /* v4.52 C5d：why 文案显示规范 zh */
         b.wallAbiSwitch=_wn0;_effW=true;
       }
     }
@@ -12493,7 +12493,7 @@ function renderCore(s){
     /* ④ 推荐特性 + 理由（数值匹配分降级到 L3）；v4.44 盲区并入项：同名项合并展示 */
     html+='<div class="fld"><div class="fhd"><span class="fno">4</span>推荐特性 + 理由</div>';
     /* v4.51 C3 P1-1：推荐区特性名经 id 反查 ABI 规范中文（与详情头特性池同源，消除双名）；回退原 a.n */
-    function _abZh(a){return (a&&a.id!=null&&a.id!==''&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):((a&&a.n)||'—')}
+    function _abZh(a){return (a&&a.id!=null&&a.id!==''&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):((a&&a.n)?abiNameZh(a.n):'—')}   /* v4.52 C5d：回退接 abiNameZh 别名反查 */
     var _abC=[],_abSeen={};
     bd.abi.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
     _abC.slice(0,2).forEach(function(a){
