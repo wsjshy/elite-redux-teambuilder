@@ -13098,6 +13098,7 @@ function engineGuardSelfCheck(){
         (b.mv&&b.mv.backup||[]).forEach(function(x){var mm=MV[x.id];if(mm&&mm[1])_haveMv[String(mm[1])]=1});
         (basisList(b)||[]).forEach(function(txt){
           var st=String(txt||'');
+          if(/可选|若不带|可换/.test(st))return;   /* v4.54 C1：可换项叙述白名单（本系最高可选≠实配，已注明） */
           for(var qi=0;qi<_mvNameList.length;qi++){
             var nm=_mvNameList[qi];
             if(st.indexOf(nm)>-1 && !_haveMv[nm]){
