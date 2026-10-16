@@ -7376,7 +7376,7 @@ var MECH_BUILD={
     var hot=bestStabAtk(s,coreSide(s),null);if(hot)b.mv.main.push(hot);
     var cov=bestCoverAtk(s,coreSide(s));if(cov)b.mv.main.push(cov);
     b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：魔法防守下替身不怕任何反作用/毒/烧伤']});
-    if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住']});
+    if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住：魔法防守下拖回合安全叠攻，免反伤/钉伤施压']});
     b.it=[['生命宝珠','1.3 倍增伤，反作用被魔法防守抵消（组合考古：Smogon Magic Guard 标准）']];
     /* v4.34 P1-3：机制特性 (所选特性 ∪ 天性) 生效判定——魔法防守须由所选特性真正提供（天性亦算） */
     b.abi=forceMechAbi(s,'magic_guard_survival',b.abi);
@@ -7431,7 +7431,7 @@ var MECH_BUILD={
       '胆量让普通/格斗招能命中幽灵系——本系（普/格）打击面无死角，不需要特意补幽灵盲');
     var hot=bestStabAtk(s,b.side,null);if(hot)b.mv.main.push(hot);
     var cov=bestCoverAtk(s,b.side);if(cov)b.mv.main.push(cov);
-    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身挡先制/状态，保血线后本系无盲点输出']});
     b.it=[['讲究头带','本系力度最大化（本流不吃追加效果，无冲突）']];
     b.abi=forceMechAbi(s,'scrappy_ghost',b.abi);   /* v4.34 P1-3：胆量须由所选特性真正提供 */
     b.basis.push({k:'mech',txt:'机制 胆量（scrappy_ghost）——普/格打幽灵，本系无盲'});
@@ -7482,7 +7482,7 @@ var MECH_BUILD={
       '巨力（大力士）物攻 ×2——物攻种族 50 也当 100 用，物理本系配最暴力招即可');
     var hot=bestStabAtk(s,'物理',null);if(hot)b.mv.main.push(hot);
     var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);
-    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身压血线/挡先制，巨力炮台安全站场输出']});
     b.it=[['讲究头带','物攻 ×2 ×1.5 = 三倍增伤（巨力流标准配置）'],['生命宝珠','1.3 倍增伤（无追加招可用）']];
     b.abi=forceMechAbi(s,'huge_power_phys',b.abi);   /* v4.34 P1-3：大力士/巨力须由所选特性真正提供 */
     /* v4.34 P2-4：巨力 × 腹鼓 / 水流喷射（报告 4.10 组合清单） */
@@ -7499,7 +7499,7 @@ var MECH_BUILD={
       '水泡水系威力 ×2（且火伤减半）——本系水招 = 双倍威力的主力输出');
     var hot=bestStabAtk(s,'特殊',null);if(hot)b.mv.main.push(hot);
     var cov=bestCoverAtk(s,'特殊');if(cov)b.mv.main.push(cov);
-    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身挡状态/先制，保血线后水泡水系双倍输出']});
     b.it=[['讲究眼镜','水系 2× 再叠 1.5，爆炸力度']];
     b.abi=forceMechAbi(s,'water_bubble_shell',b.abi);   /* v4.34 P1-3：水泡须由所选特性真正提供 */
     b.basis.push({k:'mech',txt:'机制 水泡（water_bubble_shell）——水系 2 倍，本系即核心'});
@@ -7542,7 +7542,7 @@ var MECH_BUILD={
     b.mv.main.push({id:263,kind:'attack',tag:'核心',why:['异常状态下威力 140（70 翻倍，ER 实值）——首回合即可满威']});
     b.core=[263];b.evKind='speed';   /* v4.34 P0-1/P0-2：核心招落地 + 速攻模板 EV */
     var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);
-    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身']});
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身挡先制/状态，免被强行消去自异常，保硬撑全程满威']});
     /* v4.38 B4-3 GATE-B4：异常宝珠只在「异常态能转成收益」时才推
        （毒疗 90 → 中毒不掉血 / 魔法防守 98 → 免疫自挂伤害 / 毒激 137 → 攻击向增益 / 毅力 62 → 攻击 ×1.5 且无视灼伤降攻）；
        都不命中 → 仍可给件，但必须 warn（自挂异常每回合掉血；灼伤削弱该核的**其他**物理招，硬撑本身不受影响） */
