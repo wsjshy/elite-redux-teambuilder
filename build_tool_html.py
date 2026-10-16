@@ -7084,7 +7084,7 @@ function finalizeBuildInPlace(s,b){
         else{
           b.name=_nm.replace(/控场/,'先制辅助');b.desc=String(b.desc||'').replace('控场','先制辅助');
           b.namedByMoves=1;b.nameMismatch='控场→先制辅助';
-          try{b.abi=pickAbiFor(s,b.side,b.roleTag)}catch(eAB){}   /* 解除 forceMechAbi 硬锁 → 特性按真实价值重排 */
+          try{b.abi=pickAbiFor(s,b.side,b.roleTag,{buildName:b.name})}catch(eAB){}   /* 解除 forceMechAbi 硬锁 → 特性按真实价值重排 */
         }
       }
       /* ①-2 空间（P0-C）：名含空间但主推无 433 → 先尝试入槽，补不进再回落改名
@@ -7259,7 +7259,7 @@ function mechBuildBase(s,side,name,rw,desc,roleTag){
   try{b.nat=buildNature(s,b.side,b.roleTag)}catch(e){b.nat=null}
   try{b.ev=buildEvs(s,b.side,b.roleTag,name,b)}catch(e){b.ev=null}   /* v4.37：传入流派对象，提前接入 S1~S4 */
   mechNatureApply(s,b);   /* v4.38 B 线 MECH_NATURE：机制性格语义化（只改性格名+why，不动 EV 数值/模板） */
-  try{b.abi=pickAbiFor(s,b.side,b.roleTag)}catch(e){b.abi=[]}
+  try{b.abi=pickAbiFor(s,b.side,b.roleTag,{buildName:name})}catch(e){b.abi=[]}
   return b;
 }
 function mechHasMv(s,id){return (learnOf(s)||[]).indexOf(id)>-1}
@@ -13346,6 +13346,8 @@ function engineGuardSelfCheck(){
         });
         Object.keys(_abWhyByAbi).forEach(function(an){
           Object.keys(_abWhyByAbi[an]).forEach(function(key){
+            var whyTxt=key.split('||')[1]||'';
+            if(!whyTxt)return;   /* 空 why（未给叙事的特性）不参与雷同计数，避免噪声 */
             var arr=_abWhyByAbi[an][key];
             if(arr.length>=2){nGE5b++;if(vGE5b.length<30)vGE5b.push({id:s.id,zh:s.zh,abi:an,builds:arr.join(' | ')})}
           });
