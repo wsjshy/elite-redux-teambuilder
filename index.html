@@ -127,10 +127,18 @@ details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#
 .whylist b{color:var(--text)}
 .badge-gap{background:#fff3e0; color:#b45309}
 .badge-none{background:#fce4ec; color:#b71c1c}
-.tplcard{border:1px solid var(--line); background:var(--card); border-radius:10px; padding:14px; margin-bottom:10px; cursor:pointer}
-.tplcard.open{border-color:var(--accent)}
-.tplcard h3{font-size:15px}
+/* v4.53 D-21：模板卡改原生 <details>/<summary>——点 summary 才折叠，点卡片主体(内容区)只展开不折叠，
+   根治「展开后点 body 任意处冒泡触发整卡折叠」。summary=唯一折叠热区(≥44px)，与流派卡同构。 */
+.tplcard{border:1px solid var(--line); background:var(--card); border-radius:10px; padding:0; margin-bottom:10px; overflow:hidden}
+.tplcard[open]{border-color:var(--accent)}
+.tplcard>summary{cursor:pointer; list-style:none; padding:14px; min-height:44px; display:block; position:relative}
+.tplcard>summary::-webkit-details-marker{display:none}
+.tplcard>summary:hover{background:#f6f8ff}
+.tplcard .tplchev{display:inline-block; transition:transform .15s; color:var(--sub); font-size:13px; margin-left:4px}
+.tplcard[open] .tplchev{transform:rotate(90deg)}
+.tplcard h3{font-size:15px; margin:0}
 .tplcard .theme{color:var(--sub); font-size:12px; margin:4px 0}
+.tplbody{padding:0 14px 14px}
 .tip{background:#fff8e6; border-left:3px solid var(--warn); padding:8px 10px; margin:6px 0; font-size:12px; color:#7a5b1a; border-radius:4px}
 textarea.savebox{width:100%; min-height:90px; font-family:Consolas,monospace; font-size:11px; border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical}
 /* ===== v4.6 收尾：页内轻提示（替代原生 alert，不阻塞 JS 线程）===== */
@@ -345,8 +353,8 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .mvlist{margin:2px 0}
 .mvrow{display:flex; gap:6px; align-items:baseline; margin:4px 0; flex-wrap:wrap; font-size:13px}
 .mvnm{font-weight:600}
-.mvuse{color:var(--sub); font-size:12px}
-.evsum{font-size:12px; color:var(--sub); margin:3px 0}
+.mvuse{color:var(--sub); font-size:13px}
+.evsum{font-size:13px; color:var(--sub); margin:3px 0}
 .evtap{width:100%; display:flex; align-items:center; gap:8px; min-height:44px; border:1px solid var(--line);
   border-radius:8px; background:var(--card); padding:6px 9px; cursor:pointer; font-family:inherit}
 .evsegs{display:flex; flex:1 1 auto; height:14px; border-radius:7px; overflow:hidden; background:#eef0f4; min-width:110px}
@@ -549,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.52</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.53</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4604,6 +4612,10 @@ function renderTplBody(i){
   var t=tplAll()[i],b=$('tplBody'+i);
   if(!b)return;
   var html='';
+  var recs=tplRecs(t),tSys=tplSys(t).filter(function(x){return x!=='剧毒场地'}),tArch=recs.arch||archOfTpl(t);
+  /* v4.53 D-21：首屏一眼看懂 = ①思路一句话 ②核心组件 ③固定推荐队伍(Top6 点卡片入队)；
+     ④引擎视角(开局流程/完整队伍方案/评分维度/对位预警/ER数值口径)默认收起，不占首屏 */
+  html+='<div class="tip ideabar" style="margin:2px 0 8px"><b>思路</b>：'+esc(t.theme)+'</div>';
   html+='<div class="sec"><h3>核心组件（点击可跳转反查）</h3><div style="line-height:28px">';
   t.keys.forEach(function(k){
     var kind=k[0],name=k[1];
@@ -4619,6 +4631,23 @@ function renderTplBody(i){
     }
   });
   html+='</div></div>';
+  /* ③ 固定推荐队伍（Top 6，点卡片直接入队；卡片=独立 ≥44px 触控热区） */
+  html+='<div class="sec"><h3>固定推荐队伍（Top 6 · 点卡片入队）</h3>';
+  if(recs.length){
+    html+='<div class="mxgrid">';
+    recs.forEach(function(r){
+      var main=(r.hits||[]).filter(function(x){return /（[+−]\d+）/.test(x)}).slice(0,3);
+      html+='<div class="mxc tap44" onclick="event.stopPropagation();tplAdd('+i+','+r.s.id+')" title="'+escq((r.hits||[]).slice(0,5).join('，'))+'">'+
+        sprRaw(r.s.id)+
+        '<div class="mcnm">'+esc(r.s.zh)+'</div><div class="mcx">'+r.score+'分'+(r.collapsed?(' · +'+r.collapsed+'形态'):'')+'</div>'+
+        (main.length?'<div class="mcx" style="color:var(--sub);font-size:10px;line-height:1.3">'+esc(main[0])+'</div>':'')+
+        '<div class="mcx" style="font-size:10px;color:var(--accent)">➕ 入队</div></div>';
+    });
+    html+='</div><div style="font-size:11px;color:var(--sub);margin-top:4px">点卡片即入队（最多 6 只）；完整队伍方案/逐只配招评分见下方「引擎视角」。</div>';
+  }else html+='<div class="tip">该模板核心组件在 ER 图鉴中暂无高匹配宝可梦</div>';
+  html+='</div>';
+  /* ④ 引擎视角（默认收起）：开局流程 + 槽位模型 + 完整队伍方案 + 评分维度 + 体检 + 天敌 + ER 口径 */
+  html+='<details class="acc eng"><summary>引擎视角 ▸（开局流程 / 完整队伍方案 / 评分维度 / 对位预警 / ER 数值口径；默认收起）</summary><div class="engbd">';
   /* 开局流程 */
   if(t.flow&&t.flow.length){
     html+='<div class="sec"><h3>开局流程</h3><div style="font-size:12px;line-height:1.9">';
@@ -4638,23 +4667,6 @@ function renderTplBody(i){
     html+='<div style="color:var(--sub);font-size:11px">来源：'+esc(t.src||'')+'</div>';
     html+='</div></div>';
   }
-  /* 推荐宝可梦（v4.x 体系化：archOfTpl → 该体系「维度权重表」打分；drop 项单独列示） */
-  var recs=tplRecs(t),tSys=tplSys(t).filter(function(x){return x!=='剧毒场地'}),tArch=recs.arch||archOfTpl(t);
-  html+='<div class="sec"><h3>推荐宝可梦（按体系维度分 Top 6，点击入队）</h3>';
-  html+='<div class="mini" style="color:var(--sub)">评分体系：<b>'+esc(tArch)+'</b> —— 维度权重表见下方「评分维度」；每只候选按维度逐项加减分（悬停看逐维度明细），家族去重保留最高形态。</div>';
-  if(recs.length){
-    html+='<div class="mxgrid">';
-    recs.forEach(function(r){
-      var main=(r.hits||[]).filter(function(x){return /（[+−]\d+）/.test(x)}).slice(0,3);
-      html+='<div class="mxc" onclick="event.stopPropagation();tplAdd('+i+','+r.s.id+')" title="'+escq((r.hits||[]).slice(0,5).join('，'))+'">'+
-        sprRaw(r.s.id)+
-        '<div class="mcnm">'+esc(r.s.zh)+'</div><div class="mcx">'+r.score+'分'+(r.collapsed?(' · +'+r.collapsed+'形态'):'')+'</div>'+
-        (main.length?'<div class="mcx" style="color:var(--sub);font-size:10px;line-height:1.3">'+esc(main[0])+'</div>':'')+'</div>';
-    });
-    html+='</div><div style="font-size:11px;color:var(--sub);margin-top:4px">卡片下小字=首要维度得分项；悬停看完整维度明细；点击卡片直接入队（最多 6 只）</div>';
-  }else html+='<div class="tip">该模板核心组件在 ER 图鉴中暂无高匹配宝可梦</div>';
-  /* v4.2：原「已排除（维度表硬否决）」红框已按用户裁定删除——推荐逻辑改正向体系构建，不再有排除面板 */
-  html+='</div>';
   /* v4.2：该模板的完整队伍方案（槽位骨架 + 逐槽位正向评分 Top1-3；锚 = 本模板 Top1 候选） */
   if(recs.length)html+=renderPlanSet(recs[0].s);
   /* 评分维度权重表（体系化：维度 / 权重 / 判定口径，可解释） */
@@ -4683,6 +4695,7 @@ function renderTplBody(i){
     '<div class="tip" style="background:#e3f2fd;border-color:var(--accent)"><b>机制数值（本页推荐所用）：</b><br>'+wxNums()+'<br>'+terrainNums()+'</div>';
   t.tips.forEach(function(tp){html+='<div class="tip">'+wxTip(tp)+'</div>'});
   html+='</div>';
+  html+='</div></details>';
   b.innerHTML=html;
 }
 function renderTpl(){
@@ -4691,15 +4704,16 @@ function renderTpl(){
   html+='<div class="tip">模板总数 <b>'+all.length+'</b>（数据层 '+dn+' 套'+(all.length>dn?(' + 引擎侧兜底 '+(all.length-dn)+' 套'):'')+'）· '+esc(v4ContractNote())+'</div>';
   all.forEach(function(t,i){
     var sys=tplSys(t).filter(function(x){return x!=='剧毒场地'});
-    html+='<div class="tplcard" id="tpl'+i+'" onclick="toggleTpl('+i+')">';
-    html+='<h3>'+esc(t.name)+'</h3><div class="theme">'+esc(t.theme)+'</div>';
+    /* v4.53 D-21：原生 details/summary——summary(标题+缩略图)=唯一折叠热区；tplbody 内容区点什么都不折叠 */
+    html+='<details class="tplcard" id="tpl'+i+'" ontoggle="onTplToggle('+i+')">';
+    html+='<summary><h3>'+esc(t.name)+' <span class="tplchev">▸</span></h3><div class="theme">'+esc(t.theme)+'</div>';
     if(sys.length)html+='<div style="margin:2px 0">'+sys.map(function(x){return '<span class="tagline">体系 '+esc(x)+'</span>'}).join('')+(i>=dn?'<span class="tagline">引擎侧兜底</span>':'')+'</div>';
     else if(i>=dn)html+='<div style="margin:2px 0"><span class="tagline">引擎侧兜底</span></div>';
     html+='<div style="font-size:12px;color:var(--sub);margin-bottom:4px">角色分工：'+esc(t.roles.join(' · '))+'</div>';
     /* D5：模板卡带精灵图（延迟填充，避免首屏卡顿） */
-    html+='<div class="tplthumb" id="tplThumb'+i+'"></div>';
-    html+='<div id="tplBody'+i+'" style="display:none"></div>';
-    html+='</div>';
+    html+='<div class="tplthumb" id="tplThumb'+i+'"></div></summary>';
+    html+='<div class="tplbody" id="tplBody'+i+'"></div>';
+    html+='</details>';
   });
   box.innerHTML=html;
   /* D5：异步逐张填充 Top3 缩略图（不阻塞首屏渲染） */
@@ -4721,12 +4735,11 @@ function renderTpl(){
     setTimeout(step,0);
   })();
 }
-function toggleTpl(i){
-  var c=$('tpl'+i),b=$('tplBody'+i);
-  var open=b.style.display!=='none';
-  if(!open)renderTplBody(i);
-  b.style.display=open?'none':'block';
-  c.classList.toggle('open',!open);
+/* v4.53 D-21：首次展开才懒渲染 body（原生 details open 态）；收起再开不重渲染（body._filled 标记） */
+function onTplToggle(i){
+  var d=$('tpl'+i),b=$('tplBody'+i);
+  if(!d||!b)return;
+  if(d.open&&!b._filled){renderTplBody(i);b._filled=1}
 }
 /* 模板推荐入队 + 刷新体检 */
 function tplAdd(i,id){
@@ -4852,6 +4865,18 @@ function pickFuncs(s,role,side,used){
         if(sy&&coreSys(s).indexOf(sy)<0){sc*=0.3;why.push('非本体系×0.3')}
       }
       if(cat==='removal')why.push('除钉：229 高速旋转清自身侧／432 清除浓雾清双方钉子 · 墙仅对手侧 · 降闪避 1 级');
+      /* v4.53 R9-F 项5：变化招理由逐流派生成——替身/守住按 role 实际语境给理由，弃通用「配合强化/受队」模板 */
+      if(cat==='protect'){
+        if(id===164){
+          if(role==='强化')why.push('替身：挡状态/先制后安全叠强化');
+          else if(role==='肉盾'||role==='受队')why.push('替身：控血线 + 耗对手关键招（毒/钉每回合磨）');
+          else why.push('替身：挡异常状态与先制，保血线再出手');
+        }else if(id===182){
+          if(role==='强化')why.push('守住：撑过对手爆发后再强化');
+          else if(role==='肉盾'||role==='受队')why.push('守住：拖回合耗招/安全轮转');
+          else why.push('守住：先读保命，耗对手关键招');
+        }
+      }
       c.tags.forEach(function(x){why.push(x)});
       if(c.note)why.push(c.note);
       if(!best||sc>best.score)best={id:id,cat:cat,score:sc,why:why,w:w};
@@ -8028,6 +8053,14 @@ function itemScored(s,side,tag,ctx){
   var p=profileOf(s),tg=oppTargets(s),d=itemDutyOf(tag,p,tg),res=[],ev=null;
   /* v4.36 D1：防守位（攻种族<70 且非变身者）→ 职责四轴改按「防御续航」，改推防御向（与 itemApplies 的门控同判据） */
   if(itemDefPos(s))d=AX_BY_CLS['防御续航'];
+  /* v4.53 R9-F 项3：offensive bias——职责 burst 轴按本物种攻种族加偏，根治输出手被错配防御向道具（凸凸头盔次优）。
+     高攻手(atkBest≥115) burst+0.15 → 输出道具(生命宝珠/讲究系)相对防御向(凸凸头盔 burst=0)升权；
+     低攻手(<80) burst-0.10。仅子区/道具评分路径，deriveBuilds 不消费 itemScored ⇒ 4680 流派零差异。 */
+  else{
+    var _ob=atkBest(s);
+    if(_ob>=115)d.burst=Math.min(1.2,d.burst+0.15);
+    else if(_ob<80)d.burst=Math.max(0,d.burst-0.10);
+  }
   try{ev=evioAdv(s)}catch(e){ev=null}
   var hazAct=tg.env.hazFrac>=0.25,boostAct=tg.env.boostFrac>=0.30;
   /* v433-2：队伍体系（ctx.sys）优先于本物种窗口——晴天队的「天气来源」位即便候选自身非设置手，也应取炽热岩石 */
@@ -8079,10 +8112,17 @@ function itemScored(s,side,tag,ctx){
     /* 职责载荷：该职责的兑现物（控速 → 夺先手权道具） */
     if((ROLE_PAYLOAD[tag]||[]).indexOf(c.zh)>-1){sc+=ROLE_PAYLOAD_BONUS;ps.push('P5');beats.push('直接兑现「'+tag+'」职责：夺先手权（围巾=速度×1.5 常驻 / 嘉珍果=速度×2 一次 / 先制之爪=先制概率）')}
     if(c.zh==='黑色污泥'){sc+=0.40;ps.push('P5');beats.push('毒系专属续航')}
-    if(c.zh==='剧毒珠'||c.zh==='剧毒宝珠'||c.zh==='火焰宝珠'){sc+=0.35;ps.push('P5');beats.push('特性异常联动（毒疗/毅力类）')}
+    if(c.zh==='剧毒珠'||c.zh==='剧毒宝珠'||c.zh==='火焰宝珠'){
+      /* v4.53 R9-F 项4：宝珠队友联动深化——毒疗/毅力站场流主推（P5+0.35）；纯速攻输出位无异常协同时软降权
+         （自伤损血与速攻斩杀线冲突），降为备选/不推。itemApplies(L8220) 已硬门：无 毒疗/毅力 协同根本不入池。 */
+      sc+=0.35;ps.push('P5');beats.push('特性异常联动（毒疗/毅力类站场流主推）');
+      if(['输出','增伤','游击'].indexOf(tag)>-1&&!abiMentions(s,/中毒时|灼伤时|异常状态时|陷入异常/)){sc-=0.15;beats.push('速攻位自伤损血冲突 → 降为备选')}
+    }
     if(/宝石$/.test(c.zh)){sc+=0.40;ps.push('P5');beats.push('本系实际属性首击增伤')}
     if(c.id&&RESIST_BERRY_ALL[c.id]){sc+=0.35;ps.push('P5');beats.push('对准实际承受最大弱点')}
-    if(/种子$/.test(c.zh)){sc+=0.25;ps.push('P5')}
+    /* v4.53 R9-F 项4：场地种子绑定开场地队友——itemApplies(L8234) 已硬门：本体系须含对应场地（自己开或队友开），
+       无场地来源直接不推；此处补 +1 能力消耗的一次性联动说明。 */
+    if(/种子$/.test(c.zh)){sc+=0.25;ps.push('P5');beats.push('需开场地队友（自己/队友开对应场地）→ 进场 +1 能力后消耗')}
     /* v4.52 C5b R9-E5-2：节拍器节奏联动——节拍器需连续同招递增，配招含蓄力/僵直/顺风开(需反复换招)则节奏冲突降权 */
     if(c.zh==='节拍器'){
       var _mvDesc=learn.map(function(id){var mm=MV[id];return mm?String(mm[10]||''):''}).join(' ');
@@ -11828,7 +11868,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.52';
+var ER_ENGINE_VER='v4.53';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12276,15 +12316,37 @@ function renderCore(s){
     html+='<div class="fld"><div class="fhd"><span class="fno">4</span>推荐特性 + 理由</div>';
     /* v4.51 C3 P1-1：推荐区特性名经 id 反查 ABI 规范中文（与详情头特性池同源，消除双名）；回退原 a.n */
     function _abZh(a){return (a&&a.id!=null&&a.id!==''&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):((a&&a.n)?abiNameZh(a.n):'—')}   /* v4.52 C5d：回退接 abiNameZh 别名反查 */
+    /* v4.53 D-16：top1 特性 why 兜底——引擎未生成时按特性补一句分析（只补空、不改分） */
+    function _abWhyFallback(n){
+      var z=String(n||'');
+      if(/狙击|超幸运|会心/.test(z))return '会心流：需配高会心招/聚气，会心一击率才有意义';
+      if(/疾风之翼/.test(z))return '飞行系先制补刀：极速下补打残血';
+      if(/加速/.test(z))return '滚雪球：每回合提速，适合控场强化流';
+      if(/大力士|瑜伽之力/.test(z))return '物攻×2：本流派物理输出核心来源';
+      if(/舍身|硬爪|铁拳/.test(z))return '同类增伤被动：与本系输出招成套';
+      if(/再生力/.test(z))return '轮换回血：下场回 1/3 血，适合中转站场';
+      if(/毒疗|自然回复/.test(z))return '状态站场：异常/回血维持长线消耗';
+      return '与本流派定位成套：覆盖该打法的关键机制缺口';
+    }
     var _abC=[],_abSeen={};
     bd.abi.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
-    _abC.slice(0,2).forEach(function(a){
-      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'+mechBadgeForAbi(a.n)+'</span>'+
-        '<span class="mvuse">'+esc((a.why||[]).join('；'))+'</span></div>';
-    });
-    if(_abC.length>2)html+='<div class="dim">其余可选：'+_abC.slice(2).map(function(a){return '<span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'}).join(' ')+'（当前默认生效 = 首选「'+esc(_abZh(_abC[0]))+'」）</div>';
-    else if(_abC.length)html+='<div class="dim">（当前默认生效 = 首选「'+esc(_abZh(_abC[0]))+'」）</div>';
-    if(_abC.length<bd.abi.length)html+='<div class="dim">另有 '+(bd.abi.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
+    /* v4.53 D-15：唯一主推模式——默认只渲染 top1；仅当 top2 评分与 top1 差<5% 视为真分支才并列 */
+    var _prim=_abC[0];
+    if(_prim){
+      var _pw=(_prim.why&&_prim.why.length)?_prim.why:[_abWhyFallback(_prim.n)];
+      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(_prim.n)+')">'+esc(_abZh(_prim))+'</span>'+mechBadgeForAbi(_prim.n)+'</span>'+
+        '<span class="mvuse">'+esc(_pw.join('；'))+'</span></div>';
+    }
+    var _sec=_abC[1];
+    var _branch=_sec&&_prim&&(((_prim.sc||0)-(_sec.sc||0))/Math.max(1,(_prim.sc||1)))<0.05;
+    if(_branch){
+      var _sw=(_sec.why&&_sec.why.length)?_sec.why:[_abWhyFallback(_sec.n)];
+      html+='<div class="dim" style="font-size:11px">分支推荐（评分接近，按语境二选一）：</div>';
+      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(_sec.n)+')">'+esc(_abZh(_sec))+'</span>'+mechBadgeForAbi(_sec.n)+'</span>'+
+        '<span class="mvuse">'+esc(_sw.join('；'))+'</span></div>';
+    }
+    if(_abC.length>2)html+='<div class="dim" style="font-size:11px">备选特性（非主推）：'+_abC.slice(2).map(function(a){return '<span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'}).join(' ')+'</div>';
+    if(_abC.length<bd.abi.length)html+='<div class="dim" style="font-size:11px">另有 '+(bd.abi.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
     html+='</div>';
     /* ⑤ 性格 */
     html+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格</div><div>'+bd.nat.map(function(n){
@@ -12324,7 +12386,17 @@ function renderCore(s){
     }
     else html+='<div class="dim">该流派暂无高匹配队友</div>';
     var _mateCtx2={team:[s].concat(mainMates.map(function(r){return r&&r.s})).filter(Boolean),sys:coreSys(s)};
-    if(altMates.length)html+='<div class="dim" style="margin-top:4px">备选（体系补盲 / 整体联防，已去重）</div><div class="mategrid">'+altMates.map(function(r){return mateCard(r,pool,false,null,_mateCtx2)}).join('')+'</div>';
+    /* v4.53 D-18：备选标注「替换 #N 位（原 xx）」语义——按主队友定位匹配位序 */
+    if(altMates.length){
+      var _posByRole={};
+      mainMates.forEach(function(r,i){var pr=(r&&r.priRole)||'输出';if(!_posByRole[pr])_posByRole[pr]={n:i+1,zh:(r&&r.s&&r.s.zh)||''}});
+      html+='<div class="dim" style="margin-top:4px">备选（可替换对应定位位，已去重）</div><div class="mategrid">'+altMates.map(function(r){
+        var pr=(r&&r.priRole)||'输出';
+        var pos=_posByRole[pr];
+        var tag=pos?('<div class="dim" style="font-size:10px;color:var(--sub)">替换 #'+pos.n+' 位（原 '+esc(pos.zh)+' · 同定位）</div>'):'';
+        return '<div>'+mateCard(r,pool,false,null,_mateCtx2)+tag+'</div>';
+      }).join('')+'</div>';
+    }
     /* v4.27 组合亮点（展示层）：核心+主推队友定稿 → 跨精灵组合扫描（先制天气轴/慢速轮转/雨天双必中等）
        v4.35 P1-5：展示层改 strict 口径（src 必填 + 体系/核心强相关或三方协同 + 参与方实际配招；撒钉除钉降级不计） */
     try{
@@ -12649,7 +12721,7 @@ function engineGuardSelfCheck(){
      · S5q（**信息项**，不作门闩）：队友集中度（方案分母最高 % 对齐探针口径；设计目标 ≤60%）
      S5o/S5q 为何降级为信息项：见下方 nSubViol 处的三段理由（分布型目标不可硬编成门闩 / 采样伪影 / 无同口径基线）。 */
   var S5O_TARGET_MD=18,S5Q_TARGET_PRES=60;
-  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0,vGE1=[],nGE1=0,comboTank=0,comboSubBoost=0,comboHazardRotor=0,comboDualWall=0,nGE3=0,vGE3=[],nGE4a=0,nGE4b=0,nGE4c=0,vGE4=[];
+  var vsp=[],subPlans=0,subSlots=0,subEvOk=0,subItem={},subMate={},subErr=0,subPlanMates=[],v7ab=[],n7a=0,n7b=0,v7e=[],n7e=0,vGE1=[],nGE1=0,comboTank=0,comboSubBoost=0,comboHazardRotor=0,comboDualWall=0,nGE3=0,vGE3=[],nGE4a=0,nGE4b=0,nGE4c=0,nGE4d=0,vGE4=[],_bldBySp={};
   /* ===== v4.49 新增守门（R6-1 §3.5/§3.6）=====
      · S6a（硬门闩）：逐 kind genShareOfTop1（= 探针字段 ciShareOfScore）≤ 45%，或该 kind 入 F-1 白名单。
        · 口径与外部探针 v449_probe.cjs **同源**：取 plan.pools[need.id].list[0] 的 needScore 落盘 dims 明细，
@@ -12749,15 +12821,18 @@ function engineGuardSelfCheck(){
         if(_mvZh.some(function(z){return /替身/.test(z)})&&_hasBoost&&_hasControl)comboSubBoost++;
         if(_hasHazard&&_hasPhaze)comboHazardRotor++;
         if(_hasWall&&_hasPhaze)comboDualWall++;
-        /* G-E3：受队/肉盾(耐久高)须含消耗三件套(守住/替身+剧毒/鬼火+回复)≥2，否则记违例 */
+        /* G-E3 v4.53 收窄：仅受队/耐久/肉盾流(roleTag)须含消耗三件套≥2，输出流高耐久不判 */
         var _hp=+((m.s.base||[])[2])||0,_df=+((m.s.base||[])[3])||0;
-        if(_hp+_df>=160){var _tankParts=[_hasProtect||_hasWall,_hasWear,_hasRec].filter(Boolean).length;if(_tankParts<2){nGE3++;if(vGE3.length<20)vGE3.push({id:m.s.id,zh:m.s.zh,kind:'G-E3 肉盾缺消耗三件套',parts:_tankParts})}}
+        var _isTankRt=/受|耐久|肉盾|中转|盾/.test(String(m.roleTag||m.priRole||''));
+        if(_isTankRt&&_hp+_df>=160){var _tankParts=[_hasProtect||_hasWall,_hasWear,_hasRec].filter(Boolean).length;if(_tankParts<2){nGE3++;if(vGE3.length<20)vGE3.push({id:m.s.id,zh:m.s.zh,kind:'G-E3 肉盾缺消耗三件套',parts:_tankParts})}}
       }catch(eGE3){}
       if(!m.core){var mz=String(m.s.zh||m.s.id);subMate[mz]=(subMate[mz]||0)+1}
     });
     var _mset={};(plan.team||[]).forEach(function(m){if(m&&m.s&&!m.core)_mset[String(m.s.zh||m.s.id)]=1});
     subPlanMates.push(Object.keys(_mset));
   }
+  /* v4.53 G-E4①：招式中文名清单（亮点文本对账用；仅长度≥3 的中文名以降低子串误报） */
+  var _mvNameList=[]; for(var _mid in MV){var _nm=String((MV[_mid]||[])[1]||''); if(_nm.length>=3)_mvNameList.push(_nm)}
   (ERDATA.species||[]).forEach(function(s){
     nSp++;
     var auto={};try{(ownAutoSys(s)||[]).forEach(function(x){auto[x]=1})}catch(e){}
@@ -12783,6 +12858,38 @@ function engineGuardSelfCheck(){
         var _rt=String(b.roleTag||''),_evT=String((b.ev&&b.ev.template)||'');
         if(_rt==='输出'&&/耐久|受队|站场|非输出位/.test(_evT)){nGE4c++;if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4 输出流配耐久模板',tpl:_evT})}
       }catch(eGE4c){}
+      /* v4.53 G-E4b：单流派动作数阈值——开天气/场地/强化/蓄力/回复动作数≥3 告警（信息项） */
+      try{
+        var _mn=(b.mv&&b.mv.main||[]).map(function(x){var mm=MV[x.id];return mm?String(mm[1]||''):''});
+        var _setup=_mn.filter(function(z){return /晴|雨|沙|雪|顺风|戏法空间|光墙|反射壁|剑舞|龙舞|成长|冥想|羽栖|睡觉|栖息|替身|守住/.test(z)}).length;
+        if(_setup>=3){nGE4b++;if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4 动作数≥3',setup:_setup})}
+      }catch(eGE4b){}
+      /* v4.53 G-E4d：同物种不同流派配招签名对比——同一物种 ≥2 流派配招主招完全相同记违例 */
+      try{
+        var _sig=(b.mv&&b.mv.main||[]).map(function(x){return ''+x.id}).sort().join(',');
+        var _k=''+s.id;
+        if(!_bldBySp[_k])_bldBySp[_k]={};
+        if(_sig&&_bldBySp[_k][_sig]){nGE4d++;if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4d 同物种流派配招雷同',sig:_sig})}
+        else if(_sig)_bldBySp[_k][_sig]=1;
+      }catch(eGE4d){}
+      /* v4.53 G-E4①：亮点引用 vs 配招对账——basis(设计亮点)文本里出现的招式中文名，必须 ∈ 该流派主招∪备选。
+         黑盒 P1：大嘴雀流派亮点引「终极冲击150」但配招/备选无此招。信息项，违例如实登记。 */
+      try{
+        var _haveMv={};
+        (b.mv&&b.mv.main||[]).forEach(function(x){var mm=MV[x.id];if(mm&&mm[1])_haveMv[String(mm[1])]=1});
+        (b.mv&&b.mv.backup||[]).forEach(function(x){var mm=MV[x.id];if(mm&&mm[1])_haveMv[String(mm[1])]=1});
+        (basisList(b)||[]).forEach(function(txt){
+          var st=String(txt||'');
+          for(var qi=0;qi<_mvNameList.length;qi++){
+            var nm=_mvNameList[qi];
+            if(st.indexOf(nm)>-1 && !_haveMv[nm]){
+              nGE4a++;
+              if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4① 亮点引用未带招',mv:nm,basis:st.slice(0,40)});
+              break; /* 每条亮点只记第一个违例招，避免刷屏 */
+            }
+          }
+        });
+      }catch(eGE4a){}
       Object.keys(auto).forEach(function(S){
         var rk=ROCK[S];if(!rk)return;checkedA++;
         if(items.indexOf(rk)>-1)va.push({id:s.id,zh:s.zh,build:b.name,item:rk,sys:S,autoBy:Object.keys(auto)});
@@ -13036,9 +13143,13 @@ function engineGuardSelfCheck(){
   var s7dViol=s7dMis;
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
     +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b+n7e;
+  /* v4.53 R9-F 项7：ABI 四别名键去重——ids 1030-1033 是 ER 双特性组合条目（无独立中文名 a[2]=""，
+     如 Slime Mold=Sticky Hold+Gooey），成分已被基础特性覆盖，非独立特性。覆盖计数排除这 4 项 → 1030/1030。
+     （条目本体保留在 ABI 供 8 个物种 innIds 反查，仅不计入覆盖分母。） */
+  var _realAbiN=0; for(var _ak in ABI){ if(ABI[_ak]&&String(ABI[_ak][2]||'').trim())_realAbiN++; }
   return {total:total,viol:{a:va.length,b1:vb1.length,b2:vb2.length,m5:vm5.length,m6:vm6.length,na:vna.length,pr:vpr.length,mg:vmg.length,mv4:vmv4.length,ci:vci.length,fs:vfs.length,lk:vlk.length,sp:vsp.length,sub:nSubViol,s6a:s6AViol,s6b:s6BViol,s7d:s7dViol,s7a:n7a,s7b:n7b,s7e:n7e,
       vest:vvest.length,vestSub:nSubVestSt,choiceSub:nSubChoiceSt},
-    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e,nGE1:nGE1,vGE1:vGE1,comboTank:comboTank,comboSubBoost:comboSubBoost,comboHazardRotor:comboHazardRotor,comboDualWall:comboDualWall,nGE3:nGE3,vGE3:vGE3,zSpecies:(ERDATA.species||[]).length,yMoves:Object.keys(MV||{}).length,xAbi:Object.keys(ABI||{}).length,nGE4c:nGE4c,vGE4:vGE4},
+    gate7ab:{n7a:n7a,n7b:n7b,n7e:n7e,mis:v7ab,mis7e:v7e,nGE1:nGE1,vGE1:vGE1,comboTank:comboTank,comboSubBoost:comboSubBoost,comboHazardRotor:comboHazardRotor,comboDualWall:comboDualWall,nGE3:nGE3,vGE3:vGE3,zSpecies:(ERDATA.species||[]).length,yMoves:Object.keys(MV||{}).length,xAbi:_realAbiN,nGE4a:nGE4a,nGE4c:nGE4c,nGE4b:nGE4b,nGE4d:nGE4d,vGE4:vGE4},
     gate6:{s6a:{limit:S6A_LIMIT,n_kind_ci:s6AN,n_kind_judged:s6Judged,n_kind_le45:s6ALe45,
         n_kind_over_limit:s6Over.length,n_kind_over_limit_nonwhite:s6OverNW.length,
         over_limit:s6Over,over_limit_nonwhite:s6OverNW,scope449:S6_SCOPE449,f1_kinds:s6F1,d1_defer_kinds:s6Defer,
