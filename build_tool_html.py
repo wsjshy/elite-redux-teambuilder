@@ -2591,7 +2591,8 @@ function anDetailHtml(s,bd,R){
     var _abC=[],_abSeen={};
     _ab.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
     _abC.slice(0,2).forEach(function(a){
-      h+='<div class="mvrow"><span class="mvnm">'+anAbiChipH(a.n,'特性',a.id)+mechBadgeForAbi(a.n)+'</span>'+
+      var _cn=(a.id!=null&&a.id!==''&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):abiNameZh(a.n);   /* v4.52 C5c：推荐特性名平行 id/别名反查 ABI 规范中文 */
+      h+='<div class="mvrow"><span class="mvnm">'+anAbiChipH(_cn,'特性',a.id)+mechBadgeForAbi(a.n)+'</span>'+
         '<span class="mvuse">'+esc((a.why||[]).join('；'))+'</span></div>';
     });
     if(_abC.length<_ab.length)h+='<div class="dim" style="font-size:11px">另有 '+(_ab.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
@@ -11877,6 +11878,12 @@ function abiChipName(n){ /* v4.50 P0：显示名统一反查 ABI 表规范中文
 /* v4.50 P0：物种特性/天性显示名反查——优先平行 id（abiIds/innIds，数据层逐位同源 gameData），
    消除「v0.3 名恰好等于另一特性 v0.5 名」的碰撞（如 加速:pid474 应显示 加速度，却被精确命中 id3 的 加速）。
    回退链：平行 id→ABI zh→ABI en→名字解析(精确 zh/en→alias)→原串。'#'+id 回退预期 0（S7d 守门登记）。 */
+/* v4.52 C5c：按特性中文名解析规范 zh（需求驱动面板推荐特性名，与流派卡同口径——abiIdByZhOrEn→ABI zh） */
+function abiNameZh(n){
+  if(n==null||n==='')return '';
+  try{var id=abiIdByZhOrEn(n);if(id&&ABI[id])return ABI[id][2]||ABI[id][1]||('#'+id)}catch(e){}
+  return String(n);
+}
 function speciesAbiZh(s,field,i){
   var ids=(field==='inns')?(s.innIds||[]):(s.abiIds||[]);
   var id=(ids&&ids[i]!=null&&ids[i]!=='')?(''+ids[i]):null;
