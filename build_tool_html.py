@@ -12564,7 +12564,17 @@ function renderCore(s){
     }
     else html+='<div class="dim">该流派暂无高匹配队友</div>';
     var _mateCtx2={team:[s].concat(mainMates.map(function(r){return r&&r.s})).filter(Boolean),sys:coreSys(s)};
-    if(altMates.length)html+='<div class="dim" style="margin-top:4px">备选（体系补盲 / 整体联防，已去重）</div><div class="mategrid">'+altMates.map(function(r){return mateCard(r,pool,false,null,_mateCtx2)}).join('')+'</div>';
+    /* v4.53 D-18：备选标注「替换 #N 位（原 xx）」语义——按主队友定位匹配位序 */
+    if(altMates.length){
+      var _posByRole={};
+      mainMates.forEach(function(r,i){var pr=(r&&r.priRole)||'输出';if(!_posByRole[pr])_posByRole[pr]={n:i+1,zh:(r&&r.s&&r.s.zh)||''}});
+      html+='<div class="dim" style="margin-top:4px">备选（可替换对应定位位，已去重）</div><div class="mategrid">'+altMates.map(function(r){
+        var pr=(r&&r.priRole)||'输出';
+        var pos=_posByRole[pr];
+        var tag=pos?('<div class="dim" style="font-size:10px;color:var(--sub)">替换 #'+pos.n+' 位（原 '+esc(pos.zh)+' · 同定位）</div>'):'';
+        return '<div>'+mateCard(r,pool,false,null,_mateCtx2)+tag+'</div>';
+      }).join('')+'</div>';
+    }
     /* v4.27 组合亮点（展示层）：核心+主推队友定稿 → 跨精灵组合扫描（先制天气轴/慢速轮转/雨天双必中等）
        v4.35 P1-5：展示层改 strict 口径（src 必填 + 体系/核心强相关或三方协同 + 参与方实际配招；撒钉除钉降级不计） */
     try{
