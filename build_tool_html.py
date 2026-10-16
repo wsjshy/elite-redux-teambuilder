@@ -2102,7 +2102,7 @@ function anRowOf(s,b){
   return {id:s.id,zh:s.zh,name:(b&&b.name)||'（无推荐流派）',side:(b&&b.side)||'',roleTag:(b&&b.roleTag)||'',
     moves:((b&&b.mv&&b.mv.main)||[]).map(function(x){return x.id}),
     movesZh:((b&&b.mv&&b.mv.main)||[]).map(function(x){return anMvZh(x.id)}),
-    abi:(b&&b.abi&&b.abi[0]&&b.abi[0].n)||'',item:b?itemMainZh(b):'',
+    abi:(function(){var _a=(b&&b.abi&&b.abi[0])||null;if(!_a)return '';if(_a.id!=null&&_a.id!==''&&typeof ABI!=='undefined'&&ABI[_a.id])return ABI[_a.id][2]||ABI[_a.id][1]||('#'+_a.id);try{return abiNameZh(_a.n)}catch(e){return _a.n||''}})(),item:b?itemMainZh(b):'',
     ev:ev,evTpl:tpl,nat:nn,why:(function(){try{return evWhyTxt(tpl)}catch(e){return ''}})(),
     raw:raw,natPos:natPos,wxSpd:wxSpd,isSp:isSp};
 }
