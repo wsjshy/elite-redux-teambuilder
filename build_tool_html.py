@@ -12194,7 +12194,10 @@ function mateAssemble(r,teamArr,coreSysList){
     var mv=((pick.mv&&pick.mv.main)||[]).slice(0,4).map(function(sl){
       var m=MV[sl.id];return {id:sl.id,zh:(m?m[1]:String(sl.id)),ty:(m?m[3]:''),cat:(m?m[4]:'')};
     });
-    out={abi:abi,abiName:(abi&&abi[0]&&abi[0].n)||((s2.abis||[])[0]||''),
+    var _ab0=(abi&&abi[0])||null;
+    var _abName=_ab0?((_ab0.id!=null&&_ab0.id!==''&&typeof ABI!=='undefined'&&ABI[_ab0.id])?(ABI[_ab0.id][2]||ABI[_ab0.id][1]||('#'+_ab0.id)):(function(){try{return abiNameZh(_ab0.n)}catch(e){return _ab0.n||''}})()):'';
+    if(!_abName)_abName=(s2.abis||[])[0]||'';
+    out={abi:abi,abiName:_abName,
       item:(it?(Array.isArray(it)?it[0]:it):''),itemWhy:(it&&it[1])||'',ev:ev,
       roleTag:pick.roleTag,side:side,name:pick.name,moves:mv,priRole:pri,assembled:true};
   }else{
