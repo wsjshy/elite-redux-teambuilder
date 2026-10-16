@@ -12494,15 +12494,37 @@ function renderCore(s){
     html+='<div class="fld"><div class="fhd"><span class="fno">4</span>推荐特性 + 理由</div>';
     /* v4.51 C3 P1-1：推荐区特性名经 id 反查 ABI 规范中文（与详情头特性池同源，消除双名）；回退原 a.n */
     function _abZh(a){return (a&&a.id!=null&&a.id!==''&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):((a&&a.n)?abiNameZh(a.n):'—')}   /* v4.52 C5d：回退接 abiNameZh 别名反查 */
+    /* v4.53 D-16：top1 特性 why 兜底——引擎未生成时按特性补一句分析（只补空、不改分） */
+    function _abWhyFallback(n){
+      var z=String(n||'');
+      if(/狙击|超幸运|会心/.test(z))return '会心流：需配高会心招/聚气，会心一击率才有意义';
+      if(/疾风之翼/.test(z))return '飞行系先制补刀：极速下补打残血';
+      if(/加速/.test(z))return '滚雪球：每回合提速，适合控场强化流';
+      if(/大力士|瑜伽之力/.test(z))return '物攻×2：本流派物理输出核心来源';
+      if(/舍身|硬爪|铁拳/.test(z))return '同类增伤被动：与本系输出招成套';
+      if(/再生力/.test(z))return '轮换回血：下场回 1/3 血，适合中转站场';
+      if(/毒疗|自然回复/.test(z))return '状态站场：异常/回血维持长线消耗';
+      return '与本流派定位成套：覆盖该打法的关键机制缺口';
+    }
     var _abC=[],_abSeen={};
     bd.abi.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
-    _abC.slice(0,2).forEach(function(a){
-      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'+mechBadgeForAbi(a.n)+'</span>'+
-        '<span class="mvuse">'+esc((a.why||[]).join('；'))+'</span></div>';
-    });
-    if(_abC.length>2)html+='<div class="dim">其余可选：'+_abC.slice(2).map(function(a){return '<span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'}).join(' ')+'（当前默认生效 = 首选「'+esc(_abZh(_abC[0]))+'」）</div>';
-    else if(_abC.length)html+='<div class="dim">（当前默认生效 = 首选「'+esc(_abZh(_abC[0]))+'」）</div>';
-    if(_abC.length<bd.abi.length)html+='<div class="dim">另有 '+(bd.abi.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
+    /* v4.53 D-15：唯一主推模式——默认只渲染 top1；仅当 top2 评分与 top1 差<5% 视为真分支才并列 */
+    var _prim=_abC[0];
+    if(_prim){
+      var _pw=(_prim.why&&_prim.why.length)?_prim.why:[_abWhyFallback(_prim.n)];
+      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(_prim.n)+')">'+esc(_abZh(_prim))+'</span>'+mechBadgeForAbi(_prim.n)+'</span>'+
+        '<span class="mvuse">'+esc(_pw.join('；'))+'</span></div>';
+    }
+    var _sec=_abC[1];
+    var _branch=_sec&&_prim&&(((_prim.sc||0)-(_sec.sc||0))/Math.max(1,(_prim.sc||1)))<0.05;
+    if(_branch){
+      var _sw=(_sec.why&&_sec.why.length)?_sec.why:[_abWhyFallback(_sec.n)];
+      html+='<div class="dim" style="font-size:11px">分支推荐（评分接近，按语境二选一）：</div>';
+      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="gotoAbi('+jsl(_sec.n)+')">'+esc(_abZh(_sec))+'</span>'+mechBadgeForAbi(_sec.n)+'</span>'+
+        '<span class="mvuse">'+esc(_sw.join('；'))+'</span></div>';
+    }
+    if(_abC.length>2)html+='<div class="dim" style="font-size:11px">备选特性（非主推）：'+_abC.slice(2).map(function(a){return '<span class="abi" onclick="gotoAbi('+jsl(a.n)+')">'+esc(_abZh(a))+'</span>'}).join(' ')+'</div>';
+    if(_abC.length<bd.abi.length)html+='<div class="dim" style="font-size:11px">另有 '+(bd.abi.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
     html+='</div>';
     /* ⑤ 性格 */
     html+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格</div><div>'+bd.nat.map(function(n){
