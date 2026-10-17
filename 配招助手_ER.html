@@ -7048,7 +7048,11 @@ function e5NonInstant(id){
 function e5Sanitize(s,b){
   try{
     if(!s||!b||!b.mv||!b.mv.main)return;
-    if((+(s.base||[])[5]||0)<110)return;
+    /* v4.59 C轮：触发不限于 base5≥110——爆发/收割/速攻/强化输出类流派语境同样禁僵直/蓄力招入主推槽
+       （大嘴雀#22 spe100 杂技爆发流仍配终极冲击=漏网）。 */
+    var _bname=String(b.name||'');
+    var _isBurst=/爆发|收割|速攻|强化主力输出|清场|炮台|扫场/.test(_bname);
+    if((+(s.base||[])[5]||0)<110 && !_isBurst)return;
     var have={};b.mv.main.forEach(function(x){have[''+x.id]=1});
     (learnOf(s)||[]).forEach(function(id){have[''+id]=have[''+id]||0});
     b.mv.main.forEach(function(slot,idx){
@@ -12969,7 +12973,10 @@ function engineGuardSelfCheck(){
          + 可打断负先制{264真气拳,658陷阱甲壳}。高速打手(base5≥110)主推槽(main)含此类招即计数；
          costOf 已对其折减(×0.85/×0.50)，此处仅如实登记残留规模，供判断是否需进一步降权。 */
       try{
-        if((+(s.base||[])[5]||0)>=110){
+        /* v4.59 C轮口径：base5≥110 ∨ 爆发/收割/速攻/强化输出流语境（与 e5Sanitize 同口径） */
+        var _e5bn=String(b.name||'');
+        var _e5burst=/爆发|收割|速攻|强化主力输出|清场|炮台|扫场/.test(_e5bn);
+        if((+(s.base||[])[5]||0)>=110 || _e5burst){
           var _e5main=(b.mv&&b.mv.main||[]);
           var _e5hit=_e5main.some(function(x){
             var mm=MV[x.id];if(!mm)return false;
