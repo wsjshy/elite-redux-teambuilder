@@ -7059,15 +7059,15 @@ function mechFlowFit(s,kind){
     if(mechHasAbi(s,'毅力')||mechHasAbi(s,'毒疗')||mechHasAbi(s,'魔法防守')||mechHasAbi(s,'毒激'))return 'ok';
     return null;
   }
-  if(kind==='acrobatics_item'){ /* 杂技：本系飞行∨轻装∨atk≥110 */
+  if(kind==='acrobatics_item'){ /* 杂技：本系飞行∨轻装∨atk≥110（REGISTER-2 收紧 90→110） */
     if(hasTy('飞行')||mechHasAbi(s,'轻装'))return 'ok';
-    if(atk>=110)return 'ok'; if(atk>=90)return 'mid'; return null;
+    if(atk>=110)return 'ok'; return null;
   }
   if(kind==='foul_play_atk'){ /* 欺诈：按对方物攻结算，自身 atk≤90 才推；atk≥120 剔除 */
     if(atk<=90)return 'ok'; if(atk<120)return 'mid'; return null;
   }
-  if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥100 才推；def<90 剔除 */
-    if(def>=100)return 'ok'; if(def>=90)return 'mid'; return null;
+  if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥110 才推；def<110 剔除冠名（水箭龟def100中位不首推） */
+    if(def>=110)return 'ok'; return null;
   }
   if(kind==='gyro_ball_speed'){ /* 陀螺球：速度越慢威力越高，spe≤70 才推；spe≥80 剔除 */
     if(spe<=70)return 'ok'; if(spe<80)return 'mid'; return null;
@@ -7463,6 +7463,8 @@ function mechBuildsOf(s){
     if(seen[rw])return;seen[rw]=1;
     if((_lowP||_lazyS)&&MECH_OFF[rw])return;
     var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
+    /* v4.58 C轮 中央门控复核：mid=横向中位 → 降权非首推（score 降 + warn 注明）；null=硬剔除冠名 */
+    if(b){try{var _fit=mechFlowFit(s,rw);if(_fit===null)b=null;else if(_fit==='mid'){b.score=Math.min(b.score||99,50);b.warn=(b.warn?b.warn+'；':'')+'机制流横向中位（种族处中段）——保留但非首推';}}catch(eF){}}
     /* 配招空槽的机制流派不生成（如再生力流但全无 UT/VS/钉子/状态招）——空卡没有可玩性 */
     if(b&&(!b.mv.main||!b.mv.main.length))b=null;
     if(b)b=fillMvSlots(s,b);   /* v4.31：机制流配招补满 4 槽 */
