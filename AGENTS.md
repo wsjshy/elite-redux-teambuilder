@@ -151,8 +151,14 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-10）
+## 6. 当前状态（2026-10-17，v4.57）
 
+- ✅ **v4.57 引擎标签 + G-E5b=747 信息项 + 三维第三批 + L7544 回归闭环（2026-10-17 部署）**：
+  - 标签行实测 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.57</span>`；master 链 HEAD=`252355f`（C1/C2 v4.57 全链已提交推送，远端 ls-remote = 本地），gh-pages=`f1443af`。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）1304809 B = `289B22ACDA84A29FA13ABD12BE2AAA81FBC6FA5CDAD69027B26F1E91C224E259`（引擎确定性 N1=N2=冻结一致）；data.js 2456881 B = `7DB7FBB33D3160AF576039882B6B33779B6EC6337B9490D45C17C92D14354431`（v4.49 起逐字节未变）。
+  - **G-E5b=747 信息项**：usagePrior coverage=747（数据层 build_tool_data.py 产出，HTML 条件回退不双写）；**三维第三批**；**L7544 回归核实闭环**。
+  - 部署记录：push master 一次成功（本轮无 RST 窗口）→ `tools/deploy_er.ps1` 前台 9s 完成 → 5 项 gitignored 输入（ER2.65简汉化/nn_data/图鉴xlsm/item_zh_cn.json/招式表_可学总表.csv）备份恢复逐项哈希 MATCH → 线上 no-cache 首抓 index==本地逐字节、含「引擎 v4.57」、data.js 未变（Age 83 / x-proxy-cache MISS / Last-Modified Sat, 17 Oct 2026 02:35:29 GMT）。
+  - 防卡死体系 L0–L4（本批建立）已登记于 §7：通道自检/负载闸门/前台硬超时≤300s/45min 看门狗/诊断快照/即时上报。
 - ✅ **四特性强调 + 特性中文源修复（2026-10-10 主 Agent 直办）**：
   - **xlsm 图鉴已全部丢失**（ROM\ER2.65简汉化 目录已空、D:\game 无任何 *.xlsm）→ 解析器特性中文此前全回退英文；
   - **新中文源**：`招式表_特性.csv`（根目录，表头 特性编号/特性英文名/特性中文名，999 条 BOM）——由 `data.js`（ERDATA.species 中文 abis/inns 数组）与 `gameDataV2.65beta.json`（stats.abis/inns id 数组）**同序对齐反推**（脚本 C:\temp\build_abi_zh.js，与网页同源，xlsm 不再依赖）；
@@ -613,6 +619,13 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 官方 GitHub 仓库 master(2024-04) 太旧无 v2.65 高编号物种，仅作参考；权威数据一律走 NextDex gameData。
 - **README 是对外重要介绍，每次版本迭代须同步更新**（功能清单/快速开始/更新记录/数据源版权）；仓库主页靠 README 呈现，缺它 GitHub 显示占位简介。
 - **长时任务纪律（2026-10-14 卡死 10h 教训，登记防再犯）**：任何浏览器/CDP/长时探针步骤必须带硬超时（单步 ≤60s）与看门狗（长任务无输出 >12min 杀掉重试一次，严禁无限等待）；chrome-devtools MCP 偶发挂死属已知环境项——退化路径：产物文件哈希等价 + headless CLI（`--headless=new --user-data-dir=<临时> --dump-dom`）+ 本地真实浏览器验证（历轮已多次登记同款，v4.40/v4.41 均有先例）；组织者发现子代理挂起于永不返回的调用时，**终止并重建该子代理优先于反复唤醒**（本次：子代理等 headless Chrome/CDP 调用 10h 不回、组织者 trajectory 零写入且唤醒无效）；**关键结论先落盘再汇报**——本次全部验证证据（探针 35/35、8tab 扫描、子区裁定）已落盘故可无损继承，未落盘的「E1 设计书报告」只能按产物重建。
+- **防卡死体系（2026-10-17 建，主代理强制准则；含 legacy-route 故障整晚卡死教训）**——三层四段，组织者每轮派发子代理时原文附上：
+  - **卡死事件库（根因归纳）**：E1 主机级负载卡死（构建进程残留占满 CPU，v4.52 C5c 后 60min 无响应需重启主机）；E2 **legacy-route 工具路由故障**（本地执行工具全拒、非执行工具正常；子代理层 101min/2h+/整晚多次、MainAgent 侧 35min；有 25-35min 窗口模式但**不能依赖窗口**）；E3 无看门狗（卡死子代理上报 parent 后无人巡检处理 → 部署链整晚静默，用户次日发现）。
+  - **L0 负载闸门**：重负载（构建/全量探针/双构建/部署）前必查 `Get-CimInstance Win32_Processor | Select LoadPercentage` 与残留构建进程（`Get-CimInstance Win32_Process | Where { $_.CommandLine -match 'build_tool_html' }`）；CPU>85% 或有残留构建进程 → **禁止启动新构建**，先杀残再动；全局构建互斥：构建锁 `C:\temp\er-build.lock`（含 PID），锁存在且进程活着即拒绝并发构建。
+  - **L1 执行纪律**：构建前台同步 + 硬超时（单命令 ≤300s，超时 TaskStop + 杀 python 构建进程 + 立即上报）；**禁 run_in_background 静默轮询**（必须后台时 TaskOutput 每 60s 轮询 + 总超时 ≤20min + 超时杀进程）；每次构建记录时间戳/exit/产物哈希 → `C:\temp\er-build-log.txt`（事后可审计卡死点）。
+  - **L2 看门狗（核心）**：组织者每 15min 巡检全部存活子代理（peek/消息探活）；连续 3 次巡检（45min）无进度推进（summary 版本号不变/无新输出）→ 判卡死；**legacy-route 故障 → 立即 kill 该子代理 + 重派（新会话路由重置），禁止等窗口**（101min/整晚两次教训）；主机级无响应 → 查负载 → 杀残留 python 构建进程 → 仍不行上报 MainAgent（由 MainAgent 决定是否请用户重启，杀进程优先于重启）；静默等待（上报后无动作）→ kill 重派或直接接管。**MainAgent 收到组织者故障上报当轮处理，不留过夜**；夜间长任务组织者每 30min 里程碑回报。
+  - **L3 恢复自动化**：新子代理首步**通道自检**（PowerShell Get-Date + Read 各一次，失败立即换代理，不静默等待）；卡死自动诊断快照（CPU/内存/进程 top5/python 构建进程列表）→ `C:\temp\er-hang-diag-<ts>.txt`；构建前自动清理残留（按 CommandLine 精确匹配 `build_tool_html`，不误杀用户其他 python）。
+  - **L4 上报契约**：子代理遇超时/路由错误/负载异常 → **立即上报不静默**；组织者收到上报 15min 内处理（kill/重派/接管/上报 MainAgent）；关键结论先落盘再汇报（可无损继承，杜绝"卡死即丢"）。
 
 ## 8. GitHub 部署（2026-10-08 起）
 
