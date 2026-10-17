@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.58</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.59</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -7036,7 +7036,45 @@ function finalizeBuildInPlace(s,b){
   return b;
 }
 /* v4.45 C-1：流派区调用点（deriveBuilds L8601 / L7530 / L11442）全部走本委托，行为 = finalizeBuildInPlace */
-function finalizeBuild(s,b){return finalizeBuildInPlace(s,b)}
+/* v4.59 P0-1 E5 门：高速打手(base5≥110)主推槽禁非即时输出招（僵直recharge/两回合蓄力/可打断负先制{264,658}）。
+   不硬剔——把该招换成同系即时次优招（保留原招作补位/备选，配招槽不掉 <4）。判据与守门 E5/G-E1 同口径。 */
+function e5NonInstant(id){
+  var mm=MV[id];if(!mm)return false;
+  if(INTERRUPTIBLE_NEG[id])return true;
+  var dd=String(mm[10]||'');
+  return /recharg|Can only be used every-?other turn|must rest/i.test(dd)||
+         /on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(dd);
+}
+function e5Sanitize(s,b){
+  try{
+    if(!s||!b||!b.mv||!b.mv.main)return;
+    /* v4.59 C轮：触发不限于 base5≥110——爆发/收割/速攻/强化输出类流派语境同样禁僵直/蓄力招入主推槽
+       （大嘴雀#22 spe100 杂技爆发流仍配终极冲击=漏网）。 */
+    var _bname=String(b.name||'');
+    var _isBurst=/爆发|收割|速攻|强化主力输出|清场|炮台|扫场/.test(_bname);
+    if((+(s.base||[])[5]||0)<110 && !_isBurst)return;
+    var have={};b.mv.main.forEach(function(x){have[''+x.id]=1});
+    (learnOf(s)||[]).forEach(function(id){have[''+id]=have[''+id]||0});
+    b.mv.main.forEach(function(slot,idx){
+      if(!e5NonInstant(slot.id))return;
+      var ty=(MV[slot.id]||[])[3];
+      var best=null;
+      (learnOf(s)||[]).forEach(function(id){
+        if(e5NonInstant(id))return;
+        if(have[''+id])return;
+        var mm=MV[id];if(!mm||mm[4]==='变化')return;
+        if(mm[3]!==ty)return;   /* 同系次优 */
+        var pw=+(mm[5]||0);
+        if(pw<55)return;
+        if(!best||pw>best.pw)best={id:id,pw:pw,kind:slot.kind};
+      });
+      if(best){have[''+slot.id]=0;have[''+best.id]=1;
+        b.mv.main[idx]={id:best.id,kind:slot.kind||'attack',tag:'换',why:['高速打手节奏：原招僵直/蓄力，改同系即时次优']};
+      }
+    });
+  }catch(e){}
+}
+function finalizeBuild(s,b){e5Sanitize(s,b);return finalizeBuildInPlace(s,b)}
 function mechBuildBase(s,side,name,rw,desc,roleTag){
   var b={name:name,side:side||coreSide(s),roleTag:roleTag||'输出',itemTag:'机制',mv:{main:[],funcs:[]},
     nat:null,it:[],abi:[],desc:desc||'',basis:[],ev:null,score:99,breakingRoute:'机制',mechRw:rw};
@@ -11940,7 +11978,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.58';
+var ER_ENGINE_VER='v4.59';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12935,7 +12973,10 @@ function engineGuardSelfCheck(){
          + 可打断负先制{264真气拳,658陷阱甲壳}。高速打手(base5≥110)主推槽(main)含此类招即计数；
          costOf 已对其折减(×0.85/×0.50)，此处仅如实登记残留规模，供判断是否需进一步降权。 */
       try{
-        if((+(s.base||[])[5]||0)>=110){
+        /* v4.59 C轮口径：base5≥110 ∨ 爆发/收割/速攻/强化输出流语境（与 e5Sanitize 同口径） */
+        var _e5bn=String(b.name||'');
+        var _e5burst=/爆发|收割|速攻|强化主力输出|清场|炮台|扫场/.test(_e5bn);
+        if((+(s.base||[])[5]||0)>=110 || _e5burst){
           var _e5main=(b.mv&&b.mv.main||[]);
           var _e5hit=_e5main.some(function(x){
             var mm=MV[x.id];if(!mm)return false;
