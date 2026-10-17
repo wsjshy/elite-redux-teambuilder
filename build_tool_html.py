@@ -13275,6 +13275,14 @@ function engineGuardSelfCheck(){
           if(_m1.length&&(''+_m1[0].id==='264'||''+_m1[0].id==='658')){nGE1++;if(vGE1.length<30)vGE1.push({id:s.id,zh:s.zh,build:b.name,mv:_m1[0].id})}
         }
       }catch(eGE1){}
+      /* v4.61 P0-2：全量 deriveBuilds 组合命中统计（plan.team 采样之外的全库覆盖） */
+      try{
+        var _mvZhA=(b.mv&&b.mv.main||[]).map(function(x){var mm=MV[x.id];return mm?String(mm[1]||''):''});
+        if(_mvZhA.some(function(z){return /替身/.test(z)})&&_mvZhA.some(function(z){return /剑舞|龙舞|舞|成长|冥想/.test(z)})&&_mvZhA.some(function(z){return /催眠粉|电磁波|催眠术/.test(z)}))comboSubBoost++;
+        if(_mvZhA.some(function(z){return /隐形岩|撒菱|毒菱|黏黏网/.test(z)})&&_mvZhA.some(function(z){return /吹飞|吼叫|龙尾/.test(z)}))comboHazardRotor++;
+        if(_mvZhA.some(function(z){return /反射壁|光墙/.test(z)})&&_mvZhA.some(function(z){return /吹飞|吼叫|龙尾/.test(z)}))comboDualWall++;
+        if(_mvZhA.some(function(z){return /守住|替身/.test(z)})&&_mvZhA.some(function(z){return /剧毒|鬼火|寄生种子/.test(z)})&&_mvZhA.some(function(z){return /羽栖|睡觉|再生|休息|治愈|回复|喝水|进食/.test(z)}))comboTank++;
+      }catch(eCB2){}
       /* v4.54 E5（信息项，登记口径不强剔）：非即时输出招合并清单残留复核。
          合并 = 两回合蓄力(eff=71:143神鸟/901电光束/988剧毒俯冲/972准备好了) + 僵直recharge(63/416/722/723/307/308/338/963/439)
          + 可打断负先制{264真气拳,658陷阱甲壳}。高速打手(base5≥110)主推槽(main)含此类招即计数；
