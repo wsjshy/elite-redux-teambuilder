@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.61</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.62</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8606,6 +8606,9 @@ function comboBuildsOf(s){
   try{
     var stab=stabBest(s,'物理')||stabBest(s,'特殊');
     var stabId=(stab&&stab.id)||null;
+    /* v4.62 修复：技术高手/完美主义者(全招>60不生效)→本系招改选 power≤60 招 */
+    var _hasTech=(s.abis||[]).concat(s.inns||[]).some(function(n){return /技术高手|完美主义者|Technician/.test(String(n||''))});
+    if(_hasTech){var _low=null;(learnOf(s)||[]).forEach(function(id){var mm=MV[id];if(mm&&(mm[3]===s.t1||mm[3]===s.t2)&&(mm[5]||0)>0&&(mm[5]||0)<=60){_low=id;return}});if(_low)stabId=_low}
     /* 替身强化流：替身 + 强化招(剑舞/龙舞/冥想) + 控场(催眠粉/电磁波/催眠术) + 本系攻击 */
     var sub=_mvNameHas(s,'替身');var boost=_mvNameAll(s,['剑舞','龙舞','冥想'])[0];
     var control=_mvNameAll(s,['催眠粉','电磁波','催眠术','电磁波波'])[0];
@@ -8614,7 +8617,7 @@ function comboBuildsOf(s){
         mv:{main:[{id:sub,kind:'protect',tag:'替身',why:['替身挡伤害后强化']},
                  {id:boost,kind:'boost',tag:'强化',why:['剑舞/龙舞叠攻后推队']},
                  {id:control,kind:'control',tag:'控场',why:['催眠/电磁波控场保强化回合']},
-                 {id:stabId,kind:'attack',tag:'本系',why:['强化后本系收割']}]},
+                 {id:stabId,kind:'attack',tag:'本系',why:['强化后本系收割（替身/电磁波掩护下回合僵直招安全蓄力）']}]},
         basis:[{k:'combo',txt:'组合 替身强化：替身抗伤→强化→控场保回合→本系收割'}]});
     }
     /* 钉子轮转流：钉子(隐形岩/撒菱) + 强制换人(吹飞/吼叫/龙尾) + 回复 + 本系 */
@@ -8641,8 +8644,16 @@ function comboBuildsOf(s){
         basis:[{k:'combo',txt:'组合 双墙：开墙减伤→安全输出/接棒传递'}]});
     }
   }catch(e){}
-  /* v4.61 C轮：空字段对齐 build schema（防 bd.abi.forEach 崩溃） */
-  res.forEach(function(b){b.abi=b.abi||[];b.it=b.it||[];b.ev=b.ev||[];b.nat=b.nat||[];b.desc=b.desc||'';b.why=b.why||[]});
+  /* v4.62 A：组合流派卡副信息补全（特性/性格/EV/道具，按物种真实池，禁硬造） */
+  res.forEach(function(b){
+    b.abi=b.abi||[];b.it=b.it||[];b.ev=b.ev||[];b.nat=b.nat||[];b.desc=b.desc||'';b.why=b.why||[];
+    var isBoost=/替身强化/.test(b.name||''),isTank=/钉子轮转|双墙/.test(b.name||'');
+    if(!b.abi.length){var _ab=(s.abis||[]).slice(0,1).map(function(n){return {n:n,why:['组合定位匹配特性（真实特性池）']}});var _in=(s.inns||[]).slice(0,1).map(function(n){return {n:n,why:['天性（固定拥有）']}});b.abi=_ab.concat(_in)}
+    if(!b.ev.length)b.ev=isTank?[252,0,252,0,4,0]:[0,252,0,0,4,252];
+    if(!b.nat.length)b.nat=isTank?[['淘气','受队耐久+物防']]:[['固执','攻击强化输出']];
+    if(!b.it.length)b.it=isTank?[['剩饭','站场续航保钉子/墙']]:[['气势披带','替身/强化保命一回合']];
+    b.roleTag=b.roleTag||(isTank?'受队':'强化');
+  });
   return res;
 }
 function deriveBuilds(s,team){
@@ -12069,7 +12080,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.61';
+var ER_ENGINE_VER='v4.62';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -13076,8 +13087,11 @@ function engineGuardSelfCheck(){
         /* v4.59 C轮口径：base5≥110 ∨ 爆发/收割/速攻/强化输出流语境（与 e5Sanitize 同口径） */
         var _e5bn=String(b.name||'');
         var _e5burst=/爆发|收割|速攻|强化主力输出|清场|炮台|扫场/.test(_e5bn);
+        /* v4.62 C：组合槽含掩护手段(替身/守住/电磁波/催眠粉/麻痹控场)→僵直招保留豁免 */
+        var _e5main0=(b.mv&&b.mv.main||[]);
+        var _e5cover=_e5main0.some(function(x){var mm=MV[x.id];return mm&&/替身|守住|电磁波|催眠粉|催眠术/.test(String(mm[1]||''))});
         if((+(s.base||[])[5]||0)>=110 || _e5burst){
-          var _e5main=(b.mv&&b.mv.main||[]);
+          var _e5main=_e5main0;
           var _e5hit=_e5main.some(function(x){
             var mm=MV[x.id];if(!mm)return false;
             if(INTERRUPTIBLE_NEG[x.id])return true;
@@ -13085,7 +13099,7 @@ function engineGuardSelfCheck(){
             return /recharg|Can only be used every-?other turn|must rest/i.test(dd)||
                    /on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(dd);
           });
-          if(_e5hit){nE5++;if(vE5.length<20)vE5.push({id:s.id,zh:s.zh,build:b.name,mvs:_e5main.map(function(x){return x.id}).join(',')})}
+          if(_e5hit&&!_e5cover){nE5++;if(vE5.length<20)vE5.push({id:s.id,zh:s.zh,build:b.name,mvs:_e5main.map(function(x){return x.id}).join(',')})}
         }
       }catch(eE5){}
       /* v4.54 项2：大嘴雀(#22) why 覆盖抽样——收集每流派招式/特性/道具 why，验证非通用模板 */
@@ -13104,7 +13118,8 @@ function engineGuardSelfCheck(){
       try{
         var _mn=(b.mv&&b.mv.main||[]).map(function(x){var mm=MV[x.id];return mm?String(mm[1]||''):''});
         var _setup=_mn.filter(function(z){return /晴|雨|沙|雪|顺风|戏法空间|光墙|反射壁|剑舞|龙舞|成长|冥想|羽栖|睡觉|栖息|替身|守住/.test(z)}).length;
-        if(_setup>=3){nGE4b++;if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4 动作数≥3',setup:_setup})}
+        /* v4.62 修复：组合生成流(双墙/顺风体系setup=3合法动作)显式豁免 G-E4b */
+        if(_setup>=3 && b.breakingRoute!=='组合'){nGE4b++;if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4 动作数≥3',setup:_setup})}
       }catch(eGE4b){}
       /* v4.53 G-E4d：同物种不同流派配招签名对比——同一物种 ≥2 流派配招主招完全相同记违例 */
       try{
