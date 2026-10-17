@@ -775,7 +775,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.56</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.57</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8507,6 +8507,13 @@ function pickAbiFor(s,side,roleTag,ctx){
     if(n==='压迫感'){sc+=1;why.push('压迫感：被对方击中时对方该招多耗 1 PP → 长站场消耗/PP 续航施压锚点')}
     else if(n==='厚脂肪'){why.push('厚脂肪：受到火/冰招伤害减半（站场减伤语境，与 tag.hf 同源）')}
     else if(n==='防尘'){why.push('防尘：免疫粉末类招式与沙暴/冰雹伤害（站场豁免语境，与 tag.im 同源）')}
+    /* v4.57 项3 三维覆盖第三批（data.js ABI 原文实读）：间接伤害豁免 / 轮转回复 / 天气设置手作用域。 */
+    else if(n==='魔法防守'){sc+=1;why.push('魔法防守：仅受直接攻击伤害——免疫沙暴/冰雹/剧毒/燃尽/反伤等一切间接伤害（站场免死语境）')}
+    else if(n==='再生力'){sc+=1;why.push('再生力：替换下场时回复 1/3 HP（轮转/pivot 续航锚点，上场即回血）')}
+    else if(n==='日照'){why.push('日照：出场开启晴天（火系 ×1.5、水系 ×0.5）——天气设置手，作用域覆盖全队晴系输出')}
+    else if(n==='降雨'){why.push('降雨：出场降雨持续 8 回合（水系 ×1.5、火系 ×0.5）——天气设置手')}
+    else if(n==='降雪'){why.push('降雪：出场引发冰雹（冰系防手提速、非冰系每回合掉血）——天气设置手')}
+    else if(n==='扬沙'){why.push('扬沙：出场引发沙暴（岩系特防 ×1.5、非地面/岩/钢系每回合掉血）——天气设置手')}
     /* v4.55→v4.56 项1：狙击手(Sniper) 会心增伤——按 roleTag × 流派名机制三变体分化，消除流派1/2/3逐字雷同。
        gameData 原文：暴击时伤害 ×1.5。杂技流=道具保血后会心爆发；硬撑流=异常增幅下会心收尾；顺风流=先制加速下会心收割；受队/肉盾=站场补刀。 */
     else if(n==='狙击手'){sc+=1;
@@ -12112,7 +12119,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.56';
+var ER_ENGINE_VER='v4.57';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
