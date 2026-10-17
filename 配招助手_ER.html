@@ -8641,6 +8641,8 @@ function comboBuildsOf(s){
         basis:[{k:'combo',txt:'组合 双墙：开墙减伤→安全输出/接棒传递'}]});
     }
   }catch(e){}
+  /* v4.61 C轮：空字段对齐 build schema（防 bd.abi.forEach 崩溃） */
+  res.forEach(function(b){b.abi=b.abi||[];b.it=b.it||[];b.ev=b.ev||[];b.nat=b.nat||[];b.desc=b.desc||'';b.why=b.why||[]});
   return res;
 }
 function deriveBuilds(s,team){
@@ -12491,7 +12493,8 @@ function renderCore(s){
     /* ① 玩法一句话（玩家话术；不含百分比 / 倍率式子） */
     html+='<summary>'+((i===0?'⭐ 推荐流派 ':'流派 ')+(i+1)+'：'+esc(bd.name))+
       ' <span class="bigsub">'+esc(bd.side)+'向 · 推荐特性 '+esc(bSet)+'</span>'+
-      '<span class="oltext">'+esc(oneLiner(bd))+'</span></summary>';
+      '<span class="oltext">'+esc(oneLiner(bd))+'</span>'+
+      ((bd&&bd.warn)?' <span class="badge badge-warnimm">注意 '+esc(bd.warn)+'</span>':'')+'</summary>';
     /* ② 设计亮点 1–3 条 + 机制溯源（可展开） */
     var bs=basisList(bd);
     html+='<div class="fld"><div class="fhd"><span class="fno">2</span>设计亮点</div>';
@@ -12533,7 +12536,7 @@ function renderCore(s){
       return '与本流派定位成套：覆盖该打法的关键机制缺口';
     }
     var _abC=[],_abSeen={};
-    bd.abi.forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
+    (bd.abi||[]).forEach(function(a){var k=String(a.n);if(_abSeen[k])return;_abSeen[k]=1;_abC.push(a)});
     /* v4.53 D-15：唯一主推模式——默认只渲染 top1；仅当 top2 评分与 top1 差<5% 视为真分支才并列 */
     var _prim=_abC[0];
     if(_prim){
