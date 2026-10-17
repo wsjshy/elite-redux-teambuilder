@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.59</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.60</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -7030,6 +7030,20 @@ function finalizeBuildInPlace(s,b){
       }
       b.ev.alloc=ev;b.ev.summary=evRebuildSummary(ev);
       if(!b.ev.template)b.ev.template='速攻';
+      /* v4.60 P1-1：输出位流派(机制流 mechRw ∨ 流派名含 输出/爆发/清场/收割/速攻)禁止落耐久/受队/站场模板；
+         仅含回复轮转定位(再生力轮转/受队站场)才允许耐久。违例→改输出模板(攻击/速度)，不硬剔保槽。 */
+      try{
+        var _evbn=String(b.name||'');
+        var _isOutCtx=!!b.mechRw||/输出|爆发|清场|收割|速攻|炮台|扫场/.test(_evbn);
+        var _hasRotate=/再生力轮转|受队站场|轮转/.test(_evbn);
+        var _isTplTank=/耐久|受队|站场|非输出位|空间低速/.test(String(b.ev.template||''));
+        if(_isOutCtx&&_isTplTank&&!_hasRotate){
+          var _outIdx2=((s.base||[])[1]>=(s.base||[])[3])?1:3;
+          ev=[0,0,4,0,0,0];ev[_outIdx2]=252;ev[0]=252;
+          while(evSumA(ev)>510){ev[0]-=Math.min(4,evSumA(ev)-510)}
+          b.ev.alloc=ev;b.ev.template='攻击集约';b.ev.summary=evRebuildSummary(ev);
+        }
+      }catch(eEV1){}
       try{evNatureLinkV437(s,b)}catch(e5){}   /* v4.37：S1~S4 联动权威收口（道具/配招已定稿；幂等） */
     }
   }catch(e){}
@@ -11978,7 +11992,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.59';
+var ER_ENGINE_VER='v4.60';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
