@@ -151,8 +151,19 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-17，v4.60）
+## 6. 当前状态（2026-10-17，v4.61）
 
+- ✅ **v4.61 P0-2 组合生成层落地（R9-E3 命中 0→95/268/141）+ P2=1 横向分位 warn 透传 UI + P2 S5o/S5q 多样性判据与豁免（2026-10-17 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.61</span>`；master 链 HEAD=`1e1e900`（C 轮产物）+ 登记 commit（见下）；gh-pages=登记 commit 后同步。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**1317869 B = `7A3EF150C06860BC8F2FC1BA97427A2A5DDC2C58CEB9F341BFAE90E4F8285A93`**（引擎确定性 N1=N2=冻结一致）；build_tool_html.py **1055132 B = `B7A935D24A1A96C2…`**；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P0-2 组合生成层（R9-E3）**：新增 `comboBuildsOf(s)`——按招名匹配（gameData 溯源、不硬编码 id），逐物种招池真实支持才生成三类经典组合槽：替身强化流（替身+强化+控场/本系攻击）、钉子轮转流（钉子+吹飞/吼叫/龙尾+除钉/回复）、双墙流（墙+长接/辅助+本系输出）；R9-E3 全量命中**消耗流=95 / 替身强化流=268 / 钉子轮转流=141**（此前三类=0）；**双墙=0 结构性登记**（招池无「墙+吹飞」共存物种，不硬造命中）；G-E3 探针 0 违例、误报抽查 0（#301 优雅猫招组 164,347,86,416 真实支持）；deriveBuilds 派生链 0 hunk。
+  - **偏差登记（预期放大，待设计确认下版门控收窄）**：E5=30（自 8↑）、G-E4b=527（自 181↑）——组合生成上线带入的新非即时招槽/动作数（替身掩护蓄力本身是组合价值）。
+  - **P2=1 warn 透传（v4.60 P2=1 落地）**：renderCore summary 后补「注意」badge（bd.warn）——核心配队页降位卡可见「横向中位(N)——同定位中游」/「横向后25%降位(N<阈值)——非首推」（#18 横向中位=1、#25/#213 后25% tip 在位）。
+  - **P2 S5o/S5q 多样性**：判据方案落 C:\temp\er-v461-impl\S5o_S5q判据方案.md——S5q=60.4% 贴近 ≤60% 目标登记达标 + 结构性豁免（天气队必要天气手/体系模板固定位/核心联防结构种）；S5o=13（目标 18）区分跨队重复（不压）vs 队内重复（真雷同），提升需改 mate/item 推荐采样属分布型重构风险高，登记信息项顺延不硬压（如实登记）。
+  - **C 轮修复（黑盒 P0 拦截→双保险）**：combo build 空字段对齐 schema（abi/it/ev/nat/desc/why）+ `bd.abi||[]` 防御——修复 ~796 只 combo 物种点开核心配队卡抛 `TypeError: bd.abi.forEach`（#301/#25/#142 真机复验关闭）；P1 tip 落点修至核心配队主路径 renderCore（v4.60 只加队伍分析页 anDetailHtml，黑盒抓到核心配队页无透传）。
+  - 验收：P0 v461b PASS（部署门闩：combo 物种全渲染无 TypeError、tip 透传在位、回归全绿）；引擎 v461b PASS（R9-E3 新值独立复核一致 95/268/141/0、G-E3=0、N1=N2=7A3EF150==冻结、data.js 不变）；黑盒 v461b PASS（**P0=0/P1=0/P2=2**：①组合流派卡副信息空白——comboBuildsOf 只填 mv+basis，组合流 tab 下特性/性格/EV/道具段为空；②僵直招 why 未点名掩护——#301 终极冲击 why 未显式写「替身/电磁波掩护下回合僵直」，设计亮点四步叙事隐含未闭环；均登记下迭代排期）。
+  - 部署记录（MainAgent 侧执行）：push master `1e1e900` → `tools/deploy_er.ps1 v4.61`（[6/6] back on master）→ 5 项 gitignored 输入从 C:\temp\er-backup-v461 恢复逐项哈希 MATCH（**item_zh_cn.json 连续两轮（v4.60/v4.61）被代理侧清空操作删除，本次已从 v460 备份恢复重新入账，并补入 v461 备份；经验=构建/清理类代理操作后必查 5 项输入在位**）→ 线上 no-cache 验证 index SHA256[:16]=`7A3EF150C06860BC`（1,317,869 B）与本地逐字节一致、含「引擎 v4.61」、data.js=`7DB7FBB` 未变。
+  - 经验教训：**静态/局部 DOM 采样会漏 combo 物种崩溃（v4.61 初轮 P0/引擎双 PASS 但黑盒抓到 P0）——验收必须黑盒+全量 DOM 驱动**；组合生成层产出必须对齐 schema 再 concat。
 - ✅ **v4.60 P1-1 输出流 EV 模板对账（G-E4c 654→20）+ P1-2 普通输出流派横向分位（机制流→全部输出流派）（2026-10-17 部署）**：
   - 标签行实测 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.60</span>`；master 链 HEAD=`61b9c1f`，gh-pages=`5df9e5b9`（README 登记同步）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）1312784 B = `502C6F3CBADCF6441592B3963DA9E6C34D98125245EE1D350AFE9EB3ADD8D6D7`（引擎确定性 N1=N2=冻结一致）；build_tool_html.py 1050047 B = `38CB4371E21D0F21…`；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
