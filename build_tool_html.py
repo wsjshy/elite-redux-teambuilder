@@ -7306,7 +7306,32 @@ function e5Sanitize(s,b){
     });
   }catch(e){}
 }
-function finalizeBuild(s,b){e5Sanitize(s,b);return finalizeBuildInPlace(s,b)}
+/* v4.60 P1-2 普通输出流派横向分位：全库物攻/特攻基准池分位（base.atk/base.spa 分开）。
+   前25%=主推；25-75%=保留 why 注明「横向中位」；后25%=降位非首推。仅普通(非机制mechRw)输出流派。 */
+var _pctThr=null;
+function pctThr(){
+  if(_pctThr)return _pctThr;
+  var atk=[],spa=[];
+  (ERDATA.species||[]).forEach(function(sp){var bs=sp.base||[];if(bs[1])atk.push(bs[1]);if(bs[3])spa.push(bs[3])});
+  atk.sort(function(a,b){return a-b});spa.sort(function(a,b){return a-b});
+  function q(arr,p){return arr[Math.max(0,Math.min(arr.length-1,Math.floor(arr.length*p)))]}
+  _pctThr={atk25:q(atk,.25),atk75:q(atk,.75),spa25:q(spa,.25),spa75:q(spa,.75)};
+  return _pctThr;
+}
+function outlierDemote(s,b){
+  try{
+    if(!s||!b||b.mechRw)return;   /* 机制流已由 mechFlowFit 门控 */
+    var nm=String(b.name||'');
+    var isOut=/输出|爆发|清场|收割|速攻|炮台|扫场/.test(nm);
+    var noRotate=!/再生力轮转|受队站场|轮转|联防|站场|消耗/.test(nm);
+    if(!isOut||!noRotate)return;
+    var bs=s.base||[0,0,0,0,0,0],t=pctThr();
+    var useAtk=bs[1]>=bs[3],v=useAtk?bs[1]:bs[3],t25=useAtk?t.atk25:t.spa25,t75=useAtk?t.atk75:t.spa75;
+    if(v<t25){b.score=Math.min(b.score||99,40);b.warn=(b.warn?b.warn+'；':'')+('横向后25%降位('+(useAtk?'物攻':'特攻')+' '+v+'<'+'阈值'+t25+')——非首推')}
+    else if(v<t75){b.warn=(b.warn?b.warn+'；':'')+'横向中位('+(useAtk?'物攻':'特攻')+' '+v+')——同定位中游'}
+  }catch(e){}
+}
+function finalizeBuild(s,b){e5Sanitize(s,b);outlierDemote(s,b);return finalizeBuildInPlace(s,b)}
 function mechBuildBase(s,side,name,rw,desc,roleTag){
   var b={name:name,side:side||coreSide(s),roleTag:roleTag||'输出',itemTag:'机制',mv:{main:[],funcs:[]},
     nat:null,it:[],abi:[],desc:desc||'',basis:[],ev:null,score:99,breakingRoute:'机制',mechRw:rw};
