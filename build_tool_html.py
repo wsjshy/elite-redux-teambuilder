@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """生成 ER 配招助手单页 HTML（v4.11 起：ERDATA 拆包为外部 data.js，页面按 CDN 前缀择优加载）
 新增：招式多条件筛选 / 队伍构建器(联防+覆盖) / 特性反查 / 战术模板 / 存档CSV导入分析
@@ -775,7 +775,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.61</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.62</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8859,8 +8859,16 @@ function comboBuildsOf(s){
         basis:[{k:'combo',txt:'组合 双墙：开墙减伤→安全输出/接棒传递'}]});
     }
   }catch(e){}
-  /* v4.61 C轮：空字段对齐 build schema（防 bd.abi.forEach 崩溃） */
-  res.forEach(function(b){b.abi=b.abi||[];b.it=b.it||[];b.ev=b.ev||[];b.nat=b.nat||[];b.desc=b.desc||'';b.why=b.why||[]});
+  /* v4.62 A：组合流派卡副信息补全（特性/性格/EV/道具，按物种真实池，禁硬造） */
+  res.forEach(function(b){
+    b.abi=b.abi||[];b.it=b.it||[];b.ev=b.ev||[];b.nat=b.nat||[];b.desc=b.desc||'';b.why=b.why||[];
+    var isBoost=/替身强化/.test(b.name||''),isTank=/钉子轮转|双墙/.test(b.name||'');
+    if(!b.abi.length){var _ab=(s.abis||[]).slice(0,1).map(function(n){return {n:n,why:['组合定位匹配特性（真实特性池）']}});var _in=(s.inns||[]).slice(0,1).map(function(n){return {n:n,why:['天性（固定拥有）']}});b.abi=_ab.concat(_in)}
+    if(!b.ev.length)b.ev=isTank?[252,0,252,0,4,0]:[0,252,0,0,4,252];
+    if(!b.nat.length)b.nat=isTank?[['淘气','受队耐久+物防']]:[['固执','攻击强化输出']];
+    if(!b.it.length)b.it=isTank?[['剩饭','站场续航保钉子/墙']]:[['气势披带','替身/强化保命一回合']];
+    b.roleTag=b.roleTag||(isTank?'受队':'强化');
+  });
   return res;
 }
 function deriveBuilds(s,team){
@@ -12287,7 +12295,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.61';
+var ER_ENGINE_VER='v4.62';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -13896,3 +13904,4 @@ if _r.returncode != 0:
     print('[FATAL] v4.47 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
     _sys.exit(1)
 print('[BUILD OK] v4.47 守门自检 exit 0（0 违规）')
+
