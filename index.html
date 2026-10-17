@@ -8606,6 +8606,9 @@ function comboBuildsOf(s){
   try{
     var stab=stabBest(s,'物理')||stabBest(s,'特殊');
     var stabId=(stab&&stab.id)||null;
+    /* v4.62 修复：技术高手/完美主义者(全招>60不生效)→本系招改选 power≤60 招 */
+    var _hasTech=(s.abis||[]).concat(s.inns||[]).some(function(n){return /技术高手|完美主义者|Technician/.test(String(n||''))});
+    if(_hasTech){var _low=null;(learnOf(s)||[]).forEach(function(id){var mm=MV[id];if(mm&&(mm[3]===s.t1||mm[3]===s.t2)&&(mm[5]||0)>0&&(mm[5]||0)<=60){_low=id;return}});if(_low)stabId=_low}
     /* 替身强化流：替身 + 强化招(剑舞/龙舞/冥想) + 控场(催眠粉/电磁波/催眠术) + 本系攻击 */
     var sub=_mvNameHas(s,'替身');var boost=_mvNameAll(s,['剑舞','龙舞','冥想'])[0];
     var control=_mvNameAll(s,['催眠粉','电磁波','催眠术','电磁波波'])[0];
@@ -13115,7 +13118,8 @@ function engineGuardSelfCheck(){
       try{
         var _mn=(b.mv&&b.mv.main||[]).map(function(x){var mm=MV[x.id];return mm?String(mm[1]||''):''});
         var _setup=_mn.filter(function(z){return /晴|雨|沙|雪|顺风|戏法空间|光墙|反射壁|剑舞|龙舞|成长|冥想|羽栖|睡觉|栖息|替身|守住/.test(z)}).length;
-        if(_setup>=3){nGE4b++;if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4 动作数≥3',setup:_setup})}
+        /* v4.62 修复：组合生成流(双墙/顺风体系setup=3合法动作)显式豁免 G-E4b */
+        if(_setup>=3 && b.breakingRoute!=='组合'){nGE4b++;if(vGE4.length<20)vGE4.push({id:s.id,zh:s.zh,build:b.name,kind:'G-E4 动作数≥3',setup:_setup})}
       }catch(eGE4b){}
       /* v4.53 G-E4d：同物种不同流派配招签名对比——同一物种 ≥2 流派配招主招完全相同记违例 */
       try{
