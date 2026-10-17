@@ -775,7 +775,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.57</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.58</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -7266,6 +7266,35 @@ function mechBuildBase(s,side,name,rw,desc,roleTag){
 }
 function mechHasMv(s,id){return (learnOf(s)||[]).indexOf(id)>-1}
 function mechHasAbi(s,zh){return (s.abis||[]).concat(s.inns||[]).indexOf(zh)>-1}
+/* v4.58 机制流适宜度门控 mechFlowFit（证据 C:\temp\er-acro-scan\：机制流 1431 推 660 不当=46%）。
+   判据=特性池/关键种族/横向分位三合一。返回 'ok'=首推 / 'mid'=中段降位(why 注明横向中位) / null=硬剔除冠名。
+   剔除只去流派冠名（机制招保留作补位招，配招槽不因剔除掉到 <4）；中段非硬剔。 */
+function mechFlowFit(s,kind){
+  var b=(s&&s.base)||[0,0,0,0,0,0];
+  var atk=b[1]||0,def=b[2]||0,spe=b[5]||0;
+  var hasTy=function(t){return !!(s&&(s.t1===t||s.t2===t))};
+  if(kind==='facade_status'){ /* 硬撑：自异常须可转化为收益（毅力/毒疗/魔法防守/毒激），否则净自伤 */
+    if(mechHasAbi(s,'毅力')||mechHasAbi(s,'毒疗')||mechHasAbi(s,'魔法防守')||mechHasAbi(s,'毒激'))return 'ok';
+    return null;
+  }
+  if(kind==='acrobatics_item'){ /* 杂技：本系飞行∨轻装∨atk≥110 */
+    if(hasTy('飞行')||mechHasAbi(s,'轻装'))return 'ok';
+    if(atk>=110)return 'ok'; if(atk>=90)return 'mid'; return null;
+  }
+  if(kind==='foul_play_atk'){ /* 欺诈：按对方物攻结算，自身 atk≤90 才推；atk≥120 剔除 */
+    if(atk<=90)return 'ok'; if(atk<120)return 'mid'; return null;
+  }
+  if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥100 才推；def<90 剔除 */
+    if(def>=100)return 'ok'; if(def>=90)return 'mid'; return null;
+  }
+  if(kind==='gyro_ball_speed'){ /* 陀螺球：速度越慢威力越高，spe≤70 才推；spe≥80 剔除 */
+    if(spe<=70)return 'ok'; if(spe<80)return 'mid'; return null;
+  }
+  if(kind==='unburden_item'){ /* 轻装：道具消耗后速度翻倍，spe≥70 才有提速意义 */
+    if(spe>=70)return 'ok'; return null;
+  }
+  return 'ok';
+}
 var MECH_BUILD={
   /* 变身者：自身种族/技能池不参与评价，出场自动复制对手 */
   imposter_anchor:function(s,cs){
@@ -7287,6 +7316,7 @@ var MECH_BUILD={
   /* 杂技：失去道具后威力翻倍（112.5）→ 消耗品联动 */
   acrobatics_item:function(s,cs){
     if(!mechHasMv(s,512))return null;
+    if(mechFlowFit(s,'acrobatics_item')===null)return null;   /* v4.58 门控：非本系飞行/无轻装/atk<90 剔除冠名 */
     /* v4.44 P1-5（物攻向统一，根因修复）：side 原按 coreSide(s) 取「物种攻击面更强者」→ 特攻更高的物种被建成
        side='特殊'，于是「杂技爆发流」出现 特攻 EV + 减攻击性格 + 3 招特殊招 的组合，而流派身份招「杂技」是**物理招**
        （`moves[512] split:0`，ER 威力 75、无道具 ×1.5=112.5）——流派名宣布的爆发手段实际零投入。
@@ -7336,6 +7366,7 @@ var MECH_BUILD={
   /* 扑击：按物防结算 + 铁壁转化 */
   body_press_def:function(s,cs){
     if(!mechHasMv(s,704))return null;
+    if(mechFlowFit(s,'body_press_def')===null)return null;   /* v4.58 门控：def<90 剔除冠名 */
     var b=mechBuildBase(s,'物理','扑击铁壁流','body_press_def',
       '扑击按**物防**结算威力——铁壁 +2 级物防直接翻档输出，兼顾耐久与力度');
     b.mv.main.push({id:704,kind:'attack',tag:'核心',why:['按物防结算（种族防高则力度高）','铁壁翻防后威力同步翻档']});
@@ -7350,6 +7381,7 @@ var MECH_BUILD={
   /* 陀螺球：速度越低威力越高 + 诅咒降速强化 */
   gyro_ball_speed:function(s,cs){
     if(!mechHasMv(s,360))return null;
+    if(mechFlowFit(s,'gyro_ball_speed')===null)return null;   /* v4.58 门控：spe≥80 剔除冠名 */
     var b=mechBuildBase(s,'物理','陀螺球重压流','gyro_ball_speed',
       '陀螺球按对方速度 / 我方速度结算（越慢越重）——诅咒每次降 1 速、拉高攻防，陀螺球越打越重');
     b.mv.main.push({id:360,kind:'attack',tag:'核心',why:['速度差结算：我方越慢威力越高','低速精灵（≤50 速）收益最大']});
@@ -7364,6 +7396,7 @@ var MECH_BUILD={
   /* 欺诈：按对方物攻结算 → 反制物攻手 */
   foul_play_atk:function(s,cs){
     if(!mechHasMv(s,492))return null;
+    if(mechFlowFit(s,'foul_play_atk')===null)return null;   /* v4.58 门控：atk≥120 剔除冠名 */
     var b=mechBuildBase(s,'物理','欺诈物反流','foul_play_atk',
       '欺诈按**对方物攻**结算——我方物攻多低都无所谓，专打物攻手；配合磷火先封对面物攻');
     b.mv.main.push({id:492,kind:'attack',tag:'核心',why:['按对方物攻结算（我方攻低无碍）','反制物攻手核心输出']});
@@ -7407,6 +7440,7 @@ var MECH_BUILD={
   /* 轻装：消耗道具后速度翻倍 → 消耗品（种子/宝石/披带）速攻 */
   unburden_item:function(s,cs){
     if(!mechAbiRwHits(s,'unburden_item'))return null;
+    if(mechFlowFit(s,'unburden_item')===null)return null;   /* v4.58 门控：spe<70 剔除冠名 */
     var b=mechBuildBase(s,coreSide(s)==='物理'?'物理':'特殊','轻装速攻流','unburden_item',
       '轻装在道具消耗后速度翻倍——带一次性消耗品（场地种子/属性宝石/披带），第一回合吃完即超速全场');
     var extra=bestStabAtk(s,b.side,null);if(extra)b.mv.main.push(extra);
@@ -7543,6 +7577,7 @@ var MECH_BUILD={
   facade_status:function(s,cs){
     if(!mechHasMv(s,263))return null;
     if(!physOutOk(s))return null;   /* v4.30 P0-1：物攻侧不可玩（如攻击 10 的幸福蛋）不生成物理硬撑流 */
+    if(mechFlowFit(s,'facade_status')===null)return null;   /* v4.58 门控：无毅力/毒疗/魔法防守/毒激 → 自异常净自伤，剔除冠名 */
     var b=mechBuildBase(s,'物理','硬撑异常爆发','facade_status',
       '硬撑在中毒/灼伤/麻痹时威力翻倍（70 → 140，ER 实值）——自挂异常（剧毒宝珠/火焰宝珠），第一回合开始就是满威力');
     b.mv.main.push({id:263,kind:'attack',tag:'核心',why:['异常状态下威力 140（70 翻倍，ER 实值）——首回合即可满威']});
@@ -12119,7 +12154,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.57';
+var ER_ENGINE_VER='v4.58';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
