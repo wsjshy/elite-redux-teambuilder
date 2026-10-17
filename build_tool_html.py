@@ -7273,10 +7273,10 @@ function mechFlowFit(s,kind){
   var b=(s&&s.base)||[0,0,0,0,0,0];
   var atk=b[1]||0,def=b[2]||0,spe=b[5]||0;
   var hasTy=function(t){return !!(s&&(s.t1===t||s.t2===t))};
-  if(kind==='facade_status'){ /* 硬撑：自异常须可转化为收益——豁免须在**可选主特性池**s.abis（build 选主特性才吃到倍率；
-       天性 inns 不可选，不计豁免）：毅力∨毒疗∨魔法防守（魔法防守可安全自施毒珠/火焰珠无自伤）。否则剔除冠名 */
-    var _ab=(s&&s.abis)||[];
-    if(_ab.indexOf('毅力')>-1||_ab.indexOf('毒疗')>-1||_ab.indexOf('魔法防守')>-1)return 'ok';
+  if(kind==='facade_status'){ /* 硬撑：自异常须可转化为收益——豁免=**全特性池**（inns天性∪abis主特性，用户裁决口径A：
+       天性毅力/毒疗恒生效，配毒珠/火焰珠自施异常→硬撑满威同样成立；魔法防守可安全自施无自伤；毒激=中毒增伤同权）：
+       毅力∨毒疗∨魔法防守∨毒激。否则剔除冠名 */
+    if(mechHasAbi(s,'毅力')||mechHasAbi(s,'毒疗')||mechHasAbi(s,'魔法防守')||mechHasAbi(s,'毒激'))return 'ok';
     return null;
   }
   if(kind==='acrobatics_item'){ /* 杂技：本系飞行∨轻装∨atk≥110（REGISTER-2 收紧 90→110） */
