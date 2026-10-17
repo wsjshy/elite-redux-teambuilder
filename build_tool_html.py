@@ -7277,15 +7277,15 @@ function mechFlowFit(s,kind){
     if(mechHasAbi(s,'毅力')||mechHasAbi(s,'毒疗')||mechHasAbi(s,'魔法防守')||mechHasAbi(s,'毒激'))return 'ok';
     return null;
   }
-  if(kind==='acrobatics_item'){ /* 杂技：本系飞行∨轻装∨atk≥110 */
+  if(kind==='acrobatics_item'){ /* 杂技：本系飞行∨轻装∨atk≥110（REGISTER-2 收紧 90→110） */
     if(hasTy('飞行')||mechHasAbi(s,'轻装'))return 'ok';
-    if(atk>=110)return 'ok'; if(atk>=90)return 'mid'; return null;
+    if(atk>=110)return 'ok'; return null;
   }
   if(kind==='foul_play_atk'){ /* 欺诈：按对方物攻结算，自身 atk≤90 才推；atk≥120 剔除 */
     if(atk<=90)return 'ok'; if(atk<120)return 'mid'; return null;
   }
-  if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥100 才推；def<90 剔除 */
-    if(def>=100)return 'ok'; if(def>=90)return 'mid'; return null;
+  if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥110 首推；90-109 中段降位；def<90 剔除 */
+    if(def>=110)return 'ok'; if(def>=90)return 'mid'; return null;
   }
   if(kind==='gyro_ball_speed'){ /* 陀螺球：速度越慢威力越高，spe≤70 才推；spe≥80 剔除 */
     if(spe<=70)return 'ok'; if(spe<80)return 'mid'; return null;
@@ -7681,6 +7681,8 @@ function mechBuildsOf(s){
     if(seen[rw])return;seen[rw]=1;
     if((_lowP||_lazyS)&&MECH_OFF[rw])return;
     var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
+    /* v4.58 C轮 中央门控复核：mid=横向中位 → 降权非首推（score 降 + warn 注明）；null=硬剔除冠名 */
+    if(b){try{var _fit=mechFlowFit(s,rw);if(_fit===null)b=null;else if(_fit==='mid'){b.score=Math.min(b.score||99,50);b.warn=(b.warn?b.warn+'；':'')+'机制流横向中位（种族处中段）——保留但非首推';}}catch(eF){}}
     /* 配招空槽的机制流派不生成（如再生力流但全无 UT/VS/钉子/状态招）——空卡没有可玩性 */
     if(b&&(!b.mv.main||!b.mv.main.length))b=null;
     if(b)b=fillMvSlots(s,b);   /* v4.31：机制流配招补满 4 槽 */
@@ -13720,6 +13722,7 @@ console.log('  G-E4（v4.54）亮点引用未带招='+(_g7ab.nGE4a||0)+'  EV模�
 console.log('  E5（v4.54 信息项）高速打手(base5≥110)主推槽含非即时招(蓄力/僵直/可打断)残留='+(_g7ab.nE5||0)+'  明细='+JSON.stringify((_g7ab.vE5||[]).slice(0,10)));
 console.log('  G-E5（v4.55 信息项）同物种不同流派 why 文案逐字雷同组数='+(_g7ab.nGE5||0)+'  明细='+JSON.stringify((_g7ab.vGE5||[]).slice(0,15)));
 console.log('  G-E5b（v4.56 子口径）单特性 why 跨流派逐字雷同组数='+(_g7ab.nGE5b||0)+'  明细='+JSON.stringify((_g7ab.vGE5b||[]).slice(0,15)));
+console.log('  G-E6（v4.58 机制流适宜度门控）六门注册在位(硬撑/杂技/欺诈/扑击/陀螺球/轻装)：硬撑=毅力/毒疗/魔法防守豁免·杂技非飞行系atk≥110·欺诈atk≥120剔·扑击def≥110首推·陀螺球spe≥80剔·轻装spe≥70；mid=横向中位降权非首推');
 console.log('  项2 大嘴雀(#22) why抽样='+JSON.stringify((_g7ab._fearowSample||[]).slice(0,4)));
 console.log('  R9-E4 三维覆盖一期（信息项）：物种='+(_g7ab.zSpecies||0)+'/1906  招式='+(_g7ab.yMoves||0)+'/1032  特性='+(_g7ab.xAbi||0)+'/1030');
 ['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk','sp'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
