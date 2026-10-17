@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.60</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.61</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2372,7 +2372,9 @@ function anDetailHtml(s,bd,R){
   if(!bd){h+='<div class="tip">该成员暂无引擎推荐流派（deriveBuilds 未返回）</div>';return h}
   /* ① 玩法流派一句话 */
   h+='<div class="fld"><div class="fhd"><span class="fno">1</span>玩法流派</div><div><b>'+esc(bd.name||'')+'</b> '+
-    '<span class="dim">'+esc(bd.side||'')+'向 · '+esc(bd.roleTag||'')+'</span><div class="oltext">'+esc(oneLiner(bd))+'</div></div></div>';
+    '<span class="dim">'+esc(bd.side||'')+'向 · '+esc(bd.roleTag||'')+'</span><div class="oltext">'+esc(oneLiner(bd))+'</div>'+
+    (bd.warn?'<div class="tip" style="margin-top:3px"><span class="badge badge-warnimm">注意</span> '+esc(bd.warn)+'</div>':'')+
+    '</div></div>';
   /* D-1 推荐特性 + 为什么选它（bd.abi[].why；点特性名看完整描述） */
   h+='<div class="fld"><div class="fhd"><span class="fno">2</span>推荐特性 + 理由</div>';
   var _ab=(bd.abi||[]);
@@ -12017,7 +12019,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.60';
+var ER_ENGINE_VER='v4.61';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
