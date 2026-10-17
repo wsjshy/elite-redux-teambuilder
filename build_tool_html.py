@@ -8832,7 +8832,7 @@ function comboBuildsOf(s){
         mv:{main:[{id:sub,kind:'protect',tag:'替身',why:['替身挡伤害后强化']},
                  {id:boost,kind:'boost',tag:'强化',why:['剑舞/龙舞叠攻后推队']},
                  {id:control,kind:'control',tag:'控场',why:['催眠/电磁波控场保强化回合']},
-                 {id:stabId,kind:'attack',tag:'本系',why:['强化后本系收割']}]},
+                 {id:stabId,kind:'attack',tag:'本系',why:['强化后本系收割（替身/电磁波掩护下回合僵直招安全蓄力）']}]},
         basis:[{k:'combo',txt:'组合 替身强化：替身抗伤→强化→控场保回合→本系收割'}]});
     }
     /* 钉子轮转流：钉子(隐形岩/撒菱) + 强制换人(吹飞/吼叫/龙尾) + 回复 + 本系 */
@@ -13302,8 +13302,11 @@ function engineGuardSelfCheck(){
         /* v4.59 C轮口径：base5≥110 ∨ 爆发/收割/速攻/强化输出流语境（与 e5Sanitize 同口径） */
         var _e5bn=String(b.name||'');
         var _e5burst=/爆发|收割|速攻|强化主力输出|清场|炮台|扫场/.test(_e5bn);
+        /* v4.62 C：组合槽含掩护手段(替身/守住/电磁波/催眠粉/麻痹控场)→僵直招保留豁免 */
+        var _e5main0=(b.mv&&b.mv.main||[]);
+        var _e5cover=_e5main0.some(function(x){var mm=MV[x.id];return mm&&/替身|守住|电磁波|催眠粉|催眠术/.test(String(mm[1]||''))});
         if((+(s.base||[])[5]||0)>=110 || _e5burst){
-          var _e5main=(b.mv&&b.mv.main||[]);
+          var _e5main=_e5main0;
           var _e5hit=_e5main.some(function(x){
             var mm=MV[x.id];if(!mm)return false;
             if(INTERRUPTIBLE_NEG[x.id])return true;
@@ -13311,7 +13314,7 @@ function engineGuardSelfCheck(){
             return /recharg|Can only be used every-?other turn|must rest/i.test(dd)||
                    /on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(dd);
           });
-          if(_e5hit){nE5++;if(vE5.length<20)vE5.push({id:s.id,zh:s.zh,build:b.name,mvs:_e5main.map(function(x){return x.id}).join(',')})}
+          if(_e5hit&&!_e5cover){nE5++;if(vE5.length<20)vE5.push({id:s.id,zh:s.zh,build:b.name,mvs:_e5main.map(function(x){return x.id}).join(',')})}
         }
       }catch(eE5){}
       /* v4.54 项2：大嘴雀(#22) why 覆盖抽样——收集每流派招式/特性/道具 why，验证非通用模板 */
