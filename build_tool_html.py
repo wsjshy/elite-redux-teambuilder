@@ -8815,6 +8815,52 @@ function coverMoveFor(s,side,blinds,conv,cur){
   });
   return best;
 }
+/* v4.61 P0-2 R9-E3 组合生成层：逐物种招池真实支持才生成三类经典组合（不硬造）。
+   按招式中文名匹配（gameData 溯源，不硬编码 id）：替身强化/钉子轮转/双墙。 */
+function _mvNameHas(s,kw){var L=learnOf(s)||[];for(var i=0;i<L.length;i++){var mm=MV[L[i]];if(mm&&String(mm[1]||'').indexOf(kw)>-1)return L[i]}return null}
+function _mvNameAll(s,kwList){var out=[];kwList.forEach(function(kw){var id=_mvNameHas(s,kw);if(id)out.push(id)});return out}
+function comboBuildsOf(s){
+  var res=[];
+  try{
+    var stab=stabBest(s,'物理')||stabBest(s,'特殊');
+    var stabId=(stab&&stab.id)||null;
+    /* 替身强化流：替身 + 强化招(剑舞/龙舞/冥想) + 控场(催眠粉/电磁波/催眠术) + 本系攻击 */
+    var sub=_mvNameHas(s,'替身');var boost=_mvNameAll(s,['剑舞','龙舞','冥想'])[0];
+    var control=_mvNameAll(s,['催眠粉','电磁波','催眠术','电磁波波'])[0];
+    if(sub&&boost&&control&&stabId){
+      res.push({name:'替身强化流',roleTag:'强化',side:coreSide(s),score:4,breakingRoute:'组合',
+        mv:{main:[{id:sub,kind:'protect',tag:'替身',why:['替身挡伤害后强化']},
+                 {id:boost,kind:'boost',tag:'强化',why:['剑舞/龙舞叠攻后推队']},
+                 {id:control,kind:'control',tag:'控场',why:['催眠/电磁波控场保强化回合']},
+                 {id:stabId,kind:'attack',tag:'本系',why:['强化后本系收割']}]},
+        basis:[{k:'combo',txt:'组合 替身强化：替身抗伤→强化→控场保回合→本系收割'}]});
+    }
+    /* 钉子轮转流：钉子(隐形岩/撒菱) + 强制换人(吹飞/吼叫/龙尾) + 回复 + 本系 */
+    var hazard=_mvNameAll(s,['隐形岩','撒菱','毒菱','黏黏网'])[0];
+    var phaze=_mvNameAll(s,['吹飞','吼叫','龙尾'])[0];
+    var rec=_mvNameAll(s,['羽栖','睡觉','再生','歇息','进食'])[0];
+    if(hazard&&phaze&&rec){
+      res.push({name:'钉子轮转流',roleTag:'受队',side:coreSide(s),score:4,breakingRoute:'组合',
+        mv:{main:[{id:hazard,kind:'hazard',tag:'钉子',why:['撒钉子压血线']},
+                 {id:phaze,kind:'phaze',tag:'吹飞',why:['吹飞/吼叫强制换人滚钉子']},
+                 {id:rec,kind:'rec',tag:'回复',why:['站场续航保钉子']},
+                 {id:stabId||phaze,kind:'attack',tag:'输出',why:['残局本系/补位']}]},
+        basis:[{k:'combo',txt:'组合 钉子轮转：撒钉→强制换人滚钉→回复续航'}]});
+    }
+    /* 双墙流：反射壁/光墙 + 长接/接力 + 本系输出 */
+    var wall=_mvNameAll(s,['反射壁','光墙'])[0];
+    var pass=_mvNameAll(s,['接棒','接力',' Baton'])[0];
+    if(wall&&stabId){
+      res.push({name:'双墙辅助流',roleTag:'受队',side:coreSide(s),score:3,breakingRoute:'组合',
+        mv:{main:[{id:wall,kind:'wall',tag:'墙',why:['反射壁/光墙减伤窗口']},
+                 {id:pass||wall,kind:'support',tag:'辅助',why:[pass?'接棒传递强化窗口':'双墙后转输出']},
+                 {id:stabId,kind:'attack',tag:'本系',why:['墙内本系安全输出']},
+                 {id:rec||wall,kind:'rec',tag:'续航',why:['站场保墙']}]},
+        basis:[{k:'combo',txt:'组合 双墙：开墙减伤→安全输出/接棒传递'}]});
+    }
+  }catch(e){}
+  return res;
+}
 function deriveBuilds(s,team){
   var p=profileOf(s),arr=[],teamArr=[];
   (team||[]).forEach(function(x){var t=x&&x.s?x.s:x;if(t&&''+t.id!==''+s.id)teamArr.push(t)});
@@ -9039,6 +9085,8 @@ function deriveBuilds(s,team){
   /* v4.11 F-1 修复：breakingRoute 原挂在返回数组上，bd.breakingRoute 恒 undefined；
      这里逐条回填到流派对象（只影响 UI 可展开内容，不改任何推荐结果） */
   for(var _brI=0;_brI<out.length;_brI++){out[_brI].breakingRoute=route}
+  /* v4.61 P0-2：追加组合生成器结果（替身强化/钉子轮转/双墙，招池真实支持才生成） */
+  try{var _cb=comboBuildsOf(s);if(_cb&&_cb.length)out=out.concat(_cb)}catch(eCB){}
   return out;
 }
 function coreWeak(s){
