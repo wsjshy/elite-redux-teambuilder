@@ -151,8 +151,16 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-17，v4.59）
+## 6. 当前状态（2026-10-17，v4.60）
 
+- ✅ **v4.60 P1-1 输出流 EV 模板对账（G-E4c 654→20）+ P1-2 普通输出流派横向分位（机制流→全部输出流派）（2026-10-17 部署）**：
+  - 标签行实测 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.60</span>`；master 链 HEAD=`61b9c1f`，gh-pages=`5df9e5b9`（README 登记同步）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）1312784 B = `502C6F3CBADCF6441592B3963DA9E6C34D98125245EE1D350AFE9EB3ADD8D6D7`（引擎确定性 N1=N2=冻结一致）；build_tool_html.py 1050047 B = `38CB4371E21D0F21…`；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1-1（用户已对齐 P1 判据方案）**：finalizeBuild EV 定稿处——机制流 ∨ 流派名含 输出/爆发/清场/收割/速攻 的输出位流派，若 EV 模板落耐久/受队/站场且不含再生轮转定位 → 自动改**攻击集约**（252HP+252 本系攻击），不硬剔保槽 ≥4；**G-E4c 654→20**（余=「真输出+带回复/站场」合理混血白名单，逐条登记带 why）。DOM 复验：拉达#20 硬撑流=攻击集约、皮卡丘#25 场地流=攻击集约、臭泥#88=耐久合规。
+  - **P1-2**：全库预计算**物攻 base.atk / 特攻 base.spa 分开基准池**分位阈值（t25/t75）；`outlierDemote` 对普通输出流派横向分位 score 微调——前 25% 主推 / 25-75% why「横向中位(N)——同定位中游」/ 后 25% 降位非首推+warn「横向后25%降位(N<阈值)」（score≤5）；机制流 mechFlowFit 门控不重复降位；剔除只去冠名、机制招保补位、槽不 <4；**deriveBuilds 派生链 0 hunk**。
+  - 验收：P0 显示层 PASS（部署门闩通过）；引擎 PASS（G-E4c=20 复核一致、横向分位后 25%=24：18 降位非首推 + 6 条唯一输出流派卡仍 idx0 但 score 已降权 2-5+warn（同扑击 def90-99 先例登记）、物攻/特攻分位表在位、N1=N2=502C6F3C==冻结、data.js 不变）；黑盒 PASS（P0=0/P1=0/P2=1：b.warn 降位文案数据层正确但渲染管线未透传 UI tip，非阻塞登记下轮优化）。
+  - **黑盒 v4.59 缺失项补跑（v4.60 产物上全过）**：大嘴雀#22 主推槽=杂技/舍身冲撞/钢翼/替身无终极冲击（舍身 why 显式「原招僵直/蓄力，改同系即时次优」）；264 真气拳白名单 #419/#1588 保留带代价说明（×0.85 可打断蓄力+×0.50 高速打手被打断概率）未占槽 1；组合识别子区消耗流（壶壶#213 钉子受队消耗：剧毒 why 消耗职责+引擎视角「消耗组件 钉子/剧毒 +4/+6」）UI 无空态；EV 模板输出类 ✓。
+  - 部署记录（MainAgent 侧执行）：push master `61b9c1f` → `tools/deploy_er.ps1 v4.60`（gh-pages `5df9e5b9`）→ 5 项 gitignored 输入从 C:\temp\er-backup-v460 恢复逐项哈希 MATCH（**item_zh_cn.json 曾缺失，已从 v459 备份恢复后重新入账**）→ 线上 no-cache 验证 index SHA256[:16]=`502C6F3CBADCF644`（1,312,784 B）与本地逐字节一致、含「引擎 v4.60」、data.js 未变。
 - ✅ **v4.59 E5 非即时招残留收口（119→8）+ 组合识别根因登记 + P1 判据方案待对齐（2026-10-17 部署）**：
   - 标签行实测 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.59</span>`；master 链 HEAD=`4171a0e`，gh-pages=`f5e9f38`（README 登记同步）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）1310235 B = `8308EF1EC0FBD2D42514DDAA547437E6E4A7DA09CE86C841BB6DBB9A75B72901`（引擎确定性 N1=N2=冻结一致）；build_tool_html.py 1047498 B = `B9F046B9D4E09FE2…`；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
