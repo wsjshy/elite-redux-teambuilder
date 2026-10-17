@@ -7284,8 +7284,8 @@ function mechFlowFit(s,kind){
   if(kind==='foul_play_atk'){ /* 欺诈：按对方物攻结算，自身 atk≤90 才推；atk≥120 剔除 */
     if(atk<=90)return 'ok'; if(atk<120)return 'mid'; return null;
   }
-  if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥110 首推；90-109 中段降位；def<90 剔除 */
-    if(def>=110)return 'ok'; if(def>=90)return 'mid'; return null;
+  if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥110 才推；def<110 剔除冠名（水箭龟def100中位不首推） */
+    if(def>=110)return 'ok'; return null;
   }
   if(kind==='gyro_ball_speed'){ /* 陀螺球：速度越慢威力越高，spe≤70 才推；spe≥80 剔除 */
     if(spe<=70)return 'ok'; if(spe<80)return 'mid'; return null;
