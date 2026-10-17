@@ -151,8 +151,16 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-17，v4.57）
+## 6. 当前状态（2026-10-17，v4.58）
 
+- ✅ **v4.58 机制流适宜度门控（六道）+ 硬撑门口径 A 回退 + G-E6 守门（2026-10-17 部署）**：
+  - 标签行实测 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.58</span>`；master 链 HEAD=`12a3468`，gh-pages=`de064ef`（README 登记同步）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）1307958 B = `0C2CFEF5ED9746BBBBAA4A1B9FAFF1FFD886BE7C865072192EB926228734193B`；build_tool_html.py 1045221 B = `AC5EBBCAAA24A690…`；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **背景（用户批评）**：流派判定太单一——能学杂技就推、不看非本系威力；要求自身比较+横向比较+举一反三。MainAgent 全库实证（C:\temp\er-acro-scan\scan5.json）：机制流派推荐 1431 条中 660 条不当（46%）——硬撑 376 推 348 无毅力/毒疗（92%）、杂技 267 推 149、扑击 253 推 81 def<90、欺诈 225 推 68 atk≥120、陀螺球 68 推 7 spe≥80、轻装 36 推 7 慢速；特性强制门（恶作剧/魔法防守/再生力/毒疗）=0 不当。
+  - **实施**：新增 `mechFlowFit(s,kind)`（L7272，判据=特性池/关键种族/横向分位三合一，ok/mid/null）；六门注册——硬撑=全特性池 inns∪abis 含【毅力∨毒疗∨魔法防守∨毒激】（口径 A，用户裁决：天性毅力恒生效配毒珠/火焰珠玩法成立；拉达#20/火伊布#136/豪力#67 恢复在位，大嘴雀#22/大比鸟#18 等 348 只维持剔除）、杂技=本系飞行∨轻装∨atk≥110、欺诈=atk≤90 推/≥120 剔、扑击=def≥100 推/90-99 中段降位/＜90 剔、陀螺球=spe≤70 推/≥80 剔、轻装=spe≥70；剔除只去流派冠名（机制招保留作补位招）；新守门 G-E6（机制流派注册缺门控=构建告警）。
+  - 验收：DOM 复验（Node vm 加载产物）拉达/火伊布/豪力硬撑第 1 位、大嘴雀/比雕无硬撑、大嘴雀杂技保留（本系豁免）；守门全绿（4099 流派/异常 0/三维 1030·1032·1906/G-E1=0/S6b=76.7%/S7d 显示不一致 0/EV 0 违例）。
+  - 部署记录：master push 走代理 → deploy_er.ps1 ×2（部署+README 同步）→ 5 项 gitignored 输入从 C:\temp\er-backup-v458 恢复逐项哈希 MATCH → 线上 no-cache 首抓 index SHA256[:16]=`0C2CFEF5ED9746BB` 与本地逐字节一致、含「引擎 v4.58」与 mechHasAbi 硬撑门判据、data.js 未变。
+  - 防卡死体系 L0–L4 登记于 §7（本轮执行：环境通道故障 7min 后恢复，MainAgent 接管 C6 全链）。
 - ✅ **v4.57 引擎标签 + G-E5b=747 信息项 + 三维第三批 + L7544 回归闭环（2026-10-17 部署）**：
   - 标签行实测 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.57</span>`；master 链 HEAD=`252355f`（C1/C2 v4.57 全链已提交推送，远端 ls-remote = 本地），gh-pages=`f1443af`。
   - 产物哈希：index.html（≡ 配招助手_ER.html）1304809 B = `289B22ACDA84A29FA13ABD12BE2AAA81FBC6FA5CDAD69027B26F1E91C224E259`（引擎确定性 N1=N2=冻结一致）；data.js 2456881 B = `7DB7FBB33D3160AF576039882B6B33779B6EC6337B9490D45C17C92D14354431`（v4.49 起逐字节未变）。
