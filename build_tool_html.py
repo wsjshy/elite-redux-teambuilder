@@ -9393,8 +9393,8 @@ function mateRoleOf(t,wxSys){
   if((t.abis||[]).concat(t.inns||[]).indexOf('再生力')>-1)out.push('轮转');
   if(t.base[2]>=120||t.base[4]>=120)out.push('盾');
   if(hasAny(tl,[92,269,87,30]))out.push('状态');
-  /* v4.67 P1-1：强化手（剑舞/龙舞/诡计/蝶舞/破壳）真实 push「强化」角色 */
-  try{var _mvZh=(tl||[]).map(function(m){var o=MV[m];return o?(o[2]||o[1]||''):''});if(_mvZh.some(function(z){return /剑舞|龙舞|诡计|蝶舞|破壳|生长/.test(z)}))out.push('强化')}catch(eBo){}
+  /* v4.67 P1-1二轮：强化手按招式 id 白名单（不依赖文案语言） */
+  try{var _BOOST_ID=[14,349,417,483,504,76];if((tl||[]).some(function(m){return _BOOST_ID.indexOf(m)>-1}))out.push('强化')}catch(eBo){}
   /* v4.35 P1-4：进攻力达标的队友可**兼任**『输出』位。原实现只有「无任何其他角色」才给输出位，
      而输出在 MATE_ROLE_PRIO 里优先级最低 → 6 个槽位被 6 个非输出角色占满，输出位仅 8.4%（A3）。
      输出仍排最后（优先级最低），只在其他角色被占用时落位 → 不改变既有骨架顺序，只让输出位可达。 */
