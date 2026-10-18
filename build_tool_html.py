@@ -9100,10 +9100,9 @@ function deriveBuilds(s,team){
   for(var _brI=0;_brI<out.length;_brI++){out[_brI].breakingRoute=route}
   /* v4.64 P1-1：组合结果按招组签名去重（与既有流派雷同则跳过） */
   try{var _cb=comboBuildsOf(s);if(_cb&&_cb.length){var _ss={};out.forEach(function(o){var sg=(o.mv&&o.mv.main||[]).map(function(x){return ''+x.id}).sort().join(',');_ss[sg]=1});_cb.forEach(function(cb){var sg=(cb.mv&&cb.mv.main||[]).map(function(x){return ''+x.id}).sort().join(',');if(!_ss[sg]){out.push(cb);_ss[sg]=1}})}}catch(eCB){}
-  /* v4.64 P1-3 补做：abi why 注入流派语境（同特性跨流派 why 分化，降 G-E5b 雷同） */
-  try{out.forEach(function(b){(b.abi||[]).forEach(function(a){if(a&&a.why&&a.why.length&&!a._ctxV){a.why=a.why.map(function(w){return String(w).replace(/（.*流派语境）$/,'')+'（'+(b.name||b.roleTag||'通用')+'语境）'});a._ctxV=1}})})}catch(eCtx){}
-  /* v4.65 P1：同物种同流派名去重（同名同配删，同名异配加序号分化） */
+  /* v4.65 P1：先同名流派去重分化，再注入 why 语境（使跨流派 why 分化，降 G-E5b） */
   try{var _nmSeen={},_out2=[];out.forEach(function(b){var nm=String(b.name||'');if(!nm)_out2.push(b);else if(!_nmSeen[nm]){_nmSeen[nm]=1;_out2.push(b)}else{_nmSeen[nm]++;b.name=nm+'·变体'+_nmSeen[nm];_out2.push(b)}});out=_out2}catch(eDn){}
+  try{out.forEach(function(b){(b.abi||[]).forEach(function(a){if(a&&a.why&&a.why.length&&!a._ctxV){a.why=a.why.map(function(w){return String(w).replace(/（.*流派语境）$/,'')+'（'+(b.name||b.roleTag||'通用')+'语境）'});a._ctxV=1}})})}catch(eCtx){}
   return out;
 }
 function coreWeak(s){
