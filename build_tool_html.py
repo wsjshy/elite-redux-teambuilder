@@ -785,6 +785,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
     <button data-tab="type">属性克制</button>
     <button data-tab="abi">特性反查</button>
     <button data-tab="tpl">战术模板</button>
+    <button data-tab="speed">速度线</button>
   </nav>
 </header>
 <main>
@@ -937,6 +938,11 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   <div id="tplList"></div>
   <div class="tip" id="tplRuleTip">💡 ER 特化提示加载中…</div>
   <div id="ruleBoxTpl"></div>
+</section>
+<!-- ===== 速度线（v4.68 批4：全库分位锚点+配速建议） ===== -->
+<section id="tab-speed" class="tab">
+  <div class="tip">💡 速度线：全库物种极速档（252努力+速度性格）分位锚点；天气/轻装/围巾/强化乘区为参考列，不自动计入主表。配速目标：高速速攻手 P90+ / 中速清场 P75 / 空间手反向拉低速。</div>
+  <div id="speedBox"></div>
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
@@ -4129,6 +4135,13 @@ function tplDataCount(){return (ERDATA.templates||[]).length}
    ================================================================================== */
 function bstI(s,i){return (s.base&&s.base[i])||0}
 function spdOf(s){return bstI(s,5)}
+/* v4.68 批4：速度线——全库极速档分位锚点（252努力+速度性格，Lv100近似） */
+function spdMax(s){var b=bstI(s,5);return Math.floor(((2*b+31+63)*1.1))}
+function speedPctiles(){var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMax(s))});arr.sort(function(a,b){return a-b});function pct(p){return arr[Math.min(arr.length-1,Math.floor(arr.length*p))]}return{n:arr.length,P50:pct(.50),P75:pct(.75),P90:pct(.90),P95:pct(.95),P99:pct(.99)}}
+function speedRender(){try{var q=speedPctiles();var h='<div class="sec"><h3>全库速度分位锚点（极速档，n='+q.n+'）</h3><table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr><tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
+h+='<div class="tip">配速目标分层：高速速攻手→超速 P90+（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1.5×、破壳/蝶舞 +2×（不自动计入主表）。</div></div>';
+var el=document.getElementById('speedBox');if(el)el.innerHTML=h}catch(e){var el=document.getElementById('speedBox');if(el)el.innerHTML='<div class="tip">速度线计算失败：'+e.message+'</div>'}}
+document.addEventListener('DOMContentLoaded',speedRender);
 function atkBest(s){return Math.max(bstI(s,1),bstI(s,3))}
 function bulkOf(s){return bstI(s,0)+bstI(s,2)+bstI(s,4)}
 function isType(s,t){return s.t1===t||s.t2===t}
