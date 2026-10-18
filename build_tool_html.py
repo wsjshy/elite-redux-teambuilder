@@ -775,7 +775,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.64</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.65</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -9102,6 +9102,8 @@ function deriveBuilds(s,team){
   try{var _cb=comboBuildsOf(s);if(_cb&&_cb.length){var _ss={};out.forEach(function(o){var sg=(o.mv&&o.mv.main||[]).map(function(x){return ''+x.id}).sort().join(',');_ss[sg]=1});_cb.forEach(function(cb){var sg=(cb.mv&&cb.mv.main||[]).map(function(x){return ''+x.id}).sort().join(',');if(!_ss[sg]){out.push(cb);_ss[sg]=1}})}}catch(eCB){}
   /* v4.64 P1-3 补做：abi why 注入流派语境（同特性跨流派 why 分化，降 G-E5b 雷同） */
   try{out.forEach(function(b){(b.abi||[]).forEach(function(a){if(a&&a.why&&a.why.length&&!a._ctxV){a.why=a.why.map(function(w){return String(w).replace(/（.*流派语境）$/,'')+'（'+(b.name||b.roleTag||'通用')+'语境）'});a._ctxV=1}})})}catch(eCtx){}
+  /* v4.65 P1：同物种同流派名去重（同名同配删，同名异配加序号分化） */
+  try{var _nmSeen={},_out2=[];out.forEach(function(b){var nm=String(b.name||'');if(!nm)_out2.push(b);else if(!_nmSeen[nm]){_nmSeen[nm]=1;_out2.push(b)}else{_nmSeen[nm]++;b.name=nm+'·变体'+_nmSeen[nm];_out2.push(b)}});out=_out2}catch(eDn){}
   return out;
 }
 function coreWeak(s){
@@ -12300,7 +12302,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.64';
+var ER_ENGINE_VER='v4.65';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -13913,6 +13915,7 @@ if _r.returncode != 0:
     print('[FATAL] v4.47 守门自检未通过（node exit=%d）→ 构建失败（产物已落盘但不得发布）' % _r.returncode)
     _sys.exit(1)
 print('[BUILD OK] v4.47 守门自检 exit 0（0 违规）')
+
 
 
 
