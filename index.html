@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.65</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.66</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2142,6 +2142,16 @@ function anRender(R){
     (R.sys.hasSpace?'<span class="badge">空间</span>':'')+(R.sys.hasTailwind?'<span class="badge">顺风</span>':'')+
     (R.sys.hasHazard?'<span class="badge">钉×'+R.sys.hasHazard+'</span>':'')+(R.sys.hasWall?'<span class="badge">墙×'+R.sys.hasWall+'</span>':'')+
     '<div class="tip">天气轴：'+((R.sys.wx||[]).length?esc(R.sys.wx.join('、')):'无')+' ／ 场地：'+((R.sys.field||[]).length?esc(R.sys.field.join('、')):'无')+'</div>');
+  /* v4.66 P1：队伍层组合体系标签+整队叙事（命中模板才贴，允许无体系队） */
+  try{
+    var _memZh=(R.members||[]).map(function(m){return esc(m.s?m.s.zh:m.zh||'')});
+    var _sysTxt='';
+    if(R.sys.hasHazard) _sysTxt='本队围绕钉子轮转：撒钉手铺隐形岩/撒菱压血线→吹飞/吼叫强制换人滚钉→回复位续航保钉子→清场收割';
+    else if((R.sys.wx||[]).indexOf('雨')>-1) _sysTxt='本队雨天速攻：降雨手开雨天→轻快/悠游自如打手提速→雨必中炮台清场';
+    else if((R.sys.wx||[]).indexOf('晴')>-1||(R.sys.wx||[]).indexOf('沙')>-1||(R.sys.wx||[]).indexOf('雪')>-1) _sysTxt='本队天气体系：天气手开'+esc((R.sys.wx||[])[0])+'→盾牌站场+打手闭环输出';
+    else if(R.sys.hasWall) _sysTxt='本队双墙辅助：反射壁/光墙减伤窗口→墙内安全输出/接力传递';
+    if(_sysTxt) h+=anCard('<b>体系标签</b>：<span class="badge badge-warnimm">组合体系</span> <span class="tip">'+_sysTxt+'（成员：'+_memZh.join('、')+'）</span>');
+  }catch(eSys){}
   h+=anCard('<b>角色分布（可兼任）</b>：'+anChips(Object.keys(R.roles).map(function(k){return k+'×'+R.roles[k]}))+
     '<div class="tip">角色可兼任，不视为硬性配方</div>');
   h+=anCard('<b>物理/特殊配比</b>：物理 '+R.side.phys+' ／ 特殊 '+R.side.spec+' ／ 双刀 '+R.side.mixed+
@@ -12083,7 +12093,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.65';
+var ER_ENGINE_VER='v4.66';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
