@@ -8417,6 +8417,8 @@ function pickAbiFor(s,side,roleTag,ctx){
       if(tag.phy&&(roleTag==='肉盾'||roleTag==='受队'||roleTag==='强化')){sc+=1;why.push('物理减伤')}
       if(tag.nt){sc+=1;why.push('关键耐性')}
     }
+    /* v4.68 P1-1：会心流特性语境判定——无会心来源（高会心招）则降权，不主推 */
+    try{var _CRIT_ABI=['狙击手','超幸运','锋锐','怒气冲天','连胜'];if(_CRIT_ABI.indexOf(n)>-1){var _tl=learnOf(s);var _hasCrit=_tl.some(function(m){var o=MV[m];var z=o?(o[2]||o[1]||''):'';return /叶刃|石刃|暗袭要害|十字剪|连环巴掌|劈瓦|百万吨重拳/.test(z)});if(!_hasCrit){sc-=4;why.push('会心流特性但无高会心招/焦点镜支撑 → 降权，主推换稳定输出特性')}}else{}}catch(eCri){}
     if(sc===0&&names.length===1){sc=0;why.push('唯一可选')}
     /* v4.54 项6 三维覆盖第二批（gameData 原文溯源，中文以 data.js ABI 实读为准）：
        · 压迫感(Pressure,id46)：未在 abiTags 标签体系 → 补识别：被对方击中时对方该招多耗 1 PP → 长站场消耗锚点；
@@ -12441,8 +12443,8 @@ function renderCore(s){
   /* v4.10 机制徽标（命中 mechLib 的物种/特性级机制） */
   var _mpB='';
   if(mechOn()){var _mpp=mechSpProfile(s),_mw=mechAbiWhy(s);
-    if(_mpp.mechs.length)_mpB=mechChip(mechRwZh(_mpp.mechs[0].rewrite));
-    else if(_mw.length)_mpB=mechChip(_mw[0].zh);}
+    if(_mpp.mechs.length)_mpB=mechBadgeHtml([_mpp.mechs[0]]);
+    else if(_mw.length)_mpB=mechBadgeHtml([{rewrite:_mw[0].zh,why:_mw[0].why||_mw[0].zh}]);}
   var builds=deriveBuilds(s);
   var in0c=coreIntensity(s);
   var tags=coreTags(s);
