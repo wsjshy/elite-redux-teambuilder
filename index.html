@@ -18,7 +18,7 @@ header .tag{font-size:12px; color:var(--sub)}
 nav{display:flex; gap:4px; margin-left:auto; flex-wrap:wrap}
 nav button{border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px}
 nav button.active{background:var(--accent); color:#fff; border-color:var(--accent)}
-main{max-width:1200px; margin:0 auto; padding:14px}
+main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); overflow-y:auto; box-sizing:border-box} /* v4.68 黑盒P2-1：MAIN 独立滚动容器，使 bktabs sticky(top:51) 真实 engage */
 .tab{display:none}
 .tab.active{display:block}
 .t{display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; color:#fff; line-height:18px; margin-right:3px}
@@ -336,7 +336,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .evopends .evochip .evonm{font-size:11px}
 @media(max-width:640px){.famlab{flex-basis:64px; font-size:11px}.evoroute .famlab{flex-basis:52px}}
 .bktabs{display:flex; align-items:center; gap:6px; height:48px; overflow-x:auto; margin:6px 0 8px;
-  padding:0 2px; position:sticky; top:51px; z-index:60; background:var(--bg);
+  padding:0 2px; position:sticky; top:0; z-index:60; background:var(--bg); /* v4.68 黑盒P2-1：main 为独立滚动容器(已在页眉下)，bktabs 钉在 main 顶部=视口51px */
   box-shadow:0 1px 0 var(--line); -webkit-overflow-scrolling:touch}
 .bktab{flex:0 0 auto; height:44px; min-height:44px; display:inline-flex; align-items:center; padding:0 14px;
   border:1px solid var(--line); border-radius:999px; background:var(--card); font-size:13px; cursor:pointer;
@@ -1803,7 +1803,8 @@ function tmRow(r){
 function switchTab(name){
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name)});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
-  try{window.scrollTo(0,0)}catch(e){} /* v4.6-C：切 Tab 回顶（与 selectCore 行为一致） */
+  try{var _m=document.querySelector('main');if(_m)_m.scrollTop=0;else window.scrollTo(0,0)}catch(e){} /* v4.6-C：切 Tab 回顶；v4.68 P2-1：main 为独立滚动容器 */
+  if(name==='speed'){try{speedEnsureTable()}catch(eL){}} /* v4.68 黑盒P1-2：速度线全库表首次开Tab才渲染 */
 }
 document.querySelectorAll('nav button').forEach(function(b){
   b.onclick=function(){switchTab(b.dataset.tab)};
@@ -2560,9 +2561,7 @@ function renderSp(reset){
   });
   $('spMore').textContent=(spShown<arr.length?('已显示 '+spShown+'/'+arr.length+'，滚动加载更多 · '):'共 '+arr.length+' 只 · ')+spCountLabel();
 }
-window.addEventListener('scroll',function(){
-  if($('tab-poke').classList.contains('active')&&window.innerHeight+window.scrollY>document.body.scrollHeight-400)renderSp(false);
-});
+(function(){function _scPoke(){var m=document.querySelector('main');if(!$('tab-poke').classList.contains('active'))return;if(!m)return;if(m.scrollTop+m.clientHeight>m.scrollHeight-400)renderSp(false);}var _m=document.querySelector('main');if(_m)_m.addEventListener('scroll',_scPoke);window.addEventListener('scroll',_scPoke);})();
 
 /* ============ 宝可梦详情 ============ */
 /* v4.x UI 定稿（用户原则：二级内容默认就地/内联/紧凑卡片；确需浮层 → 居中轻量 modal，禁右侧抽屉）
@@ -2613,7 +2612,7 @@ function openSp(s){
     html+='<div class="barstat"><span class="lb">'+n+'</span><div class="tr"><div class="fl" style="width:'+pct+'%;background:hsl('+(210-i*20)+',70%,55%)"></div></div><span class="tk">'+base[i]+'</span></div>';
   });
   html+='</div>';
-  try{html+=speedHintHtml(s)}catch(eSp){}  /* v4.68 批4：配招卡一行配速提示（当前速度 vs 目标分位 ✅/⚠️ + 卡线省EV） */
+  try{html+=speedHintHtmlCached(s)}catch(eSp){}  /* v4.68 批4：配招卡一行配速提示（当前速度 vs 目标分位 ✅/⚠️ + 卡线省EV）；黑盒P1-2按id缓存 */
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
   html+='<div class="sec"><h3>特性（'+s.abis.length+' 选 1，点击看描述）</h3>';
   s.abis.forEach(function(n,ai){
@@ -2968,9 +2967,7 @@ function renderTm(reset){
   });
   $('tmMore').textContent=tmShown<arr.length?('已显示 '+tmShown+'/'+arr.length+'，滚动加载更多'):(arr.length?('共 '+arr.length+' 只'):'无匹配');
 }
-window.addEventListener('scroll',function(){
-  if($('tab-team').classList.contains('active')&&window.innerHeight+window.scrollY>document.body.scrollHeight-400)renderTm(false);
-});
+(function(){function _scTeam(){var m=document.querySelector('main');if(!$('tab-team').classList.contains('active'))return;if(!m)return;if(m.scrollTop+m.clientHeight>m.scrollHeight-400)renderTm(false);}var _m=document.querySelector('main');if(_m)_m.addEventListener('scroll',_scTeam);window.addEventListener('scroll',_scTeam);})();
 /* v4.33 N6：队伍 localStorage 持久化（刷新/重开不丢；仅存 id 与轻量信息，精灵数据仍以 ERDATA 为准） */
 function saveTeam(){
   try{
@@ -3981,8 +3978,13 @@ function speedRender(){try{var q=speedPctiles();
   h+='<div class="bar" style="margin-top:8px"><input type="text" id="spdSearch" placeholder="搜索物种：中文 / 英文 / 编号" oninput="speedRefreshTable()"></div>';
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
   var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
-  speedRefreshTable();
+  /* v4.68 黑盒P1-2：全库表懒渲染——仅在速度线 Tab 首次打开时构建400行，避免 DOMContentLoaded/开卡阻塞 */
+  window._speedTableBuilt=false;
  }catch(e){var el=document.getElementById('speedBox');if(el)el.innerHTML='<div class="tip">速度线计算失败：'+e.message+'</div>'}}
+function speedEnsureTable(){if(window._speedTableBuilt)return;var b=document.getElementById('spdTableBox');if(!b)return;speedRefreshTable();window._speedTableBuilt=true}
+/* 配速提示按物种 id 缓存（黑盒P1-2：开卡热路径零重算） */
+var _speedHintCache={};
+function speedHintHtmlCached(s){var k=(s&&s.id)||'';if(_speedHintCache[k]==null){try{_speedHintCache[k]=speedHintHtml(s)}catch(e){_speedHintCache[k]=''}}return _speedHintCache[k]}
 document.addEventListener('DOMContentLoaded',speedRender);
 function atkBest(s){return Math.max(bstI(s,1),bstI(s,3))}
 function bulkOf(s){return bstI(s,0)+bstI(s,2)+bstI(s,4)}
@@ -9090,10 +9092,10 @@ var ITEM_POOL=[
   {id:295,zh:'冰冷岩石',en:'Icy Rock',cls:'天气场地',gain:{util:0.8},roles:['天气'],why:'延长冰雹/雪（8→12 回合，考古实证）'},
   {id:294,zh:'光之黏土',en:'Light Clay',cls:'天气场地',gain:{util:0.8},roles:['场地'],why:'光墙/反射壁/极光幕回合延长（考古口径 12）'},
   {id:326,zh:'地形延长器',en:'Terrain Extender',cls:'天气场地',gain:{util:0.8},roles:['场地'],why:'场地延长至 12 回合（考古实证）'},
-  {id:328,zh:'电气种子',en:'Electric Seed',cls:'天气场地',gain:{util:0.5},roles:['场地','增伤'],why:'电气场地上防御 +1（一次性）'},
-  {id:331,zh:'青草种子',en:'Grassy Seed',cls:'天气场地',gain:{util:0.5},roles:['场地','增伤'],why:'青草场地上防御 +1（一次性）'},
-  {id:330,zh:'薄雾种子',en:'Misty Seed',cls:'天气场地',gain:{util:0.5},roles:['场地'],why:'薄雾场地上特防 +1（一次性）'},
-  {id:329,zh:'精神种子',en:'Psychic Seed',cls:'天气场地',gain:{util:0.5},roles:['场地'],why:'精神场地上特防 +1（一次性）'},
+  {id:328,zh:'电气种子',en:'Electric Seed',cls:'天气场地',gain:{util:0.5},roles:['场地','增伤'],why:'电气场地上防御 +1（一次性）；需队伍内有电气制造者/对应场地招触发，无场地手勿带'},
+  {id:331,zh:'青草种子',en:'Grassy Seed',cls:'天气场地',gain:{util:0.5},roles:['场地','增伤'],why:'青草场地上防御 +1（一次性）；需队伍内有青草制造者/对应场地招触发，无场地手勿带'},
+  {id:330,zh:'薄雾种子',en:'Misty Seed',cls:'天气场地',gain:{util:0.5},roles:['场地'],why:'薄雾场地上特防 +1（一次性）；需队伍内有薄雾制造者/对应场地招触发，无场地手勿带'},
+  {id:329,zh:'精神种子',en:'Psychic Seed',cls:'天气场地',gain:{util:0.5},roles:['场地'],why:'精神场地上特防 +1（一次性）；需队伍内有精神制造者/对应场地招触发，无场地手勿带'},
   /* ④ 控速机动 */
   {id:285,zh:'讲究围巾',en:'Choice Scarf',cls:'控速机动',gain:{out:1.5,spe:1.5},roles:['轮转','游击','输出','控速'],why:'速度×1.5 抢手权（锁招）'},
   {id:317,zh:'逃脱按钮',en:'Eject Button',cls:'控速机动',gain:{util:0.5},roles:['轮转','肉盾'],why:'被打即换人（保轮转节奏）'},
