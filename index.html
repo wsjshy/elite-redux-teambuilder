@@ -567,6 +567,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
     <button data-tab="type">属性克制</button>
     <button data-tab="abi">特性反查</button>
     <button data-tab="tpl">战术模板</button>
+    <button data-tab="speed">速度线</button>
   </nav>
 </header>
 <main>
@@ -719,6 +720,11 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
   <div id="tplList"></div>
   <div class="tip" id="tplRuleTip">💡 ER 特化提示加载中…</div>
   <div id="ruleBoxTpl"></div>
+</section>
+<!-- ===== 速度线（v4.68 批4：全库分位锚点+配速建议） ===== -->
+<section id="tab-speed" class="tab">
+  <div class="tip">💡 速度线：全库物种极速档（252努力+速度性格）分位锚点；天气/轻装/围巾/强化乘区为参考列，不自动计入主表。配速目标：高速速攻手 P90+ / 中速清场 P75 / 空间手反向拉低速。</div>
+  <div id="speedBox"></div>
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
@@ -2607,6 +2613,7 @@ function openSp(s){
     html+='<div class="barstat"><span class="lb">'+n+'</span><div class="tr"><div class="fl" style="width:'+pct+'%;background:hsl('+(210-i*20)+',70%,55%)"></div></div><span class="tk">'+base[i]+'</span></div>';
   });
   html+='</div>';
+  try{html+=speedHintHtml(s)}catch(eSp){}  /* v4.68 批4：配招卡一行配速提示（当前速度 vs 目标分位 ✅/⚠️ + 卡线省EV） */
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
   html+='<div class="sec"><h3>特性（'+s.abis.length+' 选 1，点击看描述）</h3>';
   s.abis.forEach(function(n,ai){
@@ -3911,6 +3918,72 @@ function tplDataCount(){return (ERDATA.templates||[]).length}
    ================================================================================== */
 function bstI(s,i){return (s.base&&s.base[i])||0}
 function spdOf(s){return bstI(s,5)}
+/* ============ v4.68 批4：速度线体系（全库1906物种可查 + 分位脚本实测 + 配速分层 + 卡线省EV实算） ============
+   Lv100 速度公式（IV=31）：中性 = 2b+31+floor(EV/4)+5；+速度性格 = floor(中性×1.1)。
+   主表=极速档（252+速度性格）；满速中性档做参考列；天气/轻装/围巾/强化乘区仅参考列，不自动计入。 */
+function spd0Of(s){var b=bstI(s,5);return 2*b+36}                    /* 0努力中性（参考） */
+function spdFullOf(s){var b=bstI(s,5);return 2*b+99}                /* 满速252中性（参考列） */
+function spdMaxOf(s){var b=bstI(s,5);return Math.floor((2*b+99)*1.1)}/* 极速252+速度性格（主表） */
+function spdScarfOf(s){var b=bstI(s,5);return Math.floor((2*b+99)*1.5)} /* 讲究围巾×1.5（满速中性，参考列） */
+function spdWeatherOf(s){var W=['轻装','悠游自如','叶绿素','拨雪'];var hit=null;(s.abis||[]).forEach(function(a){if(a&&W.indexOf(a)>-1)hit=a});return hit} /* 天气×2特性（参考列） */
+function spdWeatherVal(s){var h=spdWeatherOf(s);return h?Math.floor(spdMaxOf(s)*2):null}
+var _spdPct=null;
+function speedPctiles(){if(_spdPct)return _spdPct;
+  var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
+  var n=arr.length;function pct(p){return arr[Math.min(n-1,Math.floor(n*p))]}
+  _spdPct={n:n,P50:pct(.50),P75:pct(.75),P90:pct(.90),P95:pct(.95),P99:pct(.99)};return _spdPct}
+/* 卡线省EV实算：满速性格下达到 target 所需最小 EV(0/4/.../252)；返回 {ev,val,saved}，达不到返回 null */
+function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
+/* 定位分层：高速速攻手(超速P90+) / 中速清场(卡P75省EV) / 空间慢速手(反向拉低速) */
+function speedRole(s){var sp=spdOf(s),at=Math.max(bstI(s,1),bstI(s,3));
+  if(sp<=60&&at>=95)return 'space';
+  if(sp>=100&&at>=90)return 'fast';
+  return 'mid'}
+function speedRoleZh(r){return r==='fast'?'高速速攻手':(r==='space'?'空间/慢速炮台':'中速清场')}
+/* 配招卡一行配速提示（由 openSp 注入） */
+function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
+  var line='<div class="ruleline" style="margin-top:6px">⚡ <b>配速</b>：极速 <b>'+mx+'</b>（0努力 '+spd0Of(s)+' / 满速中性 '+spdFullOf(s)+'；围巾参考 '+spdScarfOf(s)+(spdWeatherOf(s)?'；'+spdWeatherOf(s)+'×2参考 '+spdWeatherVal(s):'')+'）';
+  if(role==='fast'){
+    if(mx>=q.P90){line+=' · <span style="color:var(--ok)">超速 P90（'+q.P90+'）✅</span>'}
+    else{var e=spdEvTo(s,q.P90);line+=' · 距 P90 差 '+(q.P90-mx)+' 点 ⚠️'+(e?('（实算需 EV '+e.ev+' → '+e.val+'）'):'（满速仍不足）')}
+  }else if(role==='mid'){
+    var e75=spdEvTo(s,q.P75);
+    if(e75){line+=' · 目标 P75（'+q.P75+'）：卡线 EV='+e75.ev+' 达 '+e75.val+' → <span style="color:var(--ok)">省 '+e75.saved+' EV 挪 HP ✅</span>'}
+    else{line+=' · <span style="color:var(--sub)">满速 '+mx+(mx>=q.P75?' 已过 P75':' 仍不足 P75（'+q.P75+'）⚠️')+'</span>'}
+  }else{
+    line+=' · <span style="color:var(--sub)">空间/慢速炮台：拉低速重耐久，空间内反超（不抢高速线）</span>'}
+  /* 卡线省 EV 实算（④）：凡能过 P75 者，给出「仅卡 P75 所需 EV → 省 N EV 挪 HP」参考行 */
+  if(role!=='space'){var e75b=spdEvTo(s,q.P75);
+    if(e75b&&mx>=q.P75){line+='<br><span style="color:var(--sub)">卡线参考：若仅求过 P75（基准 '+q.P75+'）→ EV '+e75b.ev+'（达 '+e75b.val+'）即可，<b style="color:var(--ok)">省 '+e75b.saved+' EV 挪 HP</b>（不必上满 252）。</span>'}}
+  line+='</div>';return line}
+/* 全库速度线表（可查，极速降序，搜索过滤；前 400 行） */
+function speedRenderTable(){var qv=(document.getElementById('spdSearch')&&document.getElementById('spdSearch').value||'').trim().toLowerCase();
+  var rows=ERDATA.species.filter(function(s){
+    if(!qv)return true;
+    return (''+s.zh).toLowerCase().indexOf(qv)>-1||(''+s.en).toLowerCase().indexOf(qv)>-1||(''+s.id).indexOf(qv)>-1;
+  });
+  rows.sort(function(a,b){return spdMaxOf(b)-spdMaxOf(a)});
+  var h='<table class="tbl"><thead><tr><th>#</th><th>物种</th><th>0努力</th><th>满速252中性</th><th>极速252+性格</th><th>围巾×1.5</th><th>特性×2(若触发)</th><th>+1级强化</th><th>定位</th></tr></thead><tbody>';
+  var cap=rows.slice(0,400);
+  cap.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
+    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td>'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td>'+spdScarfOf(s)+'</td><td>'+(wv?('<span style="color:var(--acc)">'+wv+'</span> <span style="color:var(--sub);font-size:10px">'+wa+'</span>'):'—')+'</td><td>'+Math.floor(mx*1.5)+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  if(rows.length>400)h+='<div class="tip">命中 '+rows.length+' 只，仅显示前 400（按极速降序）；输入关键词缩小范围。</div>';
+  else h+='<div class="tip" style="margin-top:4px">共 '+rows.length+' 只。</div>';
+  return h}
+function speedRefreshTable(){var b=document.getElementById('spdTableBox');if(b)b.innerHTML=speedRenderTable()}
+function speedRender(){try{var q=speedPctiles();
+  var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
+  h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
+  h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
+  h+='<div class="tip">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div>';
+  h+='<div class="bar" style="margin-top:8px"><input type="text" id="spdSearch" placeholder="搜索物种：中文 / 英文 / 编号" oninput="speedRefreshTable()"></div>';
+  h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
+  var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
+  speedRefreshTable();
+ }catch(e){var el=document.getElementById('speedBox');if(el)el.innerHTML='<div class="tip">速度线计算失败：'+e.message+'</div>'}}
+document.addEventListener('DOMContentLoaded',speedRender);
 function atkBest(s){return Math.max(bstI(s,1),bstI(s,3))}
 function bulkOf(s){return bstI(s,0)+bstI(s,2)+bstI(s,4)}
 function isType(s,t){return s.t1===t||s.t2===t}
