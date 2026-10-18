@@ -151,7 +151,16 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-18，v4.67）
+## 6. 当前状态（2026-10-19，v4.68）
+
+- ✅ **v4.68 轮：P0 卡死修复（构建期预计算）+ 组织者五项（机制解读/会心流/场地种子/P2×3）（2026-10-19 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.68</span>`；master 链 HEAD=`ca6180e`（产物）；gh-pages=登记 commit 后同步。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**1328648 B = `0BCC7D670486F926…`**（SHA256 全量 `693B2C25…`）；build_tool_html.py **1071557 B = `88D8A5A84F2D96FC…`**；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P0 卡死根治（用户多次报告：本地/线上点击核心配队宝可梦冻结 ~60s）**：真机探针定位根因=v4.67 强化角色判定在 mateRoleOf 内**逐候选跑完整 deriveBuilds(t)** → findTeammates 全库候选（一次点击 deriveBuilds×14183 次/49.5s、coreSys×235 万、renderCore=62.7s）。**修复=构建期 node vm 预计算全库强化角色表 `_ER_BOOST_ROLE`（312 只，判据=主推流派 mv.main 含 剑舞14/龙舞349/诡计417/蝶舞483/破壳504），运行时 O(1) 查表**；同时剔除原 BOOST_ID 中 **76=日光束**（data.js moves 实证=蓄力草招非强化，v4.67 误判顺手修）。**实测：线上点击 60s→0.04s（本地 file:// 0.8s）**。
+  - **组织者 v4.68 五项（本地 master 0dca4f5 合并入 ca6180e）**：①P0 机制解读 badge 可展开（mechChip L7587 静态 span 无 onclick → 改 mechBadgeHtml 带 onclick toggle）；②P1 会心流特性无支撑降权（狙击手等无高会心招/焦点镜→主推换稳定输出特性）；③P1 场地种子 why 注明需场地手触发（电气/精神/薄雾/青草种子=场地+1 防后消耗→杂技翻倍，why 注明需队友开场地）；④P2-1 bktabs top51 不盖 header；⑤P2-2 EV 段数值标注（4/252/252 可读）；⑥P2-3 特性 N 选 1 动态。
+  - 验收：守门 BUILD OK exit 0 **0 违规**（预计算 `[PREWARM] 物种=1906 有流派=1906 无/异常=0 强化角色=312 加载错误=0`；G-E2 三维全盖/G-E4a=76/G-E4b=181/G-E4c=20/G-E4d=109/G-E5b=45/E5=14/R9-E3=95·268·141·0 与 v4.65 基线一致）；本地点击复测 0.8s；线上 no-cache 实测 **点击 0.04s**、页面含「引擎 v4.68」。
+  - 部署记录（MainAgent 侧手动执行，deploy_er.ps1 调用异常改手动链路）：push master `ca6180e`（代理）→ checkout gh-pages 清空复制部署（index/data.js/README/assets/ER-source 三参考 JSON/.nojekyll）→ commit+push --force（代理）→ checkout master → **5 项 gitignored 输入从 C:\temp\er-backup-v468 恢复逐项哈希 MATCH**（item_zh_cn MD5=`03243EAA`）→ 线上 no-cache 验证 index SHA256[:16]=`0BCC7D670486F926`（1,328,648 B）与本地逐字节一致。
+  - **经验教训（§7 E5 固化）**：①**本地构建/部署期间禁止并发跑第二个构建**——本轮并发旧构建（用中间版 build.py）覆盖工作区产物（index/data.js 漂移 1257947/2317966），靠 git restore HEAD 找回；②**gh-pages 手动部署清空工作树会连带删除 gitignored 未跟踪输入**（nn_data/简汉化/xlsm/招式表/item_zh_cn），部署后必须从备份恢复并哈希 MATCH；③**性能类 P0 必须真机实测闭环**（60s→0.04s 数据说话），函数级计数（deriveBuilds×14183）比猜测更可靠；④**运行时高开销判定一律构建期预计算**（查表化），禁止逐候选全链派生；⑤数据字段语义以 data.js 实证为准（76=日光束非强化，白名单剔除）。
 
 - ✅ **v4.67 补全轮：消耗受队/强化推队独立体系旗标（任务书 5 类模板完整化；黑盒 FAIL×3 拦截后四轮补做闭环）（2026-10-18 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.67</span>`；master 链 HEAD=`9c21fc9`（产物）+ 登记 commit（见下）；gh-pages=登记 commit 后同步。
