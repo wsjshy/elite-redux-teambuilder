@@ -2150,7 +2150,7 @@ function anRender(R){
     var _rec=(_roles['回复']||0)+(_roles['轮转']||0);
     var _tag='',_sysTxt='';
     if(_toxic>=2&&_rec>=2&&((_roles['盾']||0)>=1||(_roles['轮转']||0)>=1)){_tag='消耗受队';_sysTxt='毒钉/剧毒压血线→回复轮转拖节奏→再生力续航站场消耗'}
-    else if((_roles['强化']||0)>=1&&(_roles['状态']||0)>=1){_tag='强化推队';_sysTxt='控场创造机会→强化叠层→清场收割'}
+    else if((_roles['强化']||0)>=2&&(_roles['输出']||0)>=2){_tag='强化推队';_sysTxt='控场创造机会→强化叠层→清场收割'}
     else if(R.sys.hasHazard){_tag='钉子轮转';_sysTxt='撒钉手铺隐形岩/撒菱压血线→吹飞/吼叫强制换人滚钉→回复位续航保钉子→清场收割'}
     else if((R.sys.wx||[]).indexOf('雨')>-1){_tag='雨天速攻';_sysTxt='降雨手开雨天→轻快/悠游自如打手提速→雨必中炮台清场'}
     else if((R.sys.wx||[]).length){_tag='天气体系';_sysTxt='天气手开'+esc((R.sys.wx||[])[0])+'→盾牌站场+打手闭环输出'}
@@ -9175,8 +9175,8 @@ function mateRoleOf(t,wxSys){
   if((t.abis||[]).concat(t.inns||[]).indexOf('再生力')>-1)out.push('轮转');
   if(t.base[2]>=120||t.base[4]>=120)out.push('盾');
   if(hasAny(tl,[92,269,87,30]))out.push('状态');
-  /* v4.67 P1-1二轮：强化手按招式 id 白名单（不依赖文案语言） */
-  try{var _BOOST_ID=[14,349,417,483,504,76];if((tl||[]).some(function(m){return _BOOST_ID.indexOf(m)>-1}))out.push('强化')}catch(eBo){}
+  /* v4.67 P1-1三轮：强化判定基于实际推荐配招 mv.main（非 learnOf 全 TM 池） */
+  try{var _BOOST_ID=[14,349,417,483,504,76];var _b0=(typeof deriveBuilds==='function'?deriveBuilds(t):null);var _mvMain=(_b0&&_b0[0]&&_b0[0].mv&&_b0[0].mv.main||[]).map(function(x){return x.id});if(_mvMain.some(function(m){return _BOOST_ID.indexOf(m)>-1}))out.push('强化')}catch(eBo){}
   /* v4.35 P1-4：进攻力达标的队友可**兼任**『输出』位。原实现只有「无任何其他角色」才给输出位，
      而输出在 MATE_ROLE_PRIO 里优先级最低 → 6 个槽位被 6 个非输出角色占满，输出位仅 8.4%（A3）。
      输出仍排最后（优先级最低），只在其他角色被占用时落位 → 不改变既有骨架顺序，只让输出位可达。 */
