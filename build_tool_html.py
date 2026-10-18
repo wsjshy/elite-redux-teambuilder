@@ -554,7 +554,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .evopends .evochip .evonm{font-size:11px}
 @media(max-width:640px){.famlab{flex-basis:64px; font-size:11px}.evoroute .famlab{flex-basis:52px}}
 .bktabs{display:flex; align-items:center; gap:6px; height:48px; overflow-x:auto; margin:6px 0 8px;
-  padding:0 2px; position:sticky; top:0; z-index:60; background:var(--bg);
+  padding:0 2px; position:sticky; top:51px; z-index:60; background:var(--bg);
   box-shadow:0 1px 0 var(--line); -webkit-overflow-scrolling:touch}
 .bktab{flex:0 0 auto; height:44px; min-height:44px; display:inline-flex; align-items:center; padding:0 14px;
   border:1px solid var(--line); border-radius:999px; background:var(--card); font-size:13px; cursor:pointer;
@@ -12127,7 +12127,8 @@ function evBarHtml(bd){
   var segs='';
   for(k=0;k<6;k++){
     var w=Math.round((+a[k])*1000/tot)/10;
-    segs+='<span class="evseg ev'+(rank[k]||0)+'" style="width:'+w+'%" title="'+escq(evName(k)+' '+a[k])+'"></span>';
+    var lbl=(+a[k]>0)?'<span style="font-size:9px;color:#fff;text-shadow:0 0 2px #000">'+a[k]+'</span>':'';
+    segs+='<span class="evseg ev'+(rank[k]||0)+'" style="width:'+w+'%;display:inline-flex;align-items:center;justify-content:center" title="'+escq(evName(k)+' '+a[k])+'">'+lbl+'</span>';
   }
   var h='<div class="fld"><div class="fhd"><span class="fno">6</span>努力值分配</div>';
   h+='<div class="evsum">'+esc(ev.summary)+'　·　数值（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　模板：<b>'+esc(ev.template)+'</b></div>';
