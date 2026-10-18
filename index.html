@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.67</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.68</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8376,6 +8376,8 @@ function buildItem(s,side,roleTag,ctx){
     if(_me.itemAudit&&_me.itemAudit.length&&list.length)
       list[0][1]=list[0][1]+'；道具位评估改写：'+_me.itemAudit[0];
   }catch(e){}
+  /* v4.68 P1-2：场地种子×场地手联动——单精灵页无 team 上下文，保留但 why 注明需场地手触发 */
+  try{var _SEED_SYS={'电气种子':'电气制造者','青草种子':'青草制造者','薄雾种子':'薄雾制造者','精神种子':'精神制造者'};list=list.map(function(x){if(_SEED_SYS[x[0]]){var need=_SEED_SYS[x[0]];if(!/需|场地手/.test(x[1]))x[1]=x[1]+'（需队伍内有'+need+'/对应场地招触发，无场地手勿带）'}return x})}catch(eSeed){}
   return list
 }
 function pickAbiFor(s,side,roleTag,ctx){
@@ -12100,7 +12102,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.67';
+var ER_ENGINE_VER='v4.68';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
