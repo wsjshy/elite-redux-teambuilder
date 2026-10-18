@@ -336,7 +336,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .evopends .evochip .evonm{font-size:11px}
 @media(max-width:640px){.famlab{flex-basis:64px; font-size:11px}.evoroute .famlab{flex-basis:52px}}
 .bktabs{display:flex; align-items:center; gap:6px; height:48px; overflow-x:auto; margin:6px 0 8px;
-  padding:0 2px; position:sticky; top:0; z-index:60; background:var(--bg);
+  padding:0 2px; position:sticky; top:51px; z-index:60; background:var(--bg);
   box-shadow:0 1px 0 var(--line); -webkit-overflow-scrolling:touch}
 .bktab{flex:0 0 auto; height:44px; min-height:44px; display:inline-flex; align-items:center; padding:0 14px;
   border:1px solid var(--line); border-radius:999px; background:var(--card); font-size:13px; cursor:pointer;
@@ -4924,13 +4924,25 @@ function hasMegaForm(s){ /* 该形态存在 Mega/Redux 对应物（且自身不�
 function isMegaPreferred(s){return !optMegaOnly||!hasMegaForm(s)} /* 受开关控制：默认过滤可 Mega 的非 Mega 形态 */
 function learnOf(s){var o={};s.lv.forEach(function(p){o[p[1]]=true});s.tut.forEach(function(m){o[m]=true});return Object.keys(o).map(Number)}
 function hasMv(learn,ids){for(var i=0;i<ids.length;i++)if(learn.indexOf(ids[i])>-1)return ids[i];return null}
+/* v4.68p0 防卡死（用户反馈：点击宝可梦页面冻结 ~60s）：根因=renderCore→findTeammates 多路全库扫描
+   对每候选重复计算物种画像（实测 coreSys 单次点击被调 235 万次、deriveBuilds 14183 次=49.5s 主线程阻塞）。
+   修复=纯函数画像记忆化：这些函数只读物种静态数据（不依赖存档投影/跨调用全局状态），
+   按物种 id（+必要参数）缓存后输出逐字节不变，仅消除重复计算。缓存返回浅拷贝防调用方 mutate 污染。 */
+var _spMemo={};
+function _spCacheS(s,fac,ns){var k=ns+'|'+s.id;if(_spMemo[k]!==undefined)return _spMemo[k];var v=fac();_spMemo[k]=v;return v}
+function _spCacheK(k,fac){if(_spMemo[k]!==undefined)return _spMemo[k];var v=fac();_spMemo[k]=v;return v}
 function coreSys(s){
-  var sys={};
-  s.abis.concat(s.inns).forEach(function(n){var v=abiSysOf(n);if(v)sys[v]=true});
-  return Object.keys(sys);
+  return _spCacheS(s,function(){
+    var sys={};
+    s.abis.concat(s.inns).forEach(function(n){var v=abiSysOf(n);if(v)sys[v]=true});
+    return Object.keys(sys).slice();
+  },'sys');
 }
-function coreSide(s){var b=s.base;if(b[1]>b[3])return '物理';if(b[3]>b[1])return '特殊';return '双刀'}
+function coreSide(s){return _spCacheS(s,function(){var b=s.base;if(b[1]>b[3])return '物理';if(b[3]>b[1])return '特殊';return '双刀'},'side')}
 function coreRole(s){
+  return _spCacheS(s,function(){return _coreRoleRaw(s)},'role');
+}
+function _coreRoleRaw(s){
   var b=s.base,names=s.abis.concat(s.inns);
   var sys=coreSys(s),swift=['悠游自如','叶绿素','拨雪','拨沙'];
   /* 天气速攻只认天性（固定生效）；可选池的提速特性仅作潜力标签（v4.2：别名感知 abiSame） */
@@ -8907,19 +8919,23 @@ function deriveBuilds(s,team){
   return out;
 }
 function coreWeak(s){
-  var wk=[];
-  ERDATA.types.forEach(function(at){if(defCellTrio(s,at).inn>1)wk.push(at)});
-  return wk;
+  return _spCacheS(s,function(){
+    var wk=[];
+    ERDATA.types.forEach(function(at){if(defCellTrio(s,at).inn>1)wk.push(at)});
+    return wk.slice();
+  },'wk');
 }
 function coverHoles(s){
-  var ai=tIdx(s.t1),bi=tIdx(s.t2);
-  var holes=[];
-  ERDATA.types.forEach(function(t){
-    if(t==='星晶'||t==='无'||t==='神秘')return;
-    var ti=tIdx(t),v=ERDATA.matchup[ai][ti]*(bi>-1?ERDATA.matchup[bi][ti]:1);
-    if(v<2)holes.push(t); /* 本系最多 1x 视为盲点 */
-  });
-  return holes;
+  return _spCacheS(s,function(){
+    var ai=tIdx(s.t1),bi=tIdx(s.t2);
+    var holes=[];
+    ERDATA.types.forEach(function(t){
+      if(t==='星晶'||t==='无'||t==='神秘')return;
+      var ti=tIdx(t),v=ERDATA.matchup[ai][ti]*(bi>-1?ERDATA.matchup[bi][ti]:1);
+      if(v<2)holes.push(t); /* 本系最多 1x 视为盲点 */
+    });
+    return holes.slice();
+  },'ch');
 }
 function hasAny(learn,ids){return ids.some(function(id){return learn.indexOf(id)>-1})}
 /* 最终形态判定（v4.3.1 拆分）：gameData evolutions 含 kd==0（普通进化）的为非最终；kd==1（Mega/道具）仍算最终。
@@ -9170,6 +9186,8 @@ function evioOk(s,sys,space,side){return !!evioAdv(s,sys,space,side)}
 function evioWhy(s,sys,space,side){var e=evioAdv(s,sys,space,side);return e?('进化奇石（非最终形态）—— '+e.why):''}
 /* v4.3.1/4.3.2：候选池准入 = 最终形态 或 奇石权衡通过形态（替代原「非最终形态一律排除」） */
 function poolOK(s){return isValidSp(s)&&(isFinalForm(s)||evioOk(s))}
+/* v4.68p0 构建期预计算强化角色表占位（构建时注入全库表；见构建尾段 _ER_BOOST_ROLE 预计算） */
+var _ER_BOOST_ROLE={"7":true,"8":true,"12":true,"19":true,"21":true,"24":true,"26":true,"46":true,"47":true,"53":true,"55":true,"71":true,"83":true,"84":true,"85":true,"96":true,"97":true,"127":true,"130":true,"138":true,"140":true,"141":true,"147":true,"149":true,"152":true,"158":true,"159":true,"176":true,"193":true,"211":true,"214":true,"215":true,"230":true,"233":true,"246":true,"247":true,"251":true,"255":true,"256":true,"257":true,"267":true,"270":true,"271":true,"272":true,"284":true,"330":true,"332":true,"336":true,"341":true,"342":true,"347":true,"348":true,"359":true,"366":true,"368":true,"371":true,"392":true,"393":true,"394":true,"395":true,"399":true,"400":true,"402":true,"407":true,"412":true,"413":true,"421":true,"443":true,"444":true,"445":true,"451":true,"452":true,"454":true,"455":true,"460":true,"461":true,"468":true,"470":true,"471":true,"474":true,"479":true,"492":true,"497":true,"501":true,"503":true,"529":true,"530":true,"541":true,"545":true,"550":true,"571":true,"588":true,"610":true,"611":true,"613":true,"614":true,"624":true,"625":true,"633":true,"635":true,"639":true,"642":true,"659":true,"661":true,"662":true,"667":true,"668":true,"684":true,"688":true,"696":true,"702":true,"710":true,"711":true,"718":true,"722":true,"724":true,"731":true,"739":true,"740":true,"745":true,"759":true,"778":true,"779":true,"782":true,"786":true,"787":true,"788":true,"793":true,"795":true,"800":true,"802":true,"803":true,"804":true,"807":true,"811":true,"812":true,"833":true,"834":true,"875":true,"885":true,"886":true,"887":true,"888":true,"891":true,"898":true,"902":true,"912":true,"913":true,"919":true,"920":true,"937":true,"959":true,"961":true,"976":true,"978":true,"991":true,"994":true,"996":true,"997":true,"998":true,"1002":true,"1004":true,"1005":true,"1020":true,"1021":true,"1022":true,"1024":true,"1032":true,"1040":true,"1041":true,"1053":true,"1064":true,"1065":true,"1072":true,"1085":true,"1094":true,"1096":true,"1099":true,"1100":true,"1103":true,"1104":true,"1117":true,"1118":true,"1120":true,"1502":true,"1511":true,"1512":true,"1519":true,"1523":true,"1536":true,"1542":true,"1544":true,"1545":true,"1553":true,"1556":true,"1557":true,"1567":true,"1569":true,"1571":true,"1636":true,"1637":true,"1638":true,"1667":true,"1677":true,"1732":true,"1733":true,"1734":true,"1735":true,"1736":true,"1737":true,"1739":true,"1740":true,"1741":true,"1742":true,"1743":true,"1746":true,"1749":true,"1781":true,"1782":true,"1783":true,"1784":true,"1799":true,"1802":true,"1809":true,"1816":true,"1832":true,"1833":true,"1834":true,"1847":true,"1849":true,"1851":true,"1855":true,"1857":true,"1870":true,"1882":true,"1892":true,"1899":true,"1902":true,"1905":true,"2106":true,"2117":true,"2121":true,"2124":true,"2130":true,"2143":true,"2151":true,"2160":true,"2162":true,"2163":true,"2165":true,"2169":true,"2174":true,"2176":true,"2180":true,"2181":true,"2183":true,"2188":true,"2190":true,"2193":true,"2194":true,"2197":true,"2205":true,"2207":true,"2213":true,"2214":true,"2216":true,"2223":true,"2231":true,"2236":true,"2247":true,"2250":true,"2253":true,"2261":true,"2263":true,"2267":true,"2276":true,"2279":true,"2503":true,"2504":true,"2507":true,"2510":true,"2522":true,"2544":true,"2545":true,"2546":true,"2550":true,"2554":true,"2558":true,"2569":true,"2570":true,"2580":true,"2581":true,"2582":true,"2584":true,"2595":true,"2596":true,"2597":true,"2598":true,"2604":true,"2605":true,"2612":true,"2613":true,"2616":true,"2619":true,"2620":true,"2638":true,"2639":true,"2643":true,"2648":true,"2668":true,"2671":true,"2673":true};
 /* v4.21 队友角色标注（多样性主推用）：天气手/钉子/回复/轮转/盾/状态/输出 —— 保证主推 3 只不全是同一角色 */
 function mateRoleOf(t,wxSys){
   var tl=learnOf(t),out=[];
@@ -9179,8 +9197,10 @@ function mateRoleOf(t,wxSys){
   if((t.abis||[]).concat(t.inns||[]).indexOf('再生力')>-1)out.push('轮转');
   if(t.base[2]>=120||t.base[4]>=120)out.push('盾');
   if(hasAny(tl,[92,269,87,30]))out.push('状态');
-  /* v4.67 P1-1三轮：强化判定基于实际推荐配招 mv.main（非 learnOf 全 TM 池） */
-  try{var _BOOST_ID=[14,349,417,483,504,76];var _b0=(typeof deriveBuilds==='function'?deriveBuilds(t):null);var _mvMain=(_b0&&_b0[0]&&_b0[0].mv&&_b0[0].mv.main||[]).map(function(x){return x.id});if(_mvMain.some(function(m){return _BOOST_ID.indexOf(m)>-1}))out.push('强化')}catch(eBo){}
+  /* v4.67 P1-1三轮：强化判定基于实际推荐配招 mv.main（非 learnOf 全 TM 池）
+     v4.68p0 性能修复：v4.67 逐候选跑完整 deriveBuilds(t) → findTeammates 全库候选 → 线上点击宝可梦卡死 60s（真机实测）。
+     改构建期预计算全库强化角色表 _ER_BOOST_ROLE（同判据：主推流派 mv.main 含剑舞/龙舞/诡计/蝶舞/破壳，剔除 76=日光束 误判），运行时 O(1) 查表。 */
+  if(_ER_BOOST_ROLE&&_ER_BOOST_ROLE[t.id])out.push('强化');
   /* v4.35 P1-4：进攻力达标的队友可**兼任**『输出』位。原实现只有「无任何其他角色」才给输出位，
      而输出在 MATE_ROLE_PRIO 里优先级最低 → 6 个槽位被 6 个非输出角色占满，输出位仅 8.4%（A3）。
      输出仍排最后（优先级最低），只在其他角色被占用时落位 → 不改变既有骨架顺序，只让输出位可达。 */
@@ -11909,7 +11929,8 @@ function evBarHtml(bd){
   var segs='';
   for(k=0;k<6;k++){
     var w=Math.round((+a[k])*1000/tot)/10;
-    segs+='<span class="evseg ev'+(rank[k]||0)+'" style="width:'+w+'%" title="'+escq(evName(k)+' '+a[k])+'"></span>';
+    var lbl=(+a[k]>0)?'<span style="font-size:9px;color:#fff;text-shadow:0 0 2px #000">'+a[k]+'</span>':'';
+    segs+='<span class="evseg ev'+(rank[k]||0)+'" style="width:'+w+'%;display:inline-flex;align-items:center;justify-content:center" title="'+escq(evName(k)+' '+a[k])+'">'+lbl+'</span>';
   }
   var h='<div class="fld"><div class="fhd"><span class="fno">6</span>努力值分配</div>';
   h+='<div class="evsum">'+esc(ev.summary)+'　·　数值（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　模板：<b>'+esc(ev.template)+'</b></div>';

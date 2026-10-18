@@ -5142,13 +5142,25 @@ function hasMegaForm(s){ /* 该形态存在 Mega/Redux 对应物（且自身不�
 function isMegaPreferred(s){return !optMegaOnly||!hasMegaForm(s)} /* 受开关控制：默认过滤可 Mega 的非 Mega 形态 */
 function learnOf(s){var o={};s.lv.forEach(function(p){o[p[1]]=true});s.tut.forEach(function(m){o[m]=true});return Object.keys(o).map(Number)}
 function hasMv(learn,ids){for(var i=0;i<ids.length;i++)if(learn.indexOf(ids[i])>-1)return ids[i];return null}
+/* v4.68p0 防卡死（用户反馈：点击宝可梦页面冻结 ~60s）：根因=renderCore→findTeammates 多路全库扫描
+   对每候选重复计算物种画像（实测 coreSys 单次点击被调 235 万次、deriveBuilds 14183 次=49.5s 主线程阻塞）。
+   修复=纯函数画像记忆化：这些函数只读物种静态数据（不依赖存档投影/跨调用全局状态），
+   按物种 id（+必要参数）缓存后输出逐字节不变，仅消除重复计算。缓存返回浅拷贝防调用方 mutate 污染。 */
+var _spMemo={};
+function _spCacheS(s,fac,ns){var k=ns+'|'+s.id;if(_spMemo[k]!==undefined)return _spMemo[k];var v=fac();_spMemo[k]=v;return v}
+function _spCacheK(k,fac){if(_spMemo[k]!==undefined)return _spMemo[k];var v=fac();_spMemo[k]=v;return v}
 function coreSys(s){
-  var sys={};
-  s.abis.concat(s.inns).forEach(function(n){var v=abiSysOf(n);if(v)sys[v]=true});
-  return Object.keys(sys);
+  return _spCacheS(s,function(){
+    var sys={};
+    s.abis.concat(s.inns).forEach(function(n){var v=abiSysOf(n);if(v)sys[v]=true});
+    return Object.keys(sys).slice();
+  },'sys');
 }
-function coreSide(s){var b=s.base;if(b[1]>b[3])return '物理';if(b[3]>b[1])return '特殊';return '双刀'}
+function coreSide(s){return _spCacheS(s,function(){var b=s.base;if(b[1]>b[3])return '物理';if(b[3]>b[1])return '特殊';return '双刀'},'side')}
 function coreRole(s){
+  return _spCacheS(s,function(){return _coreRoleRaw(s)},'role');
+}
+function _coreRoleRaw(s){
   var b=s.base,names=s.abis.concat(s.inns);
   var sys=coreSys(s),swift=['悠游自如','叶绿素','拨雪','拨沙'];
   /* 天气速攻只认天性（固定生效）；可选池的提速特性仅作潜力标签（v4.2：别名感知 abiSame） */
@@ -9125,19 +9137,23 @@ function deriveBuilds(s,team){
   return out;
 }
 function coreWeak(s){
-  var wk=[];
-  ERDATA.types.forEach(function(at){if(defCellTrio(s,at).inn>1)wk.push(at)});
-  return wk;
+  return _spCacheS(s,function(){
+    var wk=[];
+    ERDATA.types.forEach(function(at){if(defCellTrio(s,at).inn>1)wk.push(at)});
+    return wk.slice();
+  },'wk');
 }
 function coverHoles(s){
-  var ai=tIdx(s.t1),bi=tIdx(s.t2);
-  var holes=[];
-  ERDATA.types.forEach(function(t){
-    if(t==='星晶'||t==='无'||t==='神秘')return;
-    var ti=tIdx(t),v=ERDATA.matchup[ai][ti]*(bi>-1?ERDATA.matchup[bi][ti]:1);
-    if(v<2)holes.push(t); /* 本系最多 1x 视为盲点 */
-  });
-  return holes;
+  return _spCacheS(s,function(){
+    var ai=tIdx(s.t1),bi=tIdx(s.t2);
+    var holes=[];
+    ERDATA.types.forEach(function(t){
+      if(t==='星晶'||t==='无'||t==='神秘')return;
+      var ti=tIdx(t),v=ERDATA.matchup[ai][ti]*(bi>-1?ERDATA.matchup[bi][ti]:1);
+      if(v<2)holes.push(t); /* 本系最多 1x 视为盲点 */
+    });
+    return holes.slice();
+  },'ch');
 }
 function hasAny(learn,ids){return ids.some(function(id){return learn.indexOf(id)>-1})}
 /* 最终形态判定（v4.3.1 拆分）：gameData evolutions 含 kd==0（普通进化）的为非最终；kd==1（Mega/道具）仍算最终。
@@ -9388,6 +9404,8 @@ function evioOk(s,sys,space,side){return !!evioAdv(s,sys,space,side)}
 function evioWhy(s,sys,space,side){var e=evioAdv(s,sys,space,side);return e?('进化奇石（非最终形态）—— '+e.why):''}
 /* v4.3.1/4.3.2：候选池准入 = 最终形态 或 奇石权衡通过形态（替代原「非最终形态一律排除」） */
 function poolOK(s){return isValidSp(s)&&(isFinalForm(s)||evioOk(s))}
+/* v4.68p0 构建期预计算强化角色表占位（构建时注入全库表；见构建尾段 _ER_BOOST_ROLE 预计算） */
+var _ER_BOOST_ROLE=null;
 /* v4.21 队友角色标注（多样性主推用）：天气手/钉子/回复/轮转/盾/状态/输出 —— 保证主推 3 只不全是同一角色 */
 function mateRoleOf(t,wxSys){
   var tl=learnOf(t),out=[];
@@ -9397,8 +9415,10 @@ function mateRoleOf(t,wxSys){
   if((t.abis||[]).concat(t.inns||[]).indexOf('再生力')>-1)out.push('轮转');
   if(t.base[2]>=120||t.base[4]>=120)out.push('盾');
   if(hasAny(tl,[92,269,87,30]))out.push('状态');
-  /* v4.67 P1-1三轮：强化判定基于实际推荐配招 mv.main（非 learnOf 全 TM 池） */
-  try{var _BOOST_ID=[14,349,417,483,504,76];var _b0=(typeof deriveBuilds==='function'?deriveBuilds(t):null);var _mvMain=(_b0&&_b0[0]&&_b0[0].mv&&_b0[0].mv.main||[]).map(function(x){return x.id});if(_mvMain.some(function(m){return _BOOST_ID.indexOf(m)>-1}))out.push('强化')}catch(eBo){}
+  /* v4.67 P1-1三轮：强化判定基于实际推荐配招 mv.main（非 learnOf 全 TM 池）
+     v4.68p0 性能修复：v4.67 逐候选跑完整 deriveBuilds(t) → findTeammates 全库候选 → 线上点击宝可梦卡死 60s（真机实测）。
+     改构建期预计算全库强化角色表 _ER_BOOST_ROLE（同判据：主推流派 mv.main 含剑舞/龙舞/诡计/蝶舞/破壳，剔除 76=日光束 误判），运行时 O(1) 查表。 */
+  if(_ER_BOOST_ROLE&&_ER_BOOST_ROLE[t.id])out.push('强化');
   /* v4.35 P1-4：进攻力达标的队友可**兼任**『输出』位。原实现只有「无任何其他角色」才给输出位，
      而输出在 MATE_ROLE_PRIO 里优先级最低 → 6 个槽位被 6 个非输出角色占满，输出位仅 8.4%（A3）。
      输出仍排最后（优先级最低），只在其他角色被占用时落位 → 不改变既有骨架顺序，只让输出位可达。 */
@@ -13773,6 +13793,123 @@ data_out = BASE + r'\data.js'
 open(data_out, 'w', encoding='utf-8').write(data_js)
 print('data.js bytes:', os.path.getsize(data_out))
 print('written:', data_out)
+
+# ---- v4.68p0：构建期预计算全库强化角色表（_ER_BOOST_ROLE）注入产物 ----
+#   修复 v4.67 运行时逐候选 deriveBuilds 卡死（findTeammates 全库候选 × 全链派生 → 线上点击宝可梦 60s 阻塞，真机实测）。
+#   构建期用 node vm 加载 data.js + 引擎脚本，对全库跑 deriveBuilds(s) 主推流派 mv.main，
+#   收集含 剑舞14/龙舞349/诡计417/蝶舞483/破壳504 的物种 id 表（运行时 O(1) 查表替代全链派生；剔除 76=日光束 误判）。
+import sys as _sys
+import tempfile as _tf
+import subprocess as _sp
+import shutil as _sh2
+_node = _sh2.which('node') or _sh2.which('node.exe')
+if not _node:
+    print('[FATAL] 强化表预计算需要 Node.js，但 PATH 中找不到 node —— 构建中止（v4.68p0）')
+    _sys.exit(1)
+_PREWARM_JS = r''''use strict';
+var fs=require('fs'),vm=require('vm');
+var INDEX=process.argv[2],DATA=process.argv[3];
+function mkEl(tag){
+  var el={_tag:(tag||'div').toLowerCase(),children:[],style:{},dataset:{},value:'',checked:false,
+    innerHTML:'',textContent:'',className:'',id:'',hidden:false,disabled:false,type:'',
+    classList:{_s:new Set(),add:function(){for(var i=0;i<arguments.length;i++)this._s.add(arguments[i])},
+      remove:function(){for(var i=0;i<arguments.length;i++)this._s.delete(arguments[i])},
+      toggle:function(c,f){if(f===undefined)f=!this._s.has(c);f?this._s.add(c):this._s.delete(c);return f},
+      contains:function(c){return this._s.has(c)}},
+    appendChild:function(c){this.children.push(c);return c},removeChild:function(c){return c},
+    insertBefore:function(c){this.children.push(c);return c},append:function(){},replaceChildren:function(){},
+    querySelector:function(){return mkEl('div')},querySelectorAll:function(){return []},
+    getElementsByClassName:function(){return []},getElementsByTagName:function(){return []},
+    setAttribute:function(k,v){this['a_'+k]=v},getAttribute:function(k){return this['a_'+k]===undefined?null:this['a_'+k]},
+    hasAttribute:function(k){return this['a_'+k]!==undefined},removeAttribute:function(k){delete this['a_'+k]},
+    addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return true},
+    focus:function(){},blur:function(){},click:function(){},remove:function(){},insertAdjacentHTML:function(){},
+    scrollIntoView:function(){},getBoundingClientRect:function(){return {top:0,left:0,width:0,height:0,bottom:0,right:0}},
+    closest:function(){return null},contains:function(){return false},replaceWith:function(){},after:function(){},before:function(){},
+    matches:function(){return false},cloneNode:function(){return mkEl(tag)},animate:function(){return {cancel:function(){}}},
+    showModal:function(){},close:function(){},
+    get firstChild(){return this.children[0]||null},get lastChild(){return this.children[this.children.length-1]||null},
+    get parentNode(){return null},get offsetWidth(){return 0},get offsetHeight(){return 0},get scrollHeight(){return 0}};
+  return el;
+}
+function buildCtx(){
+  var reg={},doc={
+    getElementById:function(id){if(!reg[id]){var e=mkEl('div');e.id=id;reg[id]=e}return reg[id]},
+    createElement:function(t){return mkEl(t)},createTextNode:function(t){return {textContent:t,innerHTML:String(t)}},
+    querySelector:function(){return mkEl('div')},querySelectorAll:function(){return []},
+    getElementsByClassName:function(){return []},getElementsByTagName:function(){return []},
+    addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return true},
+    body:mkEl('body'),documentElement:mkEl('html'),head:mkEl('head'),createDocumentFragment:function(){return mkEl('frag')},
+    execCommand:function(){return true},write:function(){},writeln:function(){},open:function(){},close:function(){},
+    cookie:'',readyState:'complete',title:'',hidden:false,visibilityState:'visible'};
+  var st={_m:{},getItem:function(k){return (k in this._m)?this._m[k]:null},setItem:function(k,v){this._m[k]=String(v)},
+    removeItem:function(k){delete this._m[k]},clear:function(){this._m={}}};
+  var ctx={console:console,document:doc,alert:function(){},confirm:function(){return false},prompt:function(){return null},
+    setTimeout:setTimeout,clearTimeout:clearTimeout,setInterval:function(){return 0},clearInterval:function(){},setImmediate:setImmediate,
+    requestAnimationFrame:function(){return 0},cancelAnimationFrame:function(){},JSON:JSON,Math:Math,Date:Date,Object:Object,
+    Array:Array,String:String,Number:Number,Boolean:Boolean,RegExp:RegExp,Error:Error,TypeError:TypeError,Map:Map,Set:Set,
+    Promise:Promise,isFinite:isFinite,isNaN:isNaN,parseInt:parseInt,parseFloat:parseFloat,
+    encodeURIComponent:encodeURIComponent,decodeURIComponent:decodeURIComponent,Blob:function(){},FileReader:function(){},Image:undefined,
+    URL:{createObjectURL:function(){return ''},revokeObjectURL:function(){}},localStorage:st,sessionStorage:st,
+    navigator:{userAgent:'node',clipboard:{writeText:function(){return Promise.resolve()}},language:'zh-CN'},
+    location:{hash:'',href:'file:///'+INDEX.replace(/\\/g,'/'),protocol:'file:',search:'',pathname:'/'},
+    matchMedia:function(){return {matches:false,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){}}},
+    getComputedStyle:function(){return {getPropertyValue:function(){return ''}}},
+    innerWidth:1440,innerHeight:900,devicePixelRatio:1,performance:{now:function(){return Date.now()}},
+    fetch:function(){return Promise.resolve({ok:false,status:404,text:function(){return Promise.resolve('')},json:function(){return Promise.resolve(null)}})},
+    window:null,HTMLElement:function(){},Element:function(){},Node:function(){},Event:function(){},CustomEvent:function(){},
+    MutationObserver:function(){return {observe:function(){},disconnect:function(){}}}};
+  ctx.window=ctx;ctx.globalThis=ctx;ctx.self=ctx;ctx.addEventListener=function(){};
+  vm.createContext(ctx);return ctx;
+}
+function extract(html){var re=/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,m,out=[];while((m=re.exec(html))!==null){if(/\bsrc\s*=/i.test(m[1]||''))continue;out.push(m[2])}return out}
+var html=fs.readFileSync(INDEX,'utf8'),dataJs=fs.readFileSync(DATA,'utf8'),parts=extract(html);
+var fi=3,ei=3,i;
+for(i=0;i<parts.length;i++){if(/familyGraph/.test(parts[i])&&/ERDATA/.test(parts[i]))fi=i}
+for(i=0;i<parts.length;i++){if(/function deriveBuilds/.test(parts[i]))ei=i}
+var ctx=buildCtx(),loadErr=[];
+try{vm.runInContext(dataJs,ctx,{filename:'data.js'})}catch(e){loadErr.push('data: '+e.message)}
+if(parts[fi]){try{vm.runInContext(parts[fi],ctx,{filename:'familyGraph.js'})}catch(e){loadErr.push('familyGraph: '+e.message)}}
+if(parts[ei]){try{vm.runInContext(parts[ei],ctx,{filename:'engine.js'})}catch(e){loadErr.push('engine: '+e.message+'\n'+String(e.stack||'').split('\n').slice(0,4).join('\n'))}}
+if(typeof ctx.deriveBuilds!=='function'){console.error('[FATAL] 预计算失败：deriveBuilds 未加载 错误='+loadErr.length+' '+JSON.stringify(loadErr));process.exit(2)}
+var BOOST=[14,349,417,483,504],table={},hasBuild=0,noBuild=0;
+var arr=ctx.ERDATA.species||[];
+for(var j=0;j<arr.length;j++){
+  var s=arr[j],hit=false;
+  try{var b=ctx.deriveBuilds(s);var main=(b&&b[0]&&b[0].mv&&b[0].mv.main||[]).map(function(x){return x.id});hit=main.some(function(m){return BOOST.indexOf(m)>-1});if(b&&b.length)hasBuild++;else noBuild++;}
+  catch(e){noBuild++}
+  if(hit)table[s.id]=true;
+}
+console.error('[PREWARM] 物种='+arr.length+' 有流派='+hasBuild+' 无/异常='+noBuild+' 强化角色='+Object.keys(table).length+' 加载错误='+loadErr.length);
+console.log('__ER_BOOST_ROLE__'+JSON.stringify(table));
+'''
+_prewarm_path = os.path.join(_tf.gettempdir(), 'er_prewarm_%d.cjs' % os.getpid())
+with open(_prewarm_path, 'w', encoding='utf-8') as _pf:
+    _pf.write(_PREWARM_JS)
+_pw = _sp.run([_node, _prewarm_path, out, data_out], capture_output=True, timeout=1800)
+_pw_so = (_pw.stdout or b'').decode('utf-8', 'replace')
+_pw_se = (_pw.stderr or b'').decode('utf-8', 'replace')
+if _pw_so.strip():
+    print(_pw_so.rstrip())
+if _pw_se.strip():
+    print('[prewarm stderr]\n' + _pw_se.rstrip())
+if _pw.returncode != 0:
+    print('[FATAL] v4.68p0 强化表预计算失败（node exit=%d）→ 构建中止' % _pw.returncode)
+    _sys.exit(1)
+_br_marker = '__ER_BOOST_ROLE__'
+_br_i = _pw_so.find(_br_marker)
+if _br_i < 0:
+    print('[FATAL] v4.68p0 强化表预计算输出缺失（未找到 %s）→ 构建中止' % _br_marker)
+    _sys.exit(1)
+_br_json = _pw_so[_br_i + len(_br_marker):].strip()
+try:
+    _br_obj = _json.loads(_br_json)
+except Exception as _bj:
+    print('[FATAL] v4.68p0 强化表 JSON 解析失败：%s → 构建中止' % _bj)
+    _sys.exit(1)
+final = final.replace('var _ER_BOOST_ROLE=null;', 'var _ER_BOOST_ROLE=' + _json.dumps(_br_obj, ensure_ascii=False, separators=(',', ':')) + ';')
+open(out, 'w', encoding='utf-8').write(final)
+print('v4.68p0 强化表注入完成：%d 只强化角色，out 重写 %d bytes' % (len(_br_obj), os.path.getsize(out)))
 
 # ---- v4.35：index.html 同步（与 配招助手_ER.html 逐字同源）----
 #   历史做法是人工复制，易与正文漂移（本轮核查发现 index.html 与正文逐字相同但无任何自动步骤）。
