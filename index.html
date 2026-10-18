@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.63</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.64</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8880,8 +8880,8 @@ function deriveBuilds(s,team){
   /* v4.11 F-1 修复：breakingRoute 原挂在返回数组上，bd.breakingRoute 恒 undefined；
      这里逐条回填到流派对象（只影响 UI 可展开内容，不改任何推荐结果） */
   for(var _brI=0;_brI<out.length;_brI++){out[_brI].breakingRoute=route}
-  /* v4.61 P0-2：追加组合生成器结果（替身强化/钉子轮转/双墙，招池真实支持才生成） */
-  try{var _cb=comboBuildsOf(s);if(_cb&&_cb.length)out=out.concat(_cb)}catch(eCB){}
+  /* v4.64 P1-1：组合结果按招组签名去重（与既有流派雷同则跳过） */
+  try{var _cb=comboBuildsOf(s);if(_cb&&_cb.length){var _ss={};out.forEach(function(o){var sg=(o.mv&&o.mv.main||[]).map(function(x){return ''+x.id}).sort().join(',');_ss[sg]=1});_cb.forEach(function(cb){var sg=(cb.mv&&cb.mv.main||[]).map(function(x){return ''+x.id}).sort().join(',');if(!_ss[sg]){out.push(cb);_ss[sg]=1}})}}catch(eCB){}
   return out;
 }
 function coreWeak(s){
@@ -12080,7 +12080,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.63';
+var ER_ENGINE_VER='v4.64';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
