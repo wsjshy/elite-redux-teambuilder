@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.66</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.67</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2142,15 +2142,20 @@ function anRender(R){
     (R.sys.hasSpace?'<span class="badge">空间</span>':'')+(R.sys.hasTailwind?'<span class="badge">顺风</span>':'')+
     (R.sys.hasHazard?'<span class="badge">钉×'+R.sys.hasHazard+'</span>':'')+(R.sys.hasWall?'<span class="badge">墙×'+R.sys.hasWall+'</span>':'')+
     '<div class="tip">天气轴：'+((R.sys.wx||[]).length?esc(R.sys.wx.join('、')):'无')+' ／ 场地：'+((R.sys.field||[]).length?esc(R.sys.field.join('、')):'无')+'</div>');
-  /* v4.66 P1：队伍层组合体系标签+整队叙事（命中模板才贴，允许无体系队） */
+  /* v4.67 P1：受队/强化推队独立旗标补全（同源 R.sys/R.roles，命中才贴） */
   try{
     var _memZh=(R.members||[]).map(function(m){return esc(m.s?m.s.zh:m.zh||'')});
-    var _sysTxt='';
-    if(R.sys.hasHazard) _sysTxt='本队围绕钉子轮转：撒钉手铺隐形岩/撒菱压血线→吹飞/吼叫强制换人滚钉→回复位续航保钉子→清场收割';
-    else if((R.sys.wx||[]).indexOf('雨')>-1) _sysTxt='本队雨天速攻：降雨手开雨天→轻快/悠游自如打手提速→雨必中炮台清场';
-    else if((R.sys.wx||[]).indexOf('晴')>-1||(R.sys.wx||[]).indexOf('沙')>-1||(R.sys.wx||[]).indexOf('雪')>-1) _sysTxt='本队天气体系：天气手开'+esc((R.sys.wx||[])[0])+'→盾牌站场+打手闭环输出';
-    else if(R.sys.hasWall) _sysTxt='本队双墙辅助：反射壁/光墙减伤窗口→墙内安全输出/接力传递';
-    if(_sysTxt) h+=anCard('<b>体系标签</b>：<span class="badge badge-warnimm">组合体系</span> <span class="tip">'+_sysTxt+'（成员：'+_memZh.join('、')+'）</span>');
+    var _roles=R.roles||{};
+    var _toxic=(R.sys.hasHazard?1:0)+(_roles['钉子']||0)+(_roles['状态']||0);
+    var _rec=(_roles['回复']||0)+(_roles['轮转']||0);
+    var _tag='',_sysTxt='';
+    if(_toxic>=2&&_rec>=2&&((_roles['盾']||0)>=1||(_roles['轮转']||0)>=1)){_tag='消耗受队';_sysTxt='毒钉/剧毒压血线→回复轮转拖节奏→再生力续航站场消耗'}
+    else if((_roles['强化']||0)>=2&&(_roles['输出']||0)>=2){_tag='强化推队';_sysTxt='控场创造机会→强化叠层→清场收割'}
+    else if(R.sys.hasHazard){_tag='钉子轮转';_sysTxt='撒钉手铺隐形岩/撒菱压血线→吹飞/吼叫强制换人滚钉→回复位续航保钉子→清场收割'}
+    else if((R.sys.wx||[]).indexOf('雨')>-1){_tag='雨天速攻';_sysTxt='降雨手开雨天→轻快/悠游自如打手提速→雨必中炮台清场'}
+    else if((R.sys.wx||[]).length){_tag='天气体系';_sysTxt='天气手开'+esc((R.sys.wx||[])[0])+'→盾牌站场+打手闭环输出'}
+    else if(R.sys.hasWall){_tag='双墙辅助';_sysTxt='反射壁/光墙减伤窗口→墙内安全输出/接力传递'}
+    if(_sysTxt) h+=anCard('<b>体系标签</b>：<span class="badge badge-warnimm">'+esc(_tag)+'</span> <span class="tip">'+_sysTxt+'（成员：'+_memZh.join('、')+'）</span>');
   }catch(eSys){}
   h+=anCard('<b>角色分布（可兼任）</b>：'+anChips(Object.keys(R.roles).map(function(k){return k+'×'+R.roles[k]}))+
     '<div class="tip">角色可兼任，不视为硬性配方</div>');
@@ -9170,6 +9175,8 @@ function mateRoleOf(t,wxSys){
   if((t.abis||[]).concat(t.inns||[]).indexOf('再生力')>-1)out.push('轮转');
   if(t.base[2]>=120||t.base[4]>=120)out.push('盾');
   if(hasAny(tl,[92,269,87,30]))out.push('状态');
+  /* v4.67 P1-1三轮：强化判定基于实际推荐配招 mv.main（非 learnOf 全 TM 池） */
+  try{var _BOOST_ID=[14,349,417,483,504,76];var _b0=(typeof deriveBuilds==='function'?deriveBuilds(t):null);var _mvMain=(_b0&&_b0[0]&&_b0[0].mv&&_b0[0].mv.main||[]).map(function(x){return x.id});if(_mvMain.some(function(m){return _BOOST_ID.indexOf(m)>-1}))out.push('强化')}catch(eBo){}
   /* v4.35 P1-4：进攻力达标的队友可**兼任**『输出』位。原实现只有「无任何其他角色」才给输出位，
      而输出在 MATE_ROLE_PRIO 里优先级最低 → 6 个槽位被 6 个非输出角色占满，输出位仅 8.4%（A3）。
      输出仍排最后（优先级最低），只在其他角色被占用时落位 → 不改变既有骨架顺序，只让输出位可达。 */
@@ -12093,7 +12100,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.66';
+var ER_ENGINE_VER='v4.67';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
