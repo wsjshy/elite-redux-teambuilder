@@ -3934,6 +3934,21 @@ function speedPctileRankOf(s){var q=speedPctiles();var mx=spdMaxOf(s);
   var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
   var lo=0,hi=arr.length;while(lo<hi){var mid=(lo+hi)>>1;if(arr[mid]<mx)lo=mid+1;else hi=mid}
   return Math.round(lo*100/arr.length)}
+/* v4.69 P3：全库速度分布条（极速档主 + 满速中性参考；静态标注 P50/75/90/95/99 切点） */
+function speedDistBarHtml(){
+  var q=speedPctiles();var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
+  var mn=arr[0],mx=arr[arr.length-1],span=(mx-mn)||1;
+  function pos(v){return Math.round((v-mn)*100/span)}
+  var pts=[['P50',q.P50],['P75',q.P75],['P90',q.P90],['P95',q.P95],['P99',q.P99]];
+  var h='<div class="sec" style="margin-top:8px"><h3>全库速度分布（极速档 252+速度性格，实测 n='+q.n+'）</h3>';
+  h+='<div style="position:relative;height:34px;margin:14px 4px 4px;background:linear-gradient(90deg,var(--card),var(--accent));border-radius:6px;border:1px solid var(--line)">';
+  pts.forEach(function(p){var x=pos(p[1]);
+    h+='<div style="position:absolute;left:'+x+'%;top:0;bottom:0;width:2px;background:var(--fg)"></div>';
+    h+='<div style="position:absolute;left:calc('+x+'% -22px);top:-16px;width:44px;text-align:center;font-size:10px">'+p[0]+'</div>';
+    h+='<div style="position:absolute;left:calc('+x+'% -22px);bottom:-16px;width:44px;text-align:center;font-size:10px;color:var(--sub)">'+p[1]+'</div>'});
+  h+='</div>';
+  h+='<div style="font-size:10px;color:var(--sub);margin-top:22px">慢端 '+mn+' ←── 极速值 ──→ 快端 '+mx+'（满速252中性档参考列见下表；本图=极速档）</div></div>';
+  return h}
 /* 卡线省EV实算：满速性格下达到 target 所需最小 EV(0/4/.../252)；返回 {ev,val,saved}，达不到返回 null */
 function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
 /* 定位分层：高速速攻手(超速P90+) / 中速清场(卡P75省EV) / 空间慢速手(反向拉低速) */
@@ -3983,6 +3998,7 @@ function speedRender(){try{var q=speedPctiles();
   var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
   h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
+  h+=speedDistBarHtml(); /* v4.69 P3：全库速度分布条（P50/75/90/95/99 切点静态标注） */
   h+='<div class="tip">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div>';
   h+='<div class="bar" style="margin-top:8px"><input type="text" id="spdSearch" placeholder="搜索物种：中文 / 英文 / 编号" oninput="speedRefreshTable()"></div>';
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
