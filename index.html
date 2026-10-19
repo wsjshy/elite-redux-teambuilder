@@ -3929,6 +3929,11 @@ function speedPctiles(){if(_spdPct)return _spdPct;
   var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
   var n=arr.length;function pct(p){return arr[Math.min(n-1,Math.floor(n*p))]}
   _spdPct={n:n,P50:pct(.50),P75:pct(.75),P90:pct(.90),P95:pct(.95),P99:pct(.99)};return _spdPct}
+/* v4.69 P2①：该物种极速在全库的分位落点（0-99，越高越快；脚本实测，与 speedPctiles 同源排序） */
+function speedPctileRankOf(s){var q=speedPctiles();var mx=spdMaxOf(s);
+  var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
+  var lo=0,hi=arr.length;while(lo<hi){var mid=(lo+hi)>>1;if(arr[mid]<mx)lo=mid+1;else hi=mid}
+  return Math.round(lo*100/arr.length)}
 /* 卡线省EV实算：满速性格下达到 target 所需最小 EV(0/4/.../252)；返回 {ev,val,saved}，达不到返回 null */
 function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
 /* 定位分层：高速速攻手(超速P90+) / 中速清场(卡P75省EV) / 空间慢速手(反向拉低速) */
@@ -3939,7 +3944,8 @@ function speedRole(s){var sp=spdOf(s),at=Math.max(bstI(s,1),bstI(s,3));
 function speedRoleZh(r){return r==='fast'?'高速速攻手':(r==='space'?'空间/慢速炮台':'中速清场')}
 /* 配招卡一行配速提示（由 openSp 注入） */
 function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
-  var line='<div class="ruleline" style="margin-top:6px">⚡ <b>配速</b>：极速 <b>'+mx+'</b>（0努力 '+spd0Of(s)+' / 满速中性 '+spdFullOf(s)+'；围巾参考 '+spdScarfOf(s)+(spdWeatherOf(s)?'；'+spdWeatherOf(s)+'×2参考 '+spdWeatherVal(s):'')+'）';
+  var rank=speedPctileRankOf(s); /* v4.69 P2①：实测分位落点 */
+  var line='<div class="ruleline" style="margin-top:6px">⚡ <b>配速</b>：极速 <b>'+mx+'</b> <span style="color:var(--sub);font-size:11px">（全库分位 P'+rank+'）</span>（0努力 '+spd0Of(s)+' / 满速中性 '+spdFullOf(s)+'；围巾参考 '+spdScarfOf(s)+(spdWeatherOf(s)?'；'+spdWeatherOf(s)+'×2参考 '+spdWeatherVal(s):'')+'）';
   if(role==='fast'){
     if(mx>=q.P90){line+=' · <span style="color:var(--ok)">超速 P90（'+q.P90+'）✅</span>'}
     else{var e=spdEvTo(s,q.P90);line+=' · 距 P90 差 '+(q.P90-mx)+' 点 ⚠️'+(e?('（实算需 EV '+e.ev+' → '+e.val+'）'):'（满速仍不足）')}
@@ -3960,10 +3966,13 @@ function speedRenderTable(){var qv=(document.getElementById('spdSearch')&&docume
     return (''+s.zh).toLowerCase().indexOf(qv)>-1||(''+s.en).toLowerCase().indexOf(qv)>-1||(''+s.id).indexOf(qv)>-1;
   });
   rows.sort(function(a,b){return spdMaxOf(b)-spdMaxOf(a)});
-  var h='<table class="tbl"><thead><tr><th>#</th><th>物种</th><th>0努力</th><th>满速252中性</th><th>极速252+性格</th><th>围巾×1.5</th><th>特性×2(若触发)</th><th>+1级强化</th><th>定位</th></tr></thead><tbody>';
+  var h='<table class="tbl"><thead><tr><th>#</th><th>物种</th><th>0努力</th><th>满速252中性</th><th>极速252+性格</th><th>围巾×1.5</th><th>特性×2(若触发)</th><th>+1级强化</th><th>省EV建议</th><th>定位</th></tr></thead><tbody>';
   var cap=rows.slice(0,400);
   cap.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
-    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td>'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td>'+spdScarfOf(s)+'</td><td>'+(wv?('<span style="color:var(--acc)">'+wv+'</span> <span style="color:var(--sub);font-size:10px">'+wa+'</span>'):'—')+'</td><td>'+Math.floor(mx*1.5)+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
+    /* v4.69 P2③：省EV建议汇总列——能过 P75 者卡线省 EV 挪 HP；否则 — */
+    var evTip='—';var e75=spdEvTo(s,q.P75);
+    if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:10px">EV'+e75.ev+'</span>'):'已满线';}
+    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td>'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td>'+spdScarfOf(s)+'</td><td>'+(wv?('<span style="color:var(--acc)">'+wv+'</span> <span style="color:var(--sub);font-size:10px">'+wa+'</span>'):'—')+'</td><td>'+Math.floor(mx*1.5)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
   });
   h+='</tbody></table>';
   if(rows.length>400)h+='<div class="tip">命中 '+rows.length+' 只，仅显示前 400（按极速降序）；输入关键词缩小范围。</div>';
