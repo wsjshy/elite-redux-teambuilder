@@ -775,7 +775,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.69</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.70</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -12489,7 +12489,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.69';
+var ER_ENGINE_VER='v4.70';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -13852,8 +13852,20 @@ function engineGuardSelfCheck(){
     });
   });
   var s7dViol=s7dMis;
+  /* ===== v4.70 P4 图鉴数据唯一性守门（内容溯源机器化，与 G-E2 三维覆盖并列）=====
+     · id 唯一性：全库物种/招式/特性 gameData id 重复即硬 FAIL（nUniqSpDup+nUniqMvDup+nUnixAbiDup>0）
+     · 中文名跨 id 冲突：同名不同 id 计数登记（白名单未建立前作信息项，不硬失败；MainAgent 核定后转硬门） */
+  var nUniqSpDup=0,vUniqSpDup=[],nUniqMvDup=0,nUnixAbiDup=0,nNameClash=0,vNameClash=[];
+  try{
+    var _spIdSeen={};(ERDATA.species||[]).forEach(function(s){var k=''+(s&&s.id);if(_spIdSeen[k]){nUniqSpDup++;if(vUniqSpDup.length<20)vUniqSpDup.push('spid='+k+' '+s.zh)}_spIdSeen[k]=1});
+    var _mvIdSeen={};Object.keys(MV||{}).forEach(function(k){if(_mvIdSeen[k]){nUniqMvDup++}else _mvIdSeen[k]=1});
+    var _abIdSeen={};Object.keys(ABI||{}).forEach(function(k){if(_abIdSeen[k]){nUnixAbiDup++}else _abIdSeen[k]=1});
+    var _nameToIds={};(ERDATA.species||[]).forEach(function(s){var nm=String((s&&s.zh)||'').trim();if(!nm)return;_nameToIds[nm]=_nameToIds[nm]||[];_nameToIds[nm].push(''+s.id)});
+    Object.keys(_nameToIds).forEach(function(nm){var ids=_nameToIds[nm];if(ids.length>1){nNameClash++;if(vNameClash.length<30)vNameClash.push(nm+'=>'+ids.join('/'))}});
+  }catch(eP4){}
+  var nUniqHard=nUniqSpDup+nUniqMvDup+nUnixAbiDup;   /* 硬门闩：必须 0 */
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
-    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b+n7e;
+    +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b+n7e+nUniqHard;
   /* v4.53 R9-F 项7：ABI 四别名键去重——ids 1030-1033 是 ER 双特性组合条目（无独立中文名 a[2]=""，
      如 Slime Mold=Sticky Hold+Gooey），成分已被基础特性覆盖，非独立特性。覆盖计数排除这 4 项 → 1030/1030。
      （条目本体保留在 ABI 供 8 个物种 innIds 反查，仅不计入覆盖分母。） */
@@ -13867,6 +13879,7 @@ function engineGuardSelfCheck(){
         plans:s6Plans,err:s6Err,lam:S6_LAM,table:s6Table},
       s6b:{target:S6B_TARGET,n:s6Pooled,recantShare:s6BShare,midShare:s6AMidShare,monoShare:s6AMonoShare,ties:s6Ties,plans:s6Plans}},
     gate7d:{slots:s7dTotal,rawMis:s7dRawMis,displayMis:s7dMis,hashFb:s7dHashFb,mis:s7dMisList},
+    gateP4:{spDup:nUniqSpDup,mvDup:nUniqMvDup,abiDup:nUnixAbiDup,hard:nUniqHard,nameClash:nNameClash,nameClashList:vNameClash.slice(0,30),spChk:(ERDATA.species||[]).length,mvChk:Object.keys(MV||{}).length,abiChk:Object.keys(ABI||{}).length},
     detail:{a:va.slice(0,20),b1:vb1.slice(0,20),b2:vb2.slice(0,20),m5:vm5.slice(0,20),m6:vm6.slice(0,20),
       na:vna.slice(0,20),pr:vpr.slice(0,20),mg:vmg.slice(0,20),mv4:vmv4.slice(0,20),ci:vci.slice(0,20),
       fs:vfs.slice(0,20),lk:vlk.slice(0,20),sp:vsp.slice(0,20)},
@@ -14191,6 +14204,7 @@ console.log('  G-E5b（v4.56 子口径）单特性 why 跨流派逐字雷同组�
 console.log('  G-E6（v4.58 机制流适宜度门控）六门注册在位(硬撑/杂技/欺诈/扑击/陀螺球/轻装)：硬撑=毅力/毒疗/魔法防守豁免·杂技非飞行系atk≥110·欺诈atk≥120剔·扑击def≥110首推·陀螺球spe≥80剔·轻装spe≥70；mid=横向中位降权非首推');
 console.log('  项2 大嘴雀(#22) why抽样='+JSON.stringify((_g7ab._fearowSample||[]).slice(0,4)));
 console.log('  R9-E4 三维覆盖一期（信息项）：物种='+(_g7ab.zSpecies||0)+'/1906  招式='+(_g7ab.yMoves||0)+'/1032  特性='+(_g7ab.xAbi||0)+'/1030');
+console.log('  v4.70 P4 唯一性守门：受检 物种='+((r.gateP4||{}).spChk||0)+' 招式='+((r.gateP4||{}).mvChk||0)+' 特性='+((r.gateP4||{}).abiChk||0)+' 违例 id重复(硬)='+((r.gateP4||{}).hard||0)+'(sp='+((r.gateP4||{}).spDup||0)+' mv='+((r.gateP4||{}).mvDup||0)+' abi='+((r.gateP4||{}).abiDup||0)+') 中文名跨id冲突(信息项)='+((r.gateP4||{}).nameClash||0)+' 明细='+JSON.stringify((r.gateP4||{}).nameClashList||[]).slice(0,400));
 ['a','b1','b2','m5','m6','na','pr','mg','mv4','ci','fs','lk','sp'].forEach(function(k){(r.detail[k]||[]).slice(0,10).forEach(function(x){
   console.log('    · ['+k+'] '+JSON.stringify(x))})});
 if(r.total>0||r.errors>0||(_g7ab.nGE1||0)>0){console.error('[FAIL] v4.50 守门自检不通过：违规合计='+r.total+'(含子区项 '+(r.viol.sub||0)+' + S6a越限非豁免 '+((r.viol||{}).s6a||0)+' + S6b不达标 '+((r.viol||{}).s6b||0)+' + S7d显示不一致 '+((r.viol||{}).s7d||0)+' + G-E1高速打手负先制 '+(_g7ab.nGE1||0)+') deriveBuilds 异常='+r.errors);process.exit(1)}
