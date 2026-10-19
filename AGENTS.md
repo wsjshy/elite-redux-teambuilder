@@ -151,7 +151,14 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-19，v4.72）
+## 6. 当前状态（2026-10-19，v4.73）
+
+- ✅ **v4.73 轮：流派 EV 推荐联动速度线（速度线体系闭环——「配速收益最大化」从提示层推进到推荐层）（2026-10-19 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.73</span>`；master 链 HEAD=`ba1ef85`（产物）；gh-pages=`685767e`（清单核查仅 README+index.html，无 gitignored 输入误入）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**1351096 B = `93F131D12F262AA4…`**（N1=N2==冻结确定性）；build_tool_html.py **1094458 B = `1A8AA9DDA81B4609…`**；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 流派 EV 联动速度线（commit `ba1ef85`，buildEvs 速攻模板后接卡线）**：①**fast 高速速攻手**：主项=速度且极速（252+速度性格）≥P90 时，`spdEvTo(s,P90).ev` 卡线，省≥48 EV 启用——速度=卡线ev、HP=252-卡线ev，summary 注「卡 P90 线(372) 省N EV→HP」；②**mid 中速清场**：卡 P75（331）同判据；③**空间手/慢速炮台**：isSpace 模板不动（252 HP+252 输出不抢速）；④**安全阀**：省<48 EV 不启用保持 252 满投；性格非速度（不含爽胆/胆小/急躁/爽朗/天真/害羞）→ 卡线值无效，保持满投；⑤**一致性**：同一 `spdEvTo` 源（与详情卡配速行同源）、summary 四段非空保持；⑥**边界**：EV 总和恒 508（a[5] 削减等额挪 HP[0] 守恒）、base 低速极速 252 仍 <P75 且非空间保持现状+配速行 ⚠️、**mechBuildsOf 路径经同一 buildEvs 出口闸门**。
+  - **验收链（0 FAIL）**：引擎 PASS（守门全量对照 v4.65 无回归 + **P4 唯一性守门保持**：物种 1906/招式 1032/特性 1034、id 重复=0、中文名冲突=0 白名单在位；**EV 不变量 S5r 槽位可用率=100% 硬门、总和恒 508、启用卡线流派等额守恒无越界**；**分位锚点未变**（273/331/372/394/441 六处在位）；**卡线同源**（spdEvTo=8/sanitizeBuild=7 三方对账/卡线=9 在位）；确定性 N1=N2=`93F131D1`==冻结逐字节复现；版本双查 v4.73）；黑盒 PASS（P0=0/P1=0/P2=0——**#51 三地鼠命中对照案例 a**：引擎派「沙增伤清场」固执非速度性格 build、EV=252HP/252攻/4特防/速=0（性格非速度→不抢速收敛正确）；预期「开朗快攻 速=100/HP=156 卡 P90 省152EV」启用分支未抓到（本物种池仅 1 条沙暴低速流派，无开朗快攻 tab）→**登记下轮构造快攻流派补 UI 实证**；EV 段四段非空不回归）；P0 快验 PASS（版本双查一致、7/7 渲染无错、EV 段 301=29/模板=25 修复项不回归、EXIT=0）。
+  - 部署记录：push master `ba1ef85`（多 IP 探测 140.82.121.3）→ deploy_er.ps1 v4.73（[6/6] back on master）→ gh-pages commit `685767e`（清单核查仅 README+index.html）→ 线上 no-cache 验证 index SHA256[:16]=`93F131D12F262AA4`（1,351,096 B）与本地逐字节一致、标签「引擎 v4.73」、ER_ENGINE_VER='v4.73'、data.js=`7DB7FBB` 未变（**CDN 传播延迟 ~5 分钟**——deploy 完成后立即验证返回 v4.72 旧值，等 120s+no-cache 头后命中，登记）。**5 项 gitignored 输入由 MainAgent 侧独立恢复**（备份 C:\temp\er-backup-v473 15 文件在位，item_zh_cn MD5=`03243EAA`）。
 
 - ✅ **v4.72 轮：速度线 Tab UX 改造（用户点名主线：默认最快→最慢/前N条/搜索正常/最佳展示形态——方案已对齐）（2026-10-19 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.72</span>`；master 链 HEAD=`92e8688`（产物）；gh-pages=`dc77d60`（清单核查仅 README+index.html，无 gitignored 输入误入）。
