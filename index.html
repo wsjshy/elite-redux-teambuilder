@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.68</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.69</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3929,6 +3929,26 @@ function speedPctiles(){if(_spdPct)return _spdPct;
   var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
   var n=arr.length;function pct(p){return arr[Math.min(n-1,Math.floor(n*p))]}
   _spdPct={n:n,P50:pct(.50),P75:pct(.75),P90:pct(.90),P95:pct(.95),P99:pct(.99)};return _spdPct}
+/* v4.69 P2①：该物种极速在全库的分位落点（0-99，越高越快；脚本实测，与 speedPctiles 同源排序） */
+function speedPctileRankOf(s){var q=speedPctiles();var mx=spdMaxOf(s);
+  var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
+  var lo=0,hi=arr.length;while(lo<hi){var mid=(lo+hi)>>1;if(arr[mid]<mx)lo=mid+1;else hi=mid}
+  return Math.round(lo*100/arr.length)}
+/* v4.69 P3：全库速度分布条（极速档主 + 满速中性参考；静态标注 P50/75/90/95/99 切点） */
+function speedDistBarHtml(){
+  var q=speedPctiles();var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
+  var mn=arr[0],mx=arr[arr.length-1],span=(mx-mn)||1;
+  function pos(v){return Math.round((v-mn)*100/span)}
+  var pts=[['P50',q.P50],['P75',q.P75],['P90',q.P90],['P95',q.P95],['P99',q.P99]];
+  var h='<div class="sec" style="margin-top:8px"><h3>全库速度分布（极速档 252+速度性格，实测 n='+q.n+'）</h3>';
+  h+='<div style="position:relative;height:34px;margin:14px 4px 4px;background:linear-gradient(90deg,var(--card),var(--accent));border-radius:6px;border:1px solid var(--line)">';
+  pts.forEach(function(p){var x=pos(p[1]);
+    h+='<div style="position:absolute;left:'+x+'%;top:0;bottom:0;width:2px;background:var(--fg)"></div>';
+    h+='<div style="position:absolute;left:calc('+x+'% -22px);top:-16px;width:44px;text-align:center;font-size:10px">'+p[0]+'</div>';
+    h+='<div style="position:absolute;left:calc('+x+'% -22px);bottom:-16px;width:44px;text-align:center;font-size:10px;color:var(--sub)">'+p[1]+'</div>'});
+  h+='</div>';
+  h+='<div style="font-size:10px;color:var(--sub);margin-top:22px">慢端 '+mn+' ←── 极速值 ──→ 快端 '+mx+'（满速252中性档参考列见下表；本图=极速档）</div></div>';
+  return h}
 /* 卡线省EV实算：满速性格下达到 target 所需最小 EV(0/4/.../252)；返回 {ev,val,saved}，达不到返回 null */
 function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
 /* 定位分层：高速速攻手(超速P90+) / 中速清场(卡P75省EV) / 空间慢速手(反向拉低速) */
@@ -3939,7 +3959,8 @@ function speedRole(s){var sp=spdOf(s),at=Math.max(bstI(s,1),bstI(s,3));
 function speedRoleZh(r){return r==='fast'?'高速速攻手':(r==='space'?'空间/慢速炮台':'中速清场')}
 /* 配招卡一行配速提示（由 openSp 注入） */
 function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
-  var line='<div class="ruleline" style="margin-top:6px">⚡ <b>配速</b>：极速 <b>'+mx+'</b>（0努力 '+spd0Of(s)+' / 满速中性 '+spdFullOf(s)+'；围巾参考 '+spdScarfOf(s)+(spdWeatherOf(s)?'；'+spdWeatherOf(s)+'×2参考 '+spdWeatherVal(s):'')+'）';
+  var rank=speedPctileRankOf(s); /* v4.69 P2①：实测分位落点 */
+  var line='<div class="ruleline" style="margin-top:6px">⚡ <b>配速</b>：极速 <b>'+mx+'</b> <span style="color:var(--sub);font-size:11px">（全库分位 P'+rank+'）</span>（0努力 '+spd0Of(s)+' / 满速中性 '+spdFullOf(s)+'；围巾参考 '+spdScarfOf(s)+(spdWeatherOf(s)?'；'+spdWeatherOf(s)+'×2参考 '+spdWeatherVal(s):'')+'）';
   if(role==='fast'){
     if(mx>=q.P90){line+=' · <span style="color:var(--ok)">超速 P90（'+q.P90+'）✅</span>'}
     else{var e=spdEvTo(s,q.P90);line+=' · 距 P90 差 '+(q.P90-mx)+' 点 ⚠️'+(e?('（实算需 EV '+e.ev+' → '+e.val+'）'):'（满速仍不足）')}
@@ -3960,10 +3981,13 @@ function speedRenderTable(){var qv=(document.getElementById('spdSearch')&&docume
     return (''+s.zh).toLowerCase().indexOf(qv)>-1||(''+s.en).toLowerCase().indexOf(qv)>-1||(''+s.id).indexOf(qv)>-1;
   });
   rows.sort(function(a,b){return spdMaxOf(b)-spdMaxOf(a)});
-  var h='<table class="tbl"><thead><tr><th>#</th><th>物种</th><th>0努力</th><th>满速252中性</th><th>极速252+性格</th><th>围巾×1.5</th><th>特性×2(若触发)</th><th>+1级强化</th><th>定位</th></tr></thead><tbody>';
+  var h='<table class="tbl"><thead><tr><th>#</th><th>物种</th><th>0努力</th><th>满速252中性</th><th>极速252+性格</th><th>围巾×1.5</th><th>特性×2(若触发)</th><th>+1级强化</th><th>省EV建议</th><th>定位</th></tr></thead><tbody>';
   var cap=rows.slice(0,400);
   cap.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
-    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td>'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td>'+spdScarfOf(s)+'</td><td>'+(wv?('<span style="color:var(--acc)">'+wv+'</span> <span style="color:var(--sub);font-size:10px">'+wa+'</span>'):'—')+'</td><td>'+Math.floor(mx*1.5)+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
+    /* v4.69 P2③：省EV建议汇总列——能过 P75 者卡线省 EV 挪 HP；否则 — */
+    var evTip='—';var e75=spdEvTo(s,q.P75);
+    if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:10px">EV'+e75.ev+'</span>'):'已满线';}
+    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td>'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td>'+spdScarfOf(s)+'</td><td>'+(wv?('<span style="color:var(--acc)">'+wv+'</span> <span style="color:var(--sub);font-size:10px">'+wa+'</span>'):'—')+'</td><td>'+Math.floor(mx*1.5)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
   });
   h+='</tbody></table>';
   if(rows.length>400)h+='<div class="tip">命中 '+rows.length+' 只，仅显示前 400（按极速降序）；输入关键词缩小范围。</div>';
@@ -3974,6 +3998,7 @@ function speedRender(){try{var q=speedPctiles();
   var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
   h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
+  h+=speedDistBarHtml(); /* v4.69 P3：全库速度分布条（P50/75/90/95/99 切点静态标注） */
   h+='<div class="tip">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div>';
   h+='<div class="bar" style="margin-top:8px"><input type="text" id="spdSearch" placeholder="搜索物种：中文 / 英文 / 编号" oninput="speedRefreshTable()"></div>';
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
@@ -8441,6 +8466,20 @@ function itemDecide(s,side,roleTag,ctx){
   }catch(eE6){}
   return out.slice(0,3);
 }
+/* v4.69 P1：场地种子 → 对应场地/制造者/场地招映射；判定队伍（含自身）能否开出该场地 */
+var _SEED_TER={'电气种子':{ter:'电气场地',abi:['电气制造者'],mv:['电场'],needZh:'电气制造者'},
+               '青草种子':{ter:'青草场地',abi:['青草制造者'],mv:['青草场地'],needZh:'青草制造者'},
+               '精神种子':{ter:'精神场地',abi:['精神制造者'],mv:['精神场地'],needZh:'精神制造者'},
+               '薄雾种子':{ter:'薄雾场地',abi:['薄雾制造者'],mv:['薄雾场地'],needZh:'薄雾制造者'}};
+function teamCanSetTerrain(self,teamArr,need){
+  var list=(teamArr||[]).slice();list.push(self);
+  for(var i=0;i<list.length;i++){var sp=list[i];if(!sp)continue;
+    var abis=(sp.abis||[]).concat(sp.inns||[]);
+    for(var a=0;a<abis.length;a++){if(need.abi.indexOf(abis[a])>-1)return abis[a]}
+    var L=learnOf(sp);
+    for(var m=0;m<need.mv.length;m++){if(learnHasName(sp,need.mv[m],L))return need.mv[m]}
+  }
+  return null}
 function buildItem(s,side,roleTag,ctx){
   var list=itemDecide(s,side,roleTag,ctx).map(function(e){return [e.zh,e.why]});
   /* v4.10 机制锚点（§3 imposter_anchor：道具三选 讲究围巾/气势披带/脱壳忍者壳）——正向置顶，不剔除既有候选 */
@@ -8463,8 +8502,22 @@ function buildItem(s,side,roleTag,ctx){
     if(_me.itemAudit&&_me.itemAudit.length&&list.length)
       list[0][1]=list[0][1]+'；道具位评估改写：'+_me.itemAudit[0];
   }catch(e){}
-  /* v4.68 P1-2：场地种子×场地手联动——单精灵页无 team 上下文，保留但 why 注明需场地手触发 */
-  try{var _SEED_SYS={'电气种子':'电气制造者','青草种子':'青草制造者','薄雾种子':'薄雾制造者','精神种子':'精神制造者'};list=list.map(function(x){if(_SEED_SYS[x[0]]){var need=_SEED_SYS[x[0]];if(!/需|场地手/.test(x[1]))x[1]=x[1]+'（需队伍内有'+need+'/对应场地招触发，无场地手勿带）'}return x})}catch(eSeed){}
+  /* v4.69 P1：场地种子 team 级剔除收口——ctx.team 在位时按队伍实际能否开场地裁决：
+     · 队伍（含自身）有对应制造者特性/场地招 → 保留种子，why 点名触发者（配合XX的XX场地触发）
+     · 队伍无对应场地手 → 从推荐道具列表剔除该种子（仅道具列表，配招槽不受影响）
+     · 无 team 上下文（单精灵页 openSp）保持 v4.68 口径：保留并 why 注明「需场地手勿带」 */
+  try{
+    var _team=(ctx&&ctx.team&&ctx.team.length)?ctx.team:null; /* 空队伍=无队伍上下文 → 单精灵页保留+警告 */
+    list=list.filter(function(x){
+      var need=_SEED_TER[x[0]];if(!need)return true;
+      if(!_team){ /* 单精灵页：保留+v4.68警告 */
+        if(!/需|场地手|配合/.test(x[1]))x[1]=x[1]+'（需队伍内有'+need.needZh+'/对应场地招触发，无场地手勿带）';
+        return true}
+      var trig=teamCanSetTerrain(s,_team,need);
+      if(trig){x[1]=x[1]+'（配合'+trig+'的'+need.ter+'触发）';return true}
+      return false; /* 队伍无场地手 → 剔除 */
+    });
+  }catch(eSeed){}
   return list
 }
 function pickAbiFor(s,side,roleTag,ctx){
@@ -8827,7 +8880,10 @@ function deriveBuilds(s,team){
     /* v4.3.3：自身即天气/场地设置手时，道具位按「天气」角色走（天气岩石/光之黏土等） */
     /* v45-1：道具 tag 改用**与队伍行同源的核心口径**（coreItemTagOf），不再用打法 tag
        —— 盾/受系核心的强化流派不再被推锁招道具；ctx 同源（体系窗口，v433-2） */
-    var b=mkBuild(s,side,nm,spBest,phBest,roleTag,itemTagOfCoreProf(p,s),coreItemCtxOf(s));
+    /* v4.69 P1：把队伍已选队友穿入道具 ctx（ctx.team），供 buildItem 按队伍实际能否开场地裁决场地种子 */
+    var _ictx=coreItemCtxOf(s);var _dctx=(typeof _ictx==='object'&&_ictx)?_ictx:{};
+    var _tctx={};for(var _dk in _dctx)_tctx[_dk]=_dctx[_dk];_tctx.team=teamArr;
+    var b=mkBuild(s,side,nm,spBest,phBest,roleTag,itemTagOfCoreProf(p,s),_tctx);
     b=sanitizeBuild(s,b);   /* v4.30 P0-1：派生流派三方一致性（EV×配招类别×性格）；v4.32 P1-3 内含低攻物理招净化 */
     b=fillMvSlots(s,b);     /* v4.32：净化/机制流不满 4 槽时补满（与 mechBuildsOf 同口径） */
     /* v4.51 R8-E E6（core 路径终门，sanitize/fillMv 之后）：满血红先制持有的主推道具不得为自损生命宝珠
@@ -8943,6 +8999,21 @@ function deriveBuilds(s,team){
     var _mechBs=mechBuildsOf(s);
     for(var _mi=_mechBs.length-1;_mi>=0;_mi--)out.unshift(_mechBs[_mi]);
   }catch(e){}
+  /* v4.69 P1 收口：全流派 it 统一按队伍能否开场地裁决场地种子（覆盖 mechBuildsOf 杂技/轻装路径；
+     队伍非空且无对应制造者/场地招 → 从推荐道具列表剔除；有则 why 点名触发者） */
+  try{
+    if(teamArr&&teamArr.length){
+      out.forEach(function(bd){
+        if(!bd.it)return;
+        bd.it=bd.it.filter(function(e){
+          var need=_SEED_TER[e[0]];if(!need)return true;
+          var trig=teamCanSetTerrain(s,teamArr,need);
+          if(trig){e[1]=(e[1]||'')+'（配合'+trig+'的'+need.ter+'触发）';return true}
+          return false;
+        });
+      });
+    }
+  }catch(eSeedGate){}
   /* v4.14 单玩法一致性：同侧且配招前 3 槽完全相同的流派视为同一玩法 → 只保留评分最高的一条
      （妙蛙花「晴强化清场」与「晴增伤清场」配招重合：强化清场为上位，评分高者胜出，不再并列两条近同卡）
      评分取自 deriveBuilds 的 sc（cand 已按 sc 降序生成，out 顺序即分序；此处仍显式比较 b.score 稳妥） */
@@ -12200,7 +12271,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.68';
+var ER_ENGINE_VER='v4.69';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
