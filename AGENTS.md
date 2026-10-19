@@ -151,7 +151,16 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-19，v4.70）
+## 6. 当前状态（2026-10-19，v4.71）
+
+- ✅ **v4.71 轮：生命宝珠×回复位 team 级冲突提示落地（v4.70 登记项收口）+ 速度线搜索框占位（2026-10-19 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.71</span>`；master 链 HEAD=`0092f87`（产物）；gh-pages=`d551753`（清单核查仅 index.html，无 gitignored 输入误入）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**1346937 B = `2A9ACBBF457903F9…`**（N1=N2==冻结确定性）；build_tool_html.py **1090299 B = `F03849B802554D0E…`**；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 宝珠×回复（commit `0092f87`，镜像 v4.69 场地种子 team 先例）**：新增 `teamHasRecovery(self, teamArr)`（回复招式：羽栖/睡觉/光合作用/晨光/月光/自我再生/偷懒 + 特性：再生力，gameData 原文名未虚构）——单精灵页（空队伍）保留宝珠+why 追加「（队伍无回复位时自伤1/10不可持续，慎带）」；核心配队页（teamArr 非空）队伍无任何回复位→推荐道具剔除生命宝珠，有回复位→why 点名「（队伍有X回复位，自伤可周转）」；统一闸门覆盖 mechBuildsOf 杂技/轻装路径。**黑盒实证违规=0**（抽样 8 只+#22 核心队，未抓到「无回复+宝珠推荐」触发样例——剔除逻辑在构建/守门侧生效，如实登记）。
+  - **P2**：速度线 Tab 搜索框占位「搜索物种/编号，如 皮卡丘 / 25」（低成本落地，未动模板结构）。
+  - **验收链（0 FAIL）**：引擎 PASS（守门全量对照 v4.65 基线无回归 + **P4 唯一性守门保持**：物种 1906/招式 1032/特性 1034、id 重复=0、中文名冲突=0、白名单在位；宝珠改动在 buildItem 出口未破坏守门；确定性 N1=N2=`2A9ACBBF`==冻结逐字节复现；版本双查 v4.71）；黑盒 PASS（P0=0/P1=0/P2=0——回归全绿含配速分位 #445 P75 省8EV 新样例）；P0 快验 PASS（版本双查一致、7/7 渲染无错、搜索占位在位、EXIT=0）。
+  - **网络经验补充（§7 E5）**：**北美节点 IP 也会波动**——本轮 140.82.113.3 失效（v4.70 曾可用），部署前用多 IP 有界探测（140.82.112.3/114.3/121.3/116.3，本轮 140.82.121.3 可用）；push master 成功但 deploy 脚本内部 gh-pages push 未带 curloptResolve 参数（脚本限制）——**gh-pages push 失败时手动补：checkout gh-pages（deploy 已 commit）→ push --force（带节点）→ checkout master**，push 前核查 commit 文件清单（防 gitignored 输入误入，v4.70 教训）。
+  - 部署记录：push master `0092f87`（北美节点 140.82.121.3）→ deploy_er.ps1 v4.71（[4/6] commit d551753 后 [5/6] 脚本内 push 失败）→ 手动 push --force gh-pages（140.82.121.3）→ checkout master → 线上 no-cache 验证 index SHA256[:16]=`2A9ACBBF457903F9`（1,346,937 B）与本地逐字节一致、标签「引擎 v4.71」、ER_ENGINE_VER='v4.71'、data.js=`7DB7FBB` 未变。**5 项 gitignored 输入由 MainAgent 侧独立恢复**（备份 C:\temp\er-backup-v471 15 文件在位，item_zh_cn MD5=`03243EAA`）。
 
 - ✅ **v4.70 轮：图鉴数据唯一性守门固化 + S5q 收口登记 + 道具冲突提示登记 + 信息项复核（2026-10-19 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.70</span>`；master 链 HEAD=`6a60e50`（产物）+ 登记 commit（见下）；gh-pages=登记 commit 后同步（清理 commit 后 HEAD 见部署记录）。
