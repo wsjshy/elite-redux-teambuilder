@@ -151,7 +151,14 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-19，v4.71）
+## 6. 当前状态（2026-10-19，v4.72）
+
+- ✅ **v4.72 轮：速度线 Tab UX 改造（用户点名主线：默认最快→最慢/前N条/搜索正常/最佳展示形态——方案已对齐）（2026-10-19 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.72</span>`；master 链 HEAD=`92e8688`（产物）；gh-pages=`dc77d60`（清单核查仅 README+index.html，无 gitignored 输入误入）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**1349912 B = `9E53C49FDF4BF4C1…`**（N1=N2==冻结确定性）；build_tool_html.py **1093274 B = `B11CC6EE504826D3…`**；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 速度线 Tab 展示形态改造（commit `92e8688`，6 点全落地）**：①**前 N 条分段控件**「前 50/100/200/400/全部」下拉（默认 400），搜索命中 ≤ 上限全显、>400 截断+提示「命中 N 只，仅显示前 M」；②**搜索强化**：实时「命中 X 只」计数、空结果「无匹配，试试英文名/编号」、oninput 150ms 防抖（`speedOnSearch`）、占位保持「搜索物种/编号，如 皮卡丘 / 25」；③**分位徽标（核心 UX，回应「看比例」）**：每行极速右侧 `_spdBadge(p)` 复用 `speedPctileRankOf` 同源——≥P90 绿「超速」/P75-89 蓝「清场」/P50-74 黄「中速」/<P50 灰「慢速」，一眼看全库速度位次；④**排序切换下拉**：极速降序（默认）/极速升序（慢端空间手）/满速降序/0努力降序/编号升序，切换即刷新；⑤**响应式 ≤768px**：隐藏次要列（0努力/围巾/特性×2/+1级），保留 编号/物种/满速/极速/分位徽标/省EV/定位；⑥**性能**：懒渲染保持（`speedEnsureTable` 首开才建表）、开卡 openSp 独立路径不受影响（0.06s）。
+  - **验收链（0 FAIL）**：引擎 PASS（守门全量对照 v4.65 基线无回归 + **P4 唯一性守门保持**：物种 1906/招式 1032/特性 1034、id 重复=0、中文名冲突=0 白名单在位；确定性 N1=N2=`9E53C49F`==冻结逐字节复现；版本双查 v4.72；速度线专项：_spdBadge/speedPctileRankOf 同源在位、排序四档在位、截断+命中提示在位、分位锚点/分布条未回归）；黑盒 PASS（P0=0/P1=0/P2=0——首行 #2633 幸福蛋R 极速 669 **P100**、搜索 皮卡丘=18 行（全换装形态 372/P88）/25=138/Pikachu=18/空输入恢复 401 行/截断提示「命中 1906 只，仅显示前 400」、徽标 P100 行 rgb(22,163,74) 绿色、**375px 窄屏隐藏次要列 scrollW=clientW=375 无溢出**、开 Tab 3.11s/搜索重建 <1s、openSp 0.06s；**未逐一点测②分段控件/⑤排序切换按钮（存在+默认已验证），登记下轮补**）；P0 快验 PASS（版本双查一致、速度线改造覆盖在位、7/7 渲染无错、EXIT=0）。
+  - 部署记录：push master `92e8688`（多 IP 探测 140.82.121.3 可用）→ deploy_er.ps1 v4.72（[6/6] back on master，gh-pages push 本次未受阻）→ gh-pages commit `dc77d60`（清单核查仅 README+index.html）→ 线上 no-cache 验证 index SHA256[:16]=`9E53C49FDF4BF4C1`（1,349,912 B）与本地逐字节一致、标签「引擎 v4.72」、ER_ENGINE_VER='v4.72'、data.js=`7DB7FBB` 未变。**5 项 gitignored 输入由 MainAgent 侧独立恢复**（备份 C:\temp\er-backup-v472 15 文件在位，item_zh_cn MD5=`03243EAA`）。
 
 - ✅ **v4.71 轮：生命宝珠×回复位 team 级冲突提示落地（v4.70 登记项收口）+ 速度线搜索框占位（2026-10-19 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.71</span>`；master 链 HEAD=`0092f87`（产物）；gh-pages=`d551753`（清单核查仅 index.html，无 gitignored 输入误入）。
