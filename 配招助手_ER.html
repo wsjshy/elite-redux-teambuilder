@@ -559,7 +559,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.73</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.74</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3603,7 +3603,7 @@ function renderMyPool(){
 function myCoreTeam(id){
   var s=speciesById(id);if(!s){toast('该编号不在图鉴中');return}
   var o=$('myTeamOut');if(!o)return;
-  o.innerHTML='<div class="sec" style="margin:8px 0"><h3>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:12px;color:var(--sub)">#'+s.id+'</span> <span class="mini" style="color:var(--sub)">（核心来自存档 · 同一套需求驱动引擎）</span></h3></div>'+renderPlanSet(s);
+  o.innerHTML='<div class="sec" style="margin:8px 0"><h3>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:12px;color:var(--sub)">#'+s.id+'</span> <span class="mini" style="color:var(--sub)">（核心来自存档 · 同一套需求驱动引擎）</span></h3></div>'+renderPlanSet(s)+teamSpeedCardHtml();
   myPhase('detail'); /* v4.6.3：进入详情阶段（方案置顶、池隐藏、带返回按钮） */
 }
 /* v4.6 收尾：页内轻提示（替代原生 alert —— 原生 alert 阻塞 JS 线程，历史 bu 事故同源） */
@@ -3977,6 +3977,34 @@ function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
     if(e75b&&mx>=q.P75){line+='<br><span style="color:var(--sub)">卡线参考：若仅求过 P75（基准 '+q.P75+'）→ EV '+e75b.ev+'（达 '+e75b.val+'）即可，<b style="color:var(--ok)">省 '+e75b.saved+' EV 挪 HP</b>（不必上满 252）。</span>'}}
   line+='</div>';return line}
 /* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
+/* v4.74 P1：队伍级速度结构卡（纯展示，O(6)，只读当前 team 全局，禁止全链派生） */
+function teamSpeedCardHtml(){
+  try{
+    var q=speedPctiles();
+    var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
+    var mn=arr[0],mx=arr[arr.length-1],span=(mx-mn)||1;
+    var tm=(typeof team!=='undefined'&&team)?team.filter(function(x){return x&&isValidSp(x)}):[];
+    if(!tm.length)return '';
+    function pos(v){return Math.round((v-mn)*100/span)}
+    var rowsH='',fast=0,mid=0,slow=0,best=null;
+    tm.forEach(function(s){
+      var v=spdMaxOf(s),p=speedPctileRankOf(s);
+      if(p>=90)fast++;else if(p>=50)mid++;else slow++;
+      if(!best||v>best.v)best={zh:s.zh,v:v,p:p};
+      rowsH+='<div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:110px;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.zh)+'</span>'+
+        '<div style="position:relative;flex:1;height:14px;background:var(--card,#f0f0f0);border-radius:3px">'+
+        '<div style="position:absolute;left:0;top:0;bottom:0;width:'+pos(v)+'%;background:var(--acc,#1976d2);border-radius:3px"></div>'+
+        '<div style="position:absolute;left:'+pos(q.P75)+'%;top:-2px;bottom:-2px;width:1px;background:#f9a825" title="P75"></div>'+
+        '<div style="position:absolute;left:'+pos(q.P90)+'%;top:-2px;bottom:-2px;width:1px;background:var(--ok,#2e7d32)" title="P90"></div>'+
+        '</div><span style="font-size:11px">'+v+'</span>'+_spdBadge(p)+'</div>';
+    });
+    var warn='';
+    if(best&&best.v<q.P75){warn='<div style="color:#c62828;font-size:12px;margin-top:4px">⚠ 速度线塌陷：全队最快 '+esc(best.zh)+' 极速 '+best.v+' &lt; P75('+q.P75+')，建议控速/空间/围巾。</div>'}
+    return '<div class="sec" style="margin-top:8px"><h3>队伍速度结构（极速档 · 全库分位）</h3>'+
+      '<div style="font-size:12px;margin-bottom:4px">全队最快=<b>'+esc(best.zh)+'</b> 极速 '+best.v+' · P'+best.p+' ｜ ≥P90 超速 '+fast+' 只 / P50-89 '+mid+' 只 / &lt;P50 '+slow+' 只</div>'+
+      rowsH+'<div style="font-size:10px;color:var(--sub);margin-top:2px">竖线：P75(331) 黄 / P90(372) 绿；蓝条=该只极速在全库范围定位。</div>'+warn+'</div>';
+  }catch(e){return ''}
+}
 window._spdN=400; window._spdSort='maxdesc';   /* 默认极速降序 */
 var _SPD_NS=[50,100,200,400];
 function _spdBadge(p){   /* v4.72 P3：分位徽标（与 speedPctileRankOf 同源） */
@@ -12349,7 +12377,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.73';
+var ER_ENGINE_VER='v4.74';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
