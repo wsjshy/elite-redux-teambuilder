@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.68</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.69</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -8441,6 +8441,20 @@ function itemDecide(s,side,roleTag,ctx){
   }catch(eE6){}
   return out.slice(0,3);
 }
+/* v4.69 P1：场地种子 → 对应场地/制造者/场地招映射；判定队伍（含自身）能否开出该场地 */
+var _SEED_TER={'电气种子':{ter:'电气场地',abi:['电气制造者'],mv:['电场'],needZh:'电气制造者'},
+               '青草种子':{ter:'青草场地',abi:['青草制造者'],mv:['青草场地'],needZh:'青草制造者'},
+               '精神种子':{ter:'精神场地',abi:['精神制造者'],mv:['精神场地'],needZh:'精神制造者'},
+               '薄雾种子':{ter:'薄雾场地',abi:['薄雾制造者'],mv:['薄雾场地'],needZh:'薄雾制造者'}};
+function teamCanSetTerrain(self,teamArr,need){
+  var list=(teamArr||[]).slice();list.push(self);
+  for(var i=0;i<list.length;i++){var sp=list[i];if(!sp)continue;
+    var abis=(sp.abis||[]).concat(sp.inns||[]);
+    for(var a=0;a<abis.length;a++){if(need.abi.indexOf(abis[a])>-1)return abis[a]}
+    var L=learnOf(sp);
+    for(var m=0;m<need.mv.length;m++){if(learnHasName(sp,need.mv[m],L))return need.mv[m]}
+  }
+  return null}
 function buildItem(s,side,roleTag,ctx){
   var list=itemDecide(s,side,roleTag,ctx).map(function(e){return [e.zh,e.why]});
   /* v4.10 机制锚点（§3 imposter_anchor：道具三选 讲究围巾/气势披带/脱壳忍者壳）——正向置顶，不剔除既有候选 */
@@ -8463,8 +8477,22 @@ function buildItem(s,side,roleTag,ctx){
     if(_me.itemAudit&&_me.itemAudit.length&&list.length)
       list[0][1]=list[0][1]+'；道具位评估改写：'+_me.itemAudit[0];
   }catch(e){}
-  /* v4.68 P1-2：场地种子×场地手联动——单精灵页无 team 上下文，保留但 why 注明需场地手触发 */
-  try{var _SEED_SYS={'电气种子':'电气制造者','青草种子':'青草制造者','薄雾种子':'薄雾制造者','精神种子':'精神制造者'};list=list.map(function(x){if(_SEED_SYS[x[0]]){var need=_SEED_SYS[x[0]];if(!/需|场地手/.test(x[1]))x[1]=x[1]+'（需队伍内有'+need+'/对应场地招触发，无场地手勿带）'}return x})}catch(eSeed){}
+  /* v4.69 P1：场地种子 team 级剔除收口——ctx.team 在位时按队伍实际能否开场地裁决：
+     · 队伍（含自身）有对应制造者特性/场地招 → 保留种子，why 点名触发者（配合XX的XX场地触发）
+     · 队伍无对应场地手 → 从推荐道具列表剔除该种子（仅道具列表，配招槽不受影响）
+     · 无 team 上下文（单精灵页 openSp）保持 v4.68 口径：保留并 why 注明「需场地手勿带」 */
+  try{
+    var _team=(ctx&&ctx.team&&ctx.team.length)?ctx.team:null; /* 空队伍=无队伍上下文 → 单精灵页保留+警告 */
+    list=list.filter(function(x){
+      var need=_SEED_TER[x[0]];if(!need)return true;
+      if(!_team){ /* 单精灵页：保留+v4.68警告 */
+        if(!/需|场地手|配合/.test(x[1]))x[1]=x[1]+'（需队伍内有'+need.needZh+'/对应场地招触发，无场地手勿带）';
+        return true}
+      var trig=teamCanSetTerrain(s,_team,need);
+      if(trig){x[1]=x[1]+'（配合'+trig+'的'+need.ter+'触发）';return true}
+      return false; /* 队伍无场地手 → 剔除 */
+    });
+  }catch(eSeed){}
   return list
 }
 function pickAbiFor(s,side,roleTag,ctx){
@@ -8827,7 +8855,10 @@ function deriveBuilds(s,team){
     /* v4.3.3：自身即天气/场地设置手时，道具位按「天气」角色走（天气岩石/光之黏土等） */
     /* v45-1：道具 tag 改用**与队伍行同源的核心口径**（coreItemTagOf），不再用打法 tag
        —— 盾/受系核心的强化流派不再被推锁招道具；ctx 同源（体系窗口，v433-2） */
-    var b=mkBuild(s,side,nm,spBest,phBest,roleTag,itemTagOfCoreProf(p,s),coreItemCtxOf(s));
+    /* v4.69 P1：把队伍已选队友穿入道具 ctx（ctx.team），供 buildItem 按队伍实际能否开场地裁决场地种子 */
+    var _ictx=coreItemCtxOf(s);var _dctx=(typeof _ictx==='object'&&_ictx)?_ictx:{};
+    var _tctx={};for(var _dk in _dctx)_tctx[_dk]=_dctx[_dk];_tctx.team=teamArr;
+    var b=mkBuild(s,side,nm,spBest,phBest,roleTag,itemTagOfCoreProf(p,s),_tctx);
     b=sanitizeBuild(s,b);   /* v4.30 P0-1：派生流派三方一致性（EV×配招类别×性格）；v4.32 P1-3 内含低攻物理招净化 */
     b=fillMvSlots(s,b);     /* v4.32：净化/机制流不满 4 槽时补满（与 mechBuildsOf 同口径） */
     /* v4.51 R8-E E6（core 路径终门，sanitize/fillMv 之后）：满血红先制持有的主推道具不得为自损生命宝珠
@@ -8943,6 +8974,21 @@ function deriveBuilds(s,team){
     var _mechBs=mechBuildsOf(s);
     for(var _mi=_mechBs.length-1;_mi>=0;_mi--)out.unshift(_mechBs[_mi]);
   }catch(e){}
+  /* v4.69 P1 收口：全流派 it 统一按队伍能否开场地裁决场地种子（覆盖 mechBuildsOf 杂技/轻装路径；
+     队伍非空且无对应制造者/场地招 → 从推荐道具列表剔除；有则 why 点名触发者） */
+  try{
+    if(teamArr&&teamArr.length){
+      out.forEach(function(bd){
+        if(!bd.it)return;
+        bd.it=bd.it.filter(function(e){
+          var need=_SEED_TER[e[0]];if(!need)return true;
+          var trig=teamCanSetTerrain(s,teamArr,need);
+          if(trig){e[1]=(e[1]||'')+'（配合'+trig+'的'+need.ter+'触发）';return true}
+          return false;
+        });
+      });
+    }
+  }catch(eSeedGate){}
   /* v4.14 单玩法一致性：同侧且配招前 3 槽完全相同的流派视为同一玩法 → 只保留评分最高的一条
      （妙蛙花「晴强化清场」与「晴增伤清场」配招重合：强化清场为上位，评分高者胜出，不再并列两条近同卡）
      评分取自 deriveBuilds 的 sc（cand 已按 sc 降序生成，out 顺序即分序；此处仍显式比较 b.score 稳妥） */
