@@ -13861,9 +13861,13 @@ function engineGuardSelfCheck(){
     var _mvIdSeen={};Object.keys(MV||{}).forEach(function(k){if(_mvIdSeen[k]){nUniqMvDup++}else _mvIdSeen[k]=1});
     var _abIdSeen={};Object.keys(ABI||{}).forEach(function(k){if(_abIdSeen[k]){nUnixAbiDup++}else _abIdSeen[k]=1});
     var _nameToIds={};(ERDATA.species||[]).forEach(function(s){var nm=String((s&&s.zh)||'').trim();if(!nm)return;_nameToIds[nm]=_nameToIds[nm]||[];_nameToIds[nm].push(''+s.id)});
-    Object.keys(_nameToIds).forEach(function(nm){var ids=_nameToIds[nm];if(ids.length>1){nNameClash++;if(vNameClash.length<30)vNameClash.push(nm+'=>'+ids.join('/'))}});
+    /* v4.70 P4 白名单：同中文名跨 id = 同物种双形态/合法变体（MainAgent 裁定入白名单，豁免硬门） */
+    var P4_NAME_WHITELIST={'基格尔德-10%形态':'1739/1740'};
+    Object.keys(_nameToIds).forEach(function(nm){var ids=_nameToIds[nm];if(ids.length>1){
+      if(P4_NAME_WHITELIST[nm]){/* 白名单豁免，不计违例 */}
+      else{nNameClash++;if(vNameClash.length<30)vNameClash.push(nm+'=>'+ids.join('/'))}}});
   }catch(eP4){}
-  var nUniqHard=nUniqSpDup+nUniqMvDup+nUnixAbiDup;   /* 硬门闩：必须 0 */
+  var nUniqHard=nUniqSpDup+nUniqMvDup+nUnixAbiDup+nNameClash;   /* 硬门闩：id 重复 + 白名单外中文名冲突，必须 0 */
   var total=va.length+vb1.length+vb2.length+vm5.length+vm6.length+vna.length+vpr.length+vmg.length+vmv4.length+vci.length+vfs.length+vlk.length+vsp.length+nSubViol
     +vvest.length+nSubVestSt+nSubChoiceSt+s6AViol+s6BViol+s7dViol+n7a+n7b+n7e+nUniqHard;
   /* v4.53 R9-F 项7：ABI 四别名键去重——ids 1030-1033 是 ER 双特性组合条目（无独立中文名 a[2]=""，
