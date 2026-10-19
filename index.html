@@ -557,7 +557,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.70</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.71</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4000,7 +4000,7 @@ function speedRender(){try{var q=speedPctiles();
   h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
   h+=speedDistBarHtml(); /* v4.69 P3：全库速度分布条（P50/75/90/95/99 切点静态标注） */
   h+='<div class="tip">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div>';
-  h+='<div class="bar" style="margin-top:8px"><input type="text" id="spdSearch" placeholder="搜索物种：中文 / 英文 / 编号" oninput="speedRefreshTable()"></div>';
+  h+='<div class="bar" style="margin-top:8px"><input type="text" id="spdSearch" placeholder="搜索物种/编号，如 皮卡丘 / 25" oninput="speedRefreshTable()"></div>';
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
   var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
   /* v4.68 黑盒P1-2：全库表懒渲染——仅在速度线 Tab 首次打开时构建400行，避免 DOMContentLoaded/开卡阻塞 */
@@ -8480,6 +8480,18 @@ function teamCanSetTerrain(self,teamArr,need){
     for(var m=0;m<need.mv.length;m++){if(learnHasName(sp,need.mv[m],L))return need.mv[m]}
   }
   return null}
+/* v4.71 P1：队伍（自身+已选队友）是否含回复手段（招式/特性；gameData 原文名，缺名登记不虚构） */
+var _RECOVERY_MV=['羽栖','睡觉','光合作用','晨光','月光','自我再生','偷懒'];
+var _RECOVERY_ABI=['再生力'];
+function teamHasRecovery(self,teamArr){
+  var list=(teamArr||[]).slice();list.push(self);
+  for(var i=0;i<list.length;i++){var sp=list[i];if(!sp)continue;
+    var abis=(sp.abis||[]).concat(sp.inns||[]);
+    for(var a=0;a<abis.length;a++){if(_RECOVERY_ABI.indexOf(abis[a])>-1)return abis[a]}
+    var L=learnOf(sp);
+    for(var m=0;m<_RECOVERY_MV.length;m++){if(learnHasName(sp,_RECOVERY_MV[m],L))return _RECOVERY_MV[m]}
+  }
+  return null}
 function buildItem(s,side,roleTag,ctx){
   var list=itemDecide(s,side,roleTag,ctx).map(function(e){return [e.zh,e.why]});
   /* v4.10 机制锚点（§3 imposter_anchor：道具三选 讲究围巾/气势披带/脱壳忍者壳）——正向置顶，不剔除既有候选 */
@@ -8518,6 +8530,19 @@ function buildItem(s,side,roleTag,ctx){
       return false; /* 队伍无场地手 → 剔除 */
     });
   }catch(eSeed){}
+  /* v4.71 P1：生命宝珠×回复手段冲突——单精灵页(空队伍)保留+why警告；队伍非空且无任何回复位 → 剔除 */
+  try{
+    var _loteam=(ctx&&ctx.team&&ctx.team.length)?ctx.team:null;
+    list=list.filter(function(x){
+      if(x[0]!=='生命宝珠')return true;
+      var rec=teamHasRecovery(s,_loteam);
+      if(!_loteam){ /* 单精灵页：保留 + 警告 */
+        if(!/无回复位/.test(x[1]))x[1]=x[1]+'（队伍无回复位时自伤1/10不可持续，慎带）';
+        return true}
+      if(rec){if(!/回复位/.test(x[1]))x[1]=x[1]+'（队伍有'+rec+'回复位，自伤可周转）';return true}
+      return false; /* 队伍非空且无回复 → 剔除 */
+    });
+  }catch(eLoOrb){}
   return list
 }
 function pickAbiFor(s,side,roleTag,ctx){
@@ -9003,13 +9028,20 @@ function deriveBuilds(s,team){
      队伍非空且无对应制造者/场地招 → 从推荐道具列表剔除；有则 why 点名触发者） */
   try{
     if(teamArr&&teamArr.length){
+      var _loRec=teamHasRecovery(s,teamArr);
       out.forEach(function(bd){
         if(!bd.it)return;
         bd.it=bd.it.filter(function(e){
-          var need=_SEED_TER[e[0]];if(!need)return true;
-          var trig=teamCanSetTerrain(s,teamArr,need);
-          if(trig){e[1]=(e[1]||'')+'（配合'+trig+'的'+need.ter+'触发）';return true}
-          return false;
+          var need=_SEED_TER[e[0]];if(need){
+            var trig=teamCanSetTerrain(s,teamArr,need);
+            if(trig){e[1]=(e[1]||'')+'（配合'+trig+'的'+need.ter+'触发）';return true}
+            return false;
+          }
+          if(e[0]==='生命宝珠'){
+            if(_loRec){if(!/回复位/.test(e[1]||''))e[1]=(e[1]||'')+'（队伍有'+_loRec+'回复位，自伤可周转）';return true}
+            return false; /* v4.71 P1：队伍无回复位 → 剔除生命宝珠 */
+          }
+          return true;
         });
       });
     }
@@ -12271,7 +12303,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.70';
+var ER_ENGINE_VER='v4.71';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
