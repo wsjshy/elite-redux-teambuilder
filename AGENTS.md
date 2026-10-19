@@ -151,7 +151,17 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-19，v4.68）
+## 6. 当前状态（2026-10-19，v4.69）
+
+- ✅ **v4.69 轮：场地种子 team 级剔除收口 + 速度线增强 + 分布可视化（2026-10-19 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.69</span>`；master 链 HEAD=`48b70e9`（产物）；gh-pages=登记 commit 后同步。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**1343187 B = `CBCF59057BDEC0AA…`**（N1=N2==冻结确定性）；build_tool_html.py **1086096 B = `A309C7FD75CAF48E…`**；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 场地种子 team 级剔除（v4.68 登记项收口，commit `00d6f4e`）**：队伍上下文穿入 buildItem（deriveBuilds 传 `ctx.team=teamArr`）——有对应场地手（制造者特性/场地招）→保留种子+why 点名触发者（「配合XX的XX场地触发」）；**无→推荐道具列表剔除种子类**（电气328/精神329/薄雾330/青草331）；出口统一闸门覆盖 mechBuildsOf 杂技/轻装路径（曾绕过 buildItem 过滤）；空队伍=单精灵页口径保留+「需场地手勿带」。**全库违规=0（CDP 真页面扫 1906）**：单精灵警告 267/剔除 210/合法保留点名 353。
+  - **P2 速度线增强（commit `ea8672a`）**：详情卡配速提示引用分位（speedPctileRankOf 二分实测「（全库分位 PXX）」——皮卡丘 P66/三地鼠 P88）；天气乘区仅参考列保持；速度线 Tab 补「省EV建议」列（卡 P75 实算→省N→HP）。
+  - **P3 分布可视化（commit `70f7ac9`，用户「看比例」诉求）**：速度线 Tab 顶部全库极速档分布条，静态标注 P50=273/P75=331/P90=372/P95=394/P99=441 切点，不依赖悬停。
+  - **验收链（0 FAIL 收口）**：P0 显示层抓 REGRESSION=1（标签 v4.69 但 ER_ENGINE_VER 常量 v4.68——实施只改标签行未升常量，修复 178d789）；**引擎补验抓确定性漂移**（v4.69 常量直接改在产物未回写源码→重建 E505D066≠冻结 CBCF5905；修复 48b70e9 回写源码后 N1=N2=CBCF5905==冻结关闭）；黑盒 PASS（P0=0/P1=0/P2=0——配速分位**假阴性澄清**：抽屉未 open（display:none）时 innerText 返回空串，正确探针实测皮卡丘 P66/地鼠 P66/三地鼠 P88+省152EV）；引擎终验 PASS（确定性关闭、守门全项无回归：G-E5b=45/E5=14/G-E4b=181/R9-E3=95/268/141/0 保持）。
+  - **经验教训（§7 E5 固化）**：①**版本升版必须源码与产物两端一致**——只改产物标签/常量未回写构建脚本源=确定性破坏（重建无法复现冻结字节），版本类改动判据=源码 build_tool_html.py 与产物双查一致；②**显示层假阴性防御**：隐藏元素（display:none 抽屉）innerText 返回空串≠渲染缺失——黑盒探针须先确认元素视觉 open（add('open')）再读 innerText，或直接读 innerHTML；③**统一闸门覆盖所有构建路径**：buildItem 过滤被 mechBuildsOf 杂技/轻装路径绕过——出口统一闸门（按 teamArr 裁决）兜底全路径。
+  - 部署记录（MainAgent 侧执行）：push master `48b70e9` → `tools/deploy_er.ps1 v4.69`（[6/6] back on master）→ 5 项 gitignored 输入从 C:\temp\er-backup-v469 恢复逐项哈希 MATCH（item_zh_cn MD5=`03243EAA` ✓）→ 线上 no-cache 验证 index SHA256[:16]=`CBCF59057BDEC0AA`（1,343,187 B）与本地逐字节一致、标签「引擎 v4.69」、ER_ENGINE_VER='v4.69'、data.js=`7DB7FBB` 未变。
 
 - ✅ **v4.68 轮：P0 卡死修复（构建期预计算）+ 组织者五项（机制解读/会心流/场地种子/P2×3）（2026-10-19 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.68</span>`；master 链 HEAD=`ca6180e`（产物）；gh-pages=登记 commit 后同步。
