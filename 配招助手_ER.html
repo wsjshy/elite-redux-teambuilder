@@ -335,6 +335,8 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .evopends .evochip{min-height:0; padding:3px 6px; font-size:11px}
 .evopends .evochip .evonm{font-size:11px}
 @media(max-width:640px){.famlab{flex-basis:64px; font-size:11px}.evoroute .famlab{flex-basis:52px}}
+/* v4.72 P5：速度线表窄屏隐藏次要列（保留 编号/物种/满速/极速/分位/省EV/定位） */
+@media(max-width:768px){.spdtbl .spd-hide-sm{display:none}}
 .bktabs{display:flex; align-items:center; gap:6px; height:48px; overflow-x:auto; margin:6px 0 8px;
   padding:0 2px; position:sticky; top:0; z-index:60; background:var(--bg); /* v4.68 黑盒P2-1：main 为独立滚动容器(已在页眉下)，bktabs 钉在 main 顶部=视口51px */
   box-shadow:0 1px 0 var(--line); -webkit-overflow-scrolling:touch}
@@ -557,7 +559,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.71</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.72</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3974,33 +3976,59 @@ function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
   if(role!=='space'){var e75b=spdEvTo(s,q.P75);
     if(e75b&&mx>=q.P75){line+='<br><span style="color:var(--sub)">卡线参考：若仅求过 P75（基准 '+q.P75+'）→ EV '+e75b.ev+'（达 '+e75b.val+'）即可，<b style="color:var(--ok)">省 '+e75b.saved+' EV 挪 HP</b>（不必上满 252）。</span>'}}
   line+='</div>';return line}
-/* 全库速度线表（可查，极速降序，搜索过滤；前 400 行） */
-function speedRenderTable(){var qv=(document.getElementById('spdSearch')&&document.getElementById('spdSearch').value||'').trim().toLowerCase();
+/* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
+window._spdN=400; window._spdSort='maxdesc';   /* 默认极速降序 */
+var _SPD_NS=[50,100,200,400];
+function _spdBadge(p){   /* v4.72 P3：分位徽标（与 speedPctileRankOf 同源） */
+  if(p>=90)return '<span style="display:inline-block;padding:0 5px;border-radius:3px;background:var(--ok,#2e7d32);color:#fff;font-size:10px">P'+p+'超速</span>';
+  if(p>=75)return '<span style="display:inline-block;padding:0 5px;border-radius:3px;background:var(--acc,#1976d2);color:#fff;font-size:10px">P'+p+'清场</span>';
+  if(p>=50)return '<span style="display:inline-block;padding:0 5px;border-radius:3px;background:#f9a825;color:#fff;font-size:10px">P'+p+'中速</span>';
+  return '<span style="display:inline-block;padding:0 5px;border-radius:3px;background:#9e9e9e;color:#fff;font-size:10px">P'+p+'慢速</span>';}
+function speedRenderTable(){
+  var q=speedPctiles();
+  var qv=(document.getElementById('spdSearch')&&document.getElementById('spdSearch').value||'').trim().toLowerCase();
   var rows=ERDATA.species.filter(function(s){
     if(!qv)return true;
     return (''+s.zh).toLowerCase().indexOf(qv)>-1||(''+s.en).toLowerCase().indexOf(qv)>-1||(''+s.id).indexOf(qv)>-1;
   });
-  rows.sort(function(a,b){return spdMaxOf(b)-spdMaxOf(a)});
-  var h='<table class="tbl"><thead><tr><th>#</th><th>物种</th><th>0努力</th><th>满速252中性</th><th>极速252+性格</th><th>围巾×1.5</th><th>特性×2(若触发)</th><th>+1级强化</th><th>省EV建议</th><th>定位</th></tr></thead><tbody>';
-  var cap=rows.slice(0,400);
-  cap.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
-    /* v4.69 P2③：省EV建议汇总列——能过 P75 者卡线省 EV 挪 HP；否则 — */
+  var sort=window._spdSort||'maxdesc';
+  rows.sort(function(a,b){
+    if(sort==='maxdesc')return spdMaxOf(b)-spdMaxOf(a);
+    if(sort==='maxasc')return spdMaxOf(a)-spdMaxOf(b);
+    if(sort==='fulldesc')return spdFullOf(b)-spdFullOf(a);
+    if(sort==='zerodesc')return spd0Of(b)-spd0Of(a);
+    if(sort==='idasc')return (''+a.id).localeCompare(''+b.id);
+    return 0});
+  /* 搜索命中时：≤上限全显，>上限仍截断 */
+  var cap=(qv&&rows.length<=window._spdN)?rows.length:window._spdN;
+  var capRows=(window._spdN==='all')?rows:rows.slice(0,cap);
+  var h='<table class="tbl spdtbl"><thead><tr><th>#</th><th>物种</th><th class="spd-hide-sm">0努力</th><th>满速252中性</th><th>极速252+性格</th><th class="spd-hide-sm">围巾×1.5</th><th class="spd-hide-sm">特性×2</th><th class="spd-hide-sm">+1级强化</th><th>分位</th><th>省EV建议</th><th>定位</th></tr></thead><tbody>';
+  capRows.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
+    var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:10px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td>'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td>'+spdScarfOf(s)+'</td><td>'+(wv?('<span style="color:var(--acc)">'+wv+'</span> <span style="color:var(--sub);font-size:10px">'+wa+'</span>'):'—')+'</td><td>'+Math.floor(mx*1.5)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
+    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td>'+_spdBadge(p)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
   });
   h+='</tbody></table>';
-  if(rows.length>400)h+='<div class="tip">命中 '+rows.length+' 只，仅显示前 400（按极速降序）；输入关键词缩小范围。</div>';
-  else h+='<div class="tip" style="margin-top:4px">共 '+rows.length+' 只。</div>';
+  /* v4.72 P2：命中计数 + 空结果提示 + 截断提示 */
+  if(rows.length===0){h+='<div class="tip" style="margin-top:6px">无匹配，试试英文名/编号。</div>'}
+  else if(rows.length>capRows.length){h+='<div class="tip">命中 '+rows.length+' 只，仅显示前 '+capRows.length+'（已按当前排序）；输入关键词或调大显示数缩小范围。</div>'}
+  else{h+='<div class="tip" style="margin-top:4px">命中 '+rows.length+' 只'+(qv?'（已全部显示）':'（共 '+rows.length+' 只）')+'。</div>'}
   return h}
 function speedRefreshTable(){var b=document.getElementById('spdTableBox');if(b)b.innerHTML=speedRenderTable()}
+var _spdDbt=null;
+function speedOnSearch(){clearTimeout(_spdDbt);_spdDbt=setTimeout(speedRefreshTable,150)}   /* v4.72 P2③：150ms 防抖 */
+function speedSetN(n){window._spdN=n;speedRefreshTable()}
+function speedSetSort(v){window._spdSort=v;speedRefreshTable()}
 function speedRender(){try{var q=speedPctiles();
   var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
   h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
   h+=speedDistBarHtml(); /* v4.69 P3：全库速度分布条（P50/75/90/95/99 切点静态标注） */
   h+='<div class="tip">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div>';
-  h+='<div class="bar" style="margin-top:8px"><input type="text" id="spdSearch" placeholder="搜索物种/编号，如 皮卡丘 / 25" oninput="speedRefreshTable()"></div>';
+  h+='<div class="bar" style="margin-top:8px;flex-wrap:wrap;gap:6px"><input type="text" id="spdSearch" placeholder="搜索物种/编号，如 皮卡丘 / 25" oninput="speedOnSearch()" style="flex:1;min-width:160px">';
+  h+='<label style="font-size:12px;color:var(--sub)">排序 <select id="spdSortSel" onchange="speedSetSort(this.value)" style="font-size:12px"><option value="maxdesc" selected>极速降序</option><option value="maxasc">极速升序(慢端/空间手)</option><option value="fulldesc">满速降序</option><option value="zerodesc">0努力降序</option><option value="idasc">编号升序</option></select></label>';
+  h+='<label style="font-size:12px;color:var(--sub)">前 <select id="spdNSel" onchange="speedSetN(this.value)" style="font-size:12px"><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="400" selected>400</option><option value="all">全部</option></select></label></div>';
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
   var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
   /* v4.68 黑盒P1-2：全库表懒渲染——仅在速度线 Tab 首次打开时构建400行，避免 DOMContentLoaded/开卡阻塞 */
@@ -12303,7 +12331,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.71';
+var ER_ENGINE_VER='v4.72';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
