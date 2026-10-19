@@ -559,7 +559,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.72</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.73</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -12110,8 +12110,26 @@ function buildEvs(s,side,roleTag,buildName,buildObj){
     else{a[4]=252;a[2]=4}
   }
   else{tpl='速攻';a[5]=252;a[outIdx]=252;a[0]=4}
+  /* v4.73 P1：流派 EV 联动速度线——速攻定位卡 P90/P75 线，省下 EV 挪 HP（与详情卡 spdEvTo 同源）。
+     · fast 卡 P90 / mid 卡 P75；省≥48 EV 才启用（省小利不丢超速保险）；空间/耐久模板不动。
+     · 性格口径：spdEvTo 按 +速度性格 卡线；非速度性格（如固执）不启用并保持满投。 */
+  var _spdCuted='';
+  try{
+    if(!isSpace&&!isWall){
+      var role=speedRole(s);
+      var tgt=(role==='fast')?speedPctiles().P90:(role==='mid'?speedPctiles().P75:null);
+      var tgName=(role==='fast')?'P90':(role==='mid'?'P75':'');
+      /* 性格非速度（主攻侧性格未加速度）→ 不启用卡线，保持满投并注明 */
+      var natSpeed=true;try{if(buildObj&&buildObj.nature&&!/(爽胆|胆小|急躁|爽朗|天真|害羞)/.test(buildObj.nature))natSpeed=false}catch(eN){}
+      if(tgt&&natSpeed){
+        var e=spdEvTo(s,tgt);
+        if(e&&e.saved>=48&&e.ev<a[5]){a[0]+=e.saved;a[5]=e.ev;_spdCuted='卡 '+tgName+' 线('+tgt+') 省'+e.saved+' EV→HP';}
+      }
+      if(!tgt){/* 空间/慢速：不动 */}
+    }
+  }catch(eSpdCut){}
   var parts=[];for(k=0;k<6;k++){if(a[k])parts.push(a[k]+evName(k))}
-  var out={template:tpl,alloc:a,summary:parts.join(' / ')};
+  var out={template:tpl,alloc:a,summary:parts.join(' / ')+(_spdCuted?('（'+_spdCuted+'）'):'')};
   if(buildObj){buildObj.ev=out;try{evNatureLinkV437(s,buildObj)}catch(e2){}}   /* v4.37：S1~S4 联动（幂等） */
   return buildObj?buildObj.ev:out;
 }
@@ -12331,7 +12349,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.72';
+var ER_ENGINE_VER='v4.73';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
