@@ -2388,6 +2388,8 @@ function anRender(R){
     '<div class="tip">角色可兼任，不视为硬性配方</div>');
   h+=anCard('<b>物理/特殊配比</b>：物理 '+R.side.phys+' ／ 特殊 '+R.side.spec+' ／ 双刀 '+R.side.mixed+
     '　<b>速度线</b>：原始最高 '+R.speed.top+' · 有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）');
+  /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
+  try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
   if(R.members&&R.members.length){
     h+=anCard('<b>成员一览</b>（点图看该只推荐详情）<div class="anmemline">'+R.members.map(function(m){
