@@ -151,7 +151,18 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-19，v4.69）
+## 6. 当前状态（2026-10-19，v4.70）
+
+- ✅ **v4.70 轮：图鉴数据唯一性守门固化 + S5q 收口登记 + 道具冲突提示登记 + 信息项复核（2026-10-19 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.70</span>`；master 链 HEAD=`6a60e50`（产物）+ 登记 commit（见下）；gh-pages=登记 commit 后同步（清理 commit 后 HEAD 见部署记录）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**1345130 B = `4EB751F9E5D961E7…`**（N1=N2==冻结确定性）；build_tool_html.py **1086096 B = `A309C7FD75CAF48E…`**（v4.69 起未变）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P4 图鉴数据唯一性守门固化（commit `e5fc19ef`，内容溯源原则机器化，优先级最高）**：新增守门=全库物种/招式/特性 gameData id 唯一性断言（重复即硬 FAIL）+ 中文名跨 id 冲突断言（同名不同 id 仅允许登记白名单）。**实测 id 重复=0 / 中文名冲突=0**；白名单闭环 commit `6a60e50`：**基格尔德-10%（id 1739/1740 两个形态共享中文名「基格尔德」）入白名单**，白名单外冲突硬 FAIL。
+  - **P1 S5q 队友集中度收口（目标≤60%，实测 60.4%）**：全局频次微惩罚不碰结构垄断位/保护名单后仍 60.4%——**裁定：接受登记**（与 A2 口径甲 68.7% 同先例，结构性分布不硬压）。
+  - **P2 道具去重 B1=36 复核（v4.65 基线保持）+ 同队冲突提示**：宝珠×回复手段冲突检测（生命宝珠+无回复位提示）**登记下轮实施**（本轮 P1/P2 全部对齐后未做呈现层）。
+  - **P3 信息项批量复核（结构性保持）**：E5=14 双墙辅助流真气拳白名单复核无新增违例；G-E4b=181 顺风稳健联防 3 动作（setup=3 合法）结构性保持；G-E5b=45 Mega 机制流 why 雷同结构性保持。
+  - **验收链（0 FAIL 收口）**：引擎 PASS（P4 守门 id 重复=0/中文名冲突=0、确定性 N1=N2=`4EB751F9`==冻结、守门全项无回归：G-E5b=45/E5=14/G-E4b=181/R9-E3=95/268/141/0 保持）；黑盒 PASS（P0=0/P1=0/P2=0 回归全绿、卡加载 0.06s）；P0 快验 PASS（版本双查 v4.70 一致）。
+  - **部署记录（MainAgent E4 接管收尾，含网络故障专项）**：组织者 push+deploy 触发后 **gh-pages push --force 失败（schannel: SSL/TLS connection failed，GitHub 握手失败直连/代理双尝试均败，线上仍 v4.69）** → MainAgent 接管：诊断确认 **git schannel 与 DNS 解析节点 20.205.243.166（新加坡）TLS 握手不兼容**（系统 curl.exe 连同一 IP 成功、git 全失败；schannel/openssl 双后端、直连/代理/HTTP1.1/TLS1.2/跳过验证全穷尽）→ **修复：git 命令加 `-c http.curloptResolve=github.com:443:140.82.113.3`（强制 GitHub 北美节点）**，ls-remote/push master/push --force gh-pages 全部成功 → 修正 gh-pages commit（组织者 Deploy v4.70 误入 nn_data/ER2.65简汉化/xlsm/招式表 gitignored 输入——gh-pages 分支无 .gitignore 且 add -A 全加，清理 commit `8b138ef`/剔除 commit 已 push）→ 5 项 gitignored 输入从 C:\temp\er-backup-v470 恢复（item_zh_cn MD5=`03243EAA` ✓）→ 线上 no-cache 验证 index SHA256[:16]=`4EB751F9E5D961E7`（1,345,130 B）与本地逐字节一致（无参数 curl 旧值=CDN 缓存，nocache 必用）。
+  - **经验教训（§7 待固化）**：①**git schannel 与 GitHub 节点握手不兼容**——DNS 解析到坏节点时 git 全失败但 curl 成功；万能解法=`-c http.curloptResolve=github.com:443:<可用IP>`（本轮 140.82.113.3），先 ls-remote 验证再 push；②**gh-pages 分支无 .gitignore**——deploy 时工作树残留 gitignored 输入会被 git add -A 混入 commit，部署后须核查 gh-pages 文件清单并清理；③组织者侧「5 项恢复 MATCH」不可信（其环境与真实工作区隔离）——**每轮部署后由 MainAgent 独立恢复并哈希核验**。
 
 - ✅ **v4.69 轮：场地种子 team 级剔除收口 + 速度线增强 + 分布可视化（2026-10-19 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.69</span>`；master 链 HEAD=`48b70e9`（产物）；gh-pages=登记 commit 后同步。
