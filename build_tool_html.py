@@ -777,7 +777,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.74</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.75</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -12368,7 +12368,8 @@ function buildEvs(s,side,roleTag,buildName,buildObj){
       var tgt=(role==='fast')?speedPctiles().P90:(role==='mid'?speedPctiles().P75:null);
       var tgName=(role==='fast')?'P90':(role==='mid'?'P75':'');
       /* 性格非速度（主攻侧性格未加速度）→ 不启用卡线，保持满投并注明 */
-      var natSpeed=true;try{if(buildObj&&buildObj.nature&&!/(爽胆|胆小|急躁|爽朗|天真|害羞)/.test(buildObj.nature))natSpeed=false}catch(eN){}
+      /* v4.75 修正：性格字段实为 b.nat[0][0]（数组），非 buildObj.nature——按首选性格判是否+速 */
+      var natSpeed=true;try{var _nn=normNatName((buildObj&&buildObj.nat&&buildObj.nat[0])?buildObj.nat[0][0]:'');if(_nn&&!/(胆小|急躁|爽朗|天真|害羞)/.test(_nn))natSpeed=false}catch(eN){}
       if(tgt&&natSpeed){
         var e=spdEvTo(s,tgt);
         if(e&&e.saved>=48&&e.ev<a[5]){a[0]+=e.saved;a[5]=e.ev;_spdCuted='卡 '+tgName+' 线('+tgt+') 省'+e.saved+' EV→HP';}
@@ -12597,7 +12598,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.74';
+var ER_ENGINE_VER='v4.75';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
