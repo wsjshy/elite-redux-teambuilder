@@ -559,7 +559,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.76</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.77</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -10998,10 +10998,17 @@ function buildTeamByNeeds(core,opts){
        防强绑衰减：首条+2/额外+1/封顶+4）。不影响需求闭合与多功能申报，仅重排同池择优顺序。 */
     try{
       var _tmB=[{s:core,core:true}].concat(team.map(function(m){return {s:m.s}}));
+      /* v4.77 S5q ①+②：全局频次折减 α·ln(1+freq)，α=2.5；体系必要位（天气源/钉子/空间/回复/清场）豁免不打折 */
+      var _NEC_KIND={wxsrc:1,hazard:1,space:1,recover:1,clear:1,wall:1};
+      var _necPos=!!_NEC_KIND[need.kind];
       pool2.forEach(function(pc){
         var _hits=scanCombos(_tmB.concat([{s:pc.s}])).length;
         try{pc.comboGain=_hits}catch(ecb){}
         pc.score=(pc.score||0)+comboScoreOf(_hits);
+        if(!_necPos){
+          var _fq=(_MATE_FREQ[pc.s.id]||0);
+          if(_fq>0){var _pen=Math.round(3.0*Math.log(1+_fq)*10)/10;pc.score-=_pen;pc.fqPen=_pen}
+        }
       });
       pool2.sort(function(a,b){return (b.score-a.score)||((b.base||0)-(a.base||0))});
       pick=pool2[0];
@@ -12397,7 +12404,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.76';
+var ER_ENGINE_VER='v4.77';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
