@@ -154,7 +154,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 6. 当前状态（2026-10-20，v4.77）
 
 - ✅ **v4.77 轮：S5q 频次惩罚实施（用户授权 ①+②+③轻量版；S5q 60.4% 带外如实登记=结构性地板）（2026-10-20 部署，线上验证通过）**：
-  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.77</span>`；master 链 HEAD=`181f47fd`（S5q 实施，worktree er477）+ 登记 commit（本轮，见部署记录）；gh-pages=`（登记后值）`（worktree 部署）。
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.77</span>`；master 链 HEAD=`181f47fd`（S5q 实施，worktree er477）+ 登记 commit `ef6ae51`（master 登记，2026-10-20 push）；gh-pages=`485f590`（worktree 部署，2026-10-20 push --force）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）**= `C157D99D03CBF646…`**（N1=N2==冻结确定性）；build_tool_html.py = `A98951B7B56F78DB`；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
   - **P1 S5q 频次惩罚实施（v4.76 方案 ①+②+③轻量版落地，commit `181f47fd`）**：①**全局频次折减升级**——buildTeamByNeeds pool2 打分循环扣 `α·ln(1+freq)`（真实分数折减，非档内换序），α 起步 2.5（无降幅）→ 授权内微调一次定版 **α=3.0**（调参登记：数值+实测，仅一次）；②**结构豁免细化**——按 need.kind 自动判「体系必要位」免罚（**零手写白名单**）：豁免集 `{wxsrc, hazard, space, recover, clear, wall}`；③**采样多样化轻量版**——复用既有 used/fam 表批次内去重（同方案不重复入队），跨家族替换暂缓（防与 M-2/R8-A 打架）。
   - **S5q 新实测（带外如实登记，不硬压）**：60.4%（α=2.5/3.0 均无降幅；方案分母最高口径、槽位分母 14.2%、前15家族 85.8%）。**结构性地板判定**：集中度来自①豁免的必要位（天气源/钉子/回复唯一胜任者）+②R8-A/M-2 的 8% 档内裁决——折减只在同档微调不改变 top-1；**引擎独立复核确认非假阴性**（Math.log=2 真实在打分路径、S5q 独立复测 60.4% 与实施一致、豁免集 wxsrc=18/hazard=74/space=85/recover=14 在位、used=60/fam=66 去重表在位）；历史轨迹 v4.44=77.6% → 60.4% 触及地板，与 A2 先例（甲 68.7% 采样伪影口径）同性质。
