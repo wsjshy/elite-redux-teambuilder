@@ -154,7 +154,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 6. 当前状态（2026-10-21，v4.78）
 
 - ✅ **v4.78 轮：图鉴页筛选开关（P1）+ S5q 语义收口登记（P2，MainAgent 裁决方案1 接受，无代码变更）（2026-10-21 部署，线上验证通过）**：
-  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.78</span>`；master 链 HEAD=`19314095`（开关实施）+ `495b472e`（三处同源贯通修复，实施 worktree er478）+ 登记 commit（master 登记，2026-10-21 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.78</span>`；master 链 HEAD=`19314095`（开关实施）+ `495b472e`（三处同源贯通修复，实施 worktree er478）+ 登记 commit `5448c0e`（master 登记，2026-10-21 push）；gh-pages=`4c147f6`（worktree 部署，2026-10-21 push --force）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）**= `CBA57648B64FAA2A…`**（N1=N2==冻结确定性）；build_tool_html.py = `F97F39FCD11D4AA3…`（v4.78 含芯片注入+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
   - **P1 图鉴页筛选开关（用户 2026-10-19 规范点名落地；chip 按钮组，禁下拉）**：图鉴 Tab 搜索框旁 `spFormChips` 两 chip——**Mega 形态** `fOpt.mega`（on→仅 `isMegaForm(s)||hasMegaForm(s)`）/**仅最终形态** `fOpt.final`（on→仅 `isFinalForm(s)`）；独立/组合可切、`fOpt` 全局状态保持、切换即刷新。
   - **判据同源（G3）**：`isMegaForm`=新增前缀正则 `/^(超级|原始|究极)/`（与形态名清洗行1678 同源前缀集）；`hasMegaForm`=行5312 既有；`isFinalForm`/nonFinalSet=行9419；形态判定并入 `spMatch`（行2751），`spQuery`(2767)/`renderSp`(2785) 均过 spMatch；**配招推荐内部 optMvFinal/optAbiFinal 未动**（推荐口径≠展示口径）。
