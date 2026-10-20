@@ -151,7 +151,18 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-20，v4.77）
+## 6. 当前状态（2026-10-21，v4.78）
+
+- ✅ **v4.78 轮：图鉴页筛选开关（P1）+ S5q 语义收口登记（P2，MainAgent 裁决方案1 接受，无代码变更）（2026-10-21 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.78</span>`；master 链 HEAD=`19314095`（开关实施）+ `495b472e`（三处同源贯通修复，实施 worktree er478）+ 登记 commit（master 登记，2026-10-21 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**= `CBA57648B64FAA2A…`**（N1=N2==冻结确定性）；build_tool_html.py = `F97F39FCD11D4AA3…`（v4.78 含芯片注入+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 图鉴页筛选开关（用户 2026-10-19 规范点名落地；chip 按钮组，禁下拉）**：图鉴 Tab 搜索框旁 `spFormChips` 两 chip——**Mega 形态** `fOpt.mega`（on→仅 `isMegaForm(s)||hasMegaForm(s)`）/**仅最终形态** `fOpt.final`（on→仅 `isFinalForm(s)`）；独立/组合可切、`fOpt` 全局状态保持、切换即刷新。
+  - **判据同源（G3）**：`isMegaForm`=新增前缀正则 `/^(超级|原始|究极)/`（与形态名清洗行1678 同源前缀集）；`hasMegaForm`=行5312 既有；`isFinalForm`/nonFinalSet=行9419；形态判定并入 `spMatch`（行2751），`spQuery`(2767)/`renderSp`(2785) 均过 spMatch；**配招推荐内部 optMvFinal/optAbiFinal 未动**（推荐口径≠展示口径）。
+  - **三处同源贯通（修复 commit `495b472e`，黑盒首轮 P2=1 抓出→修复）**：首版 chip 切换只刷新图鉴网格，队伍构建/分析选择器未联动（黑盒实测队伍构建=1906 全量）→ **`_refreshAll()` 联动**：`renderSpFormChips` 切换回调内 renderSp(true)+renderTm(true)+renderAnPickerGrid(true)，三处同一全局 fOpt 即时同结果集（黑盒重验：Mega ON+Final ON=511 三处一致、全 OFF=1906 一致、状态保持）；队伍构建 renderTm→spQuery→spMatch、分析 renderAnPickerGrid→spQuery→spMatch 同一链。
+  - **P2 S5q 语义收口（MainAgent 裁决=方案1 接受语义收口，不再加压）**：60.4% 集中度=真实体系必要位（天气手/钉子/空间/回复唯一胜任者），再压伤体系质量红线（必要位命中率 100% 硬约束）——**定为设计值收口**；参数登记：α=3.0（2.5 起步仅调一次）、豁免集 `{wxsrc,hazard,space,recover,clear,wall}`（零手写白名单）、批次内 used/fam 去重；轨迹 v4.44=77.6%→60.4% 触及结构性地板（A2 先例同性质）；**本轮惩罚链零改动**（S5q=60.4% 保持，实测：方案分母 60.4%/槽位 14.2%/前15 85.8%）。
+  - **验收链（0 FAIL）**：引擎 PASS×2（首轮 N1=`FDEAD28C`==冻结+开关判据同源 isMegaForm=2/hasMegaForm=10/isFinalForm=14+spMatch=10/spQuery=6/renderSp=12+推荐内部未动；修复轮 N1=`CBA57648`==冻结+`_refreshAll`=3 联动在位+renderTm/renderAnPickerGrid 过滤路径在位+判据复用未新造；守门全量对照 v4.65 无回归+P4/锚点/EV508 保持）；黑盒 PASS×2（首轮 P0=0/P1=0/**P2=1 三处未贯通**→修复重验 P0=0/P1=0/P2=0——Mega ON 1253→511 组合、Final ON 1905→1253、chip 高亮可辨、375px 窄屏 scrollW=clientW 无溢出、**三处同源 511/1906 跨 Tab 一致、状态保持**、回归全绿）；P0 快验 PASS（版本双查一致、7/7 渲染无错、chip 文案「Mega 形态」「仅最终形态」在位、EXIT=0）。
+  - **部署记录（v4.78 worktree 模式，v4.74 固化流程）**：实施在 worktree er-wt478（分支 er478，基线 master 2756f62）完成（commit `19314095`+修复 `495b472e`，产物 CBA57648，实施记录 C:\temp\er-v478-impl\筛选开关实施记录.md）；**master 登记**：本段在 er-wt478 提交 push（er478:master）；**gh-pages 部署**：er-gh474 worktree 检出 gh-pages → Rename 旧 index.html → Copy CBA57648 → 清锁 add/commit → push --force（push 前核查 commit 文件清单防 gitignored 输入误入）；**线上验证**：no-cache `CBA57648`==本地（等 CDN 传播 ~5min）；5 项 gitignored 输入 MainAgent 侧核验在位（er-backup-v474 15 文件，item_zh_cn MD5=`03243EAA`）。
+  - **遗留（如实登记）**：主工作区 D:\game\elite-redux git 索引仍混合（系统删除拦截未解除，物理文件全在、无数据丢失）——后续开发/登记继续在 worktree 进行；等系统解除删除拦截后 `git reset --hard` + 清 `.bak`/`.old` 锁文件恢复；**队伍分析页无全库物种列表计数**（页结构不同，同源链代码在位由引擎验证 renderAnPickerGrid→spQuery→spMatch，黑盒如实登记无计数文案）；长期顺延：v4.72 分段/排序按钮逐点测、补盲文案真实 UI 样例（登记关闭）。
 
 - ✅ **v4.77 轮：S5q 频次惩罚实施（用户授权 ①+②+③轻量版；S5q 60.4% 带外如实登记=结构性地板）（2026-10-20 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.77</span>`；master 链 HEAD=`181f47fd`（S5q 实施，worktree er477）+ 登记 commit `ef6ae51`（master 登记，2026-10-20 push）；gh-pages=`485f590`（worktree 部署，2026-10-20 push --force）。
