@@ -151,7 +151,16 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-20，v4.74）
+## 6. 当前状态（2026-10-20，v4.75）
+
+- ✅ **v4.75 轮：卡线闸门性格字段 bug 修正（v4.73 登记项收口）+ 战术模板 UX 勘察登记关闭（2026-10-20 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.75</span>`；master 链 HEAD=`00a3267b`（产物，实施 worktree er475）+ 登记 commit（本轮，见部署记录）；gh-pages=`（登记后值）`（worktree 部署）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**= `17B0D139A2388B60…`**（N1=N2==冻结确定性）；build_tool_html.py **哈希见部署记录**；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 卡线闸门性格字段 bug 修正（v4.73 引入，commit `00a3267b`）**：v4.73 卡线闸门误读 `buildObj.nature`（该字段不存在，恒 undefined → natSpeed 恒 true = 对所有速攻模板一律卡线）；v4.75 改读真实性格字段 `b.nat[0][0]`（数组首元素），用 `/(胆小|急躁|爽朗|天真|害羞)/` 判 +速。**全库再扫真实触发样例（v4.73 登记项收口）**：黑盒 CDP 遍历 20+ 候选速攻手——#169 叉字蝠/#15 大针蜂/#189 猫头夜鹰 出现非 252 满速速分配（172/132/20，为速攻模板内点对点调速），但展开「分配依据 ▸」后文案均为「速攻模板：252 速度抢线…」——**非卡线分支**；「卡 P90 线(372) 省N EV→HP」真实触发样例（极速≥P90+省≥48EV++速性格流派）**全库仍无命中 → 登记关闭（不硬造数据；代码级已双验证 spdEvTo(P90).ev=100/省152 在位，闸门修正后速分配不再一律 252，EV=508 守恒保持）**。
+  - **P2 战术模板页 UX 勘察（用户图8 早期批评核实）**：定位 renderTpl（行 5096）+ onTplToggle（行 5134）——**图8 批评（内容冗余/卡片点击折叠）已在 v4.53 D-21 处理**：原生 `<details>/<summary>`，summary（标题+缩略图）为唯一折叠热区、`tplbody` 内容区点击不折叠（行 5102 注释明示）、首次展开才懒渲染 body 且 `_filled` 标记防重复渲染 → **登记关闭，不改码**；黑盒实测 30 套模板结构一致无冗余、summary 展开 ✅/内容区不折叠 ✅/展开-收起-再展开无重复渲染 ✅。
+  - **验收链（0 FAIL）**：引擎 PASS（守门全量对照 v4.65 无回归 + P4 唯一性守门保持：1906/1032/1034、id 重复=0、中文名冲突=0 白名单在位；**卡线闸门修正核验**：b.nat[0][0]=7 处/速性格正则=1/spdEvTo=8/sanitizeBuild=7 同源在位、EV=508 S5r=100% 守恒修正后仍成立；分位锚点 273/331/372/394/441 未变；P2 details=60/summary=66 未被误动；确定性 N1=N2=`17B0D139`==冻结逐字节复现；版本双查 v4.75）；黑盒 PASS（P0=0/P1=0/P2=0——20 候选遍历 3 只非满速速分配=闸门修正生效、卡线 summary 文案展开折叠区确认非卡线分支=登记关闭、战术模板交互全绿、回归全绿）；P0 快验 PASS（版本双查一致、7/7 渲染无错、EXIT=0）。
+  - **部署记录（v4.75 worktree 模式，v4.74 固化流程）**：实施在 worktree er-wt475（分支 er475，基线 master b600c5b）完成（commit `00a3267b`，产物 17B0D139）；**master 登记**：本段在 er-wt475 提交 push（er475:master）；**gh-pages 部署**：er-gh474 worktree 检出 gh-pages → Rename 旧 index.html → Copy 17B0D139 → 清锁 add/commit → push --force（gh-pages 无 .gitignore，push 前核查 commit 文件清单防 gitignored 输入误入）；**线上验证**：no-cache `17B0D139`==本地（等 CDN 传播 ~5min）；5 项 gitignored 输入 MainAgent 侧核验在位（er-backup-v474 15 文件，item_zh_cn MD5=`03243EAA`）。
+  - **遗留（如实登记）**：主工作区 D:\game\elite-redux git 索引仍混合（系统删除拦截未解除，物理文件全在、无数据丢失）——后续开发/登记继续在 worktree 进行；等系统解除删除拦截后 `git reset --hard` + 清 `.bak`/`.old` 锁文件恢复；卡线启用真实 UI 演示样例待未来数据（本轮登记关闭）。
 
 - ✅ **v4.74 轮：队伍级速度结构卡（速度线体系团队视角收尾）+ v4.73 登记项收口（2026-10-20 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.74</span>`；master 链 HEAD=`747d6b3`（产物，组织者 push）+ 登记 commit（本轮 MainAgent，见部署记录）；gh-pages=`1e36c66`（MainAgent worktree 部署）。
