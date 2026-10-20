@@ -1030,6 +1030,21 @@ var MV={},ABI={},ITM={};
 ERDATA.moves.forEach(function(m){MV[m[0]]=m});
 ERDATA.abilities.forEach(function(a){ABI[a[0]]=a});
 ERDATA.items.forEach(function(i){ITM[i[0]]=i});
+/* v4.76 F-A：招式→类型索引（只读 gameData MV，新增查表）——物种实际习得的攻击属性集合（排除变化/状态招），
+   供补盲判定由「仅属性匹配」收紧为「确实习得该系攻招」。按物种 id 缓存，findTeammates 候选循环内 O(1)。 */
+var _SP_OFF_TYPES={};
+function spOffTypes(s){
+  try{
+    if(_SP_OFF_TYPES[s.id])return _SP_OFF_TYPES[s.id];
+    var set={};
+    learnOf(s).forEach(function(mid){
+      var m=MV[mid];if(!m)return;
+      if(m[4]==='变化')return;            /* 状态/变化招不计攻击面 */
+      var ty=m[3];if(ty)set[ty]=1;
+    });
+    _SP_OFF_TYPES[s.id]=set;return set;
+  }catch(e){return {}}
+}
 function tchip(t,on,fn){var b=document.createElement('button');b.textContent=t;if(on)b.className='on';b.onclick=fn;return b}
 function tlabel(t){return '<span class="t t-'+t+'">'+t+'</span>'}
 function splitLabel(s){var z={'PHYSICAL':'物理','SPECIAL':'特殊','STATUS':'变化','物理':'物理','特殊':'特殊','变化':'变化'};
@@ -9737,9 +9752,11 @@ function findTeammates(s,side,roleTag){
       if(v===0){sc+=3;why.push('免疫你弱点的'+w)}
       else if(v<1){sc+=2;why.push('抵抗你弱点的'+w)}
     });
-    /* ② 补盲：本系命中核心盲点 */
-    if(t.t1&&holes.indexOf(t.t1)>-1){sc+=2;why.push('本系'+t.t1+'补你盲点')}
-    if(t.t2&&t.t2!==t.t1&&holes.indexOf(t.t2)>-1){sc+=2;why.push('本系'+t.t2+'补你盲点')}
+    /* ② 补盲：v4.76 F-A 机制收紧——队友招式池实际习得核心盲点属性的攻招才计 +2（非仅按属性） */
+    var _offT=spOffTypes(t),_holeHit=0;
+    holes.forEach(function(h){
+      if(_offT[h]){sc+=2;_holeHit++;why.push('习得'+h+'系攻招补你盲点')}
+    });
     /* ③ 体系契合（⑥-1，v4.2 正向化）：只做**加分**表达协同，不做对立体系降权/剔除；
        对立天气体系（晴↔雨/沙/雪 同槽互斥）仅作为排序键（fit=0 → 靠后但仍可见，见下方 sort） */
     var tsys=coreSys(t);
