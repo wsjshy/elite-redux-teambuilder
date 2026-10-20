@@ -777,7 +777,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.77</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.78</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -834,6 +834,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
       <option value="atk">攻击</option><option value="def">防御</option><option value="spa">特攻</option>
       <option value="spd">特防</option><option value="spe">速度</option>
     </select>
+    <div class="chips" id="spFormChips" style="margin-top:4px"></div>
     <div class="chips" id="spTypeChips"></div>
   </div>
   <div class="grid" id="spGrid"></div>
@@ -2729,6 +2730,14 @@ function anDetailHtml(s,bd,R){
 
 /* ============ 宝可梦列表 ============ */
 var spFilter={types:{}},spShown=0,spStep=120;
+/* v4.78 P1：形态筛选开关（Mega / 最终形态）——并入 spMatch 同源链，图鉴/队伍构建/分析选择器三处同结果 */
+var fOpt={mega:0,final:0};
+function isMegaForm(s){return /^(超级|原始|究极)/.test(s.zh||'')}   /* 与形态名清洗同源（行1678 前缀集） */
+function renderSpFormChips(){
+  var box=$('spFormChips');if(!box)return;box.innerHTML='';
+  box.appendChild(tchip('Mega形态',!!fOpt.mega,function(){fOpt.mega=!fOpt.mega;renderSpFormChips();renderSp(true)}));
+  box.appendChild(tchip('仅最终形态',!!fOpt.final,function(){fOpt.final=!fOpt.final;renderSpFormChips();renderSp(true)}));
+}
 function renderSpChips(){
   var box=$('spTypeChips');box.innerHTML='';
   ERDATA.types.forEach(function(t){
@@ -2744,6 +2753,7 @@ function renderSpChips(){
 }
 (function(){
   renderSpChips();
+  renderSpFormChips();
   $('spSearch').oninput=function(){renderSp(true)};
   $('spSort').onchange=function(){renderSp(true)};
 })();
@@ -2759,6 +2769,9 @@ function spMatch(s,q,sel,role,abi){
   }
   if(role&&spRoleTags(s).indexOf(role)<0)return false;
   if(abi&&!fzAny(abi,s.abis.concat(s.inns)))return false;
+  /* v4.78 P1：形态开关并入同源过滤链 */
+  if(fOpt.mega&&!(isMegaForm(s)||hasMegaForm(s)))return false;
+  if(fOpt.final&&!isFinalForm(s))return false;
   return true;
 }
 /* v4.39 R-2：筛选/排序单一真源 —— 图鉴 + 队伍构建 + 第八 tab 选择器共用一条过滤链
@@ -12622,7 +12635,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.77';
+var ER_ENGINE_VER='v4.78';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
