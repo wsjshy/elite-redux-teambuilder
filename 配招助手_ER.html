@@ -2517,8 +2517,14 @@ var fOpt={mega:0,final:0};
 function isMegaForm(s){return /^(超级|原始|究极)/.test(s.zh||'')}   /* 与形态名清洗同源（行1678 前缀集） */
 function renderSpFormChips(){
   var box=$('spFormChips');if(!box)return;box.innerHTML='';
-  box.appendChild(tchip('Mega形态',!!fOpt.mega,function(){fOpt.mega=!fOpt.mega;renderSpFormChips();renderSp(true)}));
-  box.appendChild(tchip('仅最终形态',!!fOpt.final,function(){fOpt.final=!fOpt.final;renderSpFormChips();renderSp(true)}));
+  /* v4.78 fix：fOpt 切换后联动刷新队伍构建网格 + 分析选择器，保证三处 spQuery 结果集即时一致 */
+  function _refreshAll(){
+    renderSp(true);
+    try{if($('tmGrid'))renderTm(true)}catch(eT){}
+    try{if($('anpGrid'))renderAnPickerGrid(true)}catch(eA){}
+  }
+  box.appendChild(tchip('Mega形态',!!fOpt.mega,function(){fOpt.mega=!fOpt.mega;renderSpFormChips();_refreshAll()}));
+  box.appendChild(tchip('仅最终形态',!!fOpt.final,function(){fOpt.final=!fOpt.final;renderSpFormChips();_refreshAll()}));
 }
 function renderSpChips(){
   var box=$('spTypeChips');box.innerHTML='';
