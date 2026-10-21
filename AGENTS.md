@@ -154,7 +154,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 6. 当前状态（2026-10-22，v4.80）
 
 - ✅ **v4.80 轮：速度线分布条分位标签重叠修复（P1，用户截图确认「速度那里重叠」；根因=绝对定位标签窄屏堆叠）（2026-10-22 部署，线上验证通过）**：
-  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.80</span>`；master 链 HEAD=`3edacc3a`（实施，worktree er480）+ 登记 commit（master 登记，2026-10-22 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.80</span>`；master 链 HEAD=`3edacc3a`（实施，worktree er480）+ 登记 commit `1ccc490`（master 登记，2026-10-22 push）；gh-pages=`e21049a`（worktree 部署，2026-10-22 push --force）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）**= `1C93FEDBC5272B67…`**（N1=N2==冻结确定性）；build_tool_html.py = `17477B93166E129C…`（v4.80 含图例行注入+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
   - **P1 根因（用户截图确认）**：`speedDistBarHtml`（v4.69）5 个分位切点各渲染 3 个绝对定位元素（2px 竖线+上方名字标签 top:-16px width:44px+下方数值标签 bottom:-16px width:44px）——标签固定宽 44px，切点相邻像素距离窄屏 <44px（P90→P95 3.9%、P95→P99 8.4%，@375px 约 14px/30px）→ **相邻标签互相堆叠**；且绝对定位不占文档流 → 与上方标题/下方说明行溢出重叠。
   - **P2 修复（根除重叠，信息不丢，commit `3edacc3a`）**：①**竖线保留**（切点可视 2px 永不重叠）；②**名字+数值标签全部移出条外**——条上方一行紧凑图例 `P50 273 · P75 331 · P90 372 · P95 394 · P99 441`（font-size 10px、flex-wrap 窄屏自动换行、gap 紧凑；运行时 pts=[P50/P75/P90/P95/P99] 注入，切点同源 `_spdPct`），**删除 top:-16px/bottom:-16px 全部绝对定位标签**（旧残留=0，10 个标签全删）；③容器 height:34px 保留、图例行与条 margin 正常流、说明行 margin-top 22px→6px 收紧。
