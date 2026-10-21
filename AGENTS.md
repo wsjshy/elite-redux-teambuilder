@@ -151,7 +151,17 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-21，v4.79）
+## 6. 当前状态（2026-10-22，v4.80）
+
+- ✅ **v4.80 轮：速度线分布条分位标签重叠修复（P1，用户截图确认「速度那里重叠」；根因=绝对定位标签窄屏堆叠）（2026-10-22 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.80</span>`；master 链 HEAD=`3edacc3a`（实施，worktree er480）+ 登记 commit（master 登记，2026-10-22 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**= `1C93FEDBC5272B67…`**（N1=N2==冻结确定性）；build_tool_html.py = `17477B93166E129C…`（v4.80 含图例行注入+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 根因（用户截图确认）**：`speedDistBarHtml`（v4.69）5 个分位切点各渲染 3 个绝对定位元素（2px 竖线+上方名字标签 top:-16px width:44px+下方数值标签 bottom:-16px width:44px）——标签固定宽 44px，切点相邻像素距离窄屏 <44px（P90→P95 3.9%、P95→P99 8.4%，@375px 约 14px/30px）→ **相邻标签互相堆叠**；且绝对定位不占文档流 → 与上方标题/下方说明行溢出重叠。
+  - **P2 修复（根除重叠，信息不丢，commit `3edacc3a`）**：①**竖线保留**（切点可视 2px 永不重叠）；②**名字+数值标签全部移出条外**——条上方一行紧凑图例 `P50 273 · P75 331 · P90 372 · P95 394 · P99 441`（font-size 10px、flex-wrap 窄屏自动换行、gap 紧凑；运行时 pts=[P50/P75/P90/P95/P99] 注入，切点同源 `_spdPct`），**删除 top:-16px/bottom:-16px 全部绝对定位标签**（旧残留=0，10 个标签全删）；③容器 height:34px 保留、图例行与条 margin 正常流、说明行 margin-top 22px→6px 收紧。
+  - **不回归**：分位锚点数值不变（P50=273/P75=331/P90=372/P95=394/P99=441，P0 截图实证）；speedHint/speedRenderTable/teamSpeedCardHtml（v4.74 队伍速度卡）未触碰；守门全量对照 v4.65 无回归+P4/EV508/S5q=60.4% 保持。
+  - **验收链（0 FAIL）**：引擎 PASS（确定性 N1=N2=`1C93FEDB`==冻结逐字节复现+守门全绿+修复专项：speedDistBarHtml=2、旧 top:-16px=0/bottom:-16px=0、新图例 pts 运行时注入同源 _spdPct、说明行 margin-top 6px=15/22px=0、其余区块 speedHint=4/speedRenderTable=2/teamSpeedCardHtml=3 不回归）；黑盒 PASS（P0=0/P1=0/P2=0——**三档多宽度实测**：375px scrollW=clientW=375 无溢出+图例行完整可读+0 重叠、412px 412=412 无溢出、PC 1280 无重叠；图例数值 P50=273/P75=331/P90=372/P95=394/P99=441 与锚点表一致；回归全绿）；P0 快验 PASS（版本双查一致、7/7 渲染无错、分位锚点表截图实证全对、EXIT=0）。
+  - **部署记录（v4.80 worktree 模式，v4.74 固化流程）**：实施在 worktree er-wt480（分支 er480，基线 master 5eb1b11）完成（commit `3edacc3a`，产物 1C93FEDB，修复记录 C:\temp\er-v480-impl\分布条修复记录.md）；**master 登记**：本段在 er-wt480 提交 push（er480:master）；**gh-pages 部署**：er-gh474 worktree 检出 gh-pages → Rename 旧 index.html → Copy 1C93FEDB → 清锁 add/commit → push --force（push 前核查 commit 文件清单防 gitignored 输入误入）；**线上验证**：no-cache `1C93FEDB`==本地（等 CDN 传播 ~5min）；5 项 gitignored 输入 MainAgent 侧核验在位（er-backup-v474 15 文件，item_zh_cn MD5=`03243EAA`）。
+  - **遗留（如实登记）**：主工作区 D:\game\elite-redux git 索引仍混合（系统删除拦截未解除，物理文件全在、无数据丢失）——后续开发/登记继续在 worktree 进行；等系统解除删除拦截后 `git reset --hard` + 清 `.bak`/`.old` 锁文件恢复；长期顺延：v4.72 分段/排序按钮逐点测、补盲文案真实 UI 样例（登记关闭）。
 
 - ✅ **v4.79 轮：队伍分析器可视化增强（P1，用户 2026-10-19 规范点名「六队分析器可视化布局」落地）+ 手机端加载复核（P2，无劣化登记）（2026-10-21 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.79</span>`；master 链 HEAD=`696bfc95`（六维图实施）+ `e9cdbefe`（空壳修复，实施 worktree er479）+ 登记 commit `75a2970`（master 登记，2026-10-21 push）；gh-pages=`f538c00`（worktree 部署，2026-10-21 push --force）。
