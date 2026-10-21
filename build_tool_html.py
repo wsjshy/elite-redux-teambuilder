@@ -4244,7 +4244,8 @@ function teamStatsChartHtml(R){
     for(var k=0;k<6;k++){
       var bars='';
       mem.forEach(function(m,i){
-        var s=m.s;if(!s||!s.base)return;
+        var s=null;try{s=speciesById(m.id)}catch(e0){s=null}
+        if(!s||!s.base)return;   /* 空壳防御：成员数据缺失则跳过该只（非空壳卡） */
         var v=s.base[k];var w=Math.round(Math.min(v,MAX)*100/MAX);
         bars+='<div style="display:flex;align-items:center;gap:2px;margin:1px 0">'+
           '<span style="width:34px;font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.zh)+'</span>'+
