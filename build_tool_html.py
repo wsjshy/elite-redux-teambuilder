@@ -777,7 +777,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.79</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.80</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4198,13 +4198,15 @@ function speedDistBarHtml(){
   function pos(v){return Math.round((v-mn)*100/span)}
   var pts=[['P50',q.P50],['P75',q.P75],['P90',q.P90],['P95',q.P95],['P99',q.P99]];
   var h='<div class="sec" style="margin-top:8px"><h3>全库速度分布（极速档 252+速度性格，实测 n='+q.n+'）</h3>';
-  h+='<div style="position:relative;height:34px;margin:14px 4px 4px;background:linear-gradient(90deg,var(--card),var(--accent));border-radius:6px;border:1px solid var(--line)">';
-  pts.forEach(function(p){var x=pos(p[1]);
-    h+='<div style="position:absolute;left:'+x+'%;top:0;bottom:0;width:2px;background:var(--fg)"></div>';
-    h+='<div style="position:absolute;left:calc('+x+'% -22px);top:-16px;width:44px;text-align:center;font-size:10px">'+p[0]+'</div>';
-    h+='<div style="position:absolute;left:calc('+x+'% -22px);bottom:-16px;width:44px;text-align:center;font-size:10px;color:var(--sub)">'+p[1]+'</div>'});
+  /* v4.80：分位标签移出条外（紧凑图例行 flex-wrap），删除 top/bottom 绝对定位标签，根除窄屏重叠 */
+  h+='<div style="display:flex;flex-wrap:wrap;gap:4px 10px;font-size:10px;color:var(--sub);margin-bottom:4px">';
+  pts.forEach(function(p){h+='<span><b>'+p[0]+'</b> '+p[1]+'</span>'});
   h+='</div>';
-  h+='<div style="font-size:10px;color:var(--sub);margin-top:22px">慢端 '+mn+' ←── 极速值 ──→ 快端 '+mx+'（满速252中性档参考列见下表；本图=极速档）</div></div>';
+  h+='<div style="position:relative;height:34px;margin:0 4px;background:linear-gradient(90deg,var(--card),var(--accent));border-radius:6px;border:1px solid var(--line)">';
+  pts.forEach(function(p){var x=pos(p[1]);
+    h+='<div style="position:absolute;left:'+x+'%;top:0;bottom:0;width:2px;background:var(--fg)"></div>'});
+  h+='</div>';
+  h+='<div style="font-size:10px;color:var(--sub);margin-top:6px">慢端 '+mn+' ←── 极速值 ──→ 快端 '+mx+'（满速252中性档参考列见下表；本图=极速档）</div></div>';
   return h}
 /* 卡线省EV实算：满速性格下达到 target 所需最小 EV(0/4/.../252)；返回 {ev,val,saved}，达不到返回 null */
 function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
@@ -12667,7 +12669,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.79';
+var ER_ENGINE_VER='v4.80';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
