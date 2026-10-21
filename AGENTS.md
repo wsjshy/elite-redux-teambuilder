@@ -151,7 +151,19 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-21，v4.78）
+## 6. 当前状态（2026-10-21，v4.79）
+
+- ✅ **v4.79 轮：队伍分析器可视化增强（P1，用户 2026-10-19 规范点名「六队分析器可视化布局」落地）+ 手机端加载复核（P2，无劣化登记）（2026-10-21 部署，线上验证通过）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.79</span>`；master 链 HEAD=`696bfc95`（六维图实施）+ `e9cdbefe`（空壳修复，实施 worktree er479）+ 登记 commit（master 登记，2026-10-21 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**= `B3FF9F0F8F05235A…`**（N1=N2==冻结确定性）；build_tool_html.py = `247AC731B707CC52…`（v4.79 含六维图注入+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 队伍分析器可视化（勘察先行，C:\temp\er-v479-impl\可视化勘察.md）**：勘察结论——anRender（行2379）已有构成画像/体系徽章/速度线卡（含 v4.74 速度结构卡），**速度维度不重复造**；插入点=速度结构卡后。落地 **`teamStatsChartHtml(R)` 六维能力分组条形图**：六行（HP/攻/防/特攻/特防/速）×每行六只各一条（6 色调色板、宽度=种族值/180 上限、物种名+数值标注），anCard 追加不删改既有六区块。
+  - **数据同源（G3）**：读 `speciesById(m.id).s.base[k]`（与成员一览/构成画像同源，非第二套口径）；标题注明「同源种族值 base」。
+  - **空壳修复（commit `e9cdbefe`，黑盒首轮 P2=1 抓出→修复）**：首版误读 `R.members[].m.s.base`（成员项实为平铺 `{id,zh}`，m.s 恒 undefined→forEach 全 return，只剩六行维度标题=空壳卡）→ 改 `speciesById(m.id)` 取 s.base/s.zh（与成员一览同源）；黑盒重验 108 元素完整渲染、HP 行 5 只数值对账全一致（壶壶 50/幸福蛋 255/月亮伊布 95/沼王 95/盔甲鸟 75）。
+  - **UI/性能**：手机端每行 flex 自适应（物种名 34px/条 flex/数值 24px）无固定宽、375px scrollW=clientW 无横向溢出；O(6×6) DOM 拼接仅队伍分析 Tab 触发（不进图鉴/开卡首屏热路径），anRender 2s 内渲染完成。
+  - **P2 手机端加载速度复核**：懒渲染保持无劣化（黑盒 mobile emulation 实测），对比 v4.69 基线口径登记。
+  - **验收链（0 FAIL，含修复闭环）**：引擎 PASS×2（首轮 N1=`48527259`==冻结+数据同源 R.members/s.base 代码面在位+anRender 六区块不回归+插入点速度卡后；修复轮 N1=`B3FF9F0F`==冻结+speciesById=24 同源取数+空壳根因 m.s 直读残留已除；守门全量对照 v4.65 无回归+P4/锚点/EV508/S5q=60.4% 保持）；黑盒 PASS×3（首轮 P0=0/P1=0/P2=0 图形在位但未测数据项→补点 **P2=1 空壳**（6 行标签在、内层全缺）→精确重验 FAIL（条形=0）→修复重验 P0=0/P1=0/P2=0：六维图 108 元素完整渲染+5 只数值对账一致+375px 无溢出+2s 内渲染+回归全绿）；P0 快验 PASS（版本双查一致、7/7 渲染无错、teamStatsChartHtml 定义+调用在位、EXIT=0）。
+  - **部署记录（v4.79 worktree 模式，v4.74 固化流程）**：实施在 worktree er-wt479（分支 er479，基线 master 8d61582）完成（commit `696bfc95`+修复 `e9cdbefe`，产物 B3FF9F0F，勘察+实施记录 C:\temp\er-v479-impl\可视化勘察.md）；**master 登记**：本段在 er-wt479 提交 push（er479:master）；**gh-pages 部署**：er-gh474 worktree 检出 gh-pages → Rename 旧 index.html → Copy B3FF9F0F → 清锁 add/commit → push --force（push 前核查 commit 文件清单防 gitignored 输入误入）；**线上验证**：no-cache `B3FF9F0F`==本地（等 CDN 传播 ~5min）；5 项 gitignored 输入 MainAgent 侧核验在位（er-backup-v474 15 文件，item_zh_cn MD5=`03243EAA`）。
+  - **遗留（如实登记）**：主工作区 D:\game\elite-redux git 索引仍混合（系统删除拦截未解除，物理文件全在、无数据丢失）——后续开发/登记继续在 worktree 进行；等系统解除删除拦截后 `git reset --hard` + 清 `.bak`/`.old` 锁文件恢复；属性联防/弱点聚合卡未落地（勘察选型=六维图优先，联防卡留待后续轮次按用户需求评估）；长期顺延：v4.72 分段/排序按钮逐点测、补盲文案真实 UI 样例（登记关闭）。
 
 - ✅ **v4.78 轮：图鉴页筛选开关（P1）+ S5q 语义收口登记（P2，MainAgent 裁决方案1 接受，无代码变更）（2026-10-21 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.78</span>`；master 链 HEAD=`19314095`（开关实施）+ `495b472e`（三处同源贯通修复，实施 worktree er478）+ 登记 commit `5448c0e`（master 登记，2026-10-21 push）；gh-pages=`4c147f6`（worktree 部署，2026-10-21 push --force）。
