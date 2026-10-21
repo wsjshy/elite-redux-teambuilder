@@ -559,7 +559,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.78</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.79</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2188,6 +2188,7 @@ function anRender(R){
     '　<b>速度线</b>：原始最高 '+R.speed.top+' · 有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）');
   /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
   try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
+  try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
   if(R.members&&R.members.length){
     h+=anCard('<b>成员一览</b>（点图看该只推荐详情）<div class="anmemline">'+R.members.map(function(m){
@@ -4013,6 +4014,30 @@ function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
     if(e75b&&mx>=q.P75){line+='<br><span style="color:var(--sub)">卡线参考：若仅求过 P75（基准 '+q.P75+'）→ EV '+e75b.ev+'（达 '+e75b.val+'）即可，<b style="color:var(--ok)">省 '+e75b.saved+' EV 挪 HP</b>（不必上满 252）。</span>'}}
   line+='</div>';return line}
 /* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
+/* v4.79 P1：队伍六维能力分组条形图（纯展示，O(6×6)，同源 R.members[].s.base，禁第二套口径）。
+   六行（HP/攻/防/特攻/特防/速），每行 6 条（每只一色，宽度=该只该项/种族上限），手机端不横向滚动（列 flex 自适应）。 */
+function teamStatsChartHtml(R){
+  try{
+    var mem=(R&&R.members)||[];if(!mem.length)return '';
+    var cols=['HP','攻','防','特攻','特防','速'];
+    var PAL=['#1976d2','#388e3c','#f57c00','#7b1fa2','#c2185b','#00838f'];
+    var MAX=180;   /* 种族值单项展示上限 */
+    var rowsH='';
+    for(var k=0;k<6;k++){
+      var bars='';
+      mem.forEach(function(m,i){
+        var s=m.s;if(!s||!s.base)return;
+        var v=s.base[k];var w=Math.round(Math.min(v,MAX)*100/MAX);
+        bars+='<div style="display:flex;align-items:center;gap:2px;margin:1px 0">'+
+          '<span style="width:34px;font-size:10px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.zh)+'</span>'+
+          '<div style="flex:1;height:9px;background:#eee;border-radius:2px"><div style="width:'+w+'%;height:100%;background:'+PAL[i%PAL.length]+';border-radius:2px"></div></div>'+
+          '<span style="width:24px;font-size:10px;text-align:right">'+v+'</span></div>';
+      });
+      rowsH+='<div style="margin-bottom:3px"><div style="font-size:11px;font-weight:600">'+cols[k]+'</div>'+bars+'</div>';
+    }
+    return '<b>六维能力分布</b>（同源种族值 base；每行一只一条）<div style="margin-top:4px">'+rowsH+'</div>';
+  }catch(e){return ''}
+}
 /* v4.74 P1：队伍级速度结构卡（纯展示，O(6)，只读当前 team 全局，禁止全链派生） */
 function teamSpeedCardHtml(){
   try{
@@ -12423,7 +12448,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.78';
+var ER_ENGINE_VER='v4.79';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
