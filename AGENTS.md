@@ -154,7 +154,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 6. 当前状态（2026-10-21，v4.79）
 
 - ✅ **v4.79 轮：队伍分析器可视化增强（P1，用户 2026-10-19 规范点名「六队分析器可视化布局」落地）+ 手机端加载复核（P2，无劣化登记）（2026-10-21 部署，线上验证通过）**：
-  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.79</span>`；master 链 HEAD=`696bfc95`（六维图实施）+ `e9cdbefe`（空壳修复，实施 worktree er479）+ 登记 commit（master 登记，2026-10-21 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.79</span>`；master 链 HEAD=`696bfc95`（六维图实施）+ `e9cdbefe`（空壳修复，实施 worktree er479）+ 登记 commit `75a2970`（master 登记，2026-10-21 push）；gh-pages=`f538c00`（worktree 部署，2026-10-21 push --force）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）**= `B3FF9F0F8F05235A…`**（N1=N2==冻结确定性）；build_tool_html.py = `247AC731B707CC52…`（v4.79 含六维图注入+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
   - **P1 队伍分析器可视化（勘察先行，C:\temp\er-v479-impl\可视化勘察.md）**：勘察结论——anRender（行2379）已有构成画像/体系徽章/速度线卡（含 v4.74 速度结构卡），**速度维度不重复造**；插入点=速度结构卡后。落地 **`teamStatsChartHtml(R)` 六维能力分组条形图**：六行（HP/攻/防/特攻/特防/速）×每行六只各一条（6 色调色板、宽度=种族值/180 上限、物种名+数值标注），anCard 追加不删改既有六区块。
   - **数据同源（G3）**：读 `speciesById(m.id).s.base[k]`（与成员一览/构成画像同源，非第二套口径）；标题注明「同源种族值 base」。
