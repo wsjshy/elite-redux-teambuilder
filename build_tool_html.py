@@ -225,7 +225,12 @@ TEMPLATE = r'''<!DOCTYPE html>
 <style>
 :root{
   --bg:#f5f6f8; --card:#fff; --line:#e0e3e8; --text:#23272f; --sub:#6b7280; --accent:#2563eb;
-  --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+  --ok:#16a34a; --warn:#d97706; --bad:#dc2626; --warnred:#c62828;
+  /* v4.84 P2-6 红色语义分层（红=警示 / 蓝=信息 / 绿=正面，冲突时引入区分样式）：
+     --bad(深红)     = 负面/错误状态（如 .mtag.sta 状态标签）
+     --warnred(深红) = 警示/失败消息（一律带 ⚠ / ✗ 图标，如速度线塌陷、建议补、诊断失败）
+     浅红底+深红字   = 数据高亮（联防热力同弱 #ffcdd2、弱点 badge #fce4ec/#b71c1c），无图标、非错误
+     黄底 warn(琥珀) = 提示（.tip 预警） */
 }
 *{box-sizing:border-box; margin:0; padding:0}
 html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
@@ -453,7 +458,9 @@ details.big[open]>summary::before{content:"▾ "}
 .mxc .mcspr,.mxc .spmid,.mxc .spsp{width:40px; height:40px; margin:0 auto}
 .spthumb .mcspr{width:26px; height:26px}
 .slothead .spinl .spsp{width:28px; height:28px}
-.spmiss{background:#eceff3}
+.spmiss{background:#eceff3;position:relative}
+/* v4.84 P1-2：spmiss 缺图占位升级——灰底+形态名文字（非裸空白；小尺寸容器下 overflow 截断不破版） */
+.spmiss .sphint{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:8px;line-height:1.15;color:#90a4ae;padding:1px;overflow:hidden;word-break:break-all}
 /* ===== v4.x UI 定稿：就地展开（克制格）/ 轻量居中 modal（词条）/ 图片优先的紧凑卡片网格 ===== */
 .mxinline{margin:8px 0 12px; border:1px solid var(--accent); border-radius:10px; background:var(--card); padding:10px}
 .mxhd2{font-size:13px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
@@ -499,8 +506,8 @@ details.big[open]>summary::before{content:"▾ "}
   border:1px solid var(--line); border-radius:6px; padding:1px 5px; margin:2px 3px 2px 0; white-space:nowrap}
 .poolrow b{color:var(--accent)}
 .poolrow img{width:24px; height:24px; object-fit:contain; image-rendering:pixelated; vertical-align:middle}
-.poolrow.hit{border-color:var(--warn); background:#fff8e6}
-.poolrow.hit b{color:#c62828}
+.poolrow.hit{border-color:var(--acc); background:#e8f0fe}
+.poolrow.hit b{color:var(--acc)}
 .modal .mhd{display:flex; align-items:center; gap:8px; margin-bottom:6px}
 .modal .mhd b{flex:1; font-size:14px}
 .modal .close{border:none; background:var(--line); width:26px; height:26px; border-radius:50%; cursor:pointer}
@@ -811,7 +818,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.83</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.84</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -837,7 +844,7 @@ details.inline,.details.inline{cursor:pointer}
     <div class="mhd"><b id="anPickTitle">选择宝可梦</b><button class="close" type="button" onclick="closeAnPicker()" aria-label="关闭">×</button></div>
     <div class="anpbar">
       <input type="text" id="anpSearch" placeholder="搜索：编号 / 中文 / 英文">
-      <select id="anpSort"><option value="id">编号</option><option value="bst">种族总值</option><option value="atk">攻击</option><option value="spe">速度</option></select>
+      <select id="anpSort"><option value="id">编号</option><option value="bst">种族值（总值）</option><option value="atk">攻击</option><option value="spe">速度</option></select>
     </div>
     <div class="anpbar">
       <span class="mini">属性：</span><div class="chips" id="anpTypeChips"></div>
@@ -864,7 +871,7 @@ details.inline,.details.inline{cursor:pointer}
   <div class="bar">
     <input type="text" id="spSearch" placeholder="搜索：中文 / 英文 / 编号">
     <select id="spSort">
-      <option value="id">编号</option><option value="bst">种族总值</option><option value="hp">HP</option>
+      <option value="id">编号</option><option value="bst">种族值（总值）</option><option value="hp">HP</option>
       <option value="atk">攻击</option><option value="def">防御</option><option value="spa">特攻</option>
       <option value="spd">特防</option><option value="spe">速度</option>
     </select>
@@ -911,7 +918,7 @@ details.inline,.details.inline{cursor:pointer}
   <div class="bar">
     <input type="text" id="tmSearch" placeholder="搜索并点击入队（最多 6 只）">
     <select id="tmSort">
-      <option value="id">编号</option><option value="bst">种族总值</option><option value="atk">攻击</option><option value="spe">速度</option>
+      <option value="id">编号</option><option value="bst">种族值（总值）</option><option value="atk">攻击</option><option value="spe">速度</option>
     </select>
     <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
@@ -936,7 +943,7 @@ details.inline,.details.inline{cursor:pointer}
   <div class="sec" id="mySavCard" style="margin:6px 0">
     <h3>🎮 存档联动组队（我的宝可梦）<span class="mini" style="color:var(--sub);font-weight:400"> · 与下方「全图鉴组队」并列，互不替换</span></h3>
     <div id="myPickWrap" class="phasefade">
-    <div class="mini" style="color:var(--sub)">① 点上方「📂 解析存档 .sav」选文件（或粘贴 CSV 导入）→ ② 下方出现你的队伍与箱子 ③ 点一只精灵 = 以它为核，走同一套需求驱动引擎出完整队伍方案</div>
+    <div class="mini" style="color:var(--sub);line-height:1.9"><span style="display:block">① 点上方「📂 解析存档 .sav」选文件（或粘贴 CSV 导入）</span><span style="display:block">② 下方出现你的队伍与箱子</span><span style="display:block">③ 点一只精灵 = 以它为核，走同一套需求驱动引擎出完整队伍方案</span></div>
     <div class="poolgrid" id="myPoolWrap"><div class="mini" style="color:var(--sub)">尚未解析存档 —— 解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 末招）。</div></div>
     </div><!-- /#myPickWrap：挑选阶段（我的宝可梦池） -->
     <div id="myDetailWrap" class="phasefade" style="display:none">
@@ -987,7 +994,7 @@ details.inline,.details.inline{cursor:pointer}
   <div class="bar">
     <input type="text" id="coreSearch" placeholder="搜索中文 / 英文 / 编号">
     <select id="coreSort">
-      <option value="id">编号</option><option value="bst">种族总值</option><option value="spe">速度</option>
+      <option value="id">编号</option><option value="bst">种族值（总值）</option><option value="spe">速度</option>
     </select>
     <select id="coreRole">
       <option value="">全部定位</option>
@@ -1898,12 +1905,18 @@ function famChainHtml(s){
     function add(r){if(r&&pend.indexOf(r.id)<0)pend.push(r)}
     ((gx&&gx.mega)||[]).forEach(add);((gx&&gx.prim)||[]).forEach(add);((gx&&gx.form)||[]).forEach(add);
     var spx=speciesById(id),key=spx?famKeyHeur(spx):'';
+    /* v4.84 P1-3：Redux 形态自身已有 mega/prim/form 记录时跳过标准族补充（大针蜂R#2516 自带超级大针蜂R，
+       原逻辑仍把标准族超级大针蜂#1505 挂上 → Redux 区重复显示标准 Mega）；
+       无形态记录的 Redux（暴鲤龙R → 归并标准 Mega X/Y，v4.13d 意图）保持补充 */
     if(effRegion(id)==='Redux'){
-      (famIndex[key]||[]).forEach(function(o){
-        if(o.id===id||effRegion(o.id)!=='标准')return;
-        var og=FG[''+o.id];if(!og)return;
-        ((og.mega)||[]).forEach(add);((og.prim)||[]).forEach(add);((og.form)||[]).forEach(add);
-      });
+      var _own=(gx&&gx.mega&&gx.mega.length)||(gx&&gx.prim&&gx.prim.length)||(gx&&gx.form&&gx.form.length);
+      if(!_own){
+        (famIndex[key]||[]).forEach(function(o){
+          if(o.id===id||effRegion(o.id)!=='标准')return;
+          var og=FG[''+o.id];if(!og)return;
+          ((og.mega)||[]).forEach(add);((og.prim)||[]).forEach(add);((og.form)||[]).forEach(add);
+        });
+      }
     }
     return pend;
   }
@@ -2622,7 +2635,7 @@ function renderAnPickerGrid(reset){
     c.innerHTML=sprImg(s.id)+
       '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+'</div>'+
       '<div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div>'+
-      '<div class="bs">种族总值 '+spBst(s)+'</div>';
+      '<div class="bs">种族值（总值 '+spBst(s)+'）</div>';
     c.onclick=function(){anPickerChoose(s.id)};
     g.appendChild(c);
   });
@@ -2685,7 +2698,7 @@ function anSpDetail(id){
 function closeAnDetail(){var d=$('anDetail');if(d&&d.classList)d.classList.remove('open')}
 function anDetailHtml(s,bd,R){
   var h='';
-  h+='<div class="andethead">'+sprImg(s.id,'spinl')+'<b>'+esc(s.zh)+'</b> <span class="dim">'+esc(s.en)+' #'+s.id+' · '+esc(s.t1)+(s.t2!==s.t1?(' / '+esc(s.t2)):'')+' · 种族总值 '+spBst(s)+'</span>'+
+  h+='<div class="andethead">'+sprImg(s.id,'spinl')+'<b>'+esc(s.zh)+'</b> <span class="dim">'+esc(s.en)+' #'+s.id+' · '+esc(s.t1)+(s.t2!==s.t1?(' / '+esc(s.t2)):'')+' · 种族值（总值 '+spBst(s)+'）</span>'+
     '<button class="btn-mini" type="button" onclick="closeAnDetail();openSpById('+s.id+')" title="打开图鉴详情（种族/特性/天性/可学招式）">图鉴详情 →</button></div>';
   if(!bd){h+='<div class="tip">该成员暂无引擎推荐流派（deriveBuilds 未返回）</div>';return h}
   /* ① 玩法流派一句话 */
@@ -2869,7 +2882,7 @@ function renderSp(reset){
     c.innerHTML=sprImg(s.id)+
       '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+
       '</div><div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+
-      '</div><div class="bs">种族总值 '+spBst(s)+'</div>';
+      '</div><div class="bs">种族值（总值 '+spBst(s)+'）</div>';
     c.onclick=function(){openSp(s)};
     $('spGrid').appendChild(c);
   });
@@ -2891,6 +2904,13 @@ glModal.onclick=function(ev){if(ev.target===glModal)closeGl()};
 document.body.appendChild(glModal);
 if(document.addEventListener)document.addEventListener('keydown',function(ev){if(ev.key==='Escape'){closeGl();try{closeSp()}catch(e){}try{closeMv()}catch(e){}}});
 function closeSp(){spDrawer.classList.remove('open')}
+/* v4.84 P1-1：详情卡「组队建议」统一入口（按钮已移出 h2 标题行——原按钮文字嵌在标题内，点击无响应时
+   呈现「标题含组队建议字样但内容仍是详情卡」的误导态）。closeSp 先关 modal；selectCore 异常时兜底切核心
+   配队 Tab，保证不卡死在详情卡。 */
+function gotoCoreFromSp(id){
+  closeSp();
+  try{selectCore(id)}catch(e){console.error('gotoCoreFromSp('+id+')',e);try{switchTab('core')}catch(e2){console.error('switchTab',e2)}}
+}
 /* 精灵图（v4.6.2 合图 Sprite Sheet）：SPR_SHEET[id] = [sheetIdx, col, row]（由 sheets_map.js 构建期内嵌）。
    sprOf(id) 返回背景样式声明（sheet 背景图 + 尺寸无关定位：background-size 1600%（16 格）/ position 百分比）
    → 同一份标记在任意容器尺寸下正确缩放；id 缺失/无映射 → 返回空串，调用侧渲染 .spmiss 空占位（不发请求、不破版）。
@@ -2907,7 +2927,10 @@ function sprOf(id){
 function sppct(k){return (Math.round(k*100/15*10000)/10000)+'%'}
 function sprEl(tag,id,cls){
   var st=sprOf(id);
-  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'"':'')+'></'+tag+'>';
+  /* v4.84 P1-2：缺图占位升级——spmiss 不再裸灰块，内嵌「灰底+形态名」文字（Mega 图运行时缺失/加载失败也可辨形态） */
+  var ph='';
+  if(!st){var _o=speciesById(id);var _nm=(_o&&_o.zh)?_o.zh:('#'+id);ph=' data-name="'+esc(_nm)+'"><span class="sphint">'+esc(_nm)+'</span>'}
+  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'"':'')+ph+'</'+tag+'>';
 }
 function sprImg(id,cls){
   return '<span class="spbox '+(cls||'spcard')+'">'+sprEl('span',id,'spsp')+'</span>';
@@ -2916,9 +2939,11 @@ function sprImg(id,cls){
 function sprRaw(id,cls){return sprEl('div',id,cls||'mcspr')}
 function openSp(s){
   var base=s.base,names=['HP','攻击','防御','特攻','特防','速度'];
-  var html='<h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:13px;color:var(--sub)">'+esc(s.en)+' #'+s.id+'</span>'+
-    ' <button class="btn-mini" style="margin-left:8px;background:var(--warn);color:#fff" onclick="closeSp();selectCore(\''+s.id+'\')" title="以它为核心生成组队建议（队友/配招/性格）">🤖 组队建议</button></h2>';
+  var html='<h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:13px;color:var(--sub)">'+esc(s.en)+' #'+s.id+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div>';
+  /* v4.84 P1-1：组队建议 CTA 从 h2 标题行移出 → 独立醒目块（核心动作前置，非滚动优先；主 CTA 用 --accent 蓝） */
+  html+='<div class="sec" style="margin:6px 0"><button class="btn" style="background:var(--accent);color:#fff;width:100%" onclick="gotoCoreFromSp(\''+s.id+'\')" title="进入核心配队 Tab，自动带出这只宝可梦的完整配队方案">🤖 以它为核心生成组队建议</button>'+
+    '<div class="mini" style="color:var(--sub);margin-top:4px">点击进入核心配队 Tab，自动带出这只宝可梦的完整配队方案（队友 / 配招 / 性格）</div></div>';
   html+='<div class="sec"><h3>种族值（总值 '+spBst(s)+'）</h3>';
   var maxv=Math.max.apply(null,base.concat([1]));
   names.forEach(function(n,i){
@@ -3278,7 +3303,7 @@ function renderTm(reset){
     c.innerHTML=sprImg(s.id)+
       '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+
       '</div><div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+
-      '</div><div class="bs">种族总值 '+spBst(s)+'</div>'+
+      '</div><div class="bs">种族值（总值 '+spBst(s)+'）</div>'+
       '<div style="margin-top:6px">'+(inTeam?'<span class="badge badge-res">已入队</span>':'<span class="badge badge-neu">＋ 入队</span>')+'</div>';
     c.onclick=function(){
       if(team.indexOf(s)>-1)return;
@@ -3693,7 +3718,7 @@ function renderAnalyze(){
       cur.map(function(n){return '<b>'+esc(n||'-')+'</b>'}).join(' / ')+
       (ids.length?' —— '+((stab?'✓本系':'✗本系输出')+' '+(rec?'✓回复':(r.indexOf('盾')>-1?'✗缺回复':''))+' '+(boost?'✓强化':(r.indexOf('攻')>-1?'✗缺强化':''))+' '+(prot?'✓保命':(r.indexOf('速攻')>-1?'✗缺保命':''))).split(' ').filter(function(x){return x}).join(' '):'')+'</div>';
     if(noted.length)html+='<div style="font-size:11px;color:var(--sub)">点评：'+noted.map(function(id){return esc(ERDATA.movesNotes[id])}).join('；')+'</div>';
-    if(miss.length)html+='<div style="font-size:12px;color:#c62828">⚠ 建议补：'+esc(miss.join('、'))+'</div>';
+    if(miss.length)html+='<div style="font-size:12px;color:var(--warnred)">⚠ 建议补：'+esc(miss.join('、'))+'</div>';
     else html+='<div style="font-size:12px;color:#2e7d32">✓ 配置健康</div>';
     html+='</div>';
   });
@@ -3849,7 +3874,7 @@ function parseSavFile(input){
       lastSavCsv=rowsToCsv(res.rows);
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
         '<div style="font-size:13px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+
-        '<div style="margin:4px 0">锚点：'+(res.summary.anchorsOk.length?res.summary.anchorsOk.map(function(a){return '<span style="color:#2e7d32">✓ '+esc(a)+'</span>'}).join(' '):'')+(res.summary.anchorsFail.length?' <span style="color:#c62828">✗ '+esc(res.summary.anchorsFail.join('；'))+'</span>':'')+'</div>'+
+        '<div style="margin:4px 0">锚点：'+(res.summary.anchorsOk.length?res.summary.anchorsOk.map(function(a){return '<span style="color:#2e7d32">✓ '+esc(a)+'</span>'}).join(' '):'')+(res.summary.anchorsFail.length?' <span style="color:var(--warnred)">✗ '+esc(res.summary.anchorsFail.join('；'))+'</span>':'')+'</div>'+
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
         ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div></div>';
       $('savParseOut').innerHTML=html;
@@ -4343,7 +4368,7 @@ function teamStatsChartHtml(R){
       });
       rowsH+='<div style="margin-bottom:3px"><div style="font-size:11px;font-weight:600">'+cols[k]+'</div>'+bars+'</div>';
     }
-    return '<b>六维能力分布</b>（同源种族值 base；每行一只一条）<div style="margin-top:4px">'+rowsH+'</div>';
+    return '<b>六维能力分布</b>（同源种族值 base；每行一只一条，<b>每只一色</b>=跨只对比色板 · 速度类条形为蓝系定位色板）<div style="margin-top:4px">'+rowsH+'</div>';
   }catch(e){return ''}
 }
 /* v4.74 P1：队伍级速度结构卡（纯展示，O(6)，只读当前 team 全局，禁止全链派生） */
@@ -4368,7 +4393,7 @@ function teamSpeedCardHtml(){
         '</div><span style="font-size:11px">'+v+'</span>'+_spdBadge(p)+'</div>';
     });
     var warn='';
-    if(best&&best.v<q.P75){warn='<div style="color:#c62828;font-size:12px;margin-top:4px">⚠ 速度线塌陷：全队最快 '+esc(best.zh)+' 极速 '+best.v+' &lt; P75('+q.P75+')，建议控速/空间/围巾。</div>'}
+    if(best&&best.v<q.P75){warn='<div style="color:var(--warnred);font-size:12px;margin-top:4px">⚠ 速度线塌陷：全队最快 '+esc(best.zh)+' 极速 '+best.v+' &lt; P75('+q.P75+')，建议控速/空间/围巾。</div>'}
     return '<div class="sec" style="margin-top:8px"><h3>队伍速度结构（极速档 · 全库分位）</h3>'+
       '<div style="font-size:12px;margin-bottom:4px">全队最快=<b>'+esc(best.zh)+'</b> 极速 '+best.v+' · P'+best.p+' ｜ ≥P90 超速 '+fast+' 只 / P50-89 '+mid+' 只 / &lt;P50 '+slow+' 只</div>'+
       rowsH+'<div style="font-size:10px;color:var(--sub);margin-top:2px">竖线：P75(331) 黄 / P90(372) 绿；蓝条=该只极速在全库范围定位。</div>'+warn+'</div>';
@@ -12764,7 +12789,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.83';
+var ER_ENGINE_VER='v4.84';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -13150,7 +13175,7 @@ function renderCore(s){
   for(var si=0;si<6;si++){
     html+='<div class="barstat"><span class="lb">'+stNames[si]+'</span><div class="tr"><div class="fl" style="width:'+Math.round(s.base[si]/255*100)+'%;background:hsl('+(210-si*20)+',70%,55%)"></div></div><span class="tk">'+s.base[si]+'</span></div>';
   }
-  html+='<div class="stattot">种族值总值 <b>'+spBst(s)+'</b>（条形图按单项上限 255 归一）</div></div>';
+  html+='<div class="stattot">种族值（总值 <b>'+spBst(s)+'</b>）（条形图按单项上限 255 归一）</div></div>';
   /* 概要：定位 / 弱点（天性口径）/ 细分定位 */
   html+='<div class="hlbox"><b>'+esc(prof.role)+'</b> —— '+esc(prof.desc)+'</div>';
   html+='<div style="margin:4px 0"><b style="font-size:13px">弱点（天性口径，含倍率）</b>：'+(weak.length?weak.map(function(t){var m=defCellTrio(s,t).inn;return tlabel(t)+(m>1?'×'+m:'')}).join(' '):'<span style="color:var(--ok)">无弱点</span>')+
@@ -13519,7 +13544,7 @@ function selectCore(id){
       var c=document.createElement('div');c.className='card';
       c.innerHTML=sprImg(s.id)+
         '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+'</div>'+
-        '<div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div><div class="bs">种族总值 '+spBst(s)+'</div>'+
+        '<div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div><div class="bs">种族值（总值 '+spBst(s)+'）</div>'+
         '<div class="mini" style="color:var(--accent);margin-top:4px">点击生成组队建议</div>';
       c.onclick=function(){selectCore(this.dataset.id); };
       c.dataset.id=s.id;
