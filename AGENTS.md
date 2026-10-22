@@ -192,7 +192,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - **遗留（如实登记）**：浏览器运行时交互观感（toast/chip 点击/tooltip hover/375px 滚动可达性）未真机实测，建议部署后线上抽查或下轮黑盒补测（P0/重测报告措辞为建议非承诺）；登记不修=说明块 375px 拥挤/条形图双套配色/术语（种族值总值/种族总值）/红色系多义分级（下一轮候选）；长期顺延 v4.72 分段/排序按钮逐点测、补盲文案真实 UI 样例（登记关闭）；超级喷火龙X 单流派 P3。
 
 - ✅ **v4.84 轮：修复轮收口（无新用户需求，v4.83 黑盒登记项 4 项 + 用户新增 P1 插队共 7 项）（2026-10-23 部署，线上验证通过）**：
-  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.84</span>`；master 链 HEAD=`82d59bd`（实施 commit，worktree er484，基线 de17a1c）+ 登记 commit `<回填>`（master 登记，2026-10-23 push）；gh-pages=`<回填>`（worktree 部署，2026-10-23 push --force）。
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.84</span>`；master 链 HEAD=`82d59bd`（实施 commit，worktree er484，基线 de17a1c）+ 登记 commit `50304fa`（master 登记，2026-10-23 push）；gh-pages=`dee05b0`（worktree 部署，2026-10-23 push --force）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）**= `8BD2A6EDB77C4E5F…`**（1372019 B，N1=N2==冻结逐字节）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变，冻结）。
   - **修复 7 项（commit `82d59bd`）**：
     1. **P1-3（用户新增，插队最高优先级）Redux 区重复标准 Mega**：根因=`pendFor` Redux 补充分支（1847-1853）未检查 Redux 形态自身已带 mega/prim/form——大针蜂R#2516 自带超级大针蜂R#2147，仍触发补充把标准族超级大针蜂#1505 挂上 → Redux 区重复显示标准 Mega（用户截图+DOM e654/e659 双证）→ 补充分支加 `_own` 守卫（`if(!_own)` 才补充标准族）；无形态记录的 Redux 保持补充（暴鲤龙R#2675→归并标准 Mega X/Y，v4.13d 意图不回归）。
