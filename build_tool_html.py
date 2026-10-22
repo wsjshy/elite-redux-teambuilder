@@ -777,7 +777,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.82</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.83</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -1030,6 +1030,10 @@ var $=function(id){return document.getElementById(id)};
 var MV={},ABI={},ITM={};
 ERDATA.moves.forEach(function(m){MV[m[0]]=m});
 ERDATA.abilities.forEach(function(a){ABI[a[0]]=a});
+/* v4.83 P2-6：冻结 data.js 中 ability 行 429（Coward）zh 串成性格名「胆小」（与 Timid 撞名）；
+   species 表作「懦夫」为游戏内展示真值（图鉴页展示源）→ 展示层以 species 表名为准，不改冻结 data.js 字节。
+   实测：壶壶主推卡「推荐特性」位原渲染「胆小/滚起来」，应渲染「懦夫/我们滚吧」。 */
+if(ABI['429']){ABI['429'][2]='懦夫'}
 ERDATA.items.forEach(function(i){ITM[i[0]]=i});
 /* v4.76 F-A：招式→类型索引（只读 gameData MV，新增查表）——物种实际习得的攻击属性集合（排除变化/状态招），
    供补盲判定由「仅属性匹配」收紧为「确实习得该系攻招」。按物种 id 缓存，findTeammates 候选循环内 O(1)。 */
@@ -2207,7 +2211,7 @@ function anDiag(R,mem,rows,wxSys,wxSpdIn){
     if(openW.length)D.push({id:'DIAG-02',sev:'高',txt:'体系「'+openW.join('、')+'」在队但无成员持开手特性',need:'天气手'});
   }
   if(co.length)D.push({id:'DIAG-03',sev:'高',txt:'共弱严重：'+co.map(function(x){return x.type+'×'+x.n}).join('、'),need:''});
-  if(cv.n<14)D.push({id:'DIAG-04',sev:'高',txt:'打击面偏窄：覆盖 '+cv.n+'/18（<14）· 盲区 '+cv.blind0.join('、'),need:'输出'});
+  if(cv.n<14)D.push({id:'DIAG-04',sev:'高',txt:'打击面偏窄：覆盖 '+cv.n+'/'+(cv.nTot||18)+'（<14）· 盲区 '+cv.blind0.join('、'),need:'输出'});   /* v4.83 P2-3②：分母统一为 nTot（=anTypes().length=20），与③打击面卡/NA-00 兜底同口径，消除 13/20 vs 13/18 */
   else if(cwx.length)D.push({id:'DIAG-04',sev:'中',txt:'脆皮共弱：'+cwx.map(function(x){return x.type+'×'+x.n}).join('、'),need:''});
   if(R.sys.hasHazard>=1&&R.sys.rmvN===0)D.push({id:'DIAG-05',sev:'中',txt:'有钉无除钉（撒钉 '+R.sys.hasHazard+' 位 / 除钉 0 位）',need:'除钉'});
   var tier=0;try{tier=speedStat(medSpe(),252,31,true)}catch(e){tier=0}
@@ -2340,11 +2344,19 @@ function teamReport(ids,label,info){
      避免叙事区块空白（黑盒实测：手工队 B-2 速攻 narr=0，17 队唯一）。兜底条目标 id=NA-00，明确标注为兜底。 */
   if(!R.narr.length){
     var _cw=(R.weak.coWeak||[])[0],_im=(R.weak.immuneAxis||[])[0];
-    R.narr.push({id:'NA-00',A:null,B:null,field:'兜底·联防结构（本队无体系联动）',
-      txt:'本队未形成体系联动（无天气/场地/空间轴），按联防结构看：'+
+    /* v4.83 P2-3①：兜底叙事不得与①画像同屏相反——画像已按 R.sys.counts/wx 识别出天气/空间轴时，
+       兜底条不再硬写「无天气/场地/空间轴」，改为动态列出本队实际持有的体系轴（与画像同一判定源 R.sys）。 */
+    var _axList=[];
+    if((R.sys.wx||[]).length)_axList.push('天气('+R.sys.wx.join('/')+')');
+    if((R.sys.field||[]).length)_axList.push('场地('+R.sys.field.join('/')+')');
+    if(R.sys.hasSpace)_axList.push('戏法空间');
+    if(R.sys.hasTailwind)_axList.push('顺风');
+    var _axTxt=_axList.length?('本队体系轴：'+_axList.join('、')+'，但未形成成对联动叙事'):'本队无天气/场地/空间轴，未形成成对体系联动';
+    R.narr.push({id:'NA-00',A:null,B:null,field:'兜底·联防结构（'+_axTxt+'）',
+      txt:_axTxt+'；按联防结构看：'+
         (_cw?('最常见共性弱点为〔'+_cw.type+'〕（'+_cw.n+' 只同弱）'):'无 ≥2 只同弱')+
         (_im?('；免疫轴可用〔'+_im.zh+'〕'+(String(_im.by)==='特性'?('的〔'+_im.src+'〕'):'的属性')+'免疫〔'+_im.immune+'〕挡下该系攻击'):'；免疫轴为空，建议补免疫位')});
-    R.narr.push({id:'NA-00',A:null,B:null,field:'兜底·打击面与速度线（本队无体系联动）',
+    R.narr.push({id:'NA-00',A:null,B:null,field:'兜底·打击面与速度线（'+_axTxt+'）',
       txt:'打击面覆盖 '+R.cover.covN+'/'+(R.cover.nTot||18)+
         ((R.cover.blind||[]).length?('，整队盲区：'+R.cover.blind.join('、')):'，无整队盲区')+
         '；速度线原始最高 '+R.speed.top+'、有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）'});
@@ -2392,7 +2404,9 @@ function anRender(R){
     var _toxic=(R.sys.hasHazard?1:0)+(_roles['钉子']||0)+(_roles['状态']||0);
     var _rec=(_roles['回复']||0)+(_roles['轮转']||0);
     var _tag='',_sysTxt='';
-    if(_toxic>=2&&_rec>=2&&((_roles['盾']||0)>=1||(_roles['轮转']||0)>=1)){_tag='消耗受队';_sysTxt='毒钉/剧毒压血线→回复轮转拖节奏→再生力续航站场消耗'}
+    /* v4.83 P2-4：消耗受队叙事不再硬编码「毒钉/再生力」具体招式/特性名——黑盒实测命中受队旗标的队伍派生配招无毒钉、特性池无再生力，
+       名实不符。改为按实际计数动态生成（钉子位/回复位/盾位数量），不点名具体招式/特性。 */
+    if(_toxic>=2&&_rec>=2&&((_roles['盾']||0)>=1||(_roles['轮转']||0)>=1)){_tag='消耗受队';_sysTxt='状态/钉子压血线（'+(_roles['钉子']||0)+' 钉+'+(_roles['状态']||0)+' 状态）→ 回复轮转拖节奏（'+_rec+' 回复/轮转位）→ 盾位站场消耗（'+(_roles['盾']||0)+' 盾）'}
     else if((_roles['强化']||0)>=2&&(_roles['输出']||0)>=2){_tag='强化推队';_sysTxt='控场创造机会→强化叠层→清场收割'}
     else if(R.sys.hasHazard){_tag='钉子轮转';_sysTxt='撒钉手铺隐形岩/撒菱压血线→吹飞/吼叫强制换人滚钉→回复位续航保钉子→清场收割'}
     else if((R.sys.wx||[]).indexOf('雨')>-1){_tag='雨天速攻';_sysTxt='降雨手开雨天→轻快/悠游自如打手提速→雨必中炮台清场'}
@@ -3001,6 +3015,9 @@ function mvRow(tr){tr.classList.toggle('open')}
   ['mvSearch','mvType','mvSplit','mvPowMin','mvPowMax','mvPpMin','mvPrMin'].forEach(function(id){
     var el=$(id);el.oninput=renderMv;el.onchange=renderMv;
   });
+  /* v4.83 P1-3：招式反查表打开即有数据（此前仅筛选项 oninput 才渲染，初始 0 行空表）。
+     默认态 = 全量招式列表（与搜索后同口径），横向滚动容器已在 HTML .scroll 包裹（PP/先制列可横滑可达）。 */
+  try{renderMv()}catch(eMvInit){}
 })();
 function renderMv(){
   var q=$('mvSearch').value.trim(),ty=$('mvType').value,sp=$('mvSplit').value;
@@ -3264,10 +3281,11 @@ function loadTeam(){
 function addToTeam(s,info){
   if(!isValidSp(s))return; /* B7：无效/占位物种不进队伍（coreMatch 与导入路径统一过滤） */
   if(team.length>=6){toast('最多 6 只');return}
-  if(team.indexOf(s)>-1)return;
+  if(team.indexOf(s)>-1){toast('已在队伍中：'+s.zh);return}   /* v4.83 P2-1：重复入队轻反馈（此前静默 return，须切队伍页确认） */
   team.push(s);
   if(info)teamInfo[s.id]=info;else teamInfo[s.id]={fromSave:false};
   renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('已加入队伍：'+s.zh+'（'+team.length+'/6）');   /* v4.83 P2-1：入队成功可见反馈 */
 }
 function removeFromTeam(s){
   var i=team.indexOf(s);
@@ -3334,7 +3352,7 @@ function exportTeam(){
   var ok=false;
   try{ok=document.execCommand('copy')}catch(e){}
   document.body.removeChild(ta);
-  if(ok)toast('已复制队伍配置：\n\n'+txt);
+  if(ok)toast('已复制队伍配置（'+team.length+' 只）到剪贴板');   /* v4.83 P2-2：导出成功轻反馈（此前 toast 携带整段配置文本，视觉噪音大；成功提示独立可见） */
   else{prompt('复制以下队伍配置文本：',txt)}
 }
 function pickAbi(id,idx){
@@ -4343,14 +4361,15 @@ function speedRenderTable(){
   /* 搜索命中时：≤上限全显，>上限仍截断 */
   var cap=(qv&&rows.length<=window._spdN)?rows.length:window._spdN;
   var capRows=(window._spdN==='all')?rows:rows.slice(0,cap);
-  var h='<table class="tbl spdtbl"><thead><tr><th>#</th><th>物种</th><th class="spd-hide-sm">0努力</th><th>满速252中性</th><th>极速252+性格</th><th class="spd-hide-sm">围巾×1.5</th><th class="spd-hide-sm">特性×2</th><th class="spd-hide-sm">+1级强化</th><th>分位</th><th>省EV建议</th><th>定位</th></tr></thead><tbody>';
+  /* v4.83 P1-2：全库速度表加横向滚动容器（黑盒实测 11 列 794px 宽撑破 375px 容器；.spd-hide-sm 隐藏列后内容仍强制最小宽度） */
+  var h='<div class="scroll" style="-webkit-overflow-scrolling:touch"><table class="tbl spdtbl"><thead><tr><th>#</th><th>物种</th><th class="spd-hide-sm">0努力</th><th>满速252中性</th><th>极速252+性格</th><th class="spd-hide-sm">围巾×1.5</th><th class="spd-hide-sm">特性×2</th><th class="spd-hide-sm">+1级强化</th><th>分位</th><th>省EV建议</th><th>定位</th></tr></thead><tbody>';
   capRows.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
     var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:10px">EV'+e75.ev+'</span>'):'已满线';}
     h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td>'+_spdBadge(p)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
   });
-  h+='</tbody></table>';
+  h+='</tbody></table></div>';
   /* v4.72 P2：命中计数 + 空结果提示 + 截断提示 */
   if(rows.length===0){h+='<div class="tip" style="margin-top:6px">无匹配，试试英文名/编号。</div>'}
   else if(rows.length>capRows.length){h+='<div class="tip">命中 '+rows.length+' 只，仅显示前 '+capRows.length+'（已按当前排序）；输入关键词或调大显示数缩小范围。</div>'}
@@ -7535,7 +7554,10 @@ function finalizeBuildInPlace(s,b){
         var _isOutCtx=!!b.mechRw||/输出|爆发|清场|收割|速攻|炮台|扫场/.test(_evbn);
         var _hasRotate=/再生力轮转|受队站场|轮转/.test(_evbn);
         var _isTplTank=/耐久|受队|站场|非输出位|空间低速/.test(String(b.ev.template||''));
-        if(_isOutCtx&&_isTplTank&&!_hasRotate){
+        /* v4.83 P1-1：机制流 evKind=physdef/spdef/slow（扑击/欺诈/反伤/陀螺球）按物防/特防/速度差结算，攻击 EV 无意义——
+           本门只拦「真输出流派误落耐久」，误伤上述防御缩放流（实测耿鬼/超梦欺诈流、幸福蛋反伤流、班基拉斯扑击流被 clobber 成 252 特攻/攻击）→ 排除 */
+        var _evDefScale=/^(physdef|spdef|slow)$/.test(String(b.evKind||''));
+        if(_isOutCtx&&_isTplTank&&!_hasRotate&&!_evDefScale){
           var _outIdx2=((s.base||[])[1]>=(s.base||[])[3])?1:3;
           ev=[0,0,4,0,0,0];ev[_outIdx2]=252;ev[0]=252;
           while(evSumA(ev)>510){ev[0]-=Math.min(4,evSumA(ev)-510)}
@@ -7726,11 +7748,15 @@ var MECH_BUILD={
   body_press_def:function(s,cs){
     if(!mechHasMv(s,704))return null;
     if(mechFlowFit(s,'body_press_def')===null)return null;   /* v4.58 门控：def<90 剔除冠名 */
-    var b=mechBuildBase(s,'物理','扑击铁壁流','body_press_def',
-      '扑击按**物防**结算威力——铁壁 +2 级物防直接翻档输出，兼顾耐久与力度');
-    b.mv.main.push({id:704,kind:'attack',tag:'核心',why:['按物防结算（种族防高则力度高）','铁壁翻防后威力同步翻档']});
+    /* v4.83 P2-5：物种不学铁壁(334)时流派名不得自称「铁壁」（黑盒实测班基拉斯招内无铁壁、名实不符）→ 条件改名 + 描述同步 */
+    var _hasID=mechHasMv(s,334);
+    var _nm=_hasID?'扑击铁壁流':'扑击物防流';
+    var _desc=_hasID?'扑击按**物防**结算威力——铁壁 +2 级物防直接翻档输出，兼顾耐久与力度'
+                    :'扑击按**物防**结算威力——高物防种族直接转化为扑击力度，兼顾耐久与力度';
+    var b=mechBuildBase(s,'物理',_nm,'body_press_def',_desc);
+    b.mv.main.push({id:704,kind:'attack',tag:'核心',why:['按物防结算（种族防高则力度高）',_hasID?'铁壁翻防后威力同步翻档':'高物防种族直接折为扑击力度']});
     b.core=[704];b.evKind='physdef';   /* v4.34 P0-1/P0-2：核心招落地 + EV 投 HP/物防（扑击按物防结算） */
-    if(mechHasMv(s,334))b.mv.main.push({id:334,kind:'boost',tag:'强化',why:['+2 物防 → 扑击威力与耐久同升']});
+    if(_hasID)b.mv.main.push({id:334,kind:'boost',tag:'强化',why:['+2 物防 → 扑击威力与耐久同升']});
     var rec=bestRecMv(s);if(rec)b.mv.main.push(rec);
     if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身挡先制/状态']});
     b.it=[['防岩果','保铁壁回合（被克制一击后物防 +1，扑击再升档）'],['剩饭','铁壁站场续航']];
@@ -12700,7 +12726,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.82';
+var ER_ENGINE_VER='v4.83';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
