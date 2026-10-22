@@ -170,7 +170,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - **遗留（如实登记）**：长期顺延：v4.72 分段/排序按钮逐点测、补盲文案真实 UI 样例（登记关闭）；强化推队真实 DOM 样例实证留待用户组队自然命中（判据在位）。
 
 - ✅ **v4.83 轮：纯黑盒可用性+效果测试（用户点名，非功能点验收；测试对象=线上 v4.82 + 375px 移动端）+ 视觉判据纠偏后修复闭环（功能 8 项 + 视觉一致性 11 项）（2026-10-22 部署，线上验证通过）**：
-  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.83</span>`；master 链 HEAD=`9af6e4f`（实施末 commit，worktree er483：功能组 `ff93bc8` + 视觉组 `9af6e4f`）+ 登记 commit `（部署后回填）`（master 登记，2026-10-22 push）；gh-pages=`（部署后回填）`（worktree 部署，2026-10-22 push --force）。
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.83</span>`；master 链 HEAD=`9af6e4f`（实施末 commit，worktree er483：功能组 `ff93bc8` + 视觉组 `9af6e4f`）+ 登记 commit `205293a`（master 登记，2026-10-22 push）；gh-pages=`0dd92c5`（worktree 部署，2026-10-22 push --force）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）**= `4F51365E1D339A7B…`**（1369067 B，N1=N2==冻结确定性）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变，冻结）。
   - **测试计划（用户确认通过+补充 3 点）**：四模块纯黑盒并行（A 主流程/B 推荐效果 17 只样例池含历史批评点/C 队伍构建与分析器/D 375px+性能+console），P0-P3 分级；补充①B 模块区分「流派本身在环境中的合理性」vs「推荐细节错误（道具/特性/EV 自洽性）」两层面，「推荐道具矛盾/流派单一」按 P2 级候选；②汇总必须给可用性/效果评级（A/B/C/D 或百分制）支撑方向决策，不能只列 Bug；③console error/network 4xx/5xx/资源加载失败=纯黑盒唯一白盒观测项（禁读脚本/断点/源码）。
   - **视觉判据纠偏（用户点名最高优先级）**：评判核心=用户体验感/UI 美观度/一致性（可用性/无 bug 只是底线）；评级加权=可用性 30%+效果 30%+**视觉体验一致性 40%**；每模块报告含「视觉亮点/视觉问题清单（按页面 Tab 定位）+一致性违例清单」；修复闭环优先视觉一致性/美观度 P1/P2。
