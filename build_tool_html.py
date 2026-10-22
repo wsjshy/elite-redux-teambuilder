@@ -777,7 +777,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.81</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.82</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2400,6 +2400,14 @@ function anRender(R){
     else if(R.sys.hasWall){_tag='双墙辅助';_sysTxt='反射壁/光墙减伤窗口→墙内安全输出/接力传递'}
     if(_sysTxt) h+=anCard('<b>体系标签</b>：<span class="badge badge-warnimm">'+esc(_tag)+'</span> <span class="tip">'+_sysTxt+'（成员：'+_memZh.join('、')+'）</span>');
   }catch(eSys){}
+  /* v4.82 P1：受队/强化推队独立并列副徽章（不改主体系链；同源 R.sys/R.roles/R.speed） */
+  try{
+    var _sb='';
+    if(R.sys.hasHazard>=1&&R.sys.recN>=2&&((R.roles['盾']||0)>=2))_sb+='<span class="badge">受队</span>';
+    var _topSp=(R.speed.list&&R.speed.list[0])?R.speed.list[0].eff:0;
+    if((R.roles['强化']||0)>=2&&_topSp>=300)_sb+='<span class="badge">强化推队</span>';
+    if(_sb)h+=anCard('<b>细化体系</b>：'+_sb+' <span class="tip">（受队=钉+回复≥2+盾≥2；强化推队=强化≥2+极速清场）</span>');
+  }catch(eSb){}
   h+=anCard('<b>角色分布（可兼任）</b>：'+anChips(Object.keys(R.roles).map(function(k){return k+'×'+R.roles[k]}))+
     '<div class="tip">角色可兼任，不视为硬性配方</div>');
   h+=anCard('<b>物理/特殊配比</b>：物理 '+R.side.phys+' ／ 特殊 '+R.side.spec+' ／ 双刀 '+R.side.mixed+
@@ -12692,7 +12700,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.81';
+var ER_ENGINE_VER='v4.82';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
