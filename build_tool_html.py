@@ -777,7 +777,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.80</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.81</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2407,6 +2407,7 @@ function anRender(R){
   /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
   try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
   try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
+  try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
   if(R.members&&R.members.length){
     h+=anCard('<b>成员一览</b>（点图看该只推荐详情）<div class="anmemline">'+R.members.map(function(m){
@@ -4234,6 +4235,28 @@ function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
     if(e75b&&mx>=q.P75){line+='<br><span style="color:var(--sub)">卡线参考：若仅求过 P75（基准 '+q.P75+'）→ EV '+e75b.ev+'（达 '+e75b.val+'）即可，<b style="color:var(--ok)">省 '+e75b.saved+' EV 挪 HP</b>（不必上满 252）。</span>'}}
   line+='</div>';return line}
 /* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
+/* v4.81 P1：联防聚合热力卡（18 属性 × 全队承受倍率聚合，复用 defCellTrio 同源克制表；与②联防文字卡互补不重复） */
+function teamDefHeatHtml(R){
+  try{
+    var mem=(R&&R.members)||[];if(!mem.length)return '';
+    var sps=[];mem.forEach(function(m){var s=null;try{s=speciesById(m.id)}catch(e0){}if(s&&s.base)sps.push(s)});
+    if(!sps.length)return '';
+    var types=ERDATA.types||[];
+    var cells='';
+    types.forEach(function(tp){
+      var immune=0,resist=0,neutral=0,weak=0;
+      sps.forEach(function(s){
+        var v=defCellTrio(s,tp).inn;
+        if(v===0)immune++;else if(v<1)resist++;else if(v>1)weak++;else neutral++;
+      });
+      var bg=weak>=3?'#ffcdd2':(immune>=2?'#bbdefb':(resist>=3?'#c8e6c9':'#f0f0f0'));
+      var txt=weak>=3?('W'+weak):(immune?('I'+immune):'')+(resist?('R'+resist):'');
+      if(!txt)txt='·';
+      cells+='<div title="'+esc(tp)+'：免疫'+immune+' 抗'+resist+' 弱'+weak+'/'+sps.length+'" style="background:'+bg+';border-radius:3px;padding:3px 4px;font-size:9px;text-align:center">'+tlabel(tp).replace(/<[^>]+>/g,'')+'<br><b>'+txt+'</b></div>';
+    });
+    return '<b>联防聚合</b>（18 属性 × 全队承受倍率；红=≥3只同弱 蓝=免疫点 绿=多抗）<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:3px;margin-top:4px">'+cells+'</div>';
+  }catch(e){return ''}
+}
 /* v4.79 P1：队伍六维能力分组条形图（纯展示，O(6×6)，同源 R.members[].s.base，禁第二套口径）。
    六行（HP/攻/防/特攻/特防/速），每行 6 条（每只一色，宽度=该只该项/种族上限），手机端不横向滚动（列 flex 自适应）。 */
 function teamStatsChartHtml(R){
@@ -12669,7 +12692,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.80';
+var ER_ENGINE_VER='v4.81';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
