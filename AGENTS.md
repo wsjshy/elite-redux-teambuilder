@@ -151,7 +151,17 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-10-22，v4.80）
+## 6. 当前状态（2026-10-22，v4.81）
+
+- ✅ **v4.81 轮：联防聚合卡（P1，v4.79 顺延项落地；队伍分析器可视化补充，anRender 结果区追加一块，只追加不删）（2026-10-22 部署，线上验证通过）+ 主工作区恢复二次探测（P2）**：
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.81</span>`；master 链 HEAD=`a4acdb0a`（联防热力卡实施，worktree er481）+ 登记 commit（master 登记，2026-10-22 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 产物哈希：index.html（≡ 配招助手_ER.html）**= `0EF5DB0E0A64EABD…`**（N1=N2==冻结确定性）；build_tool_html.py = `657D10AFD30705F3…`（v4.81 含联防热力卡+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
+  - **P1 联防聚合卡**：**勘察先行**（`C:\temp\er-v481-impl\联防卡勘察.md`）：anRender ②联防/弱点矩阵（行2418）**已有文字卡** R.weak.coWeak（共同弱点≥2）+ immuneAxis（免疫轴）——**决定不造第二份文字，追加可视化热力卡**。**落地 `teamDefHeatHtml(R)`（行4239 前定义、行2410 调用——六维图后 anCard 追加位，产物 def+call=2）**：18 属性格 grid auto-fill minmax(52px,1fr) 紧凑排列，每格统计 免疫/抗/弱 只数（红=≥3同弱高亮、蓝=≥2免疫、绿=≥3多抗；tooltip 明细），多图少文、禁横向滚动（手机端 grid 自动换行 375px scrollW=clientW）、禁用下拉选择器、非滚动优先、PC 横版+手机竖版自适应。**数据同源链（G3）**：R.members[].id → speciesById → `defCellTrio(s,tp).inn`（行3383，与②联防文字卡**同克制表**，非第二套）；类型遍历 ERDATA.types（18 属性）。
+  - **不回归**：anRender 既有区块（构成画像/体系徽章/速度线卡 v4.74/六维图 v4.79/②联防文字卡）**只追加不删未触碰**；守门全量对照 v4.65 无回归+P4/EV508/S5q=60.4% 保持；分位锚点 273/331/372/394/441 不变。
+  - **验收链（0 FAIL）**：引擎 PASS（确定性 N1=N2=`0EF5DB0E`==冻结逐字节复现+守门全绿+联防专项：teamDefHeatHtml=2、数据同源 defCellTrio=31/coWeak=4/immuneAxis=7（同克制表非第二套）、ERDATA.types=49（18 属性遍历）、既有区块 teamSpeedCardHtml=3/teamStatsChartHtml=2 只追加不删）；黑盒 PASS（P0=0/P1=0/P2=0——**对账**：格斗 R2（2 只同弱）↔文字卡「格斗×2」✓、免疫点 6 条（电/地面/毒/水/超能力/幽灵）↔文字卡「免疫轴共 6 条」✓、18 属性格全在位；375px scrollW=clientW 无横向溢出；回归全绿）；P0 快验 PASS（版本双查一致、7/7 渲染无错、teamDefHeatHtml 定义+调用在位、EXIT=0）。
+  - **P2 主工作区恢复二次探测（结论）**：**系统删除拦截已解除**（新建+删除探针 `.probe_v481_test` 成功删除）；主工作区 `git reset --hard 24d26b7` 尝试执行但被 **Windows 文件占用阻塞**（`unable to create file: File exists`，非只读属性非系统拦截——git 覆盖已存在文件失败，疑文件句柄占用）——**主工作区物理文件全在、无数据丢失**（ER-source 3 项/data.js 在），git 索引仍混合（D/A/MM）；另已清理 `.git/refs` 坏对象 8 个（历轮 Rename 锁文件 `.bak<时间戳>` 残留，外部机制持续把新锁 Rename——git fetch 硬失败根因）+ 全库 `.lock` 6 个。**恢复留待文件占用解除后重试**（reset --hard 24d26b7 + 清残留），本轮 worktree 模式继续。
+  - **部署记录（v4.81 worktree 模式，v4.74 固化流程）**：实施在 worktree er-wt481（分支 er481，基线 master 24d26b7）完成（commit `a4acdb0a`，产物 0EF5DB0E，勘察记录 C:\temp\er-v481-impl\联防卡勘察.md）；**master 登记**：本段在 er-wt481 提交 push（er481:master）；**gh-pages 部署**：er-gh474 worktree 检出 gh-pages → Rename 旧 index.html → Copy 0EF5DB0E → 清锁 add/commit → push --force（push 前核查 commit 文件清单防 gitignored 输入误入）；**线上验证**：no-cache `0EF5DB0E`==本地（等 CDN 传播 ~5min）；5 项 gitignored 输入 MainAgent 侧核验在位（er-backup-v474 15 文件，item_zh_cn MD5=`03243EAA`）。
+  - **遗留（如实登记）**：主工作区 git 索引恢复待文件占用解除（物理文件全在、无丢失；删除拦截已解除）；长期顺延：v4.72 分段/排序按钮逐点测、补盲文案真实 UI 样例（登记关闭）。
 
 - ✅ **v4.80 轮：速度线分布条分位标签重叠修复（P1，用户截图确认「速度那里重叠」；根因=绝对定位标签窄屏堆叠）（2026-10-22 部署，线上验证通过）**：
   - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.80</span>`；master 链 HEAD=`3edacc3a`（实施，worktree er480）+ 登记 commit `1ccc490`（master 登记，2026-10-22 push）；gh-pages=`e21049a`（worktree 部署，2026-10-22 push --force）。
