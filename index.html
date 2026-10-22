@@ -600,7 +600,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.84</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.85</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -1680,26 +1680,13 @@ function famChainHtml(s){
     if(key){var arr=famIndex[key]||[];for(var j2=0;j2<arr.length;j2++){var o=arr[j2];if(!C[''+o.id]){C[''+o.id]=1;q.push(o.id)}}}
     guard++;
   }
-  /* 挂件：节点自己的 mega/prim/form + Redux 形态额外带同 famKey 家族标准成员的形态记录
-     （v4.13d 聚合：暴鲤龙R 无 Mega 记录，但同族 130 的 Mega X/Y 归并过来；地区型[阿罗拉等]不误挂标准 Mega） */
+  /* 挂件：仅节点自己的 mega/prim/form（v4.85：移除 v4.13d Redux 归并分支——Redux 形态不共享标准 Mega，
+     无 Mega 记录的 Redux 不再从标准族补充（用户实测暴鲤龙R 区重复显示标准超级暴鲤龙X/Y=跨区重复），
+     跨区形态引用以 gameData evolutions 真实数据为准；v4.84 P1-3 _own 守卫随分支整体移除） */
   function pendFor(id){
     var pend=[],gx=FG[''+id];
     function add(r){if(r&&pend.indexOf(r.id)<0)pend.push(r)}
     ((gx&&gx.mega)||[]).forEach(add);((gx&&gx.prim)||[]).forEach(add);((gx&&gx.form)||[]).forEach(add);
-    var spx=speciesById(id),key=spx?famKeyHeur(spx):'';
-    /* v4.84 P1-3：Redux 形态自身已有 mega/prim/form 记录时跳过标准族补充（大针蜂R#2516 自带超级大针蜂R，
-       原逻辑仍把标准族超级大针蜂#1505 挂上 → Redux 区重复显示标准 Mega）；
-       无形态记录的 Redux（暴鲤龙R → 归并标准 Mega X/Y，v4.13d 意图）保持补充 */
-    if(effRegion(id)==='Redux'){
-      var _own=(gx&&gx.mega&&gx.mega.length)||(gx&&gx.prim&&gx.prim.length)||(gx&&gx.form&&gx.form.length);
-      if(!_own){
-        (famIndex[key]||[]).forEach(function(o){
-          if(o.id===id||effRegion(o.id)!=='标准')return;
-          var og=FG[''+o.id];if(!og)return;
-          ((og.mega)||[]).forEach(add);((og.prim)||[]).forEach(add);((og.form)||[]).forEach(add);
-        });
-      }
-    }
     return pend;
   }
   /* ② 分组：普通形态（base 空）为节点，挂件形态不计入 */
@@ -2712,7 +2699,7 @@ function sprEl(tag,id,cls){
   /* v4.84 P1-2：缺图占位升级——spmiss 不再裸灰块，内嵌「灰底+形态名」文字（Mega 图运行时缺失/加载失败也可辨形态） */
   var ph='';
   if(!st){var _o=speciesById(id);var _nm=(_o&&_o.zh)?_o.zh:('#'+id);ph=' data-name="'+esc(_nm)+'"><span class="sphint">'+esc(_nm)+'</span>'}
-  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'"':'')+ph+'</'+tag+'>';
+  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'">':'')+ph+'</'+tag+'>';
 }
 function sprImg(id,cls){
   return '<span class="spbox '+(cls||'spcard')+'">'+sprEl('span',id,'spsp')+'</span>';
@@ -12571,7 +12558,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.84';
+var ER_ENGINE_VER='v4.85';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
