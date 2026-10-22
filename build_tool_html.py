@@ -772,6 +772,40 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 .lkcard .mcnm{white-space:normal}   /* 长名换行不截断（招式卡还带「学习方式」一行） */
 .mcx2{font-size:10px; font-weight:400; color:var(--sub); line-height:1.3}
 @media (max-width:768px){ .lkfilter label{min-height:44px; padding:6px 10px} }   /* 移动端触控目标 ≥44px */
+/* ===== v4.83 视觉一致性组（纯追加覆盖，不删既有规则；同名属性按 CSS 顺序后写覆盖） =====
+   V-P2-1 流派 tab 禁横滑 → flex-wrap 换行（桌面端 7 tab 不再溢出 146px）
+   V-P2-3 主按钮色 → 解析存档橙改全局蓝主色（HTML inline style 同步改）
+   V-P2-5 精灵名截断 → 队槽/六维左标签允许换行（窄屏再 ellipsis）
+   V-① select 视觉统一 → appearance:none 去原生外观 + chip 圆角（运行时另转 chip 组）
+   V-⑤ 圆角/padding 分级 → 导航 999 / 按钮 999 / 卡片 10 / chip 999（统一既有多数派值）
+   V-⑦ 可点元素统一 cursor:pointer */
+.bktabs{flex-wrap:wrap; height:auto; min-height:48px; overflow-x:visible; overflow-y:visible; padding:4px 2px; position:sticky}
+.bktabs .bktab{flex:0 0 auto}
+@media(max-width:768px){.bktabs{overflow-x:visible}}
+/* V-P2-5：队槽精灵名与六维图左标签不硬截断，允许换行；超窄(≤480)才 ellipsis */
+.slothead .spnm,.slothead .mcnm,.famlab,.radarlab{white-space:normal; overflow:visible; text-overflow:clip; min-width:0}
+@media(max-width:480px){.slothead .spnm,.slothead .mcnm{max-width:84px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}}
+/* V-①：原生 select 去原生外观、chip 化视觉（下拉箭头保留但弱化；运行时 v483SelectToChips 转 chip 组） */
+select{appearance:none; -webkit-appearance:none; border:1px solid var(--line); border-radius:999px; padding:5px 26px 5px 12px;
+  background:var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23666' stroke-width='1.5'/></svg>") no-repeat right 10px center;
+  font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; min-height:34px}
+select:hover{border-color:var(--accent)}
+select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 2px rgba(79,70,229,.15)}
+/* V-⑦：可点元素统一 pointer（机制解读 box / 卡片 / 词条 / chip） */
+.hlbox,.eng,.engbd,.acc,.accbd,.card,.mate,.slotcard,.needcard,.chip,.bktab,.evochip,.poolrow,.gl,.cand,.own{cursor:pointer}
+details.inline,.details.inline{cursor:pointer}
+/* V-⑤：卡片 padding 统一 8px（覆盖既有 10/0 差异，保持可读） */
+.slotcard,.needcard{padding:8px 10px}
+/* V-P2-2：空态引导条复用 .tip 样式（JS 在 atkResult/defResult 初始渲染） */
+.emptyhint{margin:14px 0; padding:14px 12px; border:1px dashed var(--line); border-radius:10px;
+  background:#fafbff; color:var(--sub); font-size:13px; text-align:center; line-height:1.8}
+.emptyhint b{color:var(--accent)}
+/* v4.83 chip 组（select 转换产物） */
+.chipgrp{display:inline-flex; flex-wrap:wrap; gap:5px; align-items:center; vertical-align:middle}
+.chipgrp .chipopt{display:inline-block; padding:4px 11px; border:1px solid var(--line); border-radius:999px;
+  background:var(--card); font-size:12px; color:var(--text); cursor:pointer; min-height:30px; line-height:22px; font-family:inherit}
+.chipgrp .chipopt:hover{border-color:var(--accent)}
+.chipgrp .chipopt.on{border-color:var(--accent); background:#eef2ff; color:var(--accent); font-weight:600}
 </style>
 </head>
 <body>
@@ -879,7 +913,7 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
     <select id="tmSort">
       <option value="id">编号</option><option value="bst">种族总值</option><option value="atk">攻击</option><option value="spe">速度</option>
     </select>
-    <button class="btn" style="background:var(--warn);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
+    <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
     <button class="btn" onclick="toggleCsvPanel()">📥 粘贴 CSV</button>
   </div>
@@ -3145,6 +3179,10 @@ function openMv(m){
       this.classList.toggle('on');renderDef();
     }));
   });
+  /* v4.83 V-P2-2：属性克制结果区初始空态引导（此前大面积空白无文案） */
+  var _ar=$('atkResult'),_dr=$('defResult');
+  if(_ar&&!_ar.innerHTML.trim())_ar.innerHTML='<div class="emptyhint">👆 <b>点上方任意属性</b> → 查看该属性招式打谁克制（2× / 0.5× / 0× 分组）</div>';
+  if(_dr&&!_dr.innerHTML.trim())_dr.innerHTML='<div class="emptyhint">👆 <b>点上方属性</b>（可多选双属性）→ 查看你的宝可梦属性怕谁、抗谁、免疫谁</div>';
 })();
 function renderAtk(t){
   var i=tIdx(t),k=[],h=[],z=[];
@@ -14136,6 +14174,31 @@ initRuleBoxes();
 renderTpl();
 renderMyPool();
 sprProbe();
+/* ===== v4.83 视觉一致性组：select→chip 组运行时转换（纯展示层，原生 select 隐藏，chip 点击同步 value 并触发原 onchange） ===== */
+function v483SelectToChips(){
+  var ids=['anpSort','anpRole','spSort','mvType','mvSplit','tmSort','tmRole','coreSort','coreRole','mvTypeSp','mvSplitSp','spdSortSel','spdNSel'];
+  ids.forEach(function(id){
+    var sel=document.getElementById(id);if(!sel||sel.dataset._v483done)return;sel.dataset._v483done='1';
+    if(!sel.options||!sel.options.length)return;   /* v4.83：prewarm vm 中 fake element 无 options，跳过不报错 */
+    var grp=document.createElement('span');grp.className='chipgrp';
+    var origOnChange=sel.onchange;
+    Array.prototype.forEach.call(sel.options,function(op){
+      var c=document.createElement('span');c.className='chipopt'+(op.selected?' on':'');c.textContent=op.textContent;
+      c.onclick=function(){
+        sel.value=op.value;
+        grp.querySelectorAll('.chipopt').forEach(function(x){x.classList.remove('on')});
+        c.classList.add('on');
+        if(origOnChange)origOnChange.call(sel,{target:sel,currentTarget:sel});
+        else if(sel.onchange)sel.onchange();
+        if(typeof sel.dispatchEvent==='function'){try{sel.dispatchEvent(new Event('change'))}catch(e){}}
+      };
+      grp.appendChild(c);
+    });
+    sel.style.display='none';
+    if(sel.parentNode)sel.parentNode.insertBefore(grp,sel.nextSibling);
+  });
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',v483SelectToChips);else v483SelectToChips();
 </script>
 </body>
 </html>
