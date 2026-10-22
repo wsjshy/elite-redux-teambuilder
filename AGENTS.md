@@ -154,7 +154,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 6. 当前状态（2026-10-22，v4.82）
 
 - ✅ **v4.82 轮：受队/强化推队独立旗标（P1，v4.66 登记项收口；队伍层体系补全，收口轮无用户新反馈）（2026-10-22 部署，线上验证通过）+ 主工作区恢复（P2 环境前置，已恢复）**：
-  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.82</span>`；master 链 HEAD=`400f4526`（旗标实施，worktree er482）+ 登记 commit（master 登记，2026-10-22 push，见部署记录）；gh-pages=（登记后值）（worktree 部署）。
+  - 标签行 `<span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.82</span>`；master 链 HEAD=`400f4526`（旗标实施，worktree er482）+ 登记 commit `e29faf9`（master 登记，2026-10-22 push）；gh-pages=`cc1cfd5`（worktree 部署，2026-10-22 push --force）。
   - 产物哈希：index.html（≡ 配招助手_ER.html）**= `C977D55E8CAE3FB8…`**（N1=N2==冻结确定性）；build_tool_html.py = `81C8197656E8CB17…`（v4.82 含副徽章+版本升号）；data.js 2456881 B = `7DB7FBB33D3160AF…`（v4.49 起逐字节未变）。
   - **P1 受队/强化推队独立旗标（设计先行，`C:\temp\er-v482-impl\旗标设计.md`）**：
     - **勘察结论**：v4.67 已有主体系优先链（行2395-2401，天气/钉子/双墙），受队/强化推队原纳入既有 kind——本轮收口为**并列独立副徽章**。
