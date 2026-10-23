@@ -818,7 +818,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.88</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.89</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2587,6 +2587,10 @@ function savTeamReport(){
     {rowOf:function(s,b,si){return savRowOf(s,pool[si].row)}});
 }
 /* ============ v4.88 pokepast 文本互操作（第四路输入：粘贴导入 / 导出分享；解析容错：中/英/图鉴名，招式道具中文名映射复用 MV/ERDATA.items） ============ */
+var PP_NAT_ALIAS={'活泼':'开朗','活潑':'开朗','任性':'固执','固執':'固执','大膽':'大胆','內斂':'内敛','安靜':'冷静','沈着':'沉着','膽小':'胆小','認真':'认真','溫和':'温和','溫順':'温顺','慎重':'慎重','淘氣':'淘气','樂天':'乐天','悠閑':'悠闲','頑皮':'顽皮','馬虎':'马虎'};
+/* v4.89 P3：招式经典旧译别名表（搜索容错 + pokepast 导入复用；键=旧名/错名，值=数据内真实中文名） */
+var MV_ALIAS={'影子球':'暗影球','精神干扰':'精神强念','精神強念':'精神强念','大字火':'大字爆炎','冷冻光束':'冰冻光束','急冻光线':'冰冻光束','急凍光線':'冰冻光束','冰冻光线':'冰冻光束','氣合拳':'真气拳','气合拳':'真气拳','瓦割':'劈瓦','翅膀拍':'翅膀攻击','飛光':'幻象光线'};
+function mvAliasOf(n){n=String(n||'').trim();return MV_ALIAS[n]||MV_ALIAS[n.toLowerCase()]||null}
 var PP_NAT={jolly:['开朗',1],timid:['胆小',1],hasty:['急躁',1],naive:['天真',1],
   hardy:['勤奋',0],docile:['坦率',0],bashful:['害羞',0],quirky:['浮躁',0],serious:['认真',0],
   lonely:['孤僻',-1],adamant:['固执',-1],naughty:['顽皮',-1],brave:['勇敢',-1],
@@ -2598,16 +2602,27 @@ var _ppSpIdx=null,_ppMvIdx=null,_ppItIdx=null;
 function ppSpeciesByName(name){
   name=String(name||'').trim();if(!name)return null;
   if(/^\d+$/.test(name)){var s=null;try{s=speciesById(name)}catch(e){}if(s)return s}
+  /* v4.90 P1-3：英文 Mega/形态名「Charizard-Mega-Y / Gengar-Mega」→ 基种类查 → 超级形态条目（与 megaFormOf 同区口径） */
+  var mm=/^([A-Za-z0-9 .'%-]+?)\s*-\s*Mega(?:\s*-\s*([XY]))?$/i.exec(name);
+  if(mm){
+    var base=ppSpeciesByName(mm[1].trim());
+    if(base){
+      var suf=(mm[2]||'').toUpperCase(),hit=null;
+      ERDATA.species.forEach(function(x){if(!hit&&/超级/.test(x.zh)&&x.zh.indexOf(String(base.zh))>-1&&(!suf||x.zh.indexOf(suf)>-1))hit=x});   /* 复核P1：x.zh 包含 base.zh（「超级喷火龙Y」含「喷火龙」），indexOf===0 方向反导致全 NULL */
+      if(hit)return hit;
+    }
+  }
   if(!_ppSpIdx){_ppSpIdx={};ERDATA.species.forEach(function(x){_ppSpIdx[String(x.zh).toLowerCase()]=x;_ppSpIdx[String(x.en).toLowerCase()]=x})}
   var k=name.toLowerCase();if(_ppSpIdx[k])return _ppSpIdx[k];
   var hit=null;ERDATA.species.forEach(function(x){if(!hit&&(String(x.zh).indexOf(name)>-1||String(x.en).toLowerCase().indexOf(k)>-1))hit=x});
   return hit;
 }
 function ppMoveByName(n){
-  n=String(n||'').trim().toLowerCase();if(!n)return 0;
-  if(!_ppMvIdx){_ppMvIdx={};for(var id in MV){var m=MV[id];if(m[1])_ppMvIdx[String(m[1]).toLowerCase()]=+id;if(m[2])_ppMvIdx[String(m[2]).toLowerCase()]=+id}}
-  if(_ppMvIdx[n])return _ppMvIdx[n];
-  for(var k in _ppMvIdx){if(k.indexOf(n)>-1||n.indexOf(k)>-1)return _ppMvIdx[k]}
+  n=String(n||'').trim();if(!n)return 0;
+  var real=mvAliasOf(n);if(real)n=real;   /* v4.89 P3：旧译别名→真实名（pokepast 导入复用） */
+  var nl=n.toLowerCase();if(!_ppMvIdx){_ppMvIdx={};for(var id in MV){var m=MV[id];if(m[1])_ppMvIdx[String(m[1]).toLowerCase()]=+id;if(m[2])_ppMvIdx[String(m[2]).toLowerCase()]=+id}}
+  if(_ppMvIdx[nl])return _ppMvIdx[nl];
+  for(var k in _ppMvIdx){if(k.indexOf(nl)>-1||nl.indexOf(k)>-1)return _ppMvIdx[k]}
   return 0;
 }
 function ppItemByName(n){
@@ -2625,21 +2640,25 @@ function pokepastParse(text){
     var head=lines[0],item=null,name=head,at=head.split('@');
     if(at.length>1){name=at[0];item=at.slice(1).join('@').trim()}
     name=name.replace(/\s*\([^)]*\)\s*$/,'').trim();
-    var nat='—',ev=[0,0,0,0,0,0],moves=[];
+    var nat='—',ev=[0,0,0,0,0,0],moves=[],abiZh='';
     for(var i=1;i<lines.length;i++){
       var L=lines[i];
       if(/^[-–*]/.test(L)){moves.push(L.replace(/^[-–*]\s*/,''));continue}
+      var ab=/^Ability:\s*(.+)$/i.exec(L);   /* v4.90 P1-3c：Ability 行解析（导入展示 + 导出补行） */
+      if(ab){abiZh=ab[1].trim();continue}
       var eL=L.replace(/^EVs:\s*/i,'');   /* v4.88 修复BUG-D：剥离「EVs:」前缀，单行多 EV 按 / 切分逐个吃 */
-      if(eL!==L){eL.split('/').forEach(function(seg){var mm=/(\d+)\s+(HP|Atk|Def|Spa|Spd|Spe|生命|攻击|防御|特攻|特防|速度)\b/.exec(seg.trim());if(mm){var ki=PP_EVK[mm[2]]!=null?PP_EVK[mm[2]]:PP_EVK[mm[2].toLowerCase()];if(ki!=null)ev[ki]=+mm[1]}});continue}
-      var m=/^(\d+)\s+(HP|Atk|Def|Spa|Spd|Spe|生命|攻击|防御|特攻|特防|速度)\b/.exec(L);
+      if(eL!==L){eL.split('/').forEach(function(seg){var mm=/(\d+)\s+(HP|Atk|Def|Spa|Spd|Spe|生命|攻击|防御|特攻|特防|速度)\b/i.exec(seg.trim());if(mm){var ki=PP_EVK[mm[2]]!=null?PP_EVK[mm[2]]:PP_EVK[mm[2].toLowerCase()];if(ki!=null)ev[ki]=+mm[1]}});continue}
+      var m=/^(\d+)\s+(HP|Atk|Def|Spa|Spd|Spe|生命|攻击|防御|特攻|特防|速度)\b/i.exec(L);
       if(m){var ki=PP_EVK[m[2]]!=null?PP_EVK[m[2]]:PP_EVK[m[2].toLowerCase()];if(ki!=null)ev[ki]=+m[1];continue}
-      var nm=L.replace(/\s+Nature$/i,'');
+      var nm=L.replace(/\s+Nature$/i,'').trim();
       if(PP_NAT[nm.toLowerCase()])nat=PP_NAT[nm.toLowerCase()][0];
-      else if(/^(勤奋|坦率|害羞|认真|浮躁|孤僻|勇敢|固执|顽皮|大胆|悠闲|淘气|乐天|宽容|保守|稳重|马虎|冷静|温和|大方|温顺|慎重|自大|沉着|狂妄|开朗|胆小|急躁|天真)$/.test(nm))nat=nm;
+      else if(PP_NAT_ALIAS[nm])nat=PP_NAT_ALIAS[nm];
+      else if(/^(勤奋|坦率|害羞|认真|浮躁|孤僻|勇敢|固执|顽皮|大胆|悠闲|淘气|乐天|宽容|保守|稳重|马虎|冷静|温和|大方|温顺|慎重|自大|沉着|狂妄|开朗|胆小|急躁|天真|爽朗|内敛|怕寂寞|调皮|慢吞吞)$/.test(nm))nat=nm;
+      else if(!/^(EVs|IVs|LV|LV\.)/i.test(nm)&&nm.length<=6&&!/[-–*]/.test(nm)&&!/\d/.test(nm)&&!/@/.test(nm))nat=nm; /* v4.89 衔接②：未识别性格行原样保留（不再落「—」丢失导出行） */
     }
     var sp=ppSpeciesByName(name);if(!sp)return;
     var it=item?ppItemByName(item):null;
-    out.push({s:sp,itemZh:it?(it[2]||it[1]):'',movesZh:moves,ev:ev,nat:nat});
+    out.push({s:sp,itemZh:it?(it[2]||it[1]):'',movesZh:moves,ev:ev,nat:nat,abiZh:abiZh});
   });
   return out.slice(0,6);
 }
@@ -2655,7 +2674,7 @@ function pokepastImport(){
     });
     addToTeam(x.s,{fromSave:false,item:x.itemZh,moves:x.movesZh,pps:[],ev:x.ev,nat:x.nat});
     ppRows.push({'来源':'队伍','图鉴编号':String(x.s.id),'等级':'100','道具':x.itemZh,
-      '主特性(当前生效)':'','招式1':mvRows[0]||'','招式2':mvRows[1]||'','招式3':mvRows[2]||'','招式4(末招)':mvRows[3]||'',
+      '主特性(当前生效)':x.abiZh||'','招式1':mvRows[0]||'','招式2':mvRows[1]||'','招式3':mvRows[2]||'','招式4(末招)':mvRows[3]||'',
       'EV_HP':x.ev[0],'EV_攻击':x.ev[1],'EV_防御':x.ev[2],'EV_特攻':x.ev[3],'EV_特防':x.ev[4],'EV_速度':x.ev[5],'性格':x.nat});
   });
   SAV_ROWS=ppRows;anCfgSrc='sav';
@@ -2670,12 +2689,15 @@ function pokepastExport(){
   if(!builds.length){toast('当前无队伍可导出（先在槽位选 6 只）');return}
   var EVN=['HP','Atk','Def','Spa','Spd','Spe'];
   var txt=builds.map(function(b){
-    var line=b.zh+(b.item&&b.item!=='无'?' @ '+b.item:'');
+    var sp=(b.id!=null)?(speciesById(b.id)||{}):{};   /* v4.90 P2-5：物种名中英并存（zh(en) 兼容外部工具） */
+    var line=b.zh+(sp.en?' ('+sp.en+')':'')+(b.item&&b.item!=='无'?' @ '+b.item:'');
     var evs=(b.ev||[]).map(function(v,i){return (+v||0)>0?(+v)+' '+EVN[i]:null}).filter(Boolean).join(' / ')||'0 HP';
     var ms=(b.moves||[]).filter(function(id){return id>0}).map(function(id){return '- '+anMvZh(id)}).join('\n');
-    return line+'\n'+(b.nat&&b.nat!=='—'?b.nat+'\n':'')+'EVs: '+evs+'\n'+ms;
+    var abi=b.abi||b['主特性(当前生效)']||'';   /* v4.90 P2-5：导出补 Ability 行（取实配/导入特性） */
+    return line+'\n'+(abi?('Ability: '+abi+'\n'):'')+(b.nat&&b.nat!=='—'?b.nat+'\n':'')+'EVs: '+evs+'\n'+ms;
   }).join('\n\n');
   openPpModal(txt);
+  toast('已生成 pokepast 文本 ↓ 直接从文本框复制（剪贴板被浏览器拒绝时，在文本框内全选 Ctrl+C 兜底）');   /* v4.90 P2-6：剪贴板被拒降级提示 */
 }
 function openPpModal(txt){var m=$('ppModal');if(!m)return;var ta=$('ppInput');if(ta)ta.value=txt||'';if(m.classList)m.classList.add('open')}
 function closePpModal(){var m=$('ppModal');if(m&&m.classList)m.classList.remove('open')}
@@ -4258,7 +4280,7 @@ function importNameList(rows){
       var zh=(cell.split('#')[0]||'').trim(),en=(zh.indexOf('(')>-1&&zh.indexOf(')')>zh.indexOf('('))?zh.slice(zh.indexOf('(')+1,zh.indexOf(')')):'';
       if(zh){ERDATA.species.forEach(function(x){if(!s&&x.zh===zh)s=x})}
       if(!s&&en){ERDATA.species.forEach(function(x){if(!s&&x.en&&x.en.toLowerCase()===en.toLowerCase())s=x})}
-      if(!s){ERDATA.species.forEach(function(x){if(!s&&(x.zh||'').indexOf(zh)>-1&&zh.length>=2)s=x})}
+      /* v4.90 P1-2：删除子串模糊兜底——仅精确中文/英文/编号匹配，禁止静默错加无关物种 */
     }
     if(!s||!isValidSp(s))continue;
     if(seen[String(s.id)])continue;seen[String(s.id)]=1;
@@ -4270,6 +4292,11 @@ function importNameList(rows){
 function importSaveBox(){
   var text=$('saveCsv').value;
   if(!text.trim()){toast('请先粘贴存档 CSV 文本');return}
+  /* v4.90 P1-2/P2-4：pokepast 文本识别 → 统一走 pokepast 解析引擎（禁止落入名单模糊匹配错加无关物种） */
+  if(/EVs:/i.test(text)||(/@/.test(text)&&/^\s*[-–*]/m.test(text))){
+    var pl=$('ppInput');if(pl){pl.value=text;pokepastImport();return}
+    toast('检测到 pokepast 文本：请在「队伍分析」Tab 点「粘贴 pokepast 导入」');return;
+  }
   var rows=parseCsvRows(text);
   if(!rows.length){toast('CSV 解析为空');return}
   var hdr=rows[0],idx={};
@@ -4641,7 +4668,8 @@ function spdBulkAlloc(R,s,bias){
     return H*D*S/(D+S)}   /* 均衡混伤：H/(1/D+1/S) */
   while(R>=4){
     var bk=null,bv=obj();
-    ['hp','d','s'].forEach(function(k){e[k]+=4;var v=obj();e[k]-=4;if(v>bv){bv=v;bk=k}});
+    ['hp','d','s'].forEach(function(k){if(e[k]+4>252)return;   /* v4.90 P1-1：单围 EV ≤252 上限钳制（超规值回退其它围） */
+      e[k]+=4;var v=obj();e[k]-=4;if(v>bv){bv=v;bk=k}});
     if(!bk)break;
     e[bk]+=4;R-=4;
   }
@@ -4655,7 +4683,7 @@ function spdNatAdvice(s,p,M){
   return '中性';
 }
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
-var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0};
+var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',crit:false,dmgItem:'',eAtk:null};
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx)m*=2;if(__spdSl.tailwind)m*=2;return m}
 function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" onclick="'+onclick+'">'+label+'</span>'}
 function speedSliderHtml(s){
@@ -4675,11 +4703,11 @@ function speedSliderHtml(s){
         spdSlChip('围巾×1.5',__spdSl.scarf,'spdTgl(\'scarf\')')+
         spdSlChip('天气×2',__spdSl.wx,'spdTgl(\'wx\')')+
         spdSlChip('顺风×2',__spdSl.tailwind,'spdTgl(\'tailwind\')')+'</span></div>'+
-      '<div style="font-size:11px;margin:4px 0">耐久分配 bias：<span class="chipgrp">'+
+      '<div style="font-size:11px;margin:4px 0">耐久分配 bias：<span class="chipgrp" id="spdBiasG">'+
         spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
         spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
         spdSlChip('特殊端',__spdSl.bias==='special','spdSet(\'bias\',\'special\')')+'</span> '+
-      '性格：<span class="chipgrp">'+
+      '性格：<span class="chipgrp" id="spdNatG">'+
         spdSlChip('自动',!__spdSl.natOv,'spdSet(\'natOv\',\'\')')+
         spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
         spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
@@ -4695,6 +4723,24 @@ function speedSliderHtml(s){
         spdSlChip('替身4',__spdSl.bp==4,'spdSet(\'bp\',4)')+
         spdSlChip('命玉10',__spdSl.bp==10,'spdSet(\'bp\',10)')+'</span></div>'+
       '<div id="spdPlanBox" style="margin-top:2px"></div>'+
+      '<div style="border-top:1px solid var(--line,rgba(255,255,255,.12));margin-top:6px;padding-top:4px">'+
+        '<div style="font-size:11px;color:var(--sub)">🎯 '+esc('伤害判定 / OHKO 反解')+'（Gen3 公式 × ER 数据）</div>'+
+        '<input type="text" id="dmgDefQ" placeholder="搜对手，如：耿鬼" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgDefQ(this.value)">'+
+        '<div id="dmgDefList" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
+        '<input type="text" id="dmgMvQ" placeholder="搜我方招式，如：暗影球" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgMvQ(this.value)">'+
+        '<div id="dmgMvList" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
+        '<div style="font-size:11px;margin-top:2px">天气：<span class="chipgrp">'+
+          spdSlChip('无',!__spdSl.weather,'dmgSet(\'weather\',\'\')')+
+          spdSlChip('晴',__spdSl.weather==='晴','dmgSet(\'weather\',\'晴\')')+
+          spdSlChip('雨',__spdSl.weather==='雨','dmgSet(\'weather\',\'雨\')')+'</span> '+
+        '道具：<span class="chipgrp">'+
+          spdSlChip('无',!__spdSl.dmgItem,'dmgSet(\'dmgItem\',\'\')')+
+          spdSlChip('命玉',__spdSl.dmgItem==='生命宝珠','dmgSet(\'dmgItem\',\'生命宝珠\')')+
+          spdSlChip('头带',__spdSl.dmgItem==='讲究头带','dmgSet(\'dmgItem\',\'讲究头带\')')+
+          spdSlChip('眼镜',__spdSl.dmgItem==='讲究眼镜','dmgSet(\'dmgItem\',\'讲究眼镜\')')+'</span> '+
+        spdSlChip('暴击',__spdSl.crit,'dmgTgl(\'crit\')')+'</div>'+
+        '<div id="dmgOut" style="margin-top:2px"></div>'+
+      '</div>'+
     '</div>';
     setTimeout(function(){try{spdSliderRender()}catch(e){}},0);   /* v4.88 修复GAP-C：详情打开瞬间即首渲染一次方案（不等首次交互） */
     return h;
@@ -4709,13 +4755,16 @@ function spdSliderRender(){
   var b=bstI(s,5),p=__spdSl.p,T=spdPctileVal(p),M=spdModMul(),Te=Math.ceil(T/M);
   var vMax=spdMaxOf(s),vMin=Math.floor((2*b+36)*0.9);
   var plans=spdPlanForTarget(s,Te);
-  var adv=spdNatAdvice(s,p,M),main=null;
+  var adv=spdNatAdvice(s,p,M),main=null;   /* v4.90 P2-1：主方案须与 adv 决策一致（消除「目标 273 却推减速 230」矛盾） */
   if(__spdSl.natOv){plans.forEach(function(pl){if(pl.nat===__spdSl.natOv)main=pl})}
-  if(!main&&plans.length)main=plans[0];
+  if(!main&&plans.length){var advPl=null;plans.forEach(function(pl){if(!advPl&&pl.nat===adv)advPl=pl});main=advPl||plans[0]}
   var h='';
   if(T<=vMin)h+='<div style="color:var(--sub);font-size:10px">已到本只下限：减速0EV 实速尚有 '+vMin+'（P'+spdRankOfVal(vMin)+'），目标线 '+T+' 低于此无意义</div>';
   if(!main){
-    h+='<div style="color:var(--warnred);font-size:11px">⚠️ 已到本只上限：目标 P'+p+' 需自然速度 '+Te+'，即使加速+252 极速 '+vMax+' 仍差 '+(Te-vMax)+' 点 → 考虑围巾×1.5 / 顺风×2 / 换高速手</div>';
+    var canFix=(M>1)&&(Math.ceil(T/M)<=vMax);   /* v4.90 P2-3：可达性基于原始实速边界 */
+    h+=canFix
+      ?'<div style="color:var(--sub);font-size:11px">目标 P'+p+' 原始需 '+Te+' 超出极速 '+vMax+'，但<b style="color:var(--ok)">经当前乘区（×'+M+'）修正可达</b>：原始 '+Math.ceil(T/M)+' 速即可（围巾/天气/顺风生效）</div>'
+      :'<div style="color:var(--warnred);font-size:11px">⚠️ 已到本只上限：目标 P'+p+' 需原始速度 '+Te+'，即使加速+252 极速 '+vMax+' 仍差 '+(Te-vMax)+' 点，乘区关闭或修正后仍不可达 → 开启围巾×1.5 / 顺风×2 / 换高速手</div>';
   }else{
     var eff=Math.floor(main.val*M);
     h+='<div style="margin:4px 0"><span class="abi" style="border-color:var(--accent)"><b>'+main.nat+'</b> · '+glossify('EV')+' '+main.ev+'速 → 自然 '+main.val+'（有效 '+eff+'）</span>';
@@ -4724,6 +4773,7 @@ function spdSliderRender(){
     /* 攻击阈值 OHKO 线反解（§2.3：e=252−4((m/倍率)−t0)，t0=0EV 攻击实数） */
     var t0=2*bstI(s,1)+31+5,eAtk=0;
     if(__spdSl.atkM>0){eAtk=252-4*((__spdSl.atkM/__spdSl.mult)-t0);if(eAtk<0)eAtk=0;if(eAtk>252)eAtk=252;eAtk=Math.floor(eAtk/4)*4}
+    if(__spdSl.eAtk!=null&&__spdSl.eAtk>=0)eAtk=__spdSl.eAtk;   /* v4.89：OHKO 反解 EV 直接覆盖 */
     var R=508-main.ev-eAtk;if(R<0)R=0;
     var bulk=spdBulkAlloc(R,s,__spdSl.bias);
     if(__spdSl.bp>0){
@@ -4738,7 +4788,116 @@ function spdSliderRender(){
   var vb=$('spdPlanBox');if(vb)vb.innerHTML=h;
   var vv=$('spdSlVal');if(vv)vv.textContent=main?main.val:T;   /* v4.88 修复BUG-B：大字值=原始实速（乘区有效速度在方案行另列），不被 M 放大 */
   var rk=$('spdSlRank');if(rk)rk.textContent='P'+p+' · 极速 '+vMax+'=P'+spdRankOfVal(vMax);   /* 修复BUG-A：实参为极速值而非物种对象 */
+  var bg=$('spdBiasG');if(bg)bg.innerHTML=   /* v4.90 P2-2：chip 组点击后实时重渲染（radio 互斥语义可见性） */
+    spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
+    spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
+    spdSlChip('特殊端',__spdSl.bias==='special','spdSet(\'bias\',\'special\')');
+  var ng=$('spdNatG');if(ng)ng.innerHTML=
+    spdSlChip('自动',!__spdSl.natOv,'spdSet(\'natOv\',\'\')')+
+    spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
+    spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
+    spdSlChip('−Spe',__spdSl.natOv==='减速','spdSet(\'natOv\',\'减速\')');
+  dmgRender();   /* v4.89：伤害判定面板随滑块状态同步刷新 */
 }
+/* ===== v4.89 伤害引擎 spike（Gen3 基 + ER 自有数据，路径C：算法移植，零外部 API/LLM、零 npm 依赖） =====
+   公式骨架（Bulbapedia Gen3 / ER GBA 基版）：
+     base = floor( floor( 22 × BP × A / D ) / 50 ) + 2        （L=100：2L/5+2=42？不，Gen3 为 (2L/5+2)=42…
+       注：实证 ER/smogon gen3 为 (2*L/5+2)=42 当 L=100 → 内层 floor(42*BP*A/D/50)；此处按对拍样本表校准值 42 落地）
+   DMG ∈ [floor(base*MOD*0.85), floor(base*MOD*1.0)]      （随机档 85%–100%）
+   MOD = STAB(1.5) × 克制(defCellTrio.opt，含特性免疫/减半) × 天气(晴火/雨水 ×(1+WCONF.boost)=×1.5)
+       × 道具(生命宝珠1.3 / 讲究头带(物理)1.5 / 讲究眼镜(特殊)1.5) × 暴击(×2，可选)
+   口径真值源：WCONF（天气）/ ABI_ATE（-ate 本系）/ defCellTrio（克制×特性）/ ERDATA.moves（BP/属性/分类）/ NATURES（性格）。 */
+var _dmgNatSt={'攻击':1,'防御':2,'特攻':3,'特防':4,'速度':5};
+function dmgNatMul(nn,stIdx){
+  var arr=NATURES[nn];if(!arr)return 1;
+  for(var i=0;i<arr.length;i++){
+    var m=/^([+−-])(攻击|防御|特攻|特防|速度)/.exec(arr[i]);if(!m)continue;
+    if(_dmgNatSt[m[2]]===stIdx)return (m[1]==='+')?1.1:0.9;
+  }
+  return 1;
+}
+function dmgStatOf(base,ev,iv,stIdx,nn){
+  iv=(iv===undefined?31:iv);
+  return Math.floor((2*base+iv+Math.floor((ev||0)/4)+5)*dmgNatMul(nn,stIdx));
+}
+/* 衔接③：双 Mega/Redux 活性形态——持「XX进化石」时取 zh 以本种名开头且含「超级」的形态条目（P0 启发式，非配装态保持基础形态） */
+function megaFormOf(s,itemZh){
+  try{
+    if(!s||!/进化石/.test(String(itemZh||'')))return s;
+    var hit=null;
+    var suf=(/[XＸ]$/.test(itemZh))?'X':((/[YＹ]$/.test(itemZh))?'Y':((/[ZＺ]$/.test(itemZh))?'Z':''));   /* 联动：道具后缀Ｘ/Ｙ/Ｚ锁定形态（v4.89 P2残留补Ｚ支） */
+    ERDATA.species.forEach(function(x){if(!hit&&/超级/.test(x.zh)&&x.zh.indexOf(String(s.zh))>-1&&(!suf||x.zh.indexOf(suf)>-1))hit=x});
+    return hit||s;
+  }catch(e){return s}
+}
+/* 伤害核心：o={sA,sD,moveId,evA,evD,natA,natD,itemA,weather,crit}；返回 {lo,hi,eff,stab} */
+function dmgCalc(o){
+  var mv=ERDATA.moves[o.moveId];if(!mv||!(+mv[5]>0))return null;
+  var bp=+mv[5],mType=mv[3],isPhys=(mv[4]==='物理');
+  var sA=megaFormOf(o.sA,o.itemA),sD=o.sD;
+  var A=dmgStatOf(bstI(sA,isPhys?1:3),o.evA||0,31,isPhys?1:3,o.natA);
+  var D=dmgStatOf(bstI(sD,isPhys?2:4),o.evD||0,31,isPhys?2:4,o.natD);
+  var base=Math.floor(Math.floor(42*bp*A/D)/50)+2;
+  var mod=1;
+  var stab=(mType===sA.t1||mType===sA.t2);   /* STAB：本系或 -ate 转换后本系（ABI_ATE.stabConvert） */
+  if(!stab){try{var cv=convOf(sA);if(cv&&cv.to===mType)stab=ABI_ATE.stabConvert!==false}catch(e){}}
+  if(stab)mod*=1.5;
+  var eff=1;try{eff=defCellTrio(sD,mType,null).opt}catch(e){eff=1}   /* 克制×特性免疫/减半：唯一真值源 */
+  if(eff===0)return {lo:0,hi:0,eff:0,stab:stab};
+  mod*=eff;
+  if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
+  if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
+  if(/生命宝珠/.test(o.itemA||''))mod*=1.3;
+  if(isPhys&&/讲究头带/.test(o.itemA||''))mod*=1.5;
+  if(!isPhys&&/讲究眼镜/.test(o.itemA||''))mod*=1.5;
+  if(o.crit)mod*=2;
+  return {lo:Math.floor(base*mod*0.85),hi:Math.floor(base*mod),eff:eff,stab:stab,base:base,mod:mod};
+}
+/* 反解：evA 从 0 按 4 步递增，首个 min-roll ≥ 对手HP 的 EV（OHKO 线） */
+function ohkoSolveEv(o,hpD){
+  for(var ev=0;ev<=252;ev+=4){
+    var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,crit:o.crit});
+    if(r&&r.lo>=hpD)return ev;
+  }
+  return -1;
+}
+/* 伤害判定面板：选择对手(搜索chips，禁下拉)、选择我方招式、天气/暴击/道具 chip、输出 min-max + OHKO 判定 + 反解 */
+function dmgDefQ(v){
+  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgDefList');if(el)el.innerHTML='';return}
+  var hits=[];ERDATA.species.forEach(function(x){if(hits.length<12&&String(x.zh).toLowerCase().indexOf(q)>-1)hits.push(x)});
+  $('dmgDefList').innerHTML=hits.map(function(x){
+    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\')">'+esc(x.zh)+'</span>'}).join('');
+}
+function dmgDefPick(id){__spdSl.defId=id;var el=$('dmgDefList');if(el)el.innerHTML='<span class="chipopt on">'+esc((speciesById(id)||{zh:'#'+id}).zh)+'</span>';dmgRender()}
+function dmgMvQ(v){
+  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgMvList');if(el)el.innerHTML='';return}
+  var real=mvAliasOf(String(v||'').trim());   /* v4.89 P3：旧译别名命中→按真实名搜索 */
+  if(real)q=real.toLowerCase();
+  var hits=[];for(var id in ERDATA.moves){var m=ERDATA.moves[id];if(+m[5]>0&&String(m[1]).toLowerCase().indexOf(q)>-1){hits.push(m);if(hits.length>=12)break}}
+  $('dmgMvList').innerHTML=hits.map(function(m){
+    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgMvPick(\''+m[0]+'\')">'+esc(m[1])+'('+m[5]+')</span>'}).join('');
+}
+function dmgMvPick(id){__spdSl.mvId=id;var el=$('dmgMvList');if(el)el.innerHTML='<span class="chipopt on">'+esc(anMvZh(id))+'</span>';dmgRender()}
+function dmgTgl(k){__spdSl[k]=!__spdSl[k];dmgRender()}
+function dmgSet(k,v){__spdSl[k]=v;dmgRender()}
+function dmgRender(){
+  var box=$('dmgOut');if(!box)return;
+  var sA=__spdSl.s;if(!sA){box.innerHTML='';return}
+  var sD=__spdSl.defId?speciesById(__spdSl.defId):null;
+  if(!sD||!__spdSl.mvId){box.innerHTML='<div style="font-size:10px;color:var(--sub)">选对手 + 选我方招式后出伤害范围与 OHKO 判定</div>';return}
+  var natA=__spdSl.natOv||'';
+  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',crit:!!__spdSl.crit};
+  var r=dmgCalc(o);if(!r){box.innerHTML='<div style="font-size:10px;color:var(--warnred)">该招式无威力</div>';return}
+  var hpD=dmgStatOf(bstI(sD,0),0,31,0,'');
+  var verdict=r.lo>=hpD?'<span style="color:var(--ok)">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub)">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred)">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
+  var solve=ohkoSolveEv(o,hpD);
+  box.innerHTML='<div style="font-size:11px;margin:2px 0">'+esc(sA.zh)+' → '+esc(sD.zh)+'（HP '+hpD+'）'+
+    '<br>伤害 <b>'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+'）'+verdict+
+    '<br>'+(solve>=0
+      ?'达到 OHKO 最低攻端 EV = <b>'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
+      :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
+}
+function dmgApplySolve(ev){__spdSl.eAtk=ev;spdSliderRender()}
 /* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
 /* v4.81 P1：联防聚合热力卡（18 属性 × 全队承受倍率聚合，复用 defCellTrio 同源克制表；与②联防文字卡互补不重复） */
 function teamDefHeatHtml(R){
@@ -13213,7 +13372,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.88';
+var ER_ENGINE_VER='v4.89';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
