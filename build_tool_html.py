@@ -819,7 +819,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.96</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.97</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -936,6 +936,8 @@ details.inline,.details.inline{cursor:pointer}
     <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.96：随机生成 6 只队伍">🎲 随机队</button>
     <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:11px">传说档:关</button>
     <button class="btn-mini" onclick="window._randMode=(window._randMode==='template'?'pure':'template');toast(window._randMode==='template'?'随机队：官方模板模式':'随机队：纯随机模式')" id="randModeBtn" style="font-size:11px">模板:开</button>
+    <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="v4.97：基于速度线/联防/体系缺口推荐补位">🧠 智能补位</button>
+    <button class="btn-mini" onclick="window._sugPool=(window._sugPool==='pc'?'dex':'pc');toast('补位候选池：'+(window._sugPool==='pc'?'存档电脑区':'全图鉴'))" id="sugPoolBtn" style="font-size:11px">候选:存档区</button>
   </div>
   <div class="sec" style="margin:6px 0">
     <div class="tmfilter">
@@ -3747,7 +3749,7 @@ function renderSlots(){
         }
         html+='<span class="badge badge-neu" style="cursor:pointer" onclick="pickAbi('+s.id+',-1)" title="清除勾选">✕</span></div>';
       }
-      if(info.fromSave){
+      if(info.moves&&info.moves.length){
         var mv=[],pps=info.moves||[];
         pps.forEach(function(p){mv.push('<span class="split split-STATUS">'+esc(p)+'</span>')});
         html+='<div class="slotinfo" style="padding:0 10px 6px">招式：'+(mv.join(' ')||'—')+
@@ -3761,6 +3763,77 @@ function renderSlots(){
   html='<div style="margin:2px 0 8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-mini" onclick="shareCardOpen()" title="Canvas 生成 16:9 队伍分享卡（下载PNG/复制文字）">📤 分享队伍卡</button></div>'+html;
   $('tmCount').textContent=team.length;
   $('tmSlots').innerHTML=html;
+}
+/* ============ v4.97 A：智能补位（规则叙事型，无机械评分） ============ */
+function teamDiag(){
+  /* 三面诊断：速度线 / 属性联防 / 体系 */
+  var spds=team.map(function(s){try{return spdMaxOf(s)}catch(e){return 0}});
+  var mx=spds.length?Math.max.apply(null,spds):0;
+  var q=speedPctiles();
+  var spdGap=mx<q.P75;
+  /* 联防：4 倍弱点类型 + 无人联防类型 */
+  var wkCount={},resist={};
+  ERDATA.types.forEach(function(at){
+    var w4=0,res=0;
+    team.forEach(function(s){
+      try{var c=defCellTrio(s,at).inn;if(c>=2)w4++;if(c<=0.5)res++}catch(e){}
+    });
+    wkCount[at]=w4;resist[at]=res;
+  });
+  var w4Types=Object.keys(wkCount).filter(function(at){return wkCount[at]>=2});
+  var noResistWeak=Object.keys(wkCount).filter(function(at){return wkCount[at]>=1&&resist[at]===0});
+  return {mx:mx,q:q,spdGap:spdGap,w4Types:w4Types,noResistWeak:noResistWeak,spds:spds};
+}
+function smartSuggest(){
+  var d=teamDiag();
+  /* 候选池 */
+  var pool;
+  if((!window._sugPool||window._sugPool==='pc')&&typeof SAV_ROWS!=='undefined'&&SAV_ROWS&&SAV_ROWS.pc&&SAV_ROWS.pc.length){
+    pool=SAV_ROWS.pc.map(function(r){return r.sp||r});
+    pool=pool.filter(function(s){return s&&isValidSp(s)&&team.indexOf(s)<0});
+    if(!pool.length)pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+  }else{
+    pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+  }
+  /* 候选理由生成：速度缺口优先高速 / 联防缺口优先对该系抗性 */
+  var cand=pool.map(function(s){
+    var why='';
+    try{var sp=spdMaxOf(s)}catch(e){sp=0}
+    if(d.spdGap&&sp>d.mx){why='补速线：队伍极速 '+d.mx+' 低于 P75（'+d.q.P75+'）；推荐 '+s.zh+' 极速 '+sp+' 可压该段';return {s:s,why:why,val:sp}}
+    if(d.noResistWeak.length){
+      var at=d.noResistWeak[0];
+      try{var c=defCellTrio(s,at).inn;if(c<=0.5){why='补联防：队伍 4 倍弱 '+at+' 且无人联防；推荐 '+s.zh+' 对 '+at+' 耐受力 '+c+'×';return {s:s,why:why,val:(1-c)}}}catch(e){}
+    }
+    return null;
+  }).filter(function(x){return x});
+  /* 速度缺口：取前 2 高速；联防缺口：取 1 个能补 noResistWeak */
+  var picks=[];
+  var fast=cand.slice().sort(function(a,b){return b.val-a.val});
+  if(d.spdGap){fast.slice(0,2).forEach(function(x){if(picks.indexOf(x)<0)picks.push(x)})}
+  if(d.noResistWeak.length){
+    var at=d.noResistWeak[0];
+    pool.forEach(function(s){try{var c=defCellTrio(s,at).inn;if(c<=0.5){picks.push({s:s,why:'补联防：队伍 4 倍弱 '+at+' 且无人联防；'+s.zh+' 对 '+at+' 耐受力 '+c+'×',val:c});return}}catch(e){}});
+  }
+  picks=picks.slice(0,3);
+  if(!picks.length)picks=fast.slice(0,3);
+  /* 渲染 */
+  var html='<div style="margin:6px 0;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,137,123,.06)">'+
+    '<div style="font-size:12px;font-weight:600;margin-bottom:4px">🧠 智能补位诊断（队伍 '+team.length+'/6）</div>'+
+    '<div style="font-size:11px;color:var(--sub);margin-bottom:4px">速度线：全队极速 '+d.mx+(d.spdGap?' <span style="color:var(--warnred)">低于 P75（'+d.q.P75+'）⚠️</span>':' ≥ P75 ✓')+
+    '；4 倍弱点系：'+(d.w4Types.length?d.w4Types.join('、'):'无')+
+    '；无人联防系：'+(d.noResistWeak.length?d.noResistWeak.join('、'):'无')+'</div>';
+  picks.forEach(function(p){
+    html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px dashed var(--line)">'+
+      '<span style="font-size:11px;flex:1">'+p.s.zh+'<br><span style="color:var(--sub);font-size:10px">'+p.why+'</span></span>'+
+      '<button class="btn-mini" onclick="addToTeam(ERDATA.species.find(function(x){return x.id===\''+p.s.id+'\'}))" style="font-size:11px">＋入队</button></div>';
+  });
+  html+='</div>';
+  var old=document.getElementById('sugBox');
+  if(old)old.remove();
+  var div=document.createElement('div');div.id='sugBox';div.style.cssText='display:block;width:100%;box-sizing:border-box;margin:8px auto;padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(0,137,123,.06);max-width:92vw;';div.innerHTML=html;
+  try{document.body.appendChild(div)}catch(e){}
+  try{div.scrollIntoView({behavior:'auto',block:'center'})}catch(e){}
+  toast('🧠 已出补位建议 '+picks.length+' 只');
 }
 /* ============ v4.96：Showdown 官方模板 sets 懒加载（assets/showdown_sets_v496.json，独立 json 不进首屏） ============ */
 function loadShowdownSets(cb){
@@ -13719,7 +13792,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.96';
+var ER_ENGINE_VER='v4.97';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
