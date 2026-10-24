@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.103</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.104</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3827,7 +3827,7 @@ function shareCardOpen(){
   var h='<div id="shareCardOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">'+
     '<div style="background:#fff;border-radius:10px;padding:12px;max-width:min(94vw,640px);width:100%;box-sizing:border-box">'+
     '<div style="font-weight:600;margin-bottom:8px;font-size:14px">📤 队伍分享卡</div>'+
-    '<canvas id="shareCv" style="width:100%;height:auto;border-radius:8px;background:#f7f9fc;display:block"></canvas>'+
+    '<canvas id="shareCv" style="width:100%;height:auto;max-width:100%;border-radius:8px;background:#f7f9fc;display:block"></canvas>'+
     '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'+
     '<button class="btn-mini" onclick="shareCardDownload()">⬇ 下载 PNG</button>'+
     '<button class="btn-mini" onclick="shareCardCopy()">📋 复制文字</button>'+
@@ -3841,6 +3841,7 @@ function shareCardOpen(){
     '<div style="font-size:11px;color:#78909c">扫码即可在手机端打开本队伍</div></div></div></div></div>';
   document.body.insertAdjacentHTML('beforeend',h);
   shareCardDraw();
+  renderShareQr();
 }
 function shareHashCopy(){
   var hl=document.getElementById('shareHashLink');if(!hl)return;
@@ -3873,9 +3874,13 @@ function renderShareQr(){
 }
 function shareCardClose(){var o=document.getElementById('shareCardOverlay');if(o)o.remove()}
 function shareCardDraw(){
+  try{
   var cv=document.getElementById('shareCv');if(!cv)return;
-  cv.width=960;cv.height=540; /* 16:9 固定画布 */
+  var cw=cv.clientWidth||640;
+  var scale=cw/960;
+  cv.width=960*scale;cv.height=540*scale;
   var ctx=cv.getContext('2d');
+  ctx.scale(scale,scale);
   ctx.fillStyle='#f7f9fc';ctx.fillRect(0,0,960,540);
   ctx.fillStyle='#1a2332';ctx.font='bold 26px sans-serif';
   ctx.fillText('Elite Redux 队伍分享卡',28,42);
@@ -3901,6 +3906,7 @@ function shareCardDraw(){
     ctx.fillText(s.t1,x+218,y+32);
     if(s.t2&&s.t2!==s.t1){ctx.fillStyle=TC[s.t2]||'#b0bec5';ctx.fillRect(x+200,y+46,72,26);ctx.fillText(s.t2,x+218,y+64)}
   });
+  }catch(e){console.log('shareCardDraw err',e)}
 }
 function shareCardDownload(){
   var cv=document.getElementById('shareCv');if(!cv)return;
@@ -4722,7 +4728,11 @@ Minimum version required to store current data is: `+i+`.
 `);let s=wn(t,e,o),u=et.getSymbolSize(t),c=new on(u);return fn(c,t),gn(c),dn(c,t),Bt(c,e,0),t>=7&&hn(c,t),pn(c,s),isNaN(r)&&(r=At.getBestMask(c,Bt.bind(null,c,e))),At.applyMask(r,c),Bt(c,e,r),{modules:c,version:t,errorCorrectionLevel:e,maskPattern:r,segments:o}}Ae.create=function(t,e){if(typeof t>"u"||t==="")throw new Error("No input text");let r=Et.M,o,i;return typeof e<"u"&&(r=Et.from(e.errorCorrectionLevel,Et.M),o=tt.from(e.version),i=At.from(e.maskPattern),e.toSJISFunc&&et.setToSJISFunction(e.toSJISFunc)),yn(t,o,r,i)}});var It=g(L=>{function Ie(n){if(typeof n=="number"&&(n=n.toString()),typeof n!="string")throw new Error("Color should be defined as hex string");let t=n.slice().replace("#","").split("");if(t.length<3||t.length===5||t.length>8)throw new Error("Invalid hex color: "+n);(t.length===3||t.length===4)&&(t=Array.prototype.concat.apply([],t.map(function(r){return[r,r]}))),t.length===6&&t.push("F","F");let e=parseInt(t.join(""),16);return{r:e>>24&255,g:e>>16&255,b:e>>8&255,a:e&255,hex:"#"+t.slice(0,6).join("")}}L.getOptions=function(t){t||(t={}),t.color||(t.color={});let e=typeof t.margin>"u"||t.margin===null||t.margin<0?4:t.margin,r=t.width&&t.width>=21?t.width:void 0,o=t.scale||4;return{width:r,scale:r?4:o,margin:e,color:{dark:Ie(t.color.dark||"#000000ff"),light:Ie(t.color.light||"#ffffffff")},type:t.type,rendererOpts:t.rendererOpts||{}}};L.getScale=function(t,e){return e.width&&e.width>=t+e.margin*2?e.width/(t+e.margin*2):e.scale};L.getImageWidth=function(t,e){let r=L.getScale(t,e);return Math.floor((t+e.margin*2)*r)};L.qrToImageData=function(t,e,r){let o=e.modules.size,i=e.modules.data,s=L.getScale(o,r),u=Math.floor((o+r.margin*2)*s),c=r.margin*s,l=[r.color.light,r.color.dark];for(let a=0;a<u;a++)for(let w=0;w<u;w++){let h=(a*u+w)*4,y=r.color.light;if(a>=c&&w>=c&&a<u-c&&w<u-c){let A=Math.floor((a-c)/s),T=Math.floor((w-c)/s);y=l[i[A*o+T]?1:0]}t[h++]=y.r,t[h++]=y.g,t[h++]=y.b,t[h]=y.a}}});var Ne=g(nt=>{var Nt=It();function En(n,t,e){n.clearRect(0,0,t.width,t.height),t.style||(t.style={}),t.height=e,t.width=e,t.style.height=e+"px",t.style.width=e+"px"}function Cn(){try{return document.createElement("canvas")}catch{throw new Error("You need to specify a canvas element")}}nt.render=function(t,e,r){let o=r,i=e;typeof o>"u"&&(!e||!e.getContext)&&(o=e,e=void 0),e||(i=Cn()),o=Nt.getOptions(o);let s=Nt.getImageWidth(t.modules.size,o),u=i.getContext("2d"),c=u.createImageData(s,s);return Nt.qrToImageData(c.data,t,o),En(u,i,s),u.putImageData(c,0,0),i};nt.renderToDataURL=function(t,e,r){let o=r;typeof o>"u"&&(!e||!e.getContext)&&(o=e,e=void 0),o||(o={});let i=nt.render(t,e,o),s=o.type||"image/png",u=o.rendererOpts||{};return i.toDataURL(s,u.quality)}});var Pe=g(Se=>{var Bn=It();function Me(n,t){let e=n.a/255,r=t+'="'+n.hex+'"';return e<1?r+" "+t+'-opacity="'+e.toFixed(2).slice(1)+'"':r}function Mt(n,t,e){let r=n+t;return typeof e<"u"&&(r+=" "+e),r}function An(n,t,e){let r="",o=0,i=!1,s=0;for(let u=0;u<n.length;u++){let c=Math.floor(u%t),l=Math.floor(u/t);!c&&!i&&(i=!0),n[u]?(s++,u>0&&c>0&&n[u-1]||(r+=i?Mt("M",c+e,.5+l+e):Mt("m",o,0),o=0,i=!1),c+1<t&&n[u+1]||(r+=Mt("h",s),s=0)):o++}return r}Se.render=function(t,e,r){let o=Bn.getOptions(e),i=t.modules.size,s=t.modules.data,u=i+o.margin*2,c=o.color.light.a?"<path "+Me(o.color.light,"fill")+' d="M0 0h'+u+"v"+u+'H0z"/>':"",l="<path "+Me(o.color.dark,"stroke")+' d="'+An(s,i,o.margin)+'"/>',a='viewBox="0 0 '+u+" "+u+'"',h='<svg xmlns="http://www.w3.org/2000/svg" '+(o.width?'width="'+o.width+'" height="'+o.width+'" ':"")+a+' shape-rendering="crispEdges">'+c+l+`</svg>
 `;return typeof r=="function"&&r(null,h),h}});var Nn=g(O=>{var Tn=_t(),St=Te(),be=Ne(),In=Pe();function Pt(n,t,e,r,o){let i=[].slice.call(arguments,1),s=i.length,u=typeof i[s-1]=="function";if(!u&&!Tn())throw new Error("Callback required as last argument");if(u){if(s<2)throw new Error("Too few arguments provided");s===2?(o=e,e=t,t=r=void 0):s===3&&(t.getContext&&typeof o>"u"?(o=r,r=void 0):(o=r,r=e,e=t,t=void 0))}else{if(s<1)throw new Error("Too few arguments provided");return s===1?(e=t,t=r=void 0):s===2&&!t.getContext&&(r=e,e=t,t=void 0),new Promise(function(c,l){try{let a=St.create(e,r);c(n(a,t,r))}catch(a){l(a)}})}try{let c=St.create(e,r);o(null,n(c,t,r))}catch(c){o(c)}}O.create=St.create;O.toCanvas=Pt.bind(null,be.render);O.toDataURL=Pt.bind(null,be.renderToDataURL);O.toString=Pt.bind(null,function(n,t,e){return In.render(n,e)})});__ret=Nn;return __ret;})();return __bundle();})();
 /* 兼容 QRCode 包装 */
-function QRCode(text){this.qr=QRLIB.create(text,{errorCorrectionLevel:'L'});this.size=this.qr.modules.size;this.modules=this.qr.modules}
+function QRCode(text){
+  this.qr=QRLIB.create(text,{errorCorrectionLevel:'L'});
+  this.size=this.qr.modules.size;
+  this.modules=this.qr.modules;
+}
 QRCode.prototype.draw=function(canvas){
   var ctx=canvas.getContext('2d');var n=this.size,px=Math.floor(canvas.width/n);
   ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -13822,7 +13832,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.103';
+var ER_ENGINE_VER='v4.104';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
