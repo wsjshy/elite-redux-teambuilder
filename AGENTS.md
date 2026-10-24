@@ -1655,3 +1655,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.103=index 0F7449AD4114B71D 1,486,284B
 - 部署 master b24c8709/gh-pages b68074c5
+
+## v4.104 二维码专修闭环（2026-10-25）
+
+### 引入项
+- **二维码 P2 闭环**：完整 qrcode 库 esbuild bundle（含 RS ECC/format/timing/自动选版）+ modules.get 适配
+- 实测 283 字符 hash URL→size=77（v27 自动升级）→ jsQR 解码 match=true 硬门
+- canvas clientWidth 动态缩放（375px 自适应）+ 兜底保留
+
+### 13 轮修复链
+- v4.103 10 轮：stub→矩阵空→未挂→挂空→编码空→作用域 undefined→挂函数→挂调用→API 形状错
+- v4.104 3 轮：API 形状（modules.get）→canvas 触发（shareCardOpen 漏调）→375px 缩放（clientWidth）
+
+### 挖掘增量 v504（v4.105 候选）
+- NPC/存档队一键载入 dmgCalc 防守方
+- EV 迷你横条图
+- 配速反推
+- 收藏星标
+
+### 三线
+- P0 全绿（jsQR match=true）
+- 引擎 PASS（QR 完整库断言+hunk 零回归+分片一致+hash 保真）
+- 黑盒（二维码首通+375px PASS+观感 93）
+
+### 版本链
+- v4.104=index 4119E5AACB579055 1,486,725B
+- 部署 master 11d10c58/gh-pages 67b0dde
