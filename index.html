@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.104</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.105</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -663,6 +663,16 @@ details.inline,.details.inline{cursor:pointer}
   <div class="anslots" id="anSlots"></div>
   <div id="anCfgBar" style="margin:6px 0"></div>
   <div id="anOut"></div>
+  <div style="margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:6px">
+    <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 伤害判定 / OHKO 反解</div>
+    <div style="font-size:11px;margin-bottom:4px">攻方（我方）：<input id="dmgAtkQ" placeholder="搜索攻方…" style="width:120px" oninput="dmgAtkQ(this.value)"> <button class="btn-mini" onclick="loadAtkFromTeam()">从队伍选</button></div>
+    <div id="dmgAtkList" style="margin-bottom:4px"></div>
+    <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
+    <div id="dmgDefList" style="margin-bottom:4px"></div>
+    <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" style="width:120px" oninput="dmgMvQ(this.value)"></div>
+    <div id="dmgMvList" style="margin-bottom:4px"></div>
+    <div id="dmgOut"></div>
+  </div>
 </section>
 <!-- v4.88 pokepast 互操作 modal（居中轻量浮层，同 anPicker 模式；禁右侧抽屉） -->
 <div id="ppModal" class="lmod" role="dialog" aria-modal="true" aria-label="pokepast 互操作">
@@ -709,6 +719,7 @@ details.inline,.details.inline{cursor:pointer}
       <option value="atk">攻击</option><option value="def">防御</option><option value="spa">特攻</option>
       <option value="spd">特防</option><option value="spe">速度</option>
     </select>
+    <button class="btn-mini" id="favOnlyBtn" onclick="toggleFavOnly()" style="margin-left:4px">★ 已收藏</button>
     <div class="chips" id="spFormChips" style="margin-top:4px"></div>
     <div class="chips" id="spTypeChips"></div>
   </div>
@@ -1947,9 +1958,9 @@ function switchTab(name){
     return;
   }
   try{
-    if(name==='speed'){speedEnsureTable()}
+    if(name==='speed'){speedRender(true)}
     else if(name==='core'&&window.drawCoreList){drawCoreList()}
-    else if(name==='analyze'){renderAnalyze()}
+    else if(name==='analyze'){renderAnalyze();if(typeof dmgRender==='function'){try{dmgRender()}catch(e){}}}
     else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
   }catch(e){console.warn('tab render fail',name,e)}
 }
@@ -3104,6 +3115,7 @@ function renderSp(reset){
   var q=$('spSearch').value.trim().toLowerCase();
   var sel=[];for(var t in spFilter.types)if(spFilter.types[t])sel.push(t);
   var arr=ERDATA.species.filter(function(s){return spMatch(s,q,sel)});
+  if(window._favOnly){arr=arr.filter(function(s){return isFav(s.id)})}
   arr=sortedSp(arr,$('spSort').value);
   if(reset){spShown=0;$('spGrid').innerHTML=''}
   var take=arr.slice(spShown,spShown+spStep);
@@ -5284,6 +5296,20 @@ function ohkoSolveEv(o,hpD){
   return -1;
 }
 /* 伤害判定面板：选择对手(搜索chips，禁下拉)、选择我方招式、天气/暴击/道具 chip、输出 min-max + OHKO 判定 + 反解 */
+function dmgAtkQ(v){
+  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgAtkList');if(el)el.innerHTML='';return}
+  var hits=[];ERDATA.species.forEach(function(x){if(hits.length<12&&String(x.zh).toLowerCase().indexOf(q)>-1)hits.push(x)});
+  $('dmgAtkList').innerHTML=hits.map(function(x){
+    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgAtkPick(\''+x.id+'\')">'+esc(x.zh)+'</span>'}).join('');
+}
+function dmgAtkPick(id){__spdSl.s=speciesById(id);var el=$('dmgAtkList');if(el)el.innerHTML='<span class="chipopt on">'+esc((speciesById(id)||{zh:'#'+id}).zh)+'</span>';dmgRender()}
+function loadAtkFromTeam(){
+  var el=$('dmgAtkList');if(!el)return;
+  if(!team.length){toast('队伍为空');return}
+  el.innerHTML=team.map(function(s){
+    return '<span class="chipopt" role="button" onclick="dmgAtkPick(\''+s.id+'\')">'+esc(s.zh||s.id)+'</span>'
+  }).join('');
+}
 function dmgDefQ(v){
   var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgDefList');if(el)el.innerHTML='';return}
   var hits=[];ERDATA.species.forEach(function(x){if(hits.length<12&&String(x.zh).toLowerCase().indexOf(q)>-1)hits.push(x)});
@@ -13832,7 +13858,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.104';
+var ER_ENGINE_VER='v4.105';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -15273,6 +15299,97 @@ function v483SelectToChips(){
   });
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',v483SelectToChips);else v483SelectToChips();
+</script>
+
+<script>
+/* v4.105 挖掘 4 项（独立 script 块，不介入既有渲染链） */
+var NPC_TEAM_SAMPLES=[
+  {name:'道馆馆主·岩石',members:[
+    {id:'隆隆岩',item:'凸凸头盔',abis:'石头脑袋/结实/沙之力/全力攻击'},
+    {id:'班基拉斯',item:'剩饭',abis:'沙隐/扬沙/紧张感/自信过度'},
+    {id:'冰伊布',item:'光之黏土',abis:'雪隐/拨雪/冰冻之躯/雪奴'}
+  ]},
+  {name:'精英四·水',members:[
+    {id:'水伊布',item:'突击背心',abis:'储水/湿润之躯/适应力/水源力量'},
+    {id:'美纳斯',item:'剩饭',abis:'奇异之光/好胜/迷人之躯/魅惑之躯'},
+    {id:'暴鲤龙',item:'龙之牙',abis:'威吓/自信过度/碎裂铠甲/破格'}
+  ]}
+];
+function loadDefFromSource(src){
+  try{
+    if(src==='sav'){
+      var rows=window.SAV_ROWS||[];
+      if(!rows.length){toast('无存档数据，请先导入 .sav');return}
+      var html='<div style="font-size:10px;color:var(--sub)">存档队伍（'+rows.length+'只）</div>';
+      rows.forEach(function(r){
+        var sp=r['名字']||r['species']||'?';
+        var item=r['道具']||r['item']||'';
+        var abis=r['特性']||r['abis']||'';
+        html+='<div style="font-size:11px;margin:2px 0;cursor:pointer;padding:2px 4px;border:1px solid var(--line);border-radius:4px" onclick="dmgDefPick(\''+sp+'\')">'+esc(sp)+(item?' · 道具:'+esc(item):'')+(abis?' · 特性:'+esc(abis):'')+'</div>';
+      });
+      var dl=$('dmgDefList');if(dl)dl.innerHTML=html;
+      toast('存档队已载入，点击选择');
+      return;
+    }
+    var list=NPC_TEAM_SAMPLES;
+    if(!list.length){toast('无可用NPC队');return}
+    var team=list[0];
+    var members=team.members||[];
+    if(!members.length){toast('队伍无成员');return}
+    var html='<div style="font-size:10px;color:var(--sub)">'+esc(team.name||'示例队')+'</div>';
+    members.forEach(function(m){
+      var sp=m.id;
+      var item=m.item||'';var abis=m.abis||'';
+      html+='<div style="font-size:11px;margin:2px 0;cursor:pointer;padding:2px 4px;border:1px solid var(--line);border-radius:4px" onclick="dmgDefPick(\''+sp+'\')">'+esc(sp)+(item?' · 道具:'+esc(item):'')+(abis?' · 特性:'+esc(abis):'')+'</div>';
+    });
+    var dl=$('dmgDefList');if(dl)dl.innerHTML=html;
+    toast('防守方已载入 '+members.length+' 只，点击选择');
+  }catch(e){console.log('loadDef err',e)}
+}
+function evBarHtml(evs){
+  if(!evs)return '';
+  var parts=['hp','atk','def','spa','spd','spe'];
+  var colors=['#e57373','#f5975e','#f4cf45','#5dade2','#7dcea0','#95a5a6'];
+  var total=parts.reduce(function(s,k){return s+(evs[k]||0)},0)||1;
+  var html='<div style="display:flex;gap:2px;height:8px;margin-top:4px;border-radius:4px;overflow:hidden">';
+  parts.forEach(function(k,i){
+    var v=evs[k]||0;
+    var w=Math.max(1,Math.round(v/total*100));
+    html+='<div style="width:'+w+'%;background:'+colors[i]+'" title="'+k+':'+v+'"></div>';
+  });
+  html+='</div>';
+  return html;
+}
+function reverseSpeed(target,baseSpd){
+  try{
+    baseSpd=baseSpd||100; /* v4.88 滑块同算法：种族值输入 */
+    for(var ev=0;ev<=252;ev+=4){
+      var spdWithNeutral=Math.floor((baseSpd*2+31+ev/4)*1.0);
+      if(spdWithNeutral>=target)return {ev:ev,nature:'认真/其他'};
+      var spdWithBoost=Math.floor((baseSpd*2+31+ev/4)*1.1);
+      if(spdWithBoost>=target)return {ev:ev,nature:'爽朗/胆小'};
+    }
+    return {ev:252,nature:'爽朗/胆小(仍不足)'};
+  }catch(e){return {ev:0,nature:'-'}}
+}
+function toggleFav(id){
+  try{
+    var f=JSON.parse(localStorage.getItem('er_favs')||'{}');
+    f[id]=!f[id];
+    if(!f[id])delete f[id];
+    localStorage.setItem('er_favs',JSON.stringify(f));
+    return !!f[id];
+  }catch(e){return false}
+}
+function isFav(id){
+  try{return !!JSON.parse(localStorage.getItem('er_favs')||'{}')[id]}
+  catch(e){return false}
+}
+function toggleFavOnly(){
+  window._favOnly=!window._favOnly;
+  var b=$('favOnlyBtn');if(b)b.style.background=window._favOnly?'var(--accent)':'';
+  renderSp(true);
+}
 </script>
 </body>
 </html>
