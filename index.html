@@ -596,12 +596,17 @@ details.inline,.details.inline{cursor:pointer}
   background:var(--card); font-size:12px; color:var(--text); cursor:pointer; min-height:30px; line-height:22px; font-family:inherit}
 .chipgrp .chipopt:hover{border-color:var(--accent)}
 .chipgrp .chipopt.on{border-color:var(--accent); background:#eef2ff; color:var(--accent); font-weight:600}
+
+/* v4.99 观感：卡片圆角+轻阴影 */
+.slot,.badge,.tab,.card,[class*=box]{}
+.btn{border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.slot{border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 </style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.98</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.99</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -1892,12 +1897,29 @@ function tmRow(r){
     '<td><button class="btn-mini" onclick="addToTeam(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0],null);renderCore(coreSel)" title="加入队伍">➕</button> '+
     '<button class="btn-mini" onclick="openSp(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0])" title="看详情">🔍</button></td></tr>';
 }
+var _currentTab='build';
 function switchTab(name){
+  _currentTab=name;
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name)});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
-  try{var _m=document.querySelector('main');if(_m)_m.scrollTop=0;else window.scrollTo(0,0)}catch(e){} /* v4.6-C：切 Tab 回顶；v4.68 P2-1：main 为独立滚动容器 */
-  if(name==='speed'){try{speedEnsureTable()}catch(eL){}} /* v4.68 黑盒P1-2：速度线全库表首次开Tab才渲染 */
+  try{var _m=document.querySelector('main');if(_m)_m.scrollTop=0;else window.scrollTo(0,0)}catch(e){}
+  /* v4.99 Tab 渲染链守卫：数据未就绪→显示 loading；就绪后自动渲染该 Tab */
+  if(!window.__erReady){
+    var box=document.getElementById('tab-'+name);
+    if(box)box.innerHTML='<div style="padding:40px;text-align:center;color:var(--sub)">数据加载中…</div>';
+    return;
+  }
+  try{
+    if(name==='speed'){speedEnsureTable()}
+    else if(name==='core'&&window.drawCoreList){drawCoreList()}
+    else if(name==='analyze'){renderAnalyze()}
+    else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
+  }catch(e){console.warn('tab render fail',name,e)}
 }
+document.addEventListener('er-ready',function(){
+  window._speedTableBuilt=false;
+  setTimeout(function(){try{speedRender(true)}catch(e){};try{if(window._initCoreList)window._initCoreList()}catch(e){};switchTab(_currentTab)},100);
+});
 document.querySelectorAll('nav button').forEach(function(b){
   b.onclick=function(){switchTab(b.dataset.tab)};
 });
@@ -3617,6 +3639,12 @@ function smartSuggest(){
     var at=d.noResistWeak[0];
     pool.forEach(function(s){try{var c=defCellTrio(s,at).inn;if(c<=0.5){picks.push({s:s,why:'补联防：队伍 4 倍弱 '+at+' 且无人联防；'+s.zh+' 对 '+at+' 耐受力 '+c+'×',val:c});return}}catch(e){}});
   }
+  /* v4.99 排序：缺口匹配度优先 */
+  if(d.spdGap){
+    picks.sort(function(a,b){return (b.val||0)-(a.val||0)});
+  }else if(d.noResistWeak.length){
+    picks.sort(function(a,b){return (a.val||0)-(b.val||0)});
+  }
   picks=picks.slice(0,3);
   if(!picks.length)picks=fast.slice(0,3);
   /* 渲染 */
@@ -5241,7 +5269,7 @@ function speedSetN(n){window._spdN=n;speedRender(true)}
 function speedSetSort(v){window._spdSort=v;speedRender(true)}
 /* v4.94 A：chip 筛选切换（同 chip 再点=取消；整页重渲染同步 active 样式） */
 function speedToggleFilter(k,v){window._spdFilter=window._spdFilter||{};if(window._spdFilter[k]===v)delete window._spdFilter[k];else window._spdFilter[k]=v;speedRender(true)}
-function speedRender(){try{var q=speedPctiles();
+function speedRender(){if(!window.__erReady||!ERDATA.species||!ERDATA.species.length){var _sb=document.getElementById('speedBox');if(_sb)_sb.innerHTML='<div class="tip">数据加载中…</div>';return}try{var q=speedPctiles();
   var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
   h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
@@ -5271,7 +5299,7 @@ function speedRender(){try{var q=speedPctiles();
   if(arguments[0]===true){ /* chip/排序/前N 触发：整页重渲染后立即填表格 */ speedRefreshTable();window._speedTableBuilt=true }
   else{ /* v4.68 黑盒P1-2 懒渲染：DOMContentLoaded 仅建壳，首次开 Tab 才建 400 行 */ window._speedTableBuilt=false }
  }catch(e){var el=document.getElementById('speedBox');if(el)el.innerHTML='<div class="tip">速度线计算失败：'+e.message+'</div>'}}
-function speedEnsureTable(){if(window._speedTableBuilt)return;var b=document.getElementById('spdTableBox');if(!b)return;speedRefreshTable();window._speedTableBuilt=true}
+function speedEnsureTable(){var b=document.getElementById('spdTableBox');if(!b)return;try{speedRefreshTable()}catch(e){}}
 /* 配速提示按物种 id 缓存（黑盒P1-2：开卡热路径零重算） */
 var _speedHintCache={};
 function speedHintHtmlCached(s){var k=(s&&s.id)||'';if(_speedHintCache[k]==null){try{_speedHintCache[k]=speedHintHtml(s)}catch(e){_speedHintCache[k]=''}}return _speedHintCache[k]}
@@ -13603,7 +13631,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.98';
+var ER_ENGINE_VER='v4.99';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -13932,6 +13960,7 @@ function oneLiner(bd){
   return bits.join('，')+'。';
 }
 function renderCore(s){
+  if(!window.__erReady){var _co=document.getElementById('coreOut');if(_co)_co.innerHTML='<div class="tip">数据加载中…</div>';return}
   if(!s){$('coreOut').innerHTML='<div class="tip">先在上方搜索并选定一只核心宝可梦</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   if(!isValidSp(s)){$('coreOut').innerHTML='<div class="tip">该编号为占位/无效物种（种族值六项为 0），已过滤、不参与配队推荐。</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   var _ftC={};
@@ -14299,7 +14328,9 @@ function selectCore(id){
   renderCore(s);
   corePhase('detail');
 }
-(function(){
+function _initCoreList(){
+  if(window._coreListInit)return;window._coreListInit=true;
+  (function(){
   var coreFilter={types:{}},coreRoleCache={};
   function coreRoleOf(s){var k=''+s.id;if(!coreRoleCache[k])coreRoleCache[k]=coreRole(s).role;return coreRoleCache[k]}
   function renderCoreTypes(){
@@ -14392,6 +14423,8 @@ function selectCore(id){
   renderCoreTypes();
   draw();
 })();
+}
+if(window.__erReady){_initCoreList()}else{document.addEventListener('er-ready',function(){setTimeout(_initCoreList,100)})}
 /* ============ 规格 v1.0 初始化：机制口径折叠块 + ER 提示文案（全部读 WCONF） ============ */
 function wxRuleRefHtml(){return '<div class="ruleline">📐 机制数值（参数 ↔ 当前值）：完整表在「核心配队」页统一展示（同一份内容不再三处重复）。<button class="btn-mini" style="margin-left:8px" onclick="gotoRule()">查看机制数值</button></div>'}
 function gotoRule(){switchTab('core');var e=$('ruleBoxCore');if(!e)return;var d=e.querySelector?e.querySelector('details'):null;if(d)d.open=true;if(e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'})}
