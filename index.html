@@ -601,7 +601,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.97</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.98</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -841,7 +841,20 @@ details.inline,.details.inline{cursor:pointer}
   window.__ER_ASSET_BASE=F?'':'';   /* v4.30：资产同域优先（gh-pages 自带 assets/sheets，不再默认走 CDN） */
   window.__ER_CDN=GC;               /* CDN 仅作回退源（sprOf 同域 404 时兜底） */
   if(typeof ERDATA==='undefined'){
-    document.write('<scr'+'ipt src="data.js?v=785e3502"><\/scr'+'ipt>');
+    document.write('<scr'+'ipt src="data_lite_v498.js?v=v498"><\/scr'+'ipt>');
+  window.__ER_SHARDS={species:false,adv:false,fail:{}};
+  function __loadShard(name,url){
+    var s=document.createElement('script');s.src=url;s.async=true;
+    s.onload=function(){window.__ER_SHARDS[name]=true;document.dispatchEvent(new Event('er-shard-'+name));if(window.__erPending!==undefined&&window.__erShardDone)window.__erShardDone();};
+    s.onerror=function(){window.__ER_SHARDS.fail[name]=true;var b=document.createElement('div');b.style.cssText='position:fixed;bottom:8px;left:8px;right:8px;padding:10px;background:#fde;color:#900;border-radius:8px;z-index:9999;font-size:12px';b.innerHTML='数据分片 '+name+' 加载失败 <button onclick="location.reload()" style="margin-left:8px;padding:4px 12px">重试</button>';document.body.appendChild(b);};
+    document.head.appendChild(s);
+  }
+  window.__erPending=2;window.__erReady=false;
+  window.__erShardDone=function(){window.__erPending--;if(window.__erPending<=0){window.__erReady=true;document.dispatchEvent(new Event('er-ready'))}}
+  function __erStartLate(){setTimeout(function(){__loadShard('species','data_species_v498.js?v=v498');__loadShard('adv','data_adv_v498.js?v=v498');},800);}
+  if(document.readyState==='complete'){__erStartLate();}else{window.addEventListener('load',__erStartLate);}
+  var _origOnload=window.__loadShard;
+  /* wrap: onload→__erShardDone */
   }
 })();
 </script>
@@ -866,7 +879,15 @@ if(typeof ERDATA==='undefined'){
 /* ============ 工具函数 ============ */
 var $=function(id){return document.getElementById(id)};
 var MV={},ABI={},ITM={};
-ERDATA.moves.forEach(function(m){MV[m[0]]=m});
+var NATURES={
+  '固执':['+攻击','-特攻'],'爽朗':['+速度','-特攻'],'胆小':['+速度','-攻击'],'内敛':['+特攻','-攻击'],
+  '大胆':['+防御','-攻击'],'沉着':['+特防','-攻击'],'淘气':['+防御','-特攻'],'慎重':['+特防','-特攻'],
+  '勇敢':['+攻击','-速度'],'冷静':['+特攻','-速度'],'悠闲':['+防御','-速度'],'狂妄':['+特防','-速度'],
+  '怕寂寞':['+攻击','-防御'],'顽皮':['+攻击','-特防'],'急躁':['+速度','-防御'],'天真':['+速度','-特防'],
+  '温和':['+特攻','-防御'],'马虎':['+特攻','-特防'],'温顺':['+特防','-防御'],'乐天':['+防御','-特防'],
+  '认真':['全平衡'],'勤奋':['全平衡'],'坦率':['全平衡'],'害羞':['全平衡'],'浮躁':['全平衡']
+};
+if(ERDATA.moves){ERDATA.moves.forEach(function(m){MV[m[0]]=m});}else{document.addEventListener('er-ready',function(){ERDATA.moves.forEach(function(m){MV[m[0]]=m});});}
 ERDATA.abilities.forEach(function(a){ABI[a[0]]=a});
 /* v4.83 P2-6：冻结 data.js 中 ability 行 429（Coward）zh 串成性格名「胆小」（与 Timid 撞名）；
    species 表作「懦夫」为游戏内展示真值（图鉴页展示源）→ 展示层以 species 表名为准，不改冻结 data.js 字节。
@@ -2985,7 +3006,7 @@ function renderSpChips(){
   $('spSearch').oninput=function(){renderSp(true)};
   $('spSort').onchange=function(){renderSp(true)};
 })();
-renderSp(true);
+if(window.ERDATA&&ERDATA.species){renderSp(true);}else{document.addEventListener('er-ready',function(){renderSp(true);});}
 function spMatch(s,q,sel,role,abi){
   /* v4.x C⑧：全局模糊搜索（中文/英文/编号/种族值子串，多词空格 AND）；E⑩：定位 + 特性筛选 */
   if(!fzAny(q,[s.id,s.zh,s.en,spBst(s)]))return false;
@@ -3499,7 +3520,7 @@ function addToTeam(s,info){
   if(team.indexOf(s)>-1){toast('已在队伍中：'+s.zh);return}   /* v4.83 P2-1：重复入队轻反馈（此前静默 return，须切队伍页确认） */
   team.push(s);
   if(info)teamInfo[s.id]=info;else teamInfo[s.id]={fromSave:false};
-  renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  try{renderTm(true)}catch(e){}try{renderSlots()}catch(e){}try{renderAnalyze()}catch(e){}saveTeam();
   toast('已加入队伍：'+s.zh+'（'+team.length+'/6）');   /* v4.83 P2-1：入队成功可见反馈 */
 }
 function removeFromTeam(s){
@@ -3618,12 +3639,20 @@ function smartSuggest(){
   toast('🧠 已出补位建议 '+picks.length+' 只');
 }
 /* ============ v4.96：Showdown 官方模板 sets 懒加载（assets/showdown_sets_v496.json，独立 json 不进首屏） ============ */
+/* er-ready 后空闲预取 sets（不阻塞首屏） */
+if(document.addEventListener){document.addEventListener('er-ready',function(){setTimeout(function(){try{fetch('assets/showdown_sets_v496.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j)window._SH_CACHE=j}).catch(function(){})}catch(e){}},1500)})}
 function loadShowdownSets(cb){
   if(window._SH_CACHE!==undefined){cb(window._SH_CACHE);return}
-  fetch('assets/showdown_sets_v496.json').then(function(r){return r.json()}).then(function(j){window._SH_CACHE=j;cb(j)}).catch(function(){window._SH_CACHE=null;cb(null)});
+  fetch('assets/showdown_sets_v496.json').then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){window._SH_CACHE=j;cb(j)}).catch(function(e){window._SH_CACHE=null;try{toast('官方模板加载失败，已回退纯随机：'+(e&&e.message||e))}catch(_){}cb(null)});
 }
 /* ============ v4.95 B：随机队池（娱乐/测试向；v4.96 增加官方模板模式） ============ */
 function randomTeamGen(){
+  if(!window.ERDATA||!ERDATA.species){
+    var _b=document.createElement('div');_b.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);padding:8px 18px;background:#2563eb;color:#fff;border-radius:8px;z-index:9999;font-size:12px';
+    _b.textContent='数据分片加载中…请稍候片刻';
+    document.body.appendChild(_b);setTimeout(function(){_b.remove()},1800);
+    return;
+  }
   loadShowdownSets(function(sets){ randomTeamGenImpl(sets) });
 }
 function randomTeamGenImpl(sets){
@@ -13574,7 +13603,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.97';
+var ER_ENGINE_VER='v4.98';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
