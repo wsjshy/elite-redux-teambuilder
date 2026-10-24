@@ -240,6 +240,7 @@ details.big[open]>summary::before{content:"▾ "}
 .mxc .mcspr,.mxc .spmid,.mxc .spsp{width:40px; height:40px; margin:0 auto}
 .spthumb .mcspr{width:26px; height:26px}
 .slothead .spinl .spsp{width:28px; height:28px}
+#savPcList .spsp{width:48px; height:48px} /* v4.93 P2-1：电脑区清单行精灵尺寸（否则 0×0 不渲染） */
 .spmiss{background:#eceff3;position:relative}
 /* v4.84 P1-2：spmiss 缺图占位升级——灰底+形态名文字（非裸空白；小尺寸容器下 overflow 截断不破版） */
 .spmiss .sphint{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:8px;line-height:1.15;color:#90a4ae;padding:1px;overflow:hidden;word-break:break-all}
@@ -595,12 +596,54 @@ details.inline,.details.inline{cursor:pointer}
   background:var(--card); font-size:12px; color:var(--text); cursor:pointer; min-height:30px; line-height:22px; font-family:inherit}
 .chipgrp .chipopt:hover{border-color:var(--accent)}
 .chipgrp .chipopt.on{border-color:var(--accent); background:#eef2ff; color:var(--accent); font-weight:600}
+
+/* v4.99 观感：卡片圆角+轻阴影 */
+.slot,.badge,.tab,.card,[class*=box]{}
+.btn{border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.slot{border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+
+/* v4.100 观感收尾：语义色统一+微交互规范 */
+:root{
+  --ok:#2e7d32;       /* 成功：入队/生成 */
+  --warn:#ed6c02;     /* 警示：警告/冲突 */
+  --danger:#c62828;   /* 危险：删除/清空 */
+  --hi:#1565c0;       /* 数据高亮：主蓝 */
+  --hi2:#6a1b9a;      /* 次高亮：紫 */
+}
+.btn,.badge,.chip,.slot{
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover,.badge:hover,.chip:hover{
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+.btn:active,.chip:active{
+  transform:translateY(1px);
+  box-shadow:0 1px 2px rgba(0,0,0,.1);
+}
+.slot{padding:6px 8px;margin-bottom:6px}
+.tab{padding:10px 12px}
+
+/* v4.101 队检 chip 行 */
+.qa-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;cursor:pointer;margin:2px}
+.qa-chip:hover{background:#ffe0b2}
+.qa-detail{padding:4px 8px;font-size:11px;color:var(--sub);display:none}
+.qa-detail.open{display:block}
+/* v4.101 速度线分位染色 */
+.spd-p50{background:rgba(0,0,0,.03)}
+.spd-p50-75{background:rgba(21,101,192,.06)}
+.spd-p75-90{background:rgba(21,101,192,.12)}
+.spd-p90-99{background:rgba(21,101,192,.2)}
+.spd-p99{background:rgba(21,101,192,.3);font-weight:600}
+/* v4.101 迷你联防条 */
+.mini-def{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+.mini-def span{padding:2px 6px;border-radius:6px;font-size:10px;background:#fce4ec;color:#c62828}
 </style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.84</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.104</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -618,8 +661,17 @@ details.inline,.details.inline{cursor:pointer}
 <section id="tab-analyze" class="tab">
   <div class="tip" id="anRuleTip">💡 队伍分析：点下方槽位从图鉴级选择器挑 6 只（与「队伍构建」共享同一队伍）；结果只展示引擎推荐，点任意精灵看推荐详情</div>
   <div class="anslots" id="anSlots"></div>
+  <div id="anCfgBar" style="margin:6px 0"></div>
   <div id="anOut"></div>
 </section>
+<!-- v4.88 pokepast 互操作 modal（居中轻量浮层，同 anPicker 模式；禁右侧抽屉） -->
+<div id="ppModal" class="lmod" role="dialog" aria-modal="true" aria-label="pokepast 互操作">
+  <div class="lmodbox" style="max-width:560px">
+    <div class="mhd"><b>pokepast 文本互操作</b><button class="close" type="button" onclick="closePpModal()" aria-label="关闭">×</button></div>
+    <textarea id="ppInput" rows="10" style="width:100%;font-size:12px;box-sizing:border-box" placeholder="粘贴 pokepast 文本（每只一块）：名字 @ 道具&#10;开朗&#10;EVs: 252 HP / 4 Def / 252 Spe&#10;- 招式名"></textarea>
+    <div style="margin-top:6px"><button class="btn-mini" type="button" onclick="pokepastImport()">导入为队伍（实配）</button></div>
+  </div>
+</div>
 <!-- 图鉴级选择器（v4.39 R-2：轻量 modal，居中浮层非全屏；移动端全宽。过滤谓词与「图鉴/队伍构建」同源 spMatch） -->
 <div id="anPicker" class="lmod" role="dialog" aria-modal="true" aria-label="选择宝可梦">
   <div class="lmodbox anpickbox">
@@ -705,6 +757,11 @@ details.inline,.details.inline{cursor:pointer}
     <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
     <button class="btn" onclick="toggleCsvPanel()">📥 粘贴 CSV</button>
+    <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.96：随机生成 6 只队伍">🎲 随机队</button>
+    <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:11px">传说档:关</button>
+    <button class="btn-mini" onclick="window._randMode=(window._randMode==='template'?'pure':'template');toast(window._randMode==='template'?'随机队：官方模板模式':'随机队：纯随机模式')" id="randModeBtn" style="font-size:11px">模板:开</button>
+    <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="v4.97：基于速度线/联防/体系缺口推荐补位">🧠 智能补位</button>
+    <button class="btn-mini" onclick="window._sugPool=(window._sugPool==='pc'?'dex':'pc');toast('补位候选池：'+(window._sugPool==='pc'?'存档电脑区':'全图鉴'))" id="sugPoolBtn" style="font-size:11px">候选:存档区</button>
   </div>
   <div class="sec" style="margin:6px 0">
     <div class="tmfilter">
@@ -826,7 +883,20 @@ details.inline,.details.inline{cursor:pointer}
   window.__ER_ASSET_BASE=F?'':'';   /* v4.30：资产同域优先（gh-pages 自带 assets/sheets，不再默认走 CDN） */
   window.__ER_CDN=GC;               /* CDN 仅作回退源（sprOf 同域 404 时兜底） */
   if(typeof ERDATA==='undefined'){
-    document.write('<scr'+'ipt src="data.js?v=785e3502"><\/scr'+'ipt>');
+    document.write('<scr'+'ipt src="data_lite_v498.js?v=v498"><\/scr'+'ipt>');
+  window.__ER_SHARDS={species:false,adv:false,fail:{}};
+  function __loadShard(name,url){
+    var s=document.createElement('script');s.src=url;s.async=true;
+    s.onload=function(){window.__ER_SHARDS[name]=true;document.dispatchEvent(new Event('er-shard-'+name));if(window.__erPending!==undefined&&window.__erShardDone)window.__erShardDone();};
+    s.onerror=function(){window.__ER_SHARDS.fail[name]=true;var b=document.createElement('div');b.style.cssText='position:fixed;bottom:8px;left:8px;right:8px;padding:10px;background:#fde;color:#900;border-radius:8px;z-index:9999;font-size:12px';b.innerHTML='数据分片 '+name+' 加载失败 <button onclick="location.reload()" style="margin-left:8px;padding:4px 12px">重试</button>';document.body.appendChild(b);};
+    document.head.appendChild(s);
+  }
+  window.__erPending=2;window.__erReady=false;
+  window.__erShardDone=function(){window.__erPending--;if(window.__erPending<=0){window.__erReady=true;document.dispatchEvent(new Event('er-ready'))}}
+  function __erStartLate(){setTimeout(function(){__loadShard('species','data_species_v498.js?v=v498');__loadShard('adv','data_adv_v498.js?v=v498');},800);}
+  if(document.readyState==='complete'){__erStartLate();}else{window.addEventListener('load',__erStartLate);}
+  var _origOnload=window.__loadShard;
+  /* wrap: onload→__erShardDone */
   }
 })();
 </script>
@@ -851,7 +921,15 @@ if(typeof ERDATA==='undefined'){
 /* ============ 工具函数 ============ */
 var $=function(id){return document.getElementById(id)};
 var MV={},ABI={},ITM={};
-ERDATA.moves.forEach(function(m){MV[m[0]]=m});
+var NATURES={
+  '固执':['+攻击','-特攻'],'爽朗':['+速度','-特攻'],'胆小':['+速度','-攻击'],'内敛':['+特攻','-攻击'],
+  '大胆':['+防御','-攻击'],'沉着':['+特防','-攻击'],'淘气':['+防御','-特攻'],'慎重':['+特防','-特攻'],
+  '勇敢':['+攻击','-速度'],'冷静':['+特攻','-速度'],'悠闲':['+防御','-速度'],'狂妄':['+特防','-速度'],
+  '怕寂寞':['+攻击','-防御'],'顽皮':['+攻击','-特防'],'急躁':['+速度','-防御'],'天真':['+速度','-特防'],
+  '温和':['+特攻','-防御'],'马虎':['+特攻','-特防'],'温顺':['+特防','-防御'],'乐天':['+防御','-特防'],
+  '认真':['全平衡'],'勤奋':['全平衡'],'坦率':['全平衡'],'害羞':['全平衡'],'浮躁':['全平衡']
+};
+if(ERDATA.moves){ERDATA.moves.forEach(function(m){MV[m[0]]=m});}else{document.addEventListener('er-ready',function(){ERDATA.moves.forEach(function(m){MV[m[0]]=m});});}
 ERDATA.abilities.forEach(function(a){ABI[a[0]]=a});
 /* v4.83 P2-6：冻结 data.js 中 ability 行 429（Coward）zh 串成性格名「胆小」（与 Timid 撞名）；
    species 表作「懦夫」为游戏内展示真值（图鉴页展示源）→ 展示层以 species 表名为准，不改冻结 data.js 字节。
@@ -1680,26 +1758,13 @@ function famChainHtml(s){
     if(key){var arr=famIndex[key]||[];for(var j2=0;j2<arr.length;j2++){var o=arr[j2];if(!C[''+o.id]){C[''+o.id]=1;q.push(o.id)}}}
     guard++;
   }
-  /* 挂件：节点自己的 mega/prim/form + Redux 形态额外带同 famKey 家族标准成员的形态记录
-     （v4.13d 聚合：暴鲤龙R 无 Mega 记录，但同族 130 的 Mega X/Y 归并过来；地区型[阿罗拉等]不误挂标准 Mega） */
+  /* 挂件：仅节点自己的 mega/prim/form（v4.85：移除 v4.13d Redux 归并分支——Redux 形态不共享标准 Mega，
+     无 Mega 记录的 Redux 不再从标准族补充（用户实测暴鲤龙R 区重复显示标准超级暴鲤龙X/Y=跨区重复），
+     跨区形态引用以 gameData evolutions 真实数据为准；v4.84 P1-3 _own 守卫随分支整体移除） */
   function pendFor(id){
     var pend=[],gx=FG[''+id];
     function add(r){if(r&&pend.indexOf(r.id)<0)pend.push(r)}
     ((gx&&gx.mega)||[]).forEach(add);((gx&&gx.prim)||[]).forEach(add);((gx&&gx.form)||[]).forEach(add);
-    var spx=speciesById(id),key=spx?famKeyHeur(spx):'';
-    /* v4.84 P1-3：Redux 形态自身已有 mega/prim/form 记录时跳过标准族补充（大针蜂R#2516 自带超级大针蜂R，
-       原逻辑仍把标准族超级大针蜂#1505 挂上 → Redux 区重复显示标准 Mega）；
-       无形态记录的 Redux（暴鲤龙R → 归并标准 Mega X/Y，v4.13d 意图）保持补充 */
-    if(effRegion(id)==='Redux'){
-      var _own=(gx&&gx.mega&&gx.mega.length)||(gx&&gx.prim&&gx.prim.length)||(gx&&gx.form&&gx.form.length);
-      if(!_own){
-        (famIndex[key]||[]).forEach(function(o){
-          if(o.id===id||effRegion(o.id)!=='标准')return;
-          var og=FG[''+o.id];if(!og)return;
-          ((og.mega)||[]).forEach(add);((og.prim)||[]).forEach(add);((og.form)||[]).forEach(add);
-        });
-      }
-    }
     return pend;
   }
   /* ② 分组：普通形态（base 空）为节点，挂件形态不计入 */
@@ -1869,12 +1934,29 @@ function tmRow(r){
     '<td><button class="btn-mini" onclick="addToTeam(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0],null);renderCore(coreSel)" title="加入队伍">➕</button> '+
     '<button class="btn-mini" onclick="openSp(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0])" title="看详情">🔍</button></td></tr>';
 }
+var _currentTab='build';
 function switchTab(name){
+  _currentTab=name;
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name)});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
-  try{var _m=document.querySelector('main');if(_m)_m.scrollTop=0;else window.scrollTo(0,0)}catch(e){} /* v4.6-C：切 Tab 回顶；v4.68 P2-1：main 为独立滚动容器 */
-  if(name==='speed'){try{speedEnsureTable()}catch(eL){}} /* v4.68 黑盒P1-2：速度线全库表首次开Tab才渲染 */
+  try{var _m=document.querySelector('main');if(_m)_m.scrollTop=0;else window.scrollTo(0,0)}catch(e){}
+  /* v4.99 Tab 渲染链守卫：数据未就绪→显示 loading；就绪后自动渲染该 Tab */
+  if(!window.__erReady){
+    var box=document.getElementById('tab-'+name);
+    if(box)box.innerHTML='<div style="padding:40px;text-align:center;color:var(--sub)">数据加载中…</div>';
+    return;
+  }
+  try{
+    if(name==='speed'){speedEnsureTable()}
+    else if(name==='core'&&window.drawCoreList){drawCoreList()}
+    else if(name==='analyze'){renderAnalyze()}
+    else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
+  }catch(e){console.warn('tab render fail',name,e)}
 }
+document.addEventListener('er-ready',function(){
+  window._speedTableBuilt=false;
+  setTimeout(function(){try{speedRender(true)}catch(e){};try{if(window._initCoreList)window._initCoreList()}catch(e){};switchTab(_currentTab)},100);
+});
 document.querySelectorAll('nav button').forEach(function(b){
   b.onclick=function(){switchTab(b.dataset.tab)};
 });
@@ -2057,7 +2139,7 @@ function anDiag(R,mem,rows,wxSys,wxSpdIn){
     D.push({id:'DIAG-10',sev:'中',txt:'体系互斥：同时开空间又依赖天气提速（v4.37 R2-C 口径）',need:''});
   return D;
 }
-function teamReport(ids,label,info){
+function teamReport(ids,label,info,opts){
   anAliasBake();
   /* v4.39 R-7：第三参 = 队伍信息（teamInfo）；缺省回退全局 teamInfo。
      作用：让「队伍构建 Tab 勾选的可选特性（pickAbi 路径）」与第八 tab 分析推荐口径一致。 */
@@ -2083,7 +2165,7 @@ function teamReport(ids,label,info){
   mem.forEach(function(s,si){
     var sy=perSys[si]||[];
     if(sy.indexOf('空间')>-1)R.sys.hasSpace=true;
-    var b=anBuildOf(s,mem),r=anRowOf(s,b);rows.push(r);
+    var b=anBuildOf(s,mem),r=(opts&&opts.rowOf)?opts.rowOf(s,b,si):anRowOf(s,b);rows.push(r);   /* v4.87: opts.rowOf=存档实配覆盖（默认=引擎推荐，逐字不变） */
     R.builds.push({id:r.id,zh:r.zh,name:r.name,side:r.side,roleTag:r.roleTag,moves:r.moves,movesZh:r.movesZh,
       abi:r.abi,item:r.item,ev:r.ev,evTpl:r.evTpl,nat:r.nat,why:r.why});
     var rl=[];try{rl=mateRoleOf(s,wxSys)}catch(e2){rl=[]}
@@ -2218,6 +2300,7 @@ function anCard(t){return '<div class="card" style="margin:6px 0;padding:8px">'+
 function anHead(t){return '<div style="font-weight:600;margin:10px 0 4px">'+t+'</div>'}
 function anChips(arr){return arr.map(function(x){return '<span class="badge" style="margin-right:4px">'+esc(String(x))+'</span>'}).join('')}
 function anRender(R){
+  anLastR=R;   /* v4.87 BUG-1 修复：分析卡读取当前配置来源 R（teamSpeedCardHtml 等卡随 R 重渲染） */
   if(!R||!R.n)return '<div class="tip">未选择成员：点上方槽位「点击选择」，从图鉴级选择器挑 1~6 只（与「队伍构建」共享同一队伍）</div>';
   var h='';
   h+=anHead('① 队伍构成画像');
@@ -2312,16 +2395,306 @@ function anRender(R){
         }).join('')+'</div>':''));
   });
   if(R.ev.notes.length)h+=anCard('<b>队伍级 EV 微调建议（不覆盖引擎结论）</b>'+R.ev.notes.map(function(x){return '<div>'+x.id+'：'+esc(x.txt)+'</div>'}).join(''));
+  /* v4.87 六队分析器追加深度维度卡（只增不删：①~⑥ 既有区块渲染链逐字不动，行为与 v4.86 一致） */
+  try{h+=anHead('⑦ 机制语境审查');h+=anCard(mechCtxCardHtml(R))}catch(eMch){}
+  try{h+=anHead('⑧ 道具/性格/EV 体检');h+=anCard(buildVetCardHtml(R))}catch(eVet){}
+  try{h+=anHead('⑨ 有效速度轴');h+=anCard(effSpeedCardHtml(R))}catch(eSpd){}
+  try{h+=anHead('⑩ 队友联防配对');h+=anCard(pairDefCardHtml(R))}catch(ePair){}
   return h;
 }
+/* ==================== v4.87 六队分析器（配置来源三路 chip + 深度维度卡，只增不删） ====================
+   设计：er-v487-plan/v487_六队分析器设计.md（A① 单队深度 / B④ 组合输入 / C③ 现有分析 Tab 内扩充 / D 维度 / E chip 布局）。
+   三路互斥：team=当前队伍一键带入(默认,读全局 team[]+引擎推荐) / sav=存档实配导入(吃玩家真实配招/道具/EV/性格/特性) /
+   manual=手动选 6 只兜底(scratch 列表 anManualIds，不污染队伍构建 Tab 的 team[])。 */
+var anCfgSrc='team';
+var anManualIds=[];
+function anCfgBarHtml(){
+  var defs=[['team','当前队伍带入'],['sav','存档实配'],['manual','手动选6只']];
+  var h='<div style="font-size:11px;color:var(--sub);margin:2px 0">配置来源（切换后全分析卡按所选来源重渲染）</div><span class="chipgrp">';
+  defs.forEach(function(d){
+    h+='<span class="chipopt'+(anCfgSrc===d[0]?' on':'')+'" role="button" tabindex="0" onclick="anSetCfgSrc(\''+d[0]+'\')">'+d[1]+'</span>';
+  });
+  h+='</span>';
+  h+='<div style="margin-top:4px"><button class="btn-mini" type="button" onclick="openPpModal()">📋 粘贴 pokepast 导入</button> <button class="btn-mini" type="button" onclick="pokepastExport()">📋 导出 pokepast</button></div>';
+  return h;
+}
+function anSetCfgSrc(src){
+  if(src==='sav'&&!(typeof SAV_ROWS!=='undefined'&&SAV_ROWS&&SAV_ROWS.length)){toast('暂无解析存档：请到「存档导入」Tab 解析 .sav 后再切');return}
+  anCfgSrc=src;renderAnTab();
+}
+/* 存档实配行 → 与 anRowOf 同形 row（吃玩家真实配招/道具/EV/性格/特性，区别于 anBuildOf 引擎推荐） */
+function savRowOf(s,row){
+  var mvIds=[row['招式1'],row['招式2'],row['招式3'],row['招式4(末招)']].map(function(x){
+      var m=String(x||'').match(/\(id=(\d+)\)$/);return m?+m[1]:0}).filter(function(id){return id>0});
+  var phys=0,spec=0;
+  mvIds.forEach(function(id){var mm=MV[id];if(!mm||mm[4]==='变化')return;if(mm[4]==='特殊')spec++;else phys++});
+  var side=(phys>0&&spec>0)?'双刀':(phys>=spec?'物理':'特殊');
+  var ev=[+row['EV_HP']||0,+row['EV_攻击']||0,+row['EV_防御']||0,+row['EV_特攻']||0,+row['EV_特防']||0,+row['EV_速度']||0];
+  var nn=normNatName(row['性格']||'');
+  var natPos=anNatPos(nn);
+  var raw=0;try{raw=speedStat((s.base||[])[5],ev[5],31,natPos)}catch(e){raw=0}
+  var abiNow=String(row['主特性(当前生效)']||'');
+  var wxSpd=false;
+  AN_WXSPD_ABI.forEach(function(p){for(var q=1;q<p.length;q++)if(abiNow===p[q])wxSpd=true});
+  return {id:s.id,zh:s.zh,name:'玩家实配（存档）',side:side,roleTag:'实配',moves:mvIds,
+    movesZh:mvIds.map(function(id){return anMvZh(id)}),abi:abiNow,item:String(row['道具']||''),
+    ev:ev,evTpl:'存档实配',nat:nn||'—',why:'',raw:raw,natPos:natPos,wxSpd:wxSpd,isSp:false};
+}
+function savTeamReport(){
+  /* SAV_ROWS「队伍」行按图鉴编号去重 ≤6；主链复用 teamReport（注入 rowOf 覆盖 builds 取数），
+     联防/覆盖/诊断/叙事全部按实配招重算。 */
+  var pool=[],seen={};
+  (SAV_ROWS||[]).forEach(function(r){
+    if(!r)return;if(String(r['来源']||'').indexOf('队伍')<0)return;
+    var id=String(r['图鉴编号']||'').trim();if(!id||seen[id])return;
+    var sp=null;try{sp=speciesById(id)}catch(e){}if(!sp)return;
+    seen[id]=1;pool.push({s:sp,row:r});
+  });
+  pool=pool.slice(0,6);
+  return teamReport(pool.map(function(x){return x.s.id}),'存档实配导入',null,
+    {rowOf:function(s,b,si){return savRowOf(s,pool[si].row)}});
+}
+/* ============ v4.88 pokepast 文本互操作（第四路输入：粘贴导入 / 导出分享；解析容错：中/英/图鉴名，招式道具中文名映射复用 MV/ERDATA.items） ============ */
+var PP_NAT_ALIAS={'活泼':'开朗','活潑':'开朗','任性':'固执','固執':'固执','大膽':'大胆','內斂':'内敛','安靜':'冷静','沈着':'沉着','膽小':'胆小','認真':'认真','溫和':'温和','溫順':'温顺','慎重':'慎重','淘氣':'淘气','樂天':'乐天','悠閑':'悠闲','頑皮':'顽皮','馬虎':'马虎'};
+/* v4.89 P3：招式经典旧译别名表（搜索容错 + pokepast 导入复用；键=旧名/错名，值=数据内真实中文名） */
+var MV_ALIAS={'影子球':'暗影球','精神干扰':'精神强念','精神強念':'精神强念','大字火':'大字爆炎','冷冻光束':'冰冻光束','急冻光线':'冰冻光束','急凍光線':'冰冻光束','冰冻光线':'冰冻光束','氣合拳':'真气拳','气合拳':'真气拳','瓦割':'劈瓦','翅膀拍':'翅膀攻击','飛光':'幻象光线'};
+function mvAliasOf(n){n=String(n||'').trim();return MV_ALIAS[n]||MV_ALIAS[n.toLowerCase()]||null}
+var PP_NAT={jolly:['开朗',1],timid:['胆小',1],hasty:['急躁',1],naive:['天真',1],
+  hardy:['勤奋',0],docile:['坦率',0],bashful:['害羞',0],quirky:['浮躁',0],serious:['认真',0],
+  lonely:['孤僻',-1],adamant:['固执',-1],naughty:['顽皮',-1],brave:['勇敢',-1],
+  bold:['大胆',-1],impish:['淘气',-1],lax:['宽容',-1],relaxed:['悠闲',-1],
+  modest:['保守',-1],mild:['稳重',-1],rash:['马虎',-1],quiet:['冷静',-1],
+  calm:['沉着',-1],gentle:['温和',-1],careful:['慎重',-1],sassy:['自大',-1]};
+var PP_EVK={hp:0,atk:1,def:2,spa:3,spd:4,spe:5,'生命':0,'攻击':1,'防御':2,'特攻':3,'特防':4,'速度':5};
+var _ppSpIdx=null,_ppMvIdx=null,_ppItIdx=null;
+function ppSpeciesByName(name){
+  name=String(name||'').trim();if(!name)return null;
+  if(/^\d+$/.test(name)){var s=null;try{s=speciesById(name)}catch(e){}if(s)return s}
+  /* v4.90 P1-3：英文 Mega/形态名「Charizard-Mega-Y / Gengar-Mega」→ 基种类查 → 超级形态条目（与 megaFormOf 同区口径） */
+  var mm=/^([A-Za-z0-9 .'%-]+?)\s*-\s*Mega(?:\s*-\s*([XY]))?$/i.exec(name);
+  if(mm){
+    var base=ppSpeciesByName(mm[1].trim());
+    if(base){
+      var suf=(mm[2]||'').toUpperCase(),hit=null;
+      ERDATA.species.forEach(function(x){if(!hit&&/超级/.test(x.zh)&&x.zh.indexOf(String(base.zh))>-1&&(!suf||x.zh.indexOf(suf)>-1))hit=x});   /* 复核P1：x.zh 包含 base.zh（「超级喷火龙Y」含「喷火龙」），indexOf===0 方向反导致全 NULL */
+      if(hit)return hit;
+    }
+  }
+  if(!_ppSpIdx){_ppSpIdx={};ERDATA.species.forEach(function(x){_ppSpIdx[String(x.zh).toLowerCase()]=x;_ppSpIdx[String(x.en).toLowerCase()]=x})}
+  var k=name.toLowerCase();if(_ppSpIdx[k])return _ppSpIdx[k];
+  var hit=null;ERDATA.species.forEach(function(x){if(!hit&&(String(x.zh).indexOf(name)>-1||String(x.en).toLowerCase().indexOf(k)>-1))hit=x});
+  return hit;
+}
+function ppMoveByName(n){
+  n=String(n||'').trim();if(!n)return 0;
+  var real=mvAliasOf(n);if(real)n=real;   /* v4.89 P3：旧译别名→真实名（pokepast 导入复用） */
+  var nl=n.toLowerCase();if(!_ppMvIdx){_ppMvIdx={};for(var id in MV){var m=MV[id];if(m[1])_ppMvIdx[String(m[1]).toLowerCase()]=+id;if(m[2])_ppMvIdx[String(m[2]).toLowerCase()]=+id}}
+  if(_ppMvIdx[nl])return _ppMvIdx[nl];
+  for(var k in _ppMvIdx){if(k.indexOf(nl)>-1||nl.indexOf(k)>-1)return _ppMvIdx[k]}
+  return 0;
+}
+function ppItemByName(n){
+  n=String(n||'').trim().toLowerCase();if(!n)return null;
+  if(!_ppItIdx){_ppItIdx={};ERDATA.items.forEach(function(g){if(g[2])_ppItIdx[String(g[2]).toLowerCase()]=g;if(g[1])_ppItIdx[String(g[1]).toLowerCase()]=g})}
+  if(_ppItIdx[n])return _ppItIdx[n];
+  for(var k in _ppItIdx){if(k.indexOf(n)>-1||n.indexOf(k)>-1)return _ppItIdx[k]}
+  return null;
+}
+function pokepastParse(text){
+  var blocks=String(text||'').split(/\n\s*\n/),out=[];
+  blocks.forEach(function(b){
+    var lines=b.split('\n').map(function(x){return x.trim()}).filter(Boolean);
+    if(!lines.length)return;
+    var head=lines[0],item=null,name=head,at=head.split('@');
+    if(at.length>1){name=at[0];item=at.slice(1).join('@').trim()}
+    name=name.replace(/\s*\([^)]*\)\s*$/,'').trim();
+    var nat='—',ev=[0,0,0,0,0,0],moves=[],abiZh='';
+    for(var i=1;i<lines.length;i++){
+      var L=lines[i];
+      if(/^[-–*]/.test(L)){moves.push(L.replace(/^[-–*]\s*/,''));continue}
+      var ab=/^Ability:\s*(.+)$/i.exec(L);   /* v4.90 P1-3c：Ability 行解析（导入展示 + 导出补行） */
+      if(ab){abiZh=ab[1].trim();continue}
+      var eL=L.replace(/^EVs:\s*/i,'');   /* v4.88 修复BUG-D：剥离「EVs:」前缀，单行多 EV 按 / 切分逐个吃 */
+      if(eL!==L){eL.split('/').forEach(function(seg){var mm=/(\d+)\s+(HP|Atk|Def|Spa|Spd|Spe|生命|攻击|防御|特攻|特防|速度)\b/i.exec(seg.trim());if(mm){var ki=PP_EVK[mm[2]]!=null?PP_EVK[mm[2]]:PP_EVK[mm[2].toLowerCase()];if(ki!=null)ev[ki]=+mm[1]}});continue}
+      var m=/^(\d+)\s+(HP|Atk|Def|Spa|Spd|Spe|生命|攻击|防御|特攻|特防|速度)\b/i.exec(L);
+      if(m){var ki=PP_EVK[m[2]]!=null?PP_EVK[m[2]]:PP_EVK[m[2].toLowerCase()];if(ki!=null)ev[ki]=+m[1];continue}
+      var nm=L.replace(/\s+Nature$/i,'').trim();
+      if(PP_NAT[nm.toLowerCase()])nat=PP_NAT[nm.toLowerCase()][0];
+      else if(PP_NAT_ALIAS[nm])nat=PP_NAT_ALIAS[nm];
+      else if(/^(勤奋|坦率|害羞|认真|浮躁|孤僻|勇敢|固执|顽皮|大胆|悠闲|淘气|乐天|宽容|保守|稳重|马虎|冷静|温和|大方|温顺|慎重|自大|沉着|狂妄|开朗|胆小|急躁|天真|爽朗|内敛|怕寂寞|调皮|慢吞吞)$/.test(nm))nat=nm;
+      else if(!/^(EVs|IVs|LV|LV\.)/i.test(nm)&&nm.length<=6&&!/[-–*]/.test(nm)&&!/\d/.test(nm)&&!/@/.test(nm))nat=nm; /* v4.89 衔接②：未识别性格行原样保留（不再落「—」丢失导出行） */
+    }
+    var sp=ppSpeciesByName(name);if(!sp)return;
+    var it=item?ppItemByName(item):null;
+    out.push({s:sp,itemZh:it?(it[2]||it[1]):'',movesZh:moves,ev:ev,nat:nat,abiZh:abiZh});
+  });
+  return out.slice(0,6);
+}
+function pokepastImport(){
+  var ta=$('ppInput');var txt=ta?ta.value:'';
+  var list=pokepastParse(txt);
+  if(!list.length){toast('未解析到任何宝可梦（格式：每只一块，首行「名字 @ 道具」，下接 性格 / EVs: 252 HP / - 招式）');return}
+  var cleared=clearTeamForImport(),ppRows=[];
+  list.forEach(function(x){
+    var mvRows=x.movesZh.map(function(mn){   /* v4.88 修复BUG-E：招式名解析为 id，行内带(id=NNN) 供 savRowOf 正则取数，打通导出往返 */
+      var id=ppMoveByName(mn);if(!id)return mn||'';
+      return ((MV[id]&&MV[id][2])||mn)+'(id='+id+')';
+    });
+    addToTeam(x.s,{fromSave:false,item:x.itemZh,moves:x.movesZh,pps:[],ev:x.ev,nat:x.nat});
+    ppRows.push({'来源':'队伍','图鉴编号':String(x.s.id),'等级':'100','道具':x.itemZh,
+      '主特性(当前生效)':x.abiZh||'','招式1':mvRows[0]||'','招式2':mvRows[1]||'','招式3':mvRows[2]||'','招式4(末招)':mvRows[3]||'',
+      'EV_HP':x.ev[0],'EV_攻击':x.ev[1],'EV_防御':x.ev[2],'EV_特攻':x.ev[3],'EV_特防':x.ev[4],'EV_速度':x.ev[5],'性格':x.nat});
+  });
+  SAV_ROWS=ppRows;anCfgSrc='sav';
+  closePpModal();
+  try{renderTm(true);renderSlots();renderAnalyze()}catch(e){}
+  renderAnTab();
+  toast('已导入 '+list.length+' 只（清空原 '+cleared+' 只）；配置来源已切「存档实配」按 pokepast 实配分析');
+}
+function pokepastExport(){
+  var R=(typeof anLastR!=='undefined')?anLastR:null;
+  var builds=(R&&R.builds)||[];
+  if(!builds.length){toast('当前无队伍可导出（先在槽位选 6 只）');return}
+  var EVN=['HP','Atk','Def','Spa','Spd','Spe'];
+  var txt=builds.map(function(b){
+    var sp=(b.id!=null)?(speciesById(b.id)||{}):{};   /* v4.90 P2-5：物种名中英并存（zh(en) 兼容外部工具） */
+    var line=b.zh+(sp.en?' ('+sp.en+')':'')+(b.item&&b.item!=='无'?' @ '+b.item:'');
+    var evs=(b.ev||[]).map(function(v,i){return (+v||0)>0?(+v)+' '+EVN[i]:null}).filter(Boolean).join(' / ')||'0 HP';
+    var ms=(b.moves||[]).filter(function(id){return id>0}).map(function(id){return '- '+anMvZh(id)}).join('\n');
+    var abi=b.abi||b['主特性(当前生效)']||'';   /* v4.90 P2-5：导出补 Ability 行（取实配/导入特性） */
+    return line+'\n'+(abi?('Ability: '+abi+'\n'):'')+(b.nat&&b.nat!=='—'?b.nat+'\n':'')+'EVs: '+evs+'\n'+ms;
+  }).join('\n\n');
+  openPpModal(txt);
+  toast('已生成 pokepast 文本 ↓ 直接从文本框复制（剪贴板被浏览器拒绝时，在文本框内全选 Ctrl+C 兜底）');   /* v4.90 P2-6：剪贴板被拒降级提示 */
+}
+function openPpModal(txt){var m=$('ppModal');if(!m)return;var ta=$('ppInput');if(ta)ta.value=txt||'';if(m.classList)m.classList.add('open')}
+function closePpModal(){var m=$('ppModal');if(m&&m.classList)m.classList.remove('open')}
+/* ⑦ 机制语境审查卡：mechFlowFit(六门) / e5Sanitize(蓄力僵直) 已有判定 → 维度化诊断 + 缺陷高亮 */
+function mechCtxCardHtml(R){
+  try{
+    var bad=[];
+    (R.builds||[]).forEach(function(b){
+      var s=null;try{s=speciesById(b.id)}catch(e){}if(!s)return;
+      var mv=(b.moves||[]).filter(function(id){return id>0});
+      var iss=[];
+      if(mv.indexOf(512)>-1){ /* 杂技(512)：无轻装/非本系/低攻 + 道具不消耗 → 空转 */
+        if(mechFlowFit(s,'acrobatics_item')===null)
+          iss.push('杂技(512)：非本系飞行/特性池无轻装/物攻<110，不享加成语境');
+        if(!/宝石|种子|宝珠|披带/.test(String(b.item||'')))
+          iss.push('杂技配「'+esc(b.item||'无道具位')+'」：非消耗品 → 无道具增伤不触发');
+      }
+      if(mv.indexOf(264)>-1&&mv.indexOf(182)<0&&mv.indexOf(164)<0) /* 真气拳(264)：蓄力需守住/替身掩护 */
+        iss.push('真气拳(264)：配招无守住(182)/替身(164)掩护，蓄力回合易被打断');
+      var stuck=[];
+      mv.forEach(function(id){try{if(e5NonInstant(id))stuck.push(anMvZh(id))}catch(e){}});
+      if(stuck.length){
+        var isOut=/输出|速攻|爆发|收割|炮台/.test(String(b.roleTag||'')+String(b.name||''));
+        iss.push((isOut?'输出位':'配招')+'含僵直/非即时招「'+stuck.join('、')+'」'+(isOut?'——高速打手节奏受损，建议换同系即时招':''));
+      }
+      if(iss.length)bad.push('<div style="margin:3px 0">'+sprImg(b.id,'spinl')+'<b>'+esc(b.zh)+'</b>'+
+        iss.map(function(x){return '<br><span style="color:#c33">⚠ '+esc(x)+'</span>'}).join('')+'</div>');
+    });
+    return bad.length?bad.join(''):'<div style="color:var(--ok)">✅ 全员机制语境自洽（杂技/真气拳/僵直招无空转）</div>';
+  }catch(e){return ''}
+}
+/* ⑧ 道具/性格/EV 体检卡：finalizeBuild 产物字段 + 存档实配字段（道具×特性联动 / 性格×速度线 / EV 守恒） */
+function buildVetCardHtml(R){
+  try{
+    var out=[];
+    var mates=(R.members||[]).map(function(m){var sp=null;try{sp=speciesById(m.id)}catch(e){}return sp}).filter(Boolean);
+    (R.builds||[]).forEach(function(b){
+      var s=null;try{s=speciesById(b.id)}catch(e){}if(!s)return;
+      var iss=[];
+      var ev=(b.ev||[]).map(function(x){return +x||0});
+      var evSum=ev.reduce(function(a,c){return a+c},0);
+      if(ev.some(function(v){return v>252}))iss.push('EV 单项 >252（违例）');
+      if(evSum>510)iss.push('EV 合计 '+evSum+' >510（违例，上限 510）');
+      else if(b.evTpl==='存档实配'&&evSum>0)iss.push('EV 合计 '+evSum+'（上限 510）');
+      var rank=0;try{rank=speedPctileRankOf(s)}catch(e){}
+      var plusSpd=false;try{plusSpd=anNatPos(b.nat)}catch(e){}
+      if(rank>=75&&!plusSpd)iss.push('极速 P'+rank+' 却无加速性格「'+esc(b.nat||'—')+'」——抢线能力打折');
+      if(R.sys.hasSpace&&plusSpd)iss.push('空间队带加速性格——空间内慢速反制更优（加速逆语境）');
+      if(/生命宝珠/.test(String(b.item||''))){ /* v4.71 逻辑：生命宝珠×全队无回复位冲突 */
+        var rec=null;try{rec=teamHasRecovery(s,mates)}catch(e){}
+        if(!rec)iss.push('生命宝珠自伤 × 全队无回复位——自伤不可周转，换剩饭/突击背心');
+      }
+      if(/围巾|头带|眼镜/.test(String(b.item||''))){
+        var chan=(b.moves||[]).filter(function(id){var mm=MV[id];return mm&&mm[4]==='变化'});
+        if(chan.length)iss.push('讲究系锁招 × 变化招「'+chan.map(anMvZh).join('、')+'」——锁死废格');
+      }
+      if(iss.length)out.push('<div style="margin:3px 0">'+sprImg(b.id,'spinl')+'<b>'+esc(b.zh)+'</b>'+
+        iss.map(function(x){return '<br><span style="color:#c33">⚠ '+esc(x)+'</span>'}).join('')+'</div>');
+    });
+    return out.length?out.join(''):'<div style="color:var(--ok)">✅ 道具/性格/EV 体检通过（EV 守恒、性格配速、道具联动无冲突）</div>';
+  }catch(e){return ''}
+}
+/* ⑨ 有效速度轴实算卡：天气×2 / 围巾×1.5 / 顺风×2 / 空间反转（spdMaxOf 体系独立实算，不动既有 teamSpeedCard） */
+function effSpeedCardHtml(R){
+  try{
+    var bm={};(R.builds||[]).forEach(function(b){bm[''+b.id]=b});
+    if(!(R.speed.list||[]).length)return '';
+    var rowsH='';
+    (R.speed.list).forEach(function(sp){
+      var v=sp.raw||0;var mul=[];
+      var b=bm[''+sp.id];
+      var abiNow=b?String(b.abi||''):'';
+      var wx2='';
+      AN_WXSPD_ABI.forEach(function(p){for(var q=1;q<p.length;q++){
+        if(abiNow.indexOf(p[q])>-1&&(R.sys.wx||[]).indexOf(p[0])>-1)wx2=p[0]+'·'+p[q]}});
+      if(wx2){mul.push(wx2+'×2');v=v*2}
+      if(b&&/围巾/.test(b.item||'')){mul.push('围巾×1.5');v=Math.floor(v*1.5)}
+      if(R.sys.hasTailwind){mul.push('顺风×2');v=v*2}
+      rowsH+='<div style="display:flex;align-items:center;gap:6px;margin:2px 0">'+
+        '<span style="width:110px;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(sp.zh)+'</span>'+
+        '<span style="flex:1;font-size:11px">实速 <b>'+v+'</b>'+(mul.length?(' <span style="color:var(--acc,#1976d2)">（'+mul.join(' × ')+'）</span>'):'')+'</span></div>';
+    });
+    return rowsH+'<div class="tip" style="margin-top:3px">基础=252EV+性格实算；天气×2 仅当队伍天气轴命中该提速特性'+
+      (R.sys.hasSpace?'；⚠ 戏法空间在场：速度排序反转（慢=快），上表为空间外口径':'')+'</div>';
+  }catch(e){return ''}
+}
+/* ⑩ 队友联防配对轴：members 两两免疫/弱点互补矩阵（defCellTrio 同源天性口径） */
+function pairDefCardHtml(R){
+  try{
+    var sps=(R.members||[]).map(function(m){var sp=null;try{sp=speciesById(m.id)}catch(e){}return sp}).filter(Boolean);
+    if(sps.length<2)return '';
+    var cells='';
+    for(var i=0;i<sps.length;i++)for(var j=i+1;j<sps.length;j++){
+      var comp=[],shared=[];
+      anTypes().forEach(function(tp){
+        var va=defCellTrio(sps[i],tp).inn,vb=defCellTrio(sps[j],tp).inn;
+        if(va>=2&&vb<1)comp.push(tp);
+        else if(va>=2&&vb>=2)shared.push(tp);
+      });
+      var bg=comp.length>=3?'#c8e6c9':(shared.length>=2?'#ffcdd2':'#f0f0f0');
+      cells+='<div title="'+esc(sps[i].zh+' ↔ '+sps[j].zh)+'" style="background:'+bg+';border-radius:4px;padding:4px 5px;font-size:10px">'+
+        esc(sps[i].zh)+'↔'+esc(sps[j].zh)+'<br><span style="color:#2e7d32">互补'+comp.length+'</span>'+
+        (comp.length?'('+esc(comp.slice(0,4).join('/'))+')':'')+' <span style="color:#c33">共弱'+shared.length+'</span>'+
+        (shared.length?'('+esc(shared.slice(0,3).join('/'))+')':'')+'</div>';
+    }
+    return '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;margin-top:4px">'+cells+'</div>'+
+      '<div class="tip" style="margin-top:3px">绿=互补≥3（A弱B抗/免） 红=共弱≥2；同源 defCellTrio 天性口径</div>';
+  }catch(e){return ''}
+}
+/* v4.87 NN 接口预留（长期项，本轮不接线不评估）：
+   analyzerVNN(features) 输入=队伍成员逐维度向量编码
+   [种族六维/属性/特性/道具/性格/EV6/有效速度/机制语境标志(杂技512·真气拳264·僵直·轻装·硬撑)/体系标志(钉·墙·天气·顺风·空间)]，
+   输出=维度缺陷概率向量（机制语境/道具性格EV/速度轴/联防互补/覆盖盲区），不产单一总分。
+   真值数据集：nn_data/dataset_engine_v0_winrate.jsonl（构建管线）。 */
+function analyzerVNN(features){ /* 存根：未训练 → null，调用方须容错 */ return null }
 function renderAnTab(){
   var box=$('anOut');if(!box)return;
+  var _bar=$('anCfgBar');if(_bar)_bar.innerHTML=anCfgBarHtml();   /* v4.87: 配置来源 chip 栏（三路互斥） */
   /* v4.39 R-6：输入统一 —— 槽位（= 全局 team[]）为唯一输入路径（原 #anSearch 文本框 / #anRun 按钮已移除） */
   var ids=(typeof team!=='undefined'&&team?team.map(function(s){return s.id}):[]);
   var info=(typeof teamInfo!=='undefined'&&teamInfo)?teamInfo:null;   /* v4.39 R-7：第三参读 teamInfo（勾选的可选特性生效） */
   renderAnSlots();
   var R=null;
-  try{R=teamReport(ids,'自组队伍',info)}catch(e){box.innerHTML='<div class="tip">分析失败：'+esc(String(e&&e.message||e))+'</div>';return}
+  /* v4.87：配置来源三路——team=现有 R 构造链原样(默认零回归) / sav=存档实配 / manual=手动 scratch 6 只 */
+  try{
+    if(anCfgSrc==='sav')R=savTeamReport();
+    else if(anCfgSrc==='manual')R=teamReport(anManualIds.slice(),'手动挑选6只',null);
+    else R=teamReport(ids,'自组队伍',info);
+  }catch(e){box.innerHTML='<div class="tip">分析失败：'+esc(String(e&&e.message||e))+'</div>';return}
   anLastR=R;anRoleCache={};
   (R.builds||[]).forEach(function(b){if(b&&b.roleTag)anRoleCache[String(b.id)]=b.roleTag});
   renderAnSlots();   /* 引擎打法标签（roleTag）覆盖槽位廉价标签（spRoleTags） */
@@ -2343,9 +2716,17 @@ function anSlotRoleOf(s){
 }
 function renderAnSlots(){
   var box=$('anSlots');if(!box)return;
+  /* v4.87: sav 源成员来自存档队伍（非槽位）；manual 源写 scratch 列表 anManualIds */
+  if(anCfgSrc==='sav'){
+    box.innerHTML='<div class="tip">配置来源=存档实配：成员取最近解析存档的「队伍」6 只（吃玩家真实配招/道具/EV/性格）。到「存档导入」Tab 重新解析可切换。</div>';
+    return;
+  }
+  var manual=(anCfgSrc==='manual');
   var h='';
   for(var i=0;i<6;i++){
-    var s=((typeof team!=='undefined')&&team)?team[i]:null;
+    var s=null;
+    if(manual){var _mid=anManualIds[i];if(_mid!=null){try{s=speciesById(_mid)}catch(e){}}}
+    else{s=((typeof team!=='undefined')&&team)?team[i]:null}
     if(s){
       var role=anRoleCache[String(s.id)]||anSlotRoleOf(s);
       h+='<div class="slot anslot" role="button" tabindex="0" onclick="anSlotPick('+i+')" title="点击替换（打开图鉴级选择器）">'+
@@ -2360,6 +2741,7 @@ function renderAnSlots(){
 }
 function anSlotPick(i){anPickSlot=i;openAnPicker()}
 function anSlotRemove(i){
+  if(anCfgSrc==='manual'){anManualIds.splice(i,1);renderAnTab();return}   /* v4.87: scratch 列表移除，不碰全局 team[] */
   var s=((typeof team!=='undefined')&&team)?team[i]:null;
   if(!s)return;
   try{removeFromTeam(s)}catch(e){try{team.splice(i,1)}catch(e2){}}
@@ -2429,6 +2811,12 @@ function renderAnPickerGrid(reset){
 function anPickerChoose(id){
   var s=null;try{s=speciesById(id)}catch(e){}
   if(!s)return;
+  if(anCfgSrc==='manual'){   /* v4.87: 手动选 6 只兜底 → scratch 列表，不写全局 team[]/teamInfo */
+    if(anManualIds.indexOf(id)>-1){toast('该宝可梦已在列表中');return}
+    if(anPickSlot>=0&&anPickSlot<anManualIds.length){anManualIds[anPickSlot]=id}
+    else{if(anManualIds.length>=6){toast('最多 6 只');return}anManualIds.push(id)}
+    closeAnPicker();renderAnTab();return;
+  }
   var i=anPickSlot;
   if(!((typeof team!=='undefined')&&team))return;
   var inTeam=team.indexOf(s);
@@ -2478,6 +2866,66 @@ function anSpDetail(id){
   var d=$('anDetail');if(d&&d.classList)d.classList.add('open');
 }
 function closeAnDetail(){var d=$('anDetail');if(d&&d.classList)d.classList.remove('open')}
+/* ===== v4.91 任务A：五段式流派角色定位卡（Smogon StrategyDex 结构，全部程序化生成、零手写叙事） =====
+   数据源：deriveBuilds 既有字段（name/side/roleTag/mv.main/it/abi/nat/ev/warn）+ 速度线 speedPctileRankOf
+   + dmgCalc 现算注入（非写死）：主攻招对「克制代表目标」的 OHKO 击杀线（目标=该招属性克制 opt≥2 中 HP 最高的耐久标杆）。
+   五段：①概述 ②核心机制（含现算击杀线）③典型用法 ④注意与局限（弱点/ warn）⑤推荐队友（补盲）。每段 ≤3 行。 */
+function roleCard5TargetOf(mvId){
+  var mv=ERDATA.moves[mvId];if(!mv)return null;
+  var mt=mv[3],best=null;
+  ERDATA.species.forEach(function(t){
+    if(!t||!t.base)return;try{if(typeof isValidSp==='function'&&!isValidSp(t))return}catch(e0){}
+    var opt=1;try{opt=defCellTrio(t,mt,null).opt}catch(e1){opt=1}
+    if(opt>=2&&(!best||t.base[0]>best.base[0]))best=t;
+  });
+  return best;
+}
+function roleCard5Html(s,bd,R){
+  try{
+    if(!bd)return '';
+    var pct=0;try{pct=speedPctileRankOf(s)}catch(eP){}
+    var spd=0;try{spd=spdMaxOf(s)}catch(eS){}
+    var mv0=(bd.mv&&bd.mv.main&&bd.mv.main[0])?bd.mv.main[0].id:null;
+    var evA=0,isPhysMain=true;
+    if(mv0){var mm0=ERDATA.moves[mv0];if(mm0){isPhysMain=(mm0[4]==='物理');evA=(bd.ev&&bd.ev.alloc)?(+bd.ev.alloc[isPhysMain?1:3]||0):0}}
+    var tgt=mv0?roleCard5TargetOf(mv0):null;
+    var dmgRes=null,hpT=0;
+    if(tgt&&mv0){
+      var itemA=(bd.it&&bd.it[0])?String(bd.it[0][0]||''):'';
+      var natA5=(bd.nat&&bd.nat[0])?String(bd.nat[0][0]||''):'';
+      dmgRes=dmgCalc({sA:s,sD:tgt,moveId:mv0,evA:evA,evD:0,natA:natA5,natD:'',itemA:itemA,weather:'',terrain:'',crit:false});
+      hpT=dmgStatOf(bstI(tgt,0),0,31,0,'');
+    }
+    var wks=[];ERDATA.types.forEach(function(at){var c=defCellTrio(s,at).inn;if(c>1)wks.push(at)});
+    var h='<div class="fld"><div class="fhd"><span class="fno">🎭</span>角色定位（五段式）</div><div style="font-size:11px;line-height:1.8">';
+    h+='<b>① 概述：</b>'+esc(oneLiner(bd))+'（速度线 P'+pct+' · 极速 '+spd+'）<br>';
+    var mechBits=[];
+    if(mv0){var mm=ERDATA.moves[mv0];mechBits.push('主攻「'+(mm?mm[1]:mv0)+'」（威力 '+(mm?mm[5]:'-')+'）')}
+    if(bd.it&&bd.it[0])mechBits.push('道具「'+String(bd.it[0][0]||'')+'」');
+    /* v4.91 复核P3-4：②段特性名取推荐特性字段的规范中文名（与详情卡 anAbiChipH 同一反查链），消除「复仇 vs 猛鬼」不一致 */
+    var _ab0=bd.abi&&bd.abi[0];
+    if(_ab0){var _abN='';
+      try{_abN=(_ab0.id!=null&&_ab0.id!==''&&typeof ABI!=='undefined'&&ABI[_ab0.id])?(ABI[_ab0.id][2]||ABI[_ab0.id][1]||('#'+_ab0.id)):((typeof abiNameZh==='function')?abiNameZh(_ab0.n):(_ab0.n||''))}catch(eN){_abN=_ab0.n||''}
+      if(_abN)mechBits.push('特性「'+String(_abN)+'」')}
+    h+='<b>② 核心机制：</b>'+(mechBits.join('、')||'—');
+    if(dmgRes&&tgt){
+      h+='。<span style="color:var(--sub)">现算：'+esc(s.zh)+' 主攻 → '+esc(tgt.zh)+'（HP '+hpT+'）伤害 <b>'+dmgRes.lo+'–'+dmgRes.hi+'</b>'+
+        (dmgRes.lo>=hpT?'，<span style="color:var(--ok)">确定 OHKO</span>':(dmgRes.hi>=hpT?'，概率 OHKO（击杀线边缘）':'，2HKO 起（需更多攻端 EV）'))+'</span>';
+    }
+    h+='<br>';
+    var evStr=(bd.ev&&bd.ev.alloc)?bd.ev.alloc.join('/'):'-';
+    h+='<b>③ 典型用法：</b>'+((bd.nat&&bd.nat[0])?('性格「'+bd.nat[0][0]+'」'):'')+' · EV '+evStr+'（HP/攻/防/特攻/特防/速）'+
+      ((bd.ev&&bd.ev.template)?(' · 模板「'+bd.ev.template+'」'):'')+' · 速度 P'+pct+' 节奏。<br>';
+    var limBits=[];
+    if(wks.length)limBits.push('弱点 '+wks.map(function(t){return tlabel(t)}).join(' '));
+    if(bd.warn)limBits.push(String(bd.warn));
+    if(!limBits.length)limBits.push('弱点已被天性/特性覆盖，无显著短板');
+    h+='<b>④ 注意与局限：</b>'+limBits.join('；')+'<br>';
+    h+='<b>⑤ 推荐队友：</b>'+(wks.length?('需队友补 '+wks.join('、')+' 的抗性或打击面'):'本只抗性网完整，队友优先补队伍体系短板')+'。';
+    h+='</div></div>';
+    return h;
+  }catch(e){return ''}
+}
 function anDetailHtml(s,bd,R){
   var h='';
   h+='<div class="andethead">'+sprImg(s.id,'spinl')+'<b>'+esc(s.zh)+'</b> <span class="dim">'+esc(s.en)+' #'+s.id+' · '+esc(s.t1)+(s.t2!==s.t1?(' / '+esc(s.t2)):'')+' · 种族值（总值 '+spBst(s)+'）</span>'+
@@ -2488,6 +2936,7 @@ function anDetailHtml(s,bd,R){
     '<span class="dim">'+esc(bd.side||'')+'向 · '+esc(bd.roleTag||'')+'</span><div class="oltext">'+esc(oneLiner(bd))+'</div>'+
     (bd.warn?'<div class="tip" style="margin-top:3px"><span class="badge badge-warnimm">注意</span> '+esc(bd.warn)+'</div>':'')+
     '</div></div>';
+  h+=roleCard5Html(s,bd,R);   /* v4.91 任务A：五段式角色定位卡（接在流派一句话之后，风格同 fld） */
   /* D-1 推荐特性 + 为什么选它（bd.abi[].why；点特性名看完整描述） */
   h+='<div class="fld"><div class="fhd"><span class="fno">2</span>推荐特性 + 理由</div>';
   var _ab=(bd.abi||[]);
@@ -2616,7 +3065,7 @@ function renderSpChips(){
   $('spSearch').oninput=function(){renderSp(true)};
   $('spSort').onchange=function(){renderSp(true)};
 })();
-renderSp(true);
+if(window.ERDATA&&ERDATA.species){renderSp(true);}else{document.addEventListener('er-ready',function(){renderSp(true);});}
 function spMatch(s,q,sel,role,abi){
   /* v4.x C⑧：全局模糊搜索（中文/英文/编号/种族值子串，多词空格 AND）；E⑩：定位 + 特性筛选 */
   if(!fzAny(q,[s.id,s.zh,s.en,spBst(s)]))return false;
@@ -2712,7 +3161,7 @@ function sprEl(tag,id,cls){
   /* v4.84 P1-2：缺图占位升级——spmiss 不再裸灰块，内嵌「灰底+形态名」文字（Mega 图运行时缺失/加载失败也可辨形态） */
   var ph='';
   if(!st){var _o=speciesById(id);var _nm=(_o&&_o.zh)?_o.zh:('#'+id);ph=' data-name="'+esc(_nm)+'"><span class="sphint">'+esc(_nm)+'</span>'}
-  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'"':'')+ph+'</'+tag+'>';
+  return '<'+tag+' class="'+(cls||'mcspr')+(st?'':' spmiss')+'" data-id="'+id+'"'+(st?' style="'+st+'">':'')+ph+'</'+tag+'>';
 }
 function sprImg(id,cls){
   return '<span class="spbox '+(cls||'spcard')+'">'+sprEl('span',id,'spsp')+'</span>';
@@ -2734,6 +3183,7 @@ function openSp(s){
   });
   html+='</div>';
   try{html+=speedHintHtmlCached(s)}catch(eSp){}  /* v4.68 批4：配招卡一行配速提示（当前速度 vs 目标分位 ✅/⚠️ + 卡线省EV）；黑盒P1-2按id缓存 */
+  try{html+=speedSliderHtml(s)}catch(eSl){}   /* v4.88：超速滑块（配速参考区叠加，原 ruleline 零改动） */
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
   html+='<div class="sec"><h3>特性（'+s.abis.length+' 选 1，点击看描述）</h3>';
   s.abis.forEach(function(n,ai){
@@ -3129,7 +3579,7 @@ function addToTeam(s,info){
   if(team.indexOf(s)>-1){toast('已在队伍中：'+s.zh);return}   /* v4.83 P2-1：重复入队轻反馈（此前静默 return，须切队伍页确认） */
   team.push(s);
   if(info)teamInfo[s.id]=info;else teamInfo[s.id]={fromSave:false};
-  renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  try{renderTm(true)}catch(e){}try{renderSlots()}catch(e){}try{renderAnalyze()}catch(e){}saveTeam();
   toast('已加入队伍：'+s.zh+'（'+team.length+'/6）');   /* v4.83 P2-1：入队成功可见反馈 */
 }
 function removeFromTeam(s){
@@ -3161,7 +3611,7 @@ function renderSlots(){
         }
         html+='<span class="badge badge-neu" style="cursor:pointer" onclick="pickAbi('+s.id+',-1)" title="清除勾选">✕</span></div>';
       }
-      if(info.fromSave){
+      if(info.moves&&info.moves.length){
         var mv=[],pps=info.moves||[];
         pps.forEach(function(p){mv.push('<span class="split split-STATUS">'+esc(p)+'</span>')});
         html+='<div class="slotinfo" style="padding:0 10px 6px">招式：'+(mv.join(' ')||'—')+
@@ -3171,9 +3621,304 @@ function renderSlots(){
       html+='<div class="slot empty">空位</div>';
     }
   }
+  /* v4.94 B：分享卡入口（当前队伍处） */
+  html='<div style="margin:2px 0 8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-mini" onclick="shareCardOpen()" title="Canvas 生成 16:9 队伍分享卡（下载PNG/复制文字）">📤 分享队伍卡</button></div>'+html;
   $('tmCount').textContent=team.length;
   $('tmSlots').innerHTML=html;
 }
+
+/* v4.101 队检 chip 展开 */
+function qaToggle(el){
+  var i=el.getAttribute('data-idx');
+  var d=document.getElementById('qa-d'+i);
+  if(d)d.classList.toggle('open');
+}
+/* v4.101 队检聚合告警 */
+function teamQA(){
+  if(!window.__erReady)return '';
+  var warns=[];
+  /* ① 重复物种 */
+  var spCount={};team.forEach(function(s){spCount[s.id]=(spCount[s.id]||0)+1});
+  var dupSp=Object.keys(spCount).filter(function(k){return spCount[k]>=2});
+  if(dupSp.length)warns.push({icon:'⚠',label:'重复物种 ×'+dupSp.length,detail:dupSp.map(function(id){var s=ERDATA.species.filter(function(x){return x.id==id})[0];return s?s.zh:id}).join('、')});
+  /* ② 重复道具 */
+  var itCount={};team.forEach(function(s){var it=teamInfo[s.id]&&teamInfo[s.id].item;if(it)itCount[it]=(itCount[it]||0)+1});
+  var dupIt=Object.keys(itCount).filter(function(k){return itCount[k]>=2});
+  if(dupIt.length)warns.push({icon:'⚠',label:'重复道具 ×'+dupIt.length,detail:dupIt.join('、')});
+  /* ③ 无除钉 */
+  var REMOVAL=['高速旋转','清除浓雾','龙尾']; /* v4.102 对齐 data.js 真名：旋灭裂空/除雪 无对应招式已移除 */
+  var hasRemoval=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){return REMOVAL.indexOf(m)>-1})});
+  if(!hasRemoval)warns.push({icon:'⚠',label:'全队无除钉招式',detail:'建议带高速旋转/清除浓雾等除钉招式应对场地钉子'});
+  /* ④ 无回复 */
+  var RECOVER=['羽栖','祈愿','睡觉','生蛋','自我再生','月光']; /* v4.102 对齐 data.js 真名：许愿→祈愿/睡眠→睡觉/鸟栖→羽栖 移除/新增月光 */
+  var hasRec=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){return RECOVER.indexOf(m)>-1})});
+  if(!hasRec)warns.push({icon:'⚠',label:'全队无回复招式',detail:'建议带羽栖/许愿/再生力特性等回复手段'});
+  if(!warns.length)return '';
+  var h='<div style="margin:6px 0;padding:6px;border:1px solid #ffcc80;border-radius:8px;background:#fff8e1">';
+  h+='<div style="font-size:11px;font-weight:600;margin-bottom:4px">队检告警</div><div>';
+  warns.forEach(function(w,i){
+    h+='<span class="qa-chip" data-idx="'+i+'" onclick="qaToggle(this)">'+w.icon+' '+w.label+'</span>';
+  });
+  h+='</div>';
+  warns.forEach(function(w,i){
+    h+='<div class="qa-detail" id="qa-d'+i+'">'+w.detail+'</div>';
+  });
+  h+='</div>';
+  return h;
+}
+/* v4.101 迷你联防条 */
+function miniDefBar(){
+  if(!window.__erReady)return '';
+  var weak={};
+  ERDATA.types.forEach(function(at){
+    var w=0;team.forEach(function(s){try{var c=defCellTrio(s,at).inn;if(c>=2)w++}catch(e){}});
+    if(w>=2)weak[at]=w;
+  });
+  var keys=Object.keys(weak).sort(function(a,b){return weak[b]-weak[a]}).slice(0,6);
+  if(!keys.length)return '';
+  return '<div style="margin:6px 0"><div style="font-size:11px;color:var(--sub)">共同薄弱系</div><div class="mini-def">'+keys.map(function(at){return '<span>'+at+' ×'+weak[at]+'</span>'}).join('')+'</div></div>';
+}
+
+/* ============ v4.97 A：智能补位（规则叙事型，无机械评分） ============ */
+function teamDiag(){
+  /* 三面诊断：速度线 / 属性联防 / 体系 */
+  var spds=team.map(function(s){try{return spdMaxOf(s)}catch(e){return 0}});
+  var mx=spds.length?Math.max.apply(null,spds):0;
+  var q=speedPctiles();
+  var spdGap=mx<q.P75;
+  /* 联防：4 倍弱点类型 + 无人联防类型 */
+  var wkCount={},resist={};
+  ERDATA.types.forEach(function(at){
+    var w4=0,res=0;
+    team.forEach(function(s){
+      try{var c=defCellTrio(s,at).inn;if(c>=2)w4++;if(c<=0.5)res++}catch(e){}
+    });
+    wkCount[at]=w4;resist[at]=res;
+  });
+  var w4Types=Object.keys(wkCount).filter(function(at){return wkCount[at]>=2});
+  var noResistWeak=Object.keys(wkCount).filter(function(at){return wkCount[at]>=1&&resist[at]===0});
+  return {mx:mx,q:q,spdGap:spdGap,w4Types:w4Types,noResistWeak:noResistWeak,spds:spds};
+}
+function smartSuggest(){
+  var d=teamDiag();
+  /* 候选池 */
+  var pool;
+  if((!window._sugPool||window._sugPool==='pc')&&typeof SAV_ROWS!=='undefined'&&SAV_ROWS&&SAV_ROWS.pc&&SAV_ROWS.pc.length){
+    pool=SAV_ROWS.pc.map(function(r){return r.sp||r});
+    pool=pool.filter(function(s){return s&&isValidSp(s)&&team.indexOf(s)<0});
+    if(!pool.length)pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+  }else{
+    pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+  }
+  /* 候选理由生成：速度缺口优先高速 / 联防缺口优先对该系抗性 */
+  var cand=pool.map(function(s){
+    var why='';
+    try{var sp=spdMaxOf(s)}catch(e){sp=0}
+    if(d.spdGap&&sp>d.mx){why='补速线：队伍极速 '+d.mx+' 低于 P75（'+d.q.P75+'）；推荐 '+s.zh+' 极速 '+sp+' 可压该段';if(d.noResistWeak.length)why+='；同时可联防 '+d.noResistWeak.join('/');return {s:s,why:why,val:sp}}
+    if(d.noResistWeak.length){
+      var at=d.noResistWeak[0];
+      try{var c=defCellTrio(s,at).inn;if(c<=0.5){why='补联防：队伍 4 倍弱 '+at+' 且无人联防；推荐 '+s.zh+' 对 '+at+' 耐受力 '+c+'×';return {s:s,why:why,val:(1-c)}}}catch(e){}
+    }
+    return null;
+  }).filter(function(x){return x});
+  /* 速度缺口：取前 2 高速；联防缺口：取 1 个能补 noResistWeak */
+  var picks=[];
+  var fast=cand.slice().sort(function(a,b){return b.val-a.val});
+  if(d.spdGap){fast.slice(0,2).forEach(function(x){if(picks.indexOf(x)<0)picks.push(x)})}
+  if(d.noResistWeak.length){
+    var at=d.noResistWeak[0];
+    pool.forEach(function(s){try{var c=defCellTrio(s,at).inn;if(c<=0.5){picks.push({s:s,why:'补联防：队伍 4 倍弱 '+at+' 且无人联防；'+s.zh+' 对 '+at+' 耐受力 '+c+'×',val:c});return}}catch(e){}});
+  }
+  /* v4.99 排序：缺口匹配度优先 */
+  if(d.spdGap){
+    picks.sort(function(a,b){return (b.val||0)-(a.val||0)});
+  }else if(d.noResistWeak.length){
+    picks.sort(function(a,b){return (a.val||0)-(b.val||0)});
+  }
+  picks=picks.slice(0,3);
+  if(!picks.length)picks=fast.slice(0,3);
+  /* 渲染 */
+  var html='<div style="margin:6px 0;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,137,123,.06)">'+
+    '<div style="font-size:12px;font-weight:600;margin-bottom:4px">🧠 智能补位诊断（队伍 '+team.length+'/6）</div>'+
+    '<div style="font-size:11px;color:var(--sub);margin-bottom:4px">速度线：全队极速 '+d.mx+(d.spdGap?' <span style="color:var(--warnred)">低于 P75（'+d.q.P75+'）⚠️</span>':' ≥ P75 ✓')+
+    '；4 倍弱点系：'+(d.w4Types.length?d.w4Types.join('、'):'无')+
+    '；无人联防系：'+(d.noResistWeak.length?d.noResistWeak.join('、'):'无')+'</div>';
+  picks.forEach(function(p){
+    html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px dashed var(--line)">'+
+      '<span style="font-size:11px;flex:1">'+p.s.zh+'<br><span style="color:var(--sub);font-size:10px">'+p.why+'</span></span>'+
+      '<button class="btn-mini" onclick="addToTeam(ERDATA.species.find(function(x){return x.id===\''+p.s.id+'\'}))" style="font-size:11px">＋入队</button></div>';
+  });
+  html+='</div>';
+  var old=document.getElementById('sugBox');
+  if(old)old.remove();
+  var div=document.createElement('div');div.id='sugBox';div.style.cssText='display:block;width:100%;box-sizing:border-box;margin:8px auto;padding:8px;border:1px solid var(--line);border-radius:8px;background:rgba(0,137,123,.06);max-width:92vw;';div.innerHTML=html;
+  try{document.body.appendChild(div)}catch(e){}
+  try{div.scrollIntoView({behavior:'auto',block:'center'})}catch(e){}
+  toast('🧠 已出补位建议 '+picks.length+' 只');
+}
+/* ============ v4.96：Showdown 官方模板 sets 懒加载（assets/showdown_sets_v496.json，独立 json 不进首屏） ============ */
+/* er-ready 后空闲预取 sets（不阻塞首屏） */
+if(document.addEventListener){document.addEventListener('er-ready',function(){setTimeout(function(){try{fetch('assets/showdown_sets_v496.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j)window._SH_CACHE=j}).catch(function(){})}catch(e){}},1500)})}
+function loadShowdownSets(cb){
+  if(window._SH_CACHE!==undefined){cb(window._SH_CACHE);return}
+  fetch('assets/showdown_sets_v496.json').then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){window._SH_CACHE=j;cb(j)}).catch(function(e){window._SH_CACHE=null;try{toast('官方模板加载失败，已回退纯随机：'+(e&&e.message||e))}catch(_){}cb(null)});
+}
+/* ============ v4.95 B：随机队池（娱乐/测试向；v4.96 增加官方模板模式） ============ */
+function randomTeamGen(){
+  if(!window.ERDATA||!ERDATA.species){
+    var _b=document.createElement('div');_b.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);padding:8px 18px;background:#2563eb;color:#fff;border-radius:8px;z-index:9999;font-size:12px';
+    _b.textContent='数据分片加载中…请稍候片刻';
+    document.body.appendChild(_b);setTimeout(function(){_b.remove()},1800);
+    return;
+  }
+  loadShowdownSets(function(sets){ randomTeamGenImpl(sets) });
+}
+function randomTeamGenImpl(sets){
+  var mode=(window._randMode==='pure')?'pure':'template';
+  var allowL=!!window._randLegends;
+  /* 池：有效物种；默认排除 BST≥580（传说/幻兽/高准神档），开关允许 */
+  var pool=ERDATA.species.filter(function(s){
+    if(!s||!s.base||!isValidSp(s))return false;
+    var tot=s.base[0]+s.base[1]+s.base[2]+s.base[3]+s.base[4]+s.base[5];
+    if(!allowL&&tot>=580)return false;
+    return true;
+  });
+  clearTeamForImport();
+  var picked=[];
+  /* 模板模式：优先从有官方 sets 的物种取；sets 加载失败=整体回退纯随机 */
+  if(mode==='template'&&sets){
+    var keys=Object.keys(sets).filter(function(zh){return pool.find(function(s){return s.zh===zh})});
+    while(picked.length<6&&keys.length){
+      var zh=keys[Math.floor(Math.random()*keys.length)];
+      var sp=pool.find(function(s){return s.zh===zh});
+      if(sp&&picked.indexOf(sp)<0)picked.push(sp);
+      keys.splice(keys.indexOf(zh),1);
+    }
+  }
+  while(picked.length<6&&pool.length){
+    var sp=pool[Math.floor(Math.random()*pool.length)];
+    if(picked.indexOf(sp)<0)picked.push(sp);
+  }
+  var nats=Object.keys(NATURES);
+  picked.forEach(function(s){
+    var nat=nats[Math.floor(Math.random()*nats.length)];
+    var mnames=[],mids=[];
+    var useTpl=(mode==='template'&&sets&&sets[s.zh]);
+    if(useTpl){
+      /* 官方模板：从该种随机一个 role 的 moves 池取 4 个（已映射为中文名） */
+      var role=sets[s.zh].sets[Math.floor(Math.random()*sets[s.zh].sets.length)];
+      var poolM=role.moves.slice();
+      for(var k=0;k<4&&poolM.length;k++){var j=Math.floor(Math.random()*poolM.length);mnames.push(poolM.splice(j,1)[0])}
+    }
+    if(mnames.length<4){
+      /* 回退：可学池随机 4 个有威力招 */
+      var mvIds=[];for(var id in learnOf(s)){var m=ERDATA.moves[id];if(m&&+m[5]>0)mvIds.push(id)}
+      for(var k=mnames.length;k<4&&mvIds.length;k++){var j=Math.floor(Math.random()*mvIds.length);var id=mvIds.splice(j,1)[0];mnames.push(ERDATA.moves[id][1]);mids.push(+id)}
+    }
+    var pps=mnames.map(function(){return 16});
+    team.push(s);teamInfo[s.id]={fromSave:false,nature:nat,moves:mnames,pps:pps};
+  });
+  renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('🎲 随机队已生成 6 只['+(mode==='template'?(sets?'官方模板':'模板加载失败→纯随机'):'纯随机')+']'+(allowL?'（含传说档）':'（排除 BST≥580）'));
+}
+/* ============ v4.94 B：队伍分享卡（Canvas 16:9，零外部依赖；精灵图跨域失败=纯文本卡兜底） ============ */
+function shareCardOpen(){
+  if(!team.length){toast('队伍为空，先添加宝可梦');return}
+  var h='<div id="shareCardOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">'+
+    '<div style="background:#fff;border-radius:10px;padding:12px;max-width:min(94vw,640px);width:100%;box-sizing:border-box">'+
+    '<div style="font-weight:600;margin-bottom:8px;font-size:14px">📤 队伍分享卡</div>'+
+    '<canvas id="shareCv" style="width:100%;height:auto;max-width:100%;border-radius:8px;background:#f7f9fc;display:block"></canvas>'+
+    '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'+
+    '<button class="btn-mini" onclick="shareCardDownload()">⬇ 下载 PNG</button>'+
+    '<button class="btn-mini" onclick="shareCardCopy()">📋 复制文字</button>'+
+    '<button class="btn-mini" onclick="shareCardClose()">关闭</button></div>'+
+    '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #e0e6ef">'+
+    '<div style="font-size:12px;color:#546e7a;margin-bottom:4px">🔗 链接分享（含队伍全字段）</div>'+
+    '<div id="shareHashLink" style="font-size:11px;color:#00897b;word-break:break-all;max-height:40px;overflow:auto"></div>'+
+    '<button class="btn-mini" style="margin-top:6px" onclick="shareHashCopy()">📋 复制链接</button>'+
+    '<div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+    '<canvas id="shareQr" width="120" height="120" style="border:1px solid #e0e6ef;border-radius:6px"></canvas>'+
+    '<div style="font-size:11px;color:#78909c">扫码即可在手机端打开本队伍</div></div></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',h);
+  shareCardDraw();
+  renderShareQr();
+}
+function shareHashCopy(){
+  var hl=document.getElementById('shareHashLink');if(!hl)return;
+  var url=hl.textContent;
+  if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){toast('链接已复制')});
+  else toast('请手动复制');
+}
+/* v4.103 QR 渲染 */
+function renderShareQr(){
+  try{
+    var hash=teamToHash();
+    var fullUrl=location.origin+location.pathname+'#team='+hash;
+    var hl=document.getElementById('shareHashLink');if(hl)hl.textContent=fullUrl;
+    var qc=document.getElementById('shareQr');
+    if(qc){
+      if(!QRLIB||typeof QRLIB.create!=='function'){
+        qc.style.display='none';
+        var hint=qc.nextElementSibling;
+        if(hint)hint.textContent='二维码暂不可用，请复制链接分享';
+        return;
+      }
+      var qr=new QRCode(fullUrl);
+      qr.draw(qc);
+    }
+  }catch(e){
+    console.log('QR err',e);
+    var qc2=document.getElementById('shareQr');
+    if(qc2){qc2.style.display='none';var hint=qc2.nextElementSibling;if(hint)hint.textContent='二维码暂不可用，请复制链接分享'}
+  }
+}
+function shareCardClose(){var o=document.getElementById('shareCardOverlay');if(o)o.remove()}
+function shareCardDraw(){
+  try{
+  var cv=document.getElementById('shareCv');if(!cv)return;
+  var cw=cv.clientWidth||640;
+  var scale=cw/960;
+  cv.width=960*scale;cv.height=540*scale;
+  var ctx=cv.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.fillStyle='#f7f9fc';ctx.fillRect(0,0,960,540);
+  ctx.fillStyle='#1a2332';ctx.font='bold 26px sans-serif';
+  ctx.fillText('Elite Redux 队伍分享卡',28,42);
+  ctx.fillStyle='#78909c';ctx.font='14px sans-serif';
+  ctx.fillText('共 '+team.length+'/6 只 · ER Teambuilder v4.94',28,66);
+  team.forEach(function(s,i){
+    var x=28+(i%3)*308, y=92+Math.floor(i/3)*200;
+    ctx.fillStyle='#fff';ctx.strokeStyle='#d0d7e2';ctx.lineWidth=1.5;
+    ctx.fillRect(x,y,292,180);ctx.strokeRect(x,y,292,180);
+    ctx.fillStyle='#1a2332';ctx.font='bold 19px sans-serif';
+    ctx.fillText(s.zh+' #'+s.id,x+12,y+30);
+    var info=teamInfo[s.id]||{};
+    ctx.font='14px sans-serif';ctx.fillStyle='#546e7a';
+    ctx.fillText('道具: '+(info.item||'无'),x+12,y+58);
+    ctx.fillText('招式: '+(info.moves?info.moves.slice(0,3).join(' / '):'—'),x+12,y+82,268);
+    ctx.fillStyle='#2e7d32';ctx.font='bold 14px sans-serif';
+    ctx.fillText('速度 '+spdMaxOf(s)+'（满速'+spdFullOf(s)+'）',x+12,y+106);
+    /* v4.94 P3：类型色块（本地色表——原引用 window.TYPE_COLORS 全局不存在故落灰） */
+    var TC={'一般':'#a8a77a','火':'#ee8130','水':'#6390f0','草':'#7ac74c','电':'#f7d02c','冰':'#96d9d6','格斗':'#c22e28','毒':'#a33ea1','地面':'#e2bf65','飞行':'#a98ff3','超能力':'#f95587','虫':'#a6b91a','岩石':'#b6a136','幽灵':'#735797','龙':'#6f35fc','钢':'#b7b7ce','恶':'#705746','妖精':'#d685ad'};
+    ctx.fillStyle=TC[s.t1]||'#90a4ae';
+    ctx.fillRect(x+200,y+14,72,26);
+    ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';
+    ctx.fillText(s.t1,x+218,y+32);
+    if(s.t2&&s.t2!==s.t1){ctx.fillStyle=TC[s.t2]||'#b0bec5';ctx.fillRect(x+200,y+46,72,26);ctx.fillText(s.t2,x+218,y+64)}
+  });
+  }catch(e){console.log('shareCardDraw err',e)}
+}
+function shareCardDownload(){
+  var cv=document.getElementById('shareCv');if(!cv)return;
+  try{var a=document.createElement('a');a.download='er-team.png';a.href=cv.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();toast('已生成 PNG 下载')}
+  catch(e){toast('PNG 生成失败：'+e.message)}
+}
+function shareCardCopy(){
+  var txt=team.map(function(s,i){return (i+1)+'. '+s.zh+(teamInfo[s.id]&&teamInfo[s.id].item?'（'+teamInfo[s.id].item+'）':'')}).join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt);toast('队伍文字已复制')}
+  else{toast('复制不可用，请手动选择')}
+}
+/* ============ v4.94 结束 ============ */
 function removeFromTeamById(id){
   for(var i=0;i<team.length;i++)if(team[i].id==id){removeFromTeam(team[i]);return}
 }
@@ -3646,6 +4391,66 @@ function parseSavBytes(d){
 }
 function rowsToCsv(rows){if(!rows.length)return '';var cols=Object.keys(rows[0]);var lines=[cols.join(',')];rows.forEach(function(r){lines.push(cols.map(function(c){var v=(r[c]===undefined||r[c]===null)?'':String(r[c]);if(/[",\n]/.test(v))v='"'+v.replace(/"/g,'""')+'"';return v}).join(','))});return lines.join('\n')}
 var lastSavCsv='';
+/* v4.92 D-3：队伍明细行点击就地展开/收起（无弹窗/无抽屉） */
+function savRowToggle(el){var d=el.nextElementSibling;if(!d||d.className.indexOf('savrowdet')<0)return;var open=d.style.display==='none';d.style.display=open?'block':'none';var c=el.querySelector('.savrowcaret');if(c)c.textContent=open?'▾':'▸'}
+/* v4.93 D-6：电脑区清单渲染/搜索/入队/满队槽位替换 */
+function savPcRowHtml(r,rowIdx){
+  var isBox=/^BOX/.test(r.来源);
+  var btn=isBox?'<button class="btn-mini" onclick="savPcEnqueue('+rowIdx+')" style="margin-left:4px">＋入队</button>':'';
+  return '<div style="padding:3px 4px;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:center;font-size:12px">'+
+    sprEl('span',r.图鉴编号,'spsp')+
+    '<span style="flex:1;min-width:0"><span style="color:var(--accent);cursor:pointer" onclick="openSpById(\''+r.图鉴编号+'\')">'+esc(r.宝可梦)+'</span> '+
+    '<span class="dim">'+esc(r.来源)+' '+esc(r.位置)+' · Lv'+esc(String(r.等级||''))+' · '+esc(r.性格||'—')+'</span></span>'+btn+'</div>';
+}
+function savPcListRender(rows){
+  var boxN=rows.filter(function(x){return /^BOX/.test(x.r.来源)});
+  var h='';
+  var spcN=rows.filter(function(x){return x.r.来源.indexOf('特殊区')===0});
+  if(boxN.length)h+='<div class="dim" style="font-size:11px;padding:2px 4px">电脑区（'+boxN.length+'，点＋入队）</div>'+boxN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
+  if(spcN.length)h+='<div class="dim" style="font-size:11px;padding:4px 4px 2px">特殊区（仅展示，不可入队）</div>'+spcN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
+  if(!h)h='<div class="dim" style="padding:6px">无匹配</div>';
+  var el=$('savPcList');if(el)el.innerHTML=h;
+}
+var _pcSearchT=null;
+function savPcSearch(){
+  var q=($('savPcQ')?$('savPcQ').value:'').trim();
+  if(_pcSearchT)clearTimeout(_pcSearchT);
+  _pcSearchT=setTimeout(function(){
+    var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[];
+    var pool=rows.map(function(r,i){return {r:r,i:i}}).filter(function(x){return /^BOX/.test(x.r.来源)||x.r.来源.indexOf('特殊区')===0});
+    if(!q){savPcListRender(pool.filter(function(x){return x.r.来源==='BOX1'}).slice(0,12));return} /* 空搜：BOX1 前 12 兜底 */
+    var m=pool.filter(function(x){return (x.r.宝可梦||'').indexOf(q)>-1||(x.r.英文名||'').toLowerCase().indexOf(q.toLowerCase())>-1});
+    savPcListRender(m.slice(0,60));
+  },150);
+}
+var _pcSlotQ=null;
+function savPcEnqueue(idx){
+  var r=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS[idx]:null;if(!r)return;
+  var s=speciesById(r.图鉴编号);if(!s){toast('未知物种 #'+r.图鉴编号);return}
+  var info=savRowToInfo(r);
+  if(team.length>=6){savPcSlotPick(s,info);return}
+  if(team.indexOf(s)>-1)toast('「'+s.zh+'」已在队伍：新个体实配将覆盖原实配'); /* 同号不同个体：允许入队，teamInfo 按 id 键覆盖 */
+  team.push(s);teamInfo[s.id]=info;renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('已入队：'+s.zh+'（'+team.length+'/6）');
+}
+function savPcSlotPick(s,info){
+  _pcSlotQ={s:s,info:info};
+  var h='<div id="savSlotPick" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">'+
+    '<div style="background:var(--card,#fff);border:1px solid var(--line);border-radius:8px;padding:14px;max-width:min(92vw,520px);width:100%;box-sizing:border-box">'+ /* v4.93 P2-2：375px 视口不横溢 */
+    '<div style="font-weight:600;margin-bottom:8px">队伍已满 6 只，用「'+esc(s.zh)+'」替换：</div><div style="display:flex;flex-wrap:wrap;gap:4px">';
+  team.forEach(function(t,i){h+='<button class="btn-mini" onclick="savPcDoReplace('+i+')">'+(i+1)+'. '+esc(t.zh)+'</button>'});
+  h+='<div style="margin-top:8px"><button class="btn-mini" onclick="savPcCancelReplace()">取消</button></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',h);
+}
+function savPcDoReplace(i){
+  var old=team[i];team.splice(i,1);delete teamInfo[old.id];
+  var q=_pcSlotQ;_pcSlotQ=null;
+  team.push(q.s);teamInfo[q.s.id]=q.info;
+  var o=$('savSlotPick');if(o)o.remove();
+  renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('已替换：'+old.zh+' → '+q.s.zh);
+}
+function savPcCancelReplace(){var o=$('savSlotPick');if(o)o.remove();_pcSlotQ=null}
 function parseSavFile(input){
   var f=input.files&&input.files[0];if(!f)return;
   var rd=new FileReader();
@@ -3654,14 +4459,45 @@ function parseSavFile(input){
       var arr=new Uint8Array(rd.result);
       var res=parseSavBytes(arr);
       lastSavCsv=rowsToCsv(res.rows);
+      /* v4.92 D-2：锚点失败时的玩家可读提示（非技术细节） */
+      var d2Tip=res.summary.anchorsFail.length?'<div style="color:var(--warnred);font-size:12px;margin:2px 0">⚠ 该存档段定位失败，队伍行可能不全（可对照上方 ✗ 明细）</div>':'';
+      /* v4.92 D-1/D-3：队伍逐只紧凑表（行点击就地展开全字段；物种名联动图鉴 openSpById） */
+      var _pr=res.rows.filter(function(r){return r.来源==='队伍'});
+      var _tbl='<div style="margin-top:6px"><div style="font-size:13px;font-weight:600">队伍逐只明细（'+_pr.length+' 只 · 点行展开全字段，点名跳图鉴）</div>'+d2Tip+
+        '<div style="max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:6px">';
+      _pr.forEach(function(r){
+        var _ev=r.EV_HP+'/'+r.EV_攻击+'/'+r.EV_防御+'/'+r.EV_特攻+'/'+r.EV_特防+'/'+r.EV_速度;
+        var _mv=[r.招式1,r.招式2,r.招式3,r['招式4(末招)']].map(function(m){return String(m||'').replace(/\(id=\d+\)$/,'')}).join(' · ');
+        var _it=String(r.道具||'').replace(/\(id=\d+\)$/,'');
+        _tbl+='<div class="savrow" onclick="savRowToggle(this)" style="padding:4px 6px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:6px;align-items:center;font-size:12px">'+
+          sprEl('span',r.图鉴编号,'spsp')+
+          '<span style="flex:1;min-width:0">'+
+          '<span style="color:var(--accent);cursor:pointer" onclick="event.stopPropagation();openSpById(\''+r.图鉴编号+'\')">'+esc(r.宝可梦)+'</span> '+
+          '<span class="dim">Lv'+esc(String(r.等级||''))+' · '+esc(r.性格||'—')+' · EV '+_ev+'</span><br>'+
+          '<span class="dim">'+esc(_it||'—')+' · '+esc(_mv||'')+'</span></span>'+
+          '<span class="dim savrowcaret">▸</span></div>'+
+          '<div class="savrowdet" style="display:none;padding:2px 6px 6px 34px;font-size:11px;color:var(--sub)">'+
+          'EXP '+esc(String(r.EXP||''))+' · PP '+esc(String(r.PP1||''))+'/'+esc(String(r.PP2||''))+'/'+esc(String(r.PP3||''))+'/'+esc(String(r.PP4||''))+
+          ' · 特性「'+esc(String(r['主特性(当前生效)']||'—'))+'」 · 天性 '+esc(String(r['天性1(固定)']||'—'))+
+          '<br>能力 HP '+esc(String(r.能力_当前HP||''))+'/'+esc(String(r.能力_最大HP||''))+' 攻'+esc(String(r.能力_攻击||''))+' 防'+esc(String(r.能力_防御||''))+' 特攻'+esc(String(r.能力_特攻||''))+' 特防'+esc(String(r.能力_特防||''))+' 速'+esc(String(r.能力_速度||''))+
+          '<br>'+esc(r.来源)+' '+esc(r.位置)+' · 性格画像 '+esc(r.性格画像||'')+
+          '</div>';
+      });
+      _tbl+='</div></div>';
+      /* v4.93 D-6：电脑区清单（搜索驱动 C + 空搜 BOX1 前12兜底 A；BOX 行可＋入队，特殊区仅展示） */
+      var _pcHtml='<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:6px">'+
+        '<div style="font-size:13px;font-weight:600">📦 电脑区清单（'+res.summary.pc+' 只 · 搜物种名过滤 · 空搜显示 BOX1 前 12）</div>'+
+        '<input id="savPcQ" type="text" placeholder="搜索物种名（如：喷火龙）" style="width:100%;box-sizing:border-box;padding:4px 6px;font-size:12px;margin:4px 0;border:1px solid var(--line);border-radius:6px" oninput="savPcSearch()">'+
+        '<div id="savPcList" style="max-height:300px;overflow-y:auto"></div></div>';
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
         '<div style="font-size:13px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+
         '<div style="margin:4px 0">锚点：'+(res.summary.anchorsOk.length?res.summary.anchorsOk.map(function(a){return '<span style="color:#2e7d32">✓ '+esc(a)+'</span>'}).join(' '):'')+(res.summary.anchorsFail.length?' <span style="color:var(--warnred)">✗ '+esc(res.summary.anchorsFail.join('；'))+'</span>':'')+'</div>'+
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
-        ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div></div>';
+        ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+_pcHtml+'</div>';
       $('savParseOut').innerHTML=html;
       autoImportParty(res);
       SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
+      savPcSearch(); /* v4.93 D-6：默认渲染 BOX1 前 12 兜底 */
     }catch(e){toast('解析失败: '+e.message)}
   };
   rd.readAsArrayBuffer(f);
@@ -3675,6 +4511,13 @@ function clearTeamForImport(){
   if(n){team.length=0;Object.keys(teamInfo).forEach(function(k){delete teamInfo[k]})}
   return n;
 }
+/* v4.93 D-6：row → 实配 info 公共构造（autoImportParty 与电脑区入队共用，零行为差异） */
+function savRowToInfo(r){
+  var info={fromSave:true,item:r.道具,moves:[],pps:[]};
+  [r.招式1,r.招式2,r.招式3,r['招式4(末招)']].forEach(function(n){info.moves.push(String(n||'').replace(/\(id=\d+\)$/,''))});
+  [r.PP1,r.PP2,r.PP3,r.PP4].forEach(function(p){info.pps.push(p)});
+  return info;
+}
 function autoImportParty(res){
   var cleared=clearTeamForImport(),added=0;
   res.rows.forEach(function(r){
@@ -3682,10 +4525,7 @@ function autoImportParty(res){
     var s=speciesById(r.图鉴编号);if(!s)return;
     if(team.indexOf(s)>-1)return;
     if(team.length>=6)return;
-    var info={fromSave:true,item:r.道具,moves:[],pps:[]};
-    [r.招式1,r.招式2,r.招式3,r['招式4(末招)']].forEach(function(n){info.moves.push(String(n||'').replace(/\(id=\d+\)$/,''))});
-    [r.PP1,r.PP2,r.PP3,r.PP4].forEach(function(p){info.pps.push(p)});
-    addToTeam(s,info);added++;
+    addToTeam(s,savRowToInfo(r));added++;
   });
   if(added){renderTm(true);renderSlots();renderAnalyze()}
   var note=$('savImpNote');
@@ -3759,7 +4599,7 @@ function importNameList(rows){
       var zh=(cell.split('#')[0]||'').trim(),en=(zh.indexOf('(')>-1&&zh.indexOf(')')>zh.indexOf('('))?zh.slice(zh.indexOf('(')+1,zh.indexOf(')')):'';
       if(zh){ERDATA.species.forEach(function(x){if(!s&&x.zh===zh)s=x})}
       if(!s&&en){ERDATA.species.forEach(function(x){if(!s&&x.en&&x.en.toLowerCase()===en.toLowerCase())s=x})}
-      if(!s){ERDATA.species.forEach(function(x){if(!s&&(x.zh||'').indexOf(zh)>-1&&zh.length>=2)s=x})}
+      /* v4.90 P1-2：删除子串模糊兜底——仅精确中文/英文/编号匹配，禁止静默错加无关物种 */
     }
     if(!s||!isValidSp(s))continue;
     if(seen[String(s.id)])continue;seen[String(s.id)]=1;
@@ -3771,6 +4611,11 @@ function importNameList(rows){
 function importSaveBox(){
   var text=$('saveCsv').value;
   if(!text.trim()){toast('请先粘贴存档 CSV 文本');return}
+  /* v4.90 P1-2/P2-4：pokepast 文本识别 → 统一走 pokepast 解析引擎（禁止落入名单模糊匹配错加无关物种） */
+  if(/EVs:/i.test(text)||(/@/.test(text)&&/^\s*[-–*]/m.test(text))){
+    var pl=$('ppInput');if(pl){pl.value=text;pokepastImport();return}
+    toast('检测到 pokepast 文本：请在「队伍分析」Tab 点「粘贴 pokepast 导入」');return;
+  }
   var rows=parseCsvRows(text);
   if(!rows.length){toast('CSV 解析为空');return}
   var hdr=rows[0],idx={};
@@ -3850,6 +4695,7 @@ function _abiOwnersPush(o,id,s,key){
 }
 function abiOwners(){
   if(_abiOwners)return _abiOwners;
+  if(!ERDATA.species||!ERDATA.species.length)return {};
   var o={};
   ERDATA.species.forEach(function(s){
     if(!isValidSp(s))return;
@@ -3860,6 +4706,74 @@ function abiOwners(){
     inn.forEach(function(n,k){var id=inIds?inIds[k]:NM2ID[n];if(id===undefined||id===null||id===''||id==='0')return;_abiOwnersPush(o,''+id,s,'inn')});
   });
   _abiOwners=o;return o;
+}
+/* v4.103 16段乱数分布+多段KO概率 */
+function roll16(lo,hi){
+  if(hi<=lo)return [lo];
+  var out=[],step=(hi-lo)/15;
+  for(var i=0;i<16;i++)out.push(Math.round(lo+step*i));
+  return out;
+}
+function koProb(dmgArr,hp,n){
+  var p=dmgArr.filter(function(d){return d>=hp}).length/dmgArr.length;
+  return {p16:p,pN:1-Math.pow(1-p,n)};
+}
+/* v4.103 qrcode.js 完整版（esbuild bundle） */
+var QRLIB=(function(){var __bundle=(()=>{var __ret;var g=(n,t)=>()=>{try{return t||n((t={exports:{}}).exports,t),t.exports}catch(e){throw t=0,e}};var _t=g((Sn,Lt)=>{Lt.exports=function(){return typeof Promise=="function"&&Promise.prototype&&Promise.prototype.then}});var I=g(P=>{var st,Le=[0,26,44,70,100,134,172,196,242,292,346,404,466,532,581,655,733,815,901,991,1085,1156,1258,1364,1474,1588,1706,1828,1921,2051,2185,2323,2465,2611,2761,2876,3034,3196,3362,3532,3706];P.getSymbolSize=function(t){if(!t)throw new Error('"version" cannot be null or undefined');if(t<1||t>40)throw new Error('"version" should be in range from 1 to 40');return t*4+17};P.getSymbolTotalCodewords=function(t){return Le[t]};P.getBCHDigit=function(n){let t=0;for(;n!==0;)t++,n>>>=1;return t};P.setToSJISFunction=function(t){if(typeof t!="function")throw new Error('"toSJISFunc" is not a valid function.');st=t};P.isKanjiModeEnabled=function(){return typeof st<"u"};P.toSJIS=function(t){return st(t)}});var j=g(m=>{m.L={bit:1};m.M={bit:0};m.Q={bit:3};m.H={bit:2};function _e(n){if(typeof n!="string")throw new Error("Param is not a string");switch(n.toLowerCase()){case"l":case"low":return m.L;case"m":case"medium":return m.M;case"q":case"quartile":return m.Q;case"h":case"high":return m.H;default:throw new Error("Unknown EC Level: "+n)}}m.isValid=function(t){return t&&typeof t.bit<"u"&&t.bit>=0&&t.bit<4};m.from=function(t,e){if(m.isValid(t))return t;try{return _e(t)}catch{return e}}});var qt=g((Rn,Ut)=>{function xt(){this.buffer=[],this.length=0}xt.prototype={get:function(n){let t=Math.floor(n/8);return(this.buffer[t]>>>7-n%8&1)===1},put:function(n,t){for(let e=0;e<t;e++)this.putBit((n>>>t-e-1&1)===1)},getLengthInBits:function(){return this.length},putBit:function(n){let t=Math.floor(this.length/8);this.buffer.length<=t&&this.buffer.push(0),n&&(this.buffer[t]|=128>>>this.length%8),this.length++}};Ut.exports=xt});var Ft=g((Ln,Dt)=>{function k(n){if(!n||n<1)throw new Error("BitMatrix size must be defined and greater than 0");this.size=n,this.data=new Uint8Array(n*n),this.reservedBit=new Uint8Array(n*n)}k.prototype.set=function(n,t,e,r){let o=n*this.size+t;this.data[o]=e,r&&(this.reservedBit[o]=!0)};k.prototype.get=function(n,t){return this.data[n*this.size+t]};k.prototype.xor=function(n,t,e){this.data[n*this.size+t]^=e};k.prototype.isReserved=function(n,t){return this.reservedBit[n*this.size+t]};Dt.exports=k});var kt=g(G=>{var xe=I().getSymbolSize;G.getRowColCoords=function(t){if(t===1)return[];let e=Math.floor(t/7)+2,r=xe(t),o=r===145?26:Math.ceil((r-13)/(2*e-2))*2,i=[r-7];for(let s=1;s<e-1;s++)i[s]=i[s-1]-o;return i.push(6),i.reverse()};G.getPositions=function(t){let e=[],r=G.getRowColCoords(t),o=r.length;for(let i=0;i<o;i++)for(let s=0;s<o;s++)i===0&&s===0||i===0&&s===o-1||i===o-1&&s===0||e.push([r[i],r[s]]);return e}});var Ht=g(Vt=>{var Ue=I().getSymbolSize,zt=7;Vt.getPositions=function(t){let e=Ue(t);return[[0,0],[e-zt,0],[0,e-zt]]}});var Kt=g(d=>{d.Patterns={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7};var b={N1:3,N2:3,N3:40,N4:10};d.isValid=function(t){return t!=null&&t!==""&&!isNaN(t)&&t>=0&&t<=7};d.from=function(t){return d.isValid(t)?parseInt(t,10):void 0};d.getPenaltyN1=function(t){let e=t.size,r=0,o=0,i=0,s=null,u=null;for(let c=0;c<e;c++){o=i=0,s=u=null;for(let l=0;l<e;l++){let a=t.get(c,l);a===s?o++:(o>=5&&(r+=b.N1+(o-5)),s=a,o=1),a=t.get(l,c),a===u?i++:(i>=5&&(r+=b.N1+(i-5)),u=a,i=1)}o>=5&&(r+=b.N1+(o-5)),i>=5&&(r+=b.N1+(i-5))}return r};d.getPenaltyN2=function(t){let e=t.size,r=0;for(let o=0;o<e-1;o++)for(let i=0;i<e-1;i++){let s=t.get(o,i)+t.get(o,i+1)+t.get(o+1,i)+t.get(o+1,i+1);(s===4||s===0)&&r++}return r*b.N2};d.getPenaltyN3=function(t){let e=t.size,r=0,o=0,i=0;for(let s=0;s<e;s++){o=i=0;for(let u=0;u<e;u++)o=o<<1&2047|t.get(s,u),u>=10&&(o===1488||o===93)&&r++,i=i<<1&2047|t.get(u,s),u>=10&&(i===1488||i===93)&&r++}return r*b.N3};d.getPenaltyN4=function(t){let e=0,r=t.data.length;for(let i=0;i<r;i++)e+=t.data[i];return Math.abs(Math.ceil(e*100/r/5)-10)*b.N4};function qe(n,t,e){switch(n){case d.Patterns.PATTERN000:return(t+e)%2===0;case d.Patterns.PATTERN001:return t%2===0;case d.Patterns.PATTERN010:return e%3===0;case d.Patterns.PATTERN011:return(t+e)%3===0;case d.Patterns.PATTERN100:return(Math.floor(t/2)+Math.floor(e/3))%2===0;case d.Patterns.PATTERN101:return t*e%2+t*e%3===0;case d.Patterns.PATTERN110:return(t*e%2+t*e%3)%2===0;case d.Patterns.PATTERN111:return(t*e%3+(t+e)%2)%2===0;default:throw new Error("bad maskPattern:"+n)}}d.applyMask=function(t,e){let r=e.size;for(let o=0;o<r;o++)for(let i=0;i<r;i++)e.isReserved(i,o)||e.xor(i,o,qe(t,i,o))};d.getBestMask=function(t,e){let r=Object.keys(d.Patterns).length,o=0,i=1/0;for(let s=0;s<r;s++){e(s),d.applyMask(s,t);let u=d.getPenaltyN1(t)+d.getPenaltyN2(t)+d.getPenaltyN3(t)+d.getPenaltyN4(t);d.applyMask(s,t),u<i&&(i=u,o=s)}return o}});var ct=g(ut=>{var N=j(),Q=[1,1,1,1,1,1,1,1,1,1,2,2,1,2,2,4,1,2,4,4,2,4,4,4,2,4,6,5,2,4,6,6,2,5,8,8,4,5,8,8,4,5,8,11,4,8,10,11,4,9,12,16,4,9,16,16,6,10,12,18,6,10,17,16,6,11,16,19,6,13,18,21,7,14,21,25,8,16,20,25,8,17,23,25,9,17,23,34,9,18,25,30,10,20,27,32,12,21,29,35,12,23,34,37,12,25,34,40,13,26,35,42,14,28,38,45,15,29,40,48,16,31,43,51,17,33,45,54,18,35,48,57,19,37,51,60,19,38,53,63,20,40,56,66,21,43,59,70,22,45,62,74,24,47,65,77,25,49,68,81],$=[7,10,13,17,10,16,22,28,15,26,36,44,20,36,52,64,26,48,72,88,36,64,96,112,40,72,108,130,48,88,132,156,60,110,160,192,72,130,192,224,80,150,224,264,96,176,260,308,104,198,288,352,120,216,320,384,132,240,360,432,144,280,408,480,168,308,448,532,180,338,504,588,196,364,546,650,224,416,600,700,224,442,644,750,252,476,690,816,270,504,750,900,300,560,810,960,312,588,870,1050,336,644,952,1110,360,700,1020,1200,390,728,1050,1260,420,784,1140,1350,450,812,1200,1440,480,868,1290,1530,510,924,1350,1620,540,980,1440,1710,570,1036,1530,1800,570,1064,1590,1890,600,1120,1680,1980,630,1204,1770,2100,660,1260,1860,2220,720,1316,1950,2310,750,1372,2040,2430];ut.getBlocksCount=function(t,e){switch(e){case N.L:return Q[(t-1)*4+0];case N.M:return Q[(t-1)*4+1];case N.Q:return Q[(t-1)*4+2];case N.H:return Q[(t-1)*4+3];default:return}};ut.getTotalCodewordsCount=function(t,e){switch(e){case N.L:return $[(t-1)*4+0];case N.M:return $[(t-1)*4+1];case N.Q:return $[(t-1)*4+2];case N.H:return $[(t-1)*4+3];default:return}}});var Jt=g(Z=>{var z=new Uint8Array(512),W=new Uint8Array(256);(function(){let t=1;for(let e=0;e<255;e++)z[e]=t,W[t]=e,t<<=1,t&256&&(t^=285);for(let e=255;e<512;e++)z[e]=z[e-255]})();Z.log=function(t){if(t<1)throw new Error("log("+t+")");return W[t]};Z.exp=function(t){return z[t]};Z.mul=function(t,e){return t===0||e===0?0:z[W[t]+W[e]]}});var Yt=g(V=>{var lt=Jt();V.mul=function(t,e){let r=new Uint8Array(t.length+e.length-1);for(let o=0;o<t.length;o++)for(let i=0;i<e.length;i++)r[o+i]^=lt.mul(t[o],e[i]);return r};V.mod=function(t,e){let r=new Uint8Array(t);for(;r.length-e.length>=0;){let o=r[0];for(let s=0;s<e.length;s++)r[s]^=lt.mul(e[s],o);let i=0;for(;i<r.length&&r[i]===0;)i++;r=r.slice(i)}return r};V.generateECPolynomial=function(t){let e=new Uint8Array([1]);for(let r=0;r<t;r++)e=V.mul(e,new Uint8Array([1,lt.exp(r)]));return e}});var Gt=g((kn,jt)=>{var Ot=Yt();function at(n){this.genPoly=void 0,this.degree=n,this.degree&&this.initialize(this.degree)}at.prototype.initialize=function(t){this.degree=t,this.genPoly=Ot.generateECPolynomial(this.degree)};at.prototype.encode=function(t){if(!this.genPoly)throw new Error("Encoder not initialized");let e=new Uint8Array(t.length+this.degree);e.set(t);let r=Ot.mod(e,this.genPoly),o=this.degree-r.length;if(o>0){let i=new Uint8Array(this.degree);return i.set(r,o),i}return r};jt.exports=at});var ft=g(Qt=>{Qt.isValid=function(t){return!isNaN(t)&&t>=1&&t<=40}});var gt=g(B=>{var $t="[0-9]+",De="[A-Z $%*+\\-./:]+",H="(?:[u3000-u303F]|[u3040-u309F]|[u30A0-u30FF]|[uFF00-uFFEF]|[u4E00-u9FAF]|[u2605-u2606]|[u2190-u2195]|u203B|[u2010u2015u2018u2019u2025u2026u201Cu201Du2225u2260]|[u0391-u0451]|[u00A7u00A8u00B1u00B4u00D7u00F7])+";H=H.replace(/u/g,"\\u");var Fe="(?:(?![A-Z0-9 $%*+\\-./:]|"+H+`)(?:.|[\r
+]))+`;B.KANJI=new RegExp(H,"g");B.BYTE_KANJI=new RegExp("[^A-Z0-9 $%*+\\-./:]+","g");B.BYTE=new RegExp(Fe,"g");B.NUMERIC=new RegExp($t,"g");B.ALPHANUMERIC=new RegExp(De,"g");var ke=new RegExp("^"+H+"$"),ze=new RegExp("^"+$t+"$"),Ve=new RegExp("^[A-Z0-9 $%*+\\-./:]+$");B.testKanji=function(t){return ke.test(t)};B.testNumeric=function(t){return ze.test(t)};B.testAlphanumeric=function(t){return Ve.test(t)}});var M=g(p=>{var He=ft(),dt=gt();p.NUMERIC={id:"Numeric",bit:1,ccBits:[10,12,14]};p.ALPHANUMERIC={id:"Alphanumeric",bit:2,ccBits:[9,11,13]};p.BYTE={id:"Byte",bit:4,ccBits:[8,16,16]};p.KANJI={id:"Kanji",bit:8,ccBits:[8,10,12]};p.MIXED={bit:-1};p.getCharCountIndicator=function(t,e){if(!t.ccBits)throw new Error("Invalid mode: "+t);if(!He.isValid(e))throw new Error("Invalid version: "+e);return e>=1&&e<10?t.ccBits[0]:e<27?t.ccBits[1]:t.ccBits[2]};p.getBestModeForData=function(t){return dt.testNumeric(t)?p.NUMERIC:dt.testAlphanumeric(t)?p.ALPHANUMERIC:dt.testKanji(t)?p.KANJI:p.BYTE};p.toString=function(t){if(t&&t.id)return t.id;throw new Error("Invalid mode")};p.isValid=function(t){return t&&t.bit&&t.ccBits};function Ke(n){if(typeof n!="string")throw new Error("Param is not a string");switch(n.toLowerCase()){case"numeric":return p.NUMERIC;case"alphanumeric":return p.ALPHANUMERIC;case"kanji":return p.KANJI;case"byte":return p.BYTE;default:throw new Error("Unknown mode: "+n)}}p.from=function(t,e){if(p.isValid(t))return t;try{return Ke(t)}catch{return e}}});var te=g(R=>{var X=I(),Je=ct(),Wt=j(),S=M(),ht=ft(),Xt=7973,Zt=X.getBCHDigit(Xt);function Ye(n,t,e){for(let r=1;r<=40;r++)if(t<=R.getCapacity(r,e,n))return r}function vt(n,t){return S.getCharCountIndicator(n,t)+4}function Oe(n,t){let e=0;return n.forEach(function(r){let o=vt(r.mode,t);e+=o+r.getBitsLength()}),e}function je(n,t){for(let e=1;e<=40;e++)if(Oe(n,e)<=R.getCapacity(e,t,S.MIXED))return e}R.from=function(t,e){return ht.isValid(t)?parseInt(t,10):e};R.getCapacity=function(t,e,r){if(!ht.isValid(t))throw new Error("Invalid QR Code version");typeof r>"u"&&(r=S.BYTE);let o=X.getSymbolTotalCodewords(t),i=Je.getTotalCodewordsCount(t,e),s=(o-i)*8;if(r===S.MIXED)return s;let u=s-vt(r,t);switch(r){case S.NUMERIC:return Math.floor(u/10*3);case S.ALPHANUMERIC:return Math.floor(u/11*2);case S.KANJI:return Math.floor(u/13);case S.BYTE:default:return Math.floor(u/8)}};R.getBestVersionForData=function(t,e){let r,o=Wt.from(e,Wt.M);if(Array.isArray(t)){if(t.length>1)return je(t,o);if(t.length===0)return 1;r=t[0]}else r=t;return Ye(r.mode,r.getLength(),o)};R.getEncodedBits=function(t){if(!ht.isValid(t)||t<7)throw new Error("Invalid QR Code version");let e=t<<12;for(;X.getBCHDigit(e)-Zt>=0;)e^=Xt<<X.getBCHDigit(e)-Zt;return t<<12|e}});var oe=g(re=>{var pt=I(),ne=1335,Ge=21522,ee=pt.getBCHDigit(ne);re.getEncodedBits=function(t,e){let r=t.bit<<3|e,o=r<<10;for(;pt.getBCHDigit(o)-ee>=0;)o^=ne<<pt.getBCHDigit(o)-ee;return(r<<10|o)^Ge}});var se=g((Yn,ie)=>{var Qe=M();function x(n){this.mode=Qe.NUMERIC,this.data=n.toString()}x.getBitsLength=function(t){return 10*Math.floor(t/3)+(t%3?t%3*3+1:0)};x.prototype.getLength=function(){return this.data.length};x.prototype.getBitsLength=function(){return x.getBitsLength(this.data.length)};x.prototype.write=function(t){let e,r,o;for(e=0;e+3<=this.data.length;e+=3)r=this.data.substr(e,3),o=parseInt(r,10),t.put(o,10);let i=this.data.length-e;i>0&&(r=this.data.substr(e),o=parseInt(r,10),t.put(o,i*3+1))};ie.exports=x});var ce=g((On,ue)=>{var $e=M(),wt=["0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"," ","$","%","*","+","-",".","/",":"];function U(n){this.mode=$e.ALPHANUMERIC,this.data=n}U.getBitsLength=function(t){return 11*Math.floor(t/2)+6*(t%2)};U.prototype.getLength=function(){return this.data.length};U.prototype.getBitsLength=function(){return U.getBitsLength(this.data.length)};U.prototype.write=function(t){let e;for(e=0;e+2<=this.data.length;e+=2){let r=wt.indexOf(this.data[e])*45;r+=wt.indexOf(this.data[e+1]),t.put(r,11)}this.data.length%2&&t.put(wt.indexOf(this.data[e]),6)};ue.exports=U});var ae=g((jn,le)=>{var We=M();function q(n){this.mode=We.BYTE,typeof n=="string"?this.data=new TextEncoder().encode(n):this.data=new Uint8Array(n)}q.getBitsLength=function(t){return t*8};q.prototype.getLength=function(){return this.data.length};q.prototype.getBitsLength=function(){return q.getBitsLength(this.data.length)};q.prototype.write=function(n){for(let t=0,e=this.data.length;t<e;t++)n.put(this.data[t],8)};le.exports=q});var ge=g((Gn,fe)=>{var Ze=M(),Xe=I();function D(n){this.mode=Ze.KANJI,this.data=n}D.getBitsLength=function(t){return t*13};D.prototype.getLength=function(){return this.data.length};D.prototype.getBitsLength=function(){return D.getBitsLength(this.data.length)};D.prototype.write=function(n){let t;for(t=0;t<this.data.length;t++){let e=Xe.toSJIS(this.data[t]);if(e>=33088&&e<=40956)e-=33088;else if(e>=57408&&e<=60351)e-=49472;else throw new Error("Invalid SJIS character: "+this.data[t]+`
+Make sure your charset is UTF-8`);e=(e>>>8&255)*192+(e&255),n.put(e,13)}};fe.exports=D});var de=g((Qn,mt)=>{"use strict";var K={single_source_shortest_paths:function(n,t,e){var r={},o={};o[t]=0;var i=K.PriorityQueue.make();i.push(t,0);for(var s,u,c,l,a,w,h,y,A;!i.empty();){s=i.pop(),u=s.value,l=s.cost,a=n[u]||{};for(c in a)a.hasOwnProperty(c)&&(w=a[c],h=l+w,y=o[c],A=typeof o[c]>"u",(A||y>h)&&(o[c]=h,i.push(c,h),r[c]=u))}if(typeof e<"u"&&typeof o[e]>"u"){var T=["Could not find a path from ",t," to ",e,"."].join("");throw new Error(T)}return r},extract_shortest_path_from_predecessor_list:function(n,t){for(var e=[],r=t,o;r;)e.push(r),o=n[r],r=n[r];return e.reverse(),e},find_path:function(n,t,e){var r=K.single_source_shortest_paths(n,t,e);return K.extract_shortest_path_from_predecessor_list(r,e)},PriorityQueue:{make:function(n){var t=K.PriorityQueue,e={},r;n=n||{};for(r in t)t.hasOwnProperty(r)&&(e[r]=t[r]);return e.queue=[],e.sorter=n.sorter||t.default_sorter,e},default_sorter:function(n,t){return n.cost-t.cost},push:function(n,t){var e={value:n,cost:t};this.queue.push(e),this.queue.sort(this.sorter)},pop:function(){return this.queue.shift()},empty:function(){return this.queue.length===0}}};typeof mt<"u"&&(mt.exports=K)});var Be=g(F=>{var f=M(),we=se(),me=ce(),ye=ae(),Ee=ge(),J=gt(),v=I(),ve=de();function he(n){return unescape(encodeURIComponent(n)).length}function Y(n,t,e){let r=[],o;for(;(o=n.exec(e))!==null;)r.push({data:o[0],index:o.index,mode:t,length:o[0].length});return r}function Ce(n){let t=Y(J.NUMERIC,f.NUMERIC,n),e=Y(J.ALPHANUMERIC,f.ALPHANUMERIC,n),r,o;return v.isKanjiModeEnabled()?(r=Y(J.BYTE,f.BYTE,n),o=Y(J.KANJI,f.KANJI,n)):(r=Y(J.BYTE_KANJI,f.BYTE,n),o=[]),t.concat(e,r,o).sort(function(s,u){return s.index-u.index}).map(function(s){return{data:s.data,mode:s.mode,length:s.length}})}function yt(n,t){switch(t){case f.NUMERIC:return we.getBitsLength(n);case f.ALPHANUMERIC:return me.getBitsLength(n);case f.KANJI:return Ee.getBitsLength(n);case f.BYTE:return ye.getBitsLength(n)}}function tn(n){return n.reduce(function(t,e){let r=t.length-1>=0?t[t.length-1]:null;return r&&r.mode===e.mode?(t[t.length-1].data+=e.data,t):(t.push(e),t)},[])}function en(n){let t=[];for(let e=0;e<n.length;e++){let r=n[e];switch(r.mode){case f.NUMERIC:t.push([r,{data:r.data,mode:f.ALPHANUMERIC,length:r.length},{data:r.data,mode:f.BYTE,length:r.length}]);break;case f.ALPHANUMERIC:t.push([r,{data:r.data,mode:f.BYTE,length:r.length}]);break;case f.KANJI:t.push([r,{data:r.data,mode:f.BYTE,length:he(r.data)}]);break;case f.BYTE:t.push([{data:r.data,mode:f.BYTE,length:he(r.data)}])}}return t}function nn(n,t){let e={},r={start:{}},o=["start"];for(let i=0;i<n.length;i++){let s=n[i],u=[];for(let c=0;c<s.length;c++){let l=s[c],a=""+i+c;u.push(a),e[a]={node:l,lastCount:0},r[a]={};for(let w=0;w<o.length;w++){let h=o[w];e[h]&&e[h].node.mode===l.mode?(r[h][a]=yt(e[h].lastCount+l.length,l.mode)-yt(e[h].lastCount,l.mode),e[h].lastCount+=l.length):(e[h]&&(e[h].lastCount=l.length),r[h][a]=yt(l.length,l.mode)+4+f.getCharCountIndicator(l.mode,t))}}o=u}for(let i=0;i<o.length;i++)r[o[i]].end=0;return{map:r,table:e}}function pe(n,t){let e,r=f.getBestModeForData(n);if(e=f.from(t,r),e!==f.BYTE&&e.bit<r.bit)throw new Error('"'+n+'" cannot be encoded with mode '+f.toString(e)+`.
+ Suggested mode is: `+f.toString(r));switch(e===f.KANJI&&!v.isKanjiModeEnabled()&&(e=f.BYTE),e){case f.NUMERIC:return new we(n);case f.ALPHANUMERIC:return new me(n);case f.KANJI:return new Ee(n);case f.BYTE:return new ye(n)}}F.fromArray=function(t){return t.reduce(function(e,r){return typeof r=="string"?e.push(pe(r,null)):r.data&&e.push(pe(r.data,r.mode)),e},[])};F.fromString=function(t,e){let r=Ce(t,v.isKanjiModeEnabled()),o=en(r),i=nn(o,e),s=ve.find_path(i.map,"start","end"),u=[];for(let c=1;c<s.length-1;c++)u.push(i.table[s[c]].node);return F.fromArray(tn(u))};F.rawSplit=function(t){return F.fromArray(Ce(t,v.isKanjiModeEnabled()))}});var Te=g(Ae=>{var et=I(),Et=j(),rn=qt(),on=Ft(),sn=kt(),un=Ht(),At=Kt(),Tt=ct(),cn=Gt(),tt=te(),ln=oe(),an=M(),Ct=Be();function fn(n,t){let e=n.size,r=un.getPositions(t);for(let o=0;o<r.length;o++){let i=r[o][0],s=r[o][1];for(let u=-1;u<=7;u++)if(!(i+u<=-1||e<=i+u))for(let c=-1;c<=7;c++)s+c<=-1||e<=s+c||(u>=0&&u<=6&&(c===0||c===6)||c>=0&&c<=6&&(u===0||u===6)||u>=2&&u<=4&&c>=2&&c<=4?n.set(i+u,s+c,!0,!0):n.set(i+u,s+c,!1,!0))}}function gn(n){let t=n.size;for(let e=8;e<t-8;e++){let r=e%2===0;n.set(e,6,r,!0),n.set(6,e,r,!0)}}function dn(n,t){let e=sn.getPositions(t);for(let r=0;r<e.length;r++){let o=e[r][0],i=e[r][1];for(let s=-2;s<=2;s++)for(let u=-2;u<=2;u++)s===-2||s===2||u===-2||u===2||s===0&&u===0?n.set(o+s,i+u,!0,!0):n.set(o+s,i+u,!1,!0)}}function hn(n,t){let e=n.size,r=tt.getEncodedBits(t),o,i,s;for(let u=0;u<18;u++)o=Math.floor(u/3),i=u%3+e-8-3,s=(r>>u&1)===1,n.set(o,i,s,!0),n.set(i,o,s,!0)}function Bt(n,t,e){let r=n.size,o=ln.getEncodedBits(t,e),i,s;for(i=0;i<15;i++)s=(o>>i&1)===1,i<6?n.set(i,8,s,!0):i<8?n.set(i+1,8,s,!0):n.set(r-15+i,8,s,!0),i<8?n.set(8,r-i-1,s,!0):i<9?n.set(8,15-i-1+1,s,!0):n.set(8,15-i-1,s,!0);n.set(r-8,8,1,!0)}function pn(n,t){let e=n.size,r=-1,o=e-1,i=7,s=0;for(let u=e-1;u>0;u-=2)for(u===6&&u--;;){for(let c=0;c<2;c++)if(!n.isReserved(o,u-c)){let l=!1;s<t.length&&(l=(t[s]>>>i&1)===1),n.set(o,u-c,l),i--,i===-1&&(s++,i=7)}if(o+=r,o<0||e<=o){o-=r,r=-r;break}}}function wn(n,t,e){let r=new rn;e.forEach(function(c){r.put(c.mode.bit,4),r.put(c.getLength(),an.getCharCountIndicator(c.mode,n)),c.write(r)});let o=et.getSymbolTotalCodewords(n),i=Tt.getTotalCodewordsCount(n,t),s=(o-i)*8;for(r.getLengthInBits()+4<=s&&r.put(0,4);r.getLengthInBits()%8!==0;)r.putBit(0);let u=(s-r.getLengthInBits())/8;for(let c=0;c<u;c++)r.put(c%2?17:236,8);return mn(r,n,t)}function mn(n,t,e){let r=et.getSymbolTotalCodewords(t),o=Tt.getTotalCodewordsCount(t,e),i=r-o,s=Tt.getBlocksCount(t,e),u=r%s,c=s-u,l=Math.floor(r/s),a=Math.floor(i/s),w=a+1,h=l-a,y=new cn(h),A=0,T=new Array(s),bt=new Array(s),rt=0,Re=new Uint8Array(n.buffer);for(let _=0;_<s;_++){let it=_<c?a:w;T[_]=Re.slice(A,A+it),bt[_]=y.encode(T[_]),A+=it,rt=Math.max(rt,it)}let ot=new Uint8Array(r),Rt=0,E,C;for(E=0;E<rt;E++)for(C=0;C<s;C++)E<T[C].length&&(ot[Rt++]=T[C][E]);for(E=0;E<h;E++)for(C=0;C<s;C++)ot[Rt++]=bt[C][E];return ot}function yn(n,t,e,r){let o;if(Array.isArray(n))o=Ct.fromArray(n);else if(typeof n=="string"){let l=t;if(!l){let a=Ct.rawSplit(n);l=tt.getBestVersionForData(a,e)}o=Ct.fromString(n,l||40)}else throw new Error("Invalid data");let i=tt.getBestVersionForData(o,e);if(!i)throw new Error("The amount of data is too big to be stored in a QR Code");if(!t)t=i;else if(t<i)throw new Error(`
+The chosen QR Code version cannot contain this amount of data.
+Minimum version required to store current data is: `+i+`.
+`);let s=wn(t,e,o),u=et.getSymbolSize(t),c=new on(u);return fn(c,t),gn(c),dn(c,t),Bt(c,e,0),t>=7&&hn(c,t),pn(c,s),isNaN(r)&&(r=At.getBestMask(c,Bt.bind(null,c,e))),At.applyMask(r,c),Bt(c,e,r),{modules:c,version:t,errorCorrectionLevel:e,maskPattern:r,segments:o}}Ae.create=function(t,e){if(typeof t>"u"||t==="")throw new Error("No input text");let r=Et.M,o,i;return typeof e<"u"&&(r=Et.from(e.errorCorrectionLevel,Et.M),o=tt.from(e.version),i=At.from(e.maskPattern),e.toSJISFunc&&et.setToSJISFunction(e.toSJISFunc)),yn(t,o,r,i)}});var It=g(L=>{function Ie(n){if(typeof n=="number"&&(n=n.toString()),typeof n!="string")throw new Error("Color should be defined as hex string");let t=n.slice().replace("#","").split("");if(t.length<3||t.length===5||t.length>8)throw new Error("Invalid hex color: "+n);(t.length===3||t.length===4)&&(t=Array.prototype.concat.apply([],t.map(function(r){return[r,r]}))),t.length===6&&t.push("F","F");let e=parseInt(t.join(""),16);return{r:e>>24&255,g:e>>16&255,b:e>>8&255,a:e&255,hex:"#"+t.slice(0,6).join("")}}L.getOptions=function(t){t||(t={}),t.color||(t.color={});let e=typeof t.margin>"u"||t.margin===null||t.margin<0?4:t.margin,r=t.width&&t.width>=21?t.width:void 0,o=t.scale||4;return{width:r,scale:r?4:o,margin:e,color:{dark:Ie(t.color.dark||"#000000ff"),light:Ie(t.color.light||"#ffffffff")},type:t.type,rendererOpts:t.rendererOpts||{}}};L.getScale=function(t,e){return e.width&&e.width>=t+e.margin*2?e.width/(t+e.margin*2):e.scale};L.getImageWidth=function(t,e){let r=L.getScale(t,e);return Math.floor((t+e.margin*2)*r)};L.qrToImageData=function(t,e,r){let o=e.modules.size,i=e.modules.data,s=L.getScale(o,r),u=Math.floor((o+r.margin*2)*s),c=r.margin*s,l=[r.color.light,r.color.dark];for(let a=0;a<u;a++)for(let w=0;w<u;w++){let h=(a*u+w)*4,y=r.color.light;if(a>=c&&w>=c&&a<u-c&&w<u-c){let A=Math.floor((a-c)/s),T=Math.floor((w-c)/s);y=l[i[A*o+T]?1:0]}t[h++]=y.r,t[h++]=y.g,t[h++]=y.b,t[h]=y.a}}});var Ne=g(nt=>{var Nt=It();function En(n,t,e){n.clearRect(0,0,t.width,t.height),t.style||(t.style={}),t.height=e,t.width=e,t.style.height=e+"px",t.style.width=e+"px"}function Cn(){try{return document.createElement("canvas")}catch{throw new Error("You need to specify a canvas element")}}nt.render=function(t,e,r){let o=r,i=e;typeof o>"u"&&(!e||!e.getContext)&&(o=e,e=void 0),e||(i=Cn()),o=Nt.getOptions(o);let s=Nt.getImageWidth(t.modules.size,o),u=i.getContext("2d"),c=u.createImageData(s,s);return Nt.qrToImageData(c.data,t,o),En(u,i,s),u.putImageData(c,0,0),i};nt.renderToDataURL=function(t,e,r){let o=r;typeof o>"u"&&(!e||!e.getContext)&&(o=e,e=void 0),o||(o={});let i=nt.render(t,e,o),s=o.type||"image/png",u=o.rendererOpts||{};return i.toDataURL(s,u.quality)}});var Pe=g(Se=>{var Bn=It();function Me(n,t){let e=n.a/255,r=t+'="'+n.hex+'"';return e<1?r+" "+t+'-opacity="'+e.toFixed(2).slice(1)+'"':r}function Mt(n,t,e){let r=n+t;return typeof e<"u"&&(r+=" "+e),r}function An(n,t,e){let r="",o=0,i=!1,s=0;for(let u=0;u<n.length;u++){let c=Math.floor(u%t),l=Math.floor(u/t);!c&&!i&&(i=!0),n[u]?(s++,u>0&&c>0&&n[u-1]||(r+=i?Mt("M",c+e,.5+l+e):Mt("m",o,0),o=0,i=!1),c+1<t&&n[u+1]||(r+=Mt("h",s),s=0)):o++}return r}Se.render=function(t,e,r){let o=Bn.getOptions(e),i=t.modules.size,s=t.modules.data,u=i+o.margin*2,c=o.color.light.a?"<path "+Me(o.color.light,"fill")+' d="M0 0h'+u+"v"+u+'H0z"/>':"",l="<path "+Me(o.color.dark,"stroke")+' d="'+An(s,i,o.margin)+'"/>',a='viewBox="0 0 '+u+" "+u+'"',h='<svg xmlns="http://www.w3.org/2000/svg" '+(o.width?'width="'+o.width+'" height="'+o.width+'" ':"")+a+' shape-rendering="crispEdges">'+c+l+`</svg>
+`;return typeof r=="function"&&r(null,h),h}});var Nn=g(O=>{var Tn=_t(),St=Te(),be=Ne(),In=Pe();function Pt(n,t,e,r,o){let i=[].slice.call(arguments,1),s=i.length,u=typeof i[s-1]=="function";if(!u&&!Tn())throw new Error("Callback required as last argument");if(u){if(s<2)throw new Error("Too few arguments provided");s===2?(o=e,e=t,t=r=void 0):s===3&&(t.getContext&&typeof o>"u"?(o=r,r=void 0):(o=r,r=e,e=t,t=void 0))}else{if(s<1)throw new Error("Too few arguments provided");return s===1?(e=t,t=r=void 0):s===2&&!t.getContext&&(r=e,e=t,t=void 0),new Promise(function(c,l){try{let a=St.create(e,r);c(n(a,t,r))}catch(a){l(a)}})}try{let c=St.create(e,r);o(null,n(c,t,r))}catch(c){o(c)}}O.create=St.create;O.toCanvas=Pt.bind(null,be.render);O.toDataURL=Pt.bind(null,be.renderToDataURL);O.toString=Pt.bind(null,function(n,t,e){return In.render(n,e)})});__ret=Nn;return __ret;})();return __bundle();})();
+/* 兼容 QRCode 包装 */
+function QRCode(text){
+  this.qr=QRLIB.create(text,{errorCorrectionLevel:'L'});
+  this.size=this.qr.modules.size;
+  this.modules=this.qr.modules;
+}
+QRCode.prototype.draw=function(canvas){
+  var ctx=canvas.getContext('2d');var n=this.size,px=Math.floor(canvas.width/n);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#000';
+  for(var y=0;y<n;y++)for(var x=0;x<n;x++)if(this.modules.get(x,y))ctx.fillRect(x*px,y*px,px,px);
+};
+/* v4.103 URL hash 分享（简化 base64） */
+function teamToHash(){
+  try{
+    /* 全字段: id|nature|evs|moves|item 紧凑编码 */
+    var arr=team.map(function(s,idx){
+      if(!s)return '';
+      var evs=(window.evs&&window.evs[idx])||'';
+      var nat=(window.natures&&window.natures[idx])||'';
+      var mv=(window.moves&&window.moves[idx])||'';
+      var it=(window.items&&window.items[idx])||'';
+      return [''+s.id,nat,evs,mv,it].join('|');
+    });
+    return 'v2.1:'+btoa(encodeURIComponent(arr.join(';')));
+  }catch(e){return ''}
+}
+function loadFromHash(h){
+  try{
+    if(!h||h.indexOf('v2.1:')!==0)return false;
+    var raw=h.slice(5);
+    var items=decodeURIComponent(atob(raw)).split(';');
+    for(var i=0;i<Math.min(6,items.length);i++){
+      if(!items[i])continue;
+      var parts=items[i].split('|');
+      var sp=(ERDATA.species||[]).find(function(s){return ''+s.id===parts[0]});
+      if(sp){
+        team[i]=sp;
+        if(parts[1]&&window.natures)window.natures[i]=parts[1];
+        if(parts[2]&&window.evs)window.evs[i]=parts[2];
+        if(parts[3]&&window.moves)window.moves[i]=parts[3];
+        if(parts[4]&&window.items)window.items[i]=parts[4];
+      }
+    }
+    if(typeof renderAll==='function')renderAll();
+    return true;
+  }catch(e){return false}
 }
 /* ===== v4.41：反查持有者「形态筛选」——纯展示层过滤，不触碰引擎推荐（deriveBuilds / buildEvs / NM2ID / EV 写入）=====
    · 两处各自独立开关：特性反查 abiFiltFinal/abiFiltMega、招式反查 mvFiltFinal/mvFiltMega；
@@ -4054,7 +4968,7 @@ function spdScarfOf(s){var b=bstI(s,5);return Math.floor((2*b+99)*1.5)} /* 讲�
 function spdWeatherOf(s){var W=['轻装','悠游自如','叶绿素','拨雪'];var hit=null;(s.abis||[]).forEach(function(a){if(a&&W.indexOf(a)>-1)hit=a});return hit} /* 天气×2特性（参考列） */
 function spdWeatherVal(s){var h=spdWeatherOf(s);return h?Math.floor(spdMaxOf(s)*2):null}
 var _spdPct=null;
-function speedPctiles(){if(_spdPct)return _spdPct;
+function speedPctiles(){if(!ERDATA.species||!ERDATA.species.length)return {n:0,P50:0,P75:0,P90:0,P95:0,P99:0};if(_spdPct)return _spdPct;
   var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
   var n=arr.length;function pct(p){return arr[Math.min(n-1,Math.floor(n*p))]}
   _spdPct={n:n,P50:pct(.50),P75:pct(.75),P90:pct(.90),P95:pct(.95),P99:pct(.99)};return _spdPct}
@@ -4105,6 +5019,314 @@ function speedHintHtml(s){var q=speedPctiles(),mx=spdMaxOf(s),role=speedRole(s);
   if(role!=='space'){var e75b=spdEvTo(s,q.P75);
     if(e75b&&mx>=q.P75){line+='<br><span style="color:var(--sub)">卡线参考：若仅求过 P75（基准 '+q.P75+'）→ EV '+e75b.ev+'（达 '+e75b.val+'）即可，<b style="color:var(--ok)">省 '+e75b.saved+' EV 挪 HP</b>（不必上满 252）。</span>'}}
   line+='</div>';return line}
+/* ============ v4.88 超速滑块 + 自适配 EV 分配（严格按两设计文档；复用既有公式族，禁第二套速度公式） ============
+   口径：全库分位=极速档物种分布（speedPctiles 同源排序）；公式族 spd0Of/spdMaxOf/speedStat 逐位复用。
+   新增原语：spdPctileVal(分位→速度) / spdRankOfVal(速度→分位) / spdPlanForTarget(三性格×EV 枚举)。 */
+var _spdPctArr=null;
+function spdPctileArr(){if(_spdPctArr)return _spdPctArr;
+  var arr=[];ERDATA.species.forEach(function(s){if(s.base)arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
+  _spdPctArr=arr;return arr}
+/* 分位 k(0-99) → 目标速度值；与 speedPctiles() pct() 逐位同源：k=50/75/90/95/99 ≡ P50/P75/P90/P95/P99 */
+function spdPctileVal(k){var arr=spdPctileArr();k=Math.max(0,Math.min(99,+k||0));return arr[Math.min(arr.length-1,Math.floor(arr.length*k/100))]}
+/* 速度值 v → 分位 rank(0-99)；自洽：v=spdMaxOf(s) 时 ≡ speedPctileRankOf(s) */
+function spdRankOfVal(v){var arr=spdPctileArr();var lo=0,hi=arr.length;while(lo<hi){var mid=(lo+hi)>>1;if(arr[mid]<v)lo=mid+1;else hi=mid}return Math.round(lo*100/arr.length)}
+/* 三性格×EV 自适配枚举（EV 0/4/…/252；加速组与 spdEvTo(s,T) 逐位一致）；返回 plans 按最小 EV 排序 */
+function spdPlanForTarget(s,T){
+  var b=bstI(s,5),groups=[['加速',1.1],['中性',1.0],['减速',0.9]],plans=[];
+  for(var gi=0;gi<3;gi++){
+    var kc=groups[gi][1];
+    for(var ev=0;ev<=252;ev+=4){
+      var v=Math.floor((2*b+31+ev/4+5)*kc);
+      if(v>=T){plans.push({nat:groups[gi][0],kc:kc,ev:ev,val:v,saved:252-ev});break}
+    }
+  }
+  plans.sort(function(a,c){return a.ev-c.ev||a.val-c.val});
+  return plans;
+}
+/* 剩余耐久池贪心分配（EVILL 范式：每 4 EV=1 实数点，目标=有效耐久乘积最大化；HP 无性格修正故优先） */
+function spdBulkAlloc(R,s,bias){
+  var bH=bstI(s,0),bD=bstI(s,2),bS=bstI(s,4);
+  function rHp(e){return 2*bH+31+Math.floor(e/4)+110}
+  function rD(e){return 2*bD+31+Math.floor(e/4)+5}
+  function rS(e){return 2*bS+31+Math.floor(e/4)+5}
+  var e={hp:0,d:0,s:0};
+  function obj(){var H=rHp(e.hp),D=rD(e.d),S=rS(e.s);
+    if(bias==='physical')return H*D;
+    if(bias==='special')return H*S;
+    return H*D*S/(D+S)}   /* 均衡混伤：H/(1/D+1/S) */
+  while(R>=4){
+    var bk=null,bv=obj();
+    ['hp','d','s'].forEach(function(k){if(e[k]+4>252)return;   /* v4.90 P1-1：单围 EV ≤252 上限钳制（超规值回退其它围） */
+      e[k]+=4;var v=obj();e[k]-=4;if(v>bv){bv=v;bk=k}});
+    if(!bk)break;
+    e[bk]+=4;R-=4;
+  }
+  return e;
+}
+/* 性格决策表（方案 §4）：空间→−Spe；有乘区(围巾/天气/顺风)→降档 neutral；p≥90→加速；其余 neutral */
+function spdNatAdvice(s,p,M){
+  if(M>1)return '中性';
+  if(speedRole(s)==='space')return '减速';
+  if(p>=90)return '加速';
+  return '中性';
+}
+/* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
+var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null};
+function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx)m*=2;if(__spdSl.tailwind)m*=2;return m}
+function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" onclick="'+onclick+'">'+label+'</span>'}
+function speedSliderHtml(s){
+  try{
+    var p0=speedPctileRankOf(s);__spdSl.s=s;__spdSl.p=p0;
+    var h='<div class="ruleline" style="margin-top:6px;padding-bottom:6px">'+
+      '🎚 <b>超速目标</b>（全库'+glossify('分位')+'口径，拖动实时出方案）'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px">'+
+        '<span style="font-size:20px;font-weight:700;color:var(--accent)" id="spdSlVal">'+spdPctileVal(p0)+'</span>'+
+        '<span style="font-size:11px;color:var(--sub)" id="spdSlRank">P'+p0+' · 极速 '+spdMaxOf(s)+'=P'+p0+'</span>'+
+      '</div>'+
+      '<input type="range" min="0" max="99" step="1" value="'+p0+'" id="spdSlRange" style="width:100%;margin:6px 0;accent-color:var(--accent)" oninput="spdSliderOn(this.value)">'+
+      '<div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:10px;color:var(--sub)">'+
+        ['P50','P75','P90','P95','P99'].map(function(a){var v=+a.slice(1);return '<span style="cursor:pointer" onclick="spdSliderSet('+v+')" title="吸附到 '+a+' 锚点">'+a+' '+spdPctileVal(v)+'</span>'}).join('')+
+      '</div>'+
+      '<div style="font-size:11px;margin:4px 0">ER修正乘区（默认开，可关）：<span class="chipgrp">'+
+        spdSlChip('围巾×1.5',__spdSl.scarf,'spdTgl(\'scarf\')')+
+        spdSlChip('天气×2',__spdSl.wx,'spdTgl(\'wx\')')+
+        spdSlChip('顺风×2',__spdSl.tailwind,'spdTgl(\'tailwind\')')+'</span></div>'+
+      '<div style="font-size:11px;margin:4px 0">耐久分配 bias：<span class="chipgrp" id="spdBiasG">'+
+        spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
+        spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
+        spdSlChip('特殊端',__spdSl.bias==='special','spdSet(\'bias\',\'special\')')+'</span> '+
+      '性格：<span class="chipgrp" id="spdNatG">'+
+        spdSlChip('自动',!__spdSl.natOv,'spdSet(\'natOv\',\'\')')+
+        spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
+        spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
+        spdSlChip('−Spe',__spdSl.natOv==='减速','spdSet(\'natOv\',\'减速\')')+'</span></div>'+
+      '<div style="font-size:11px;margin:4px 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px">击杀线伤害折算 <input type="number" id="spdAtkM" value="'+__spdSl.atkM+'" style="width:64px;font-size:11px" placeholder="0" oninput="__spdSl.atkM=+this.value;spdSliderRender()">'+
+        '<span class="chipgrp">'+
+        spdSlChip('×1.0',__spdSl.mult==1,'spdSet(\'mult\',1)')+
+        spdSlChip('命玉×1.3',__spdSl.mult==1.3,'spdSet(\'mult\',1.3)')+
+        spdSlChip('专爱×1.5',__spdSl.mult==1.5,'spdSet(\'mult\',1.5)')+'</span> '+
+      'HP断点：<span class="chipgrp">'+
+        spdSlChip('无',__spdSl.bp==0,'spdSet(\'bp\',0)')+
+        spdSlChip('剩饭16',__spdSl.bp==16,'spdSet(\'bp\',16)')+
+        spdSlChip('替身4',__spdSl.bp==4,'spdSet(\'bp\',4)')+
+        spdSlChip('命玉10',__spdSl.bp==10,'spdSet(\'bp\',10)')+'</span></div>'+
+      '<div id="spdPlanBox" style="margin-top:2px"></div>'+
+      '<div style="border-top:1px solid var(--line,rgba(255,255,255,.12));margin-top:6px;padding-top:4px">'+
+        '<div style="font-size:11px;color:var(--sub)">🎯 '+esc('伤害判定 / OHKO 反解')+'（Gen3 公式 × ER 数据）</div>'+
+        '<input type="text" id="dmgDefQ" placeholder="搜对手，如：耿鬼" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgDefQ(this.value)">'+
+        '<div id="dmgDefList" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
+        '<input type="text" id="dmgMvQ" placeholder="搜我方招式，如：暗影球" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgMvQ(this.value)">'+
+        '<div id="dmgMvList" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
+        '<div style="font-size:11px;margin-top:2px">天气：<span class="chipgrp">'+
+          spdSlChip('无',!__spdSl.weather,'dmgSet(\'weather\',\'\')')+
+          spdSlChip('晴',__spdSl.weather==='晴','dmgSet(\'weather\',\'晴\')')+
+          spdSlChip('雨',__spdSl.weather==='雨','dmgSet(\'weather\',\'雨\')')+
+          spdSlChip('沙',__spdSl.weather==='沙','dmgSet(\'weather\',\'沙\')')+
+          spdSlChip('雪',__spdSl.weather==='雪','dmgSet(\'weather\',\'雪\')')+'</span> '+
+          '<span style="color:var(--sub)">场地：</span><span class="chipgrp">'+
+          spdSlChip('无',!__spdSl.terrain,'dmgSet(\'terrain\',\'\')')+
+          spdSlChip('电气',__spdSl.terrain==='电气','dmgSet(\'terrain\',\'电气\')')+
+          spdSlChip('青草',__spdSl.terrain==='青草','dmgSet(\'terrain\',\'青草\')')+
+          spdSlChip('精神',__spdSl.terrain==='精神','dmgSet(\'terrain\',\'精神\')')+
+          spdSlChip('薄雾',__spdSl.terrain==='薄雾','dmgSet(\'terrain\',\'薄雾\')')+'</span>'+
+          '<div style="font-size:9px;color:var(--sub)">沙/雪=防御向无伤害档；场地 ×'+WCONF.terrainBoost+'（薄雾对龙系×0.5）</div>'+
+        '道具：<span class="chipgrp">'+
+          spdSlChip('无',!__spdSl.dmgItem,'dmgSet(\'dmgItem\',\'\')')+
+          spdSlChip('命玉',__spdSl.dmgItem==='生命宝珠','dmgSet(\'dmgItem\',\'生命宝珠\')')+
+          spdSlChip('头带',__spdSl.dmgItem==='讲究头带','dmgSet(\'dmgItem\',\'讲究头带\')')+
+          spdSlChip('眼镜',__spdSl.dmgItem==='讲究眼镜','dmgSet(\'dmgItem\',\'讲究眼镜\')')+'</span> '+
+        spdSlChip('暴击',__spdSl.crit,'dmgTgl(\'crit\')')+'</div>'+
+        '<div id="dmgOut" style="margin-top:2px"></div>'+
+      '</div>'+
+    '</div>';
+    setTimeout(function(){try{spdSliderRender()}catch(e){}},0);   /* v4.88 修复GAP-C：详情打开瞬间即首渲染一次方案（不等首次交互） */
+    return h;
+  }catch(e){return ''}
+}
+function spdTgl(k){__spdSl[k]=!__spdSl[k];spdSliderRender()}
+function spdSet(k,v){__spdSl[k]=v;spdSliderRender()}
+function spdSliderOn(p){__spdSl.p=+p;spdSliderRender()}
+function spdSliderSet(p){var r=$('spdSlRange');if(r)r.value=p;__spdSl.p=p;spdSliderRender()}
+function spdSliderRender(){
+  var s=__spdSl.s;if(!s)return;
+  var b=bstI(s,5),p=__spdSl.p,T=spdPctileVal(p),M=spdModMul(),Te=Math.ceil(T/M);
+  var vMax=spdMaxOf(s),vMin=Math.floor((2*b+36)*0.9);
+  var plans=spdPlanForTarget(s,Te);
+  var adv=spdNatAdvice(s,p,M),main=null;   /* v4.90 P2-1：主方案须与 adv 决策一致（消除「目标 273 却推减速 230」矛盾） */
+  if(__spdSl.natOv){plans.forEach(function(pl){if(pl.nat===__spdSl.natOv)main=pl})}
+  if(!main&&plans.length){var advPl=null;plans.forEach(function(pl){if(!advPl&&pl.nat===adv)advPl=pl});main=advPl||plans[0]}
+  var h='';
+  if(T<=vMin)h+='<div style="color:var(--sub);font-size:10px">已到本只下限：减速0EV 实速尚有 '+vMin+'（P'+spdRankOfVal(vMin)+'），目标线 '+T+' 低于此无意义</div>';
+  if(!main){
+    var canFix=(M>1)&&(Math.ceil(T/M)<=vMax);   /* v4.90 P2-3：可达性基于原始实速边界 */
+    h+=canFix
+      ?'<div style="color:var(--sub);font-size:11px">目标 P'+p+' 原始需 '+Te+' 超出极速 '+vMax+'，但<b style="color:var(--ok)">经当前乘区（×'+M+'）修正可达</b>：原始 '+Math.ceil(T/M)+' 速即可（围巾/天气/顺风生效）</div>'
+      :'<div style="color:var(--warnred);font-size:11px">⚠️ 已到本只上限：目标 P'+p+' 需原始速度 '+Te+'，即使加速+252 极速 '+vMax+' 仍差 '+(Te-vMax)+' 点，乘区关闭或修正后仍不可达 → 开启围巾×1.5 / 顺风×2 / 换高速手</div>';
+  }else{
+    var eff=Math.floor(main.val*M);
+    h+='<div style="margin:4px 0"><span class="abi" style="border-color:var(--accent)"><b>'+main.nat+'</b> · '+glossify('EV')+' '+main.ev+'速 → 自然 '+main.val+'（有效 '+eff+'）</span>';
+    plans.forEach(function(pl){if(pl!==main)h+=' <span class="abi" style="color:var(--sub)">备选 '+pl.nat+' EV '+pl.ev+' → '+pl.val+'</span>'});
+    h+='<span style="font-size:10px;color:var(--sub)">省 '+main.saved+' EV 挪耐久</span></div>';
+    /* v4.91 任务C：P50 性格优化提示层——中性方案为主但加速性格同目标可达时，提示「建议加速性格」（不改默认推荐逻辑） */
+    var _accPl=null;plans.forEach(function(pl){if(pl.nat==='加速'&&!_accPl)_accPl=pl});
+    if(_accPl&&main.nat!=='加速'){
+      h+='<div style="font-size:10px;color:var(--sub)">💡 建议加速性格：中性需 '+main.ev+'EV 达目标，<b style="color:var(--ok)">+Spe 仅需 '+_accPl.ev+'EV → '+_accPl.val+'</b>（省 '+_accPl.saved+' EV 挪耐久；目标 P'+p+' 偏高速线时优先）</div>';
+    }
+    /* 攻击阈值 OHKO 线反解（§2.3：e=252−4((m/倍率)−t0)，t0=0EV 攻击实数） */
+    var t0=2*bstI(s,1)+31+5,eAtk=0;
+    if(__spdSl.atkM>0){eAtk=252-4*((__spdSl.atkM/__spdSl.mult)-t0);if(eAtk<0)eAtk=0;if(eAtk>252)eAtk=252;eAtk=Math.floor(eAtk/4)*4}
+    if(__spdSl.eAtk!=null&&__spdSl.eAtk>=0)eAtk=__spdSl.eAtk;   /* v4.89：OHKO 反解 EV 直接覆盖 */
+    var R=508-main.ev-eAtk;if(R<0)R=0;
+    var bulk=spdBulkAlloc(R,s,__spdSl.bias);
+    if(__spdSl.bp>0){
+      var best=bulk.hp;
+      for(var hc=bulk.hp-24;hc<=bulk.hp+24;hc+=4){if(hc<0)continue;var H=2*bstI(s,0)+31+Math.floor(hc/4)+110;
+        if(H%__spdSl.bp===0){best=hc;break}}
+      if(best!==bulk.hp){bulk.hp=best;h+='<div style="font-size:10px;color:var(--ok)">HP 已对齐 '+__spdSl.bp+' 整除断点</div>'}
+    }
+    if(eAtk>0)h+='<div style="font-size:11px;color:var(--sub)">攻击EV '+eAtk+'（击杀线反解 e=252−4((m/倍率)−t0)）</div>';
+    h+='<div style="font-size:11px;color:var(--sub)">剩余 '+R+' EV → HP '+bulk.hp+' / 防 '+bulk.d+' / 特防 '+bulk.s+'（'+(__spdSl.bias==='physical'?'物理端 2:1':(__spdSl.bias==='special'?'特殊端 2:1':'均衡先拉平双防后 2:1:1'))+'；自动性格建议='+adv+'）</div>';
+  }
+  var vb=$('spdPlanBox');if(vb)vb.innerHTML=h;
+  var vv=$('spdSlVal');if(vv)vv.textContent=main?main.val:T;   /* v4.88 修复BUG-B：大字值=原始实速（乘区有效速度在方案行另列），不被 M 放大 */
+  var rk=$('spdSlRank');if(rk)rk.textContent='P'+p+' · 极速 '+vMax+'=P'+spdRankOfVal(vMax);   /* 修复BUG-A：实参为极速值而非物种对象 */
+  var bg=$('spdBiasG');if(bg)bg.innerHTML=   /* v4.90 P2-2：chip 组点击后实时重渲染（radio 互斥语义可见性） */
+    spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
+    spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
+    spdSlChip('特殊端',__spdSl.bias==='special','spdSet(\'bias\',\'special\')');
+  var ng=$('spdNatG');if(ng)ng.innerHTML=
+    spdSlChip('自动',!__spdSl.natOv,'spdSet(\'natOv\',\'\')')+
+    spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
+    spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
+    spdSlChip('−Spe',__spdSl.natOv==='减速','spdSet(\'natOv\',\'减速\')');
+  dmgRender();   /* v4.89：伤害判定面板随滑块状态同步刷新 */
+}
+/* ===== v4.89 伤害引擎 spike（Gen3 基 + ER 自有数据，路径C：算法移植，零外部 API/LLM、零 npm 依赖） =====
+   公式骨架（Bulbapedia Gen3 / ER GBA 基版）：
+     base = floor( floor( 22 × BP × A / D ) / 50 ) + 2        （L=100：2L/5+2=42？不，Gen3 为 (2L/5+2)=42…
+       注：实证 ER/smogon gen3 为 (2*L/5+2)=42 当 L=100 → 内层 floor(42*BP*A/D/50)；此处按对拍样本表校准值 42 落地）
+   DMG ∈ [floor(base*MOD*0.85), floor(base*MOD*1.0)]      （随机档 85%–100%）
+   MOD = STAB(1.5) × 克制(defCellTrio.opt，含特性免疫/减半) × 天气(晴火/雨水 ×(1+WCONF.boost)=×1.5)
+       × 道具(生命宝珠1.3 / 讲究头带(物理)1.5 / 讲究眼镜(特殊)1.5) × 暴击(×2，可选)
+   口径真值源：WCONF（天气）/ ABI_ATE（-ate 本系）/ defCellTrio（克制×特性）/ ERDATA.moves（BP/属性/分类）/ NATURES（性格）。 */
+var _dmgNatSt={'攻击':1,'防御':2,'特攻':3,'特防':4,'速度':5};
+function dmgNatMul(nn,stIdx){
+  var arr=NATURES[nn];if(!arr)return 1;
+  for(var i=0;i<arr.length;i++){
+    var m=/^([+−-])(攻击|防御|特攻|特防|速度)/.exec(arr[i]);if(!m)continue;
+    if(_dmgNatSt[m[2]]===stIdx)return (m[1]==='+')?1.1:0.9;
+  }
+  return 1;
+}
+function dmgStatOf(base,ev,iv,stIdx,nn){
+  iv=(iv===undefined?31:iv);
+  return Math.floor((2*base+iv+Math.floor((ev||0)/4)+5)*dmgNatMul(nn,stIdx));
+}
+/* 衔接③：双 Mega/Redux 活性形态——持「XX进化石」时取 zh 以本种名开头且含「超级」的形态条目（P0 启发式，非配装态保持基础形态） */
+function megaFormOf(s,itemZh){
+  try{
+    if(!s||!/进化石/.test(String(itemZh||'')))return s;
+    var hit=null;
+    var suf=(/[XＸ]$/.test(itemZh))?'X':((/[YＹ]$/.test(itemZh))?'Y':((/[ZＺ]$/.test(itemZh))?'Z':''));   /* 联动：道具后缀Ｘ/Ｙ/Ｚ锁定形态（v4.89 P2残留补Ｚ支） */
+    ERDATA.species.forEach(function(x){if(!hit&&/超级/.test(x.zh)&&x.zh.indexOf(String(s.zh))>-1&&(!suf||x.zh.indexOf(suf)>-1))hit=x});
+    return hit||s;
+  }catch(e){return s}
+}
+/* 伤害核心：o={sA,sD,moveId,evA,evD,natA,natD,itemA,weather,crit}；返回 {lo,hi,eff,stab} */
+function dmgCalc(o){
+  var mv=ERDATA.moves[o.moveId];if(!mv||!(+mv[5]>0))return null;
+  var bp=+mv[5],mType=mv[3],isPhys=(mv[4]==='物理');
+  var sA=megaFormOf(o.sA,o.itemA),sD=o.sD;
+  var A=dmgStatOf(bstI(sA,isPhys?1:3),o.evA||0,31,isPhys?1:3,o.natA);
+  var D=dmgStatOf(bstI(sD,isPhys?2:4),o.evD||0,31,isPhys?2:4,o.natD);
+  var base=Math.floor(Math.floor(42*bp*A/D)/50)+2;
+  var mod=1;
+  var stab=(mType===sA.t1||mType===sA.t2);   /* STAB：本系或 -ate 转换后本系（ABI_ATE.stabConvert） */
+  if(!stab){try{var cv=convOf(sA);if(cv&&cv.to===mType)stab=ABI_ATE.stabConvert!==false}catch(e){}}
+  if(stab)mod*=1.5;
+  var eff=1;try{eff=defCellTrio(sD,mType,null).opt}catch(e){eff=1}   /* 克制×特性免疫/减半：唯一真值源 */
+  if(eff===0)return {lo:0,hi:0,eff:0,stab:stab};
+  mod*=eff;
+  if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
+  if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
+  /* v4.91 任务B：场地 boost 接线（WCONF.terrainBoost=1.3 考古定稿；薄雾=龙系减伤×0.5）。
+     沙/雪 在 ER 为防御向（WCONF 口径注释：无伤害档）→ MOD 不加乘，仅 UI 可选标注。 */
+  if(o.terrain==='电气'&&mType==='电')mod*=WCONF.terrainBoost;
+  if(o.terrain==='青草'&&mType==='草')mod*=WCONF.terrainBoost;
+  if(o.terrain==='精神'&&mType==='超能力')mod*=WCONF.terrainBoost;   /* v4.91 复核P2-1：ER 类型名=「超能力」（原误写「超能」死线） */
+  if(o.terrain==='薄雾'&&mType==='龙'&&sD&&(sD.t1==='龙'||sD.t2==='龙'))mod*=0.5;   /* v4.91 复核P2-2：ER 口径=龙系招仅对龙系守方×0.5 */
+  if(/生命宝珠/.test(o.itemA||''))mod*=1.3;
+  if(isPhys&&/讲究头带/.test(o.itemA||''))mod*=1.5;
+  if(!isPhys&&/讲究眼镜/.test(o.itemA||''))mod*=1.5;
+  if(o.crit)mod*=2;
+  return {lo:Math.floor(base*mod*0.85),hi:Math.floor(base*mod),eff:eff,stab:stab,base:base,mod:mod};
+}
+/* 反解：evA 从 0 按 4 步递增，首个 min-roll ≥ 对手HP 的 EV（OHKO 线） */
+/* v4.95 A：耐久反推——给定威胁(o)与存活次数 N，求最省 EV(HP+单防)。
+   算法：HP EV 升序(0..252 step4) 外层、单防 EV 升序内层；首个「hi-roll × N ≤ 当前 HP」组合即最省（HP 优先协调折线）。 */
+function surviveSolve(o,N){
+  N=N||1;
+  for(var evHp=0;evHp<=252;evHp+=4){
+    var hp=dmgStatOf(bstI(o.sD,0),evHp,31,0,'');
+    for(var evD=0;evD<=252;evD+=4){
+      var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:o.evA||0,evD:evD,natA:o.natA||'',natD:'',itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
+      if(!r)return null;
+      if(r.hi*N<=hp)return {hpEv:evHp,defEv:evD,tot:evHp+evD,hp:hp,dmgHi:r.hi,dmgLo:r.lo};
+    }
+  }
+  return null; /* 252/252 也扛不住 */
+}
+function ohkoSolveEv(o,hpD){
+  for(var ev=0;ev<=252;ev+=4){
+    var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
+    if(r&&r.lo>=hpD)return ev;
+  }
+  return -1;
+}
+/* 伤害判定面板：选择对手(搜索chips，禁下拉)、选择我方招式、天气/暴击/道具 chip、输出 min-max + OHKO 判定 + 反解 */
+function dmgDefQ(v){
+  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgDefList');if(el)el.innerHTML='';return}
+  var hits=[];ERDATA.species.forEach(function(x){if(hits.length<12&&String(x.zh).toLowerCase().indexOf(q)>-1)hits.push(x)});
+  $('dmgDefList').innerHTML=hits.map(function(x){
+    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\')">'+esc(x.zh)+'</span>'}).join('');
+}
+function dmgDefPick(id){__spdSl.defId=id;var el=$('dmgDefList');if(el)el.innerHTML='<span class="chipopt on">'+esc((speciesById(id)||{zh:'#'+id}).zh)+'</span>';dmgRender()}
+function dmgMvQ(v){
+  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgMvList');if(el)el.innerHTML='';return}
+  var real=mvAliasOf(String(v||'').trim());   /* v4.89 P3：旧译别名命中→按真实名搜索 */
+  if(real)q=real.toLowerCase();
+  var hits=[];for(var id in ERDATA.moves){var m=ERDATA.moves[id];if(+m[5]>0&&String(m[1]).toLowerCase().indexOf(q)>-1){hits.push(m);if(hits.length>=12)break}}
+  $('dmgMvList').innerHTML=hits.map(function(m){
+    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgMvPick(\''+m[0]+'\')">'+esc(m[1])+'('+m[5]+')</span>'}).join('');
+}
+function dmgMvPick(id){__spdSl.mvId=id;var el=$('dmgMvList');if(el)el.innerHTML='<span class="chipopt on">'+esc(anMvZh(id))+'</span>';dmgRender()}
+function dmgTgl(k){__spdSl[k]=!__spdSl[k];dmgRender()}
+function dmgSet(k,v){__spdSl[k]=v;dmgRender()}
+function dmgRender(){
+  var box=$('dmgOut');if(!box)return;
+  var sA=__spdSl.s;if(!sA){box.innerHTML='';return}
+  var sD=__spdSl.defId?speciesById(__spdSl.defId):null;
+  if(!sD||!__spdSl.mvId){box.innerHTML='<div style="font-size:10px;color:var(--sub)">选对手 + 选我方招式后出伤害范围与 OHKO 判定</div>';return}
+  var natA=__spdSl.natOv||'';
+  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit};
+  var r=dmgCalc(o);if(!r){box.innerHTML='<div style="font-size:10px;color:var(--warnred)">该招式无威力</div>';return}
+  var hpD=dmgStatOf(bstI(sD,0),0,31,0,'');
+  var verdict=r.lo>=hpD?'<span style="color:var(--ok)">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub)">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred)">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
+  var solve=ohkoSolveEv(o,hpD);
+  box.innerHTML='<div style="font-size:11px;margin:2px 0">'+esc(sA.zh)+' → '+esc(sD.zh)+'（HP '+hpD+'）'+
+    '<br>伤害 <b>'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+'）'+verdict+
+    '<br>'+(solve>=0
+      ?'达到 OHKO 最低攻端 EV = <b>'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
+      :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
+  /* v4.95 A：防守向反推（同输入面，反向解「扛 N 下」） */
+  var mv=ERDATA.moves[__spdSl.mvId];var phys=mv&&mv[4]==='物理';
+  var defLbl=phys?'物防':'特防';
+  var sv1=surviveSolve(o,1),sv2=surviveSolve(o,2);
+  function svTxt(sv,N){return sv?('扛'+N+'下：HP+'+sv.hpEv+' / '+defLbl+'+'+sv.defEv+'（耐久 HP '+sv.hp+' · 威胁 max '+sv.dmgHi+'）'):'扛'+N+'下：<span style="color:var(--warnred)">252/252 也必死</span>'}
+  box.innerHTML+='<div style="font-size:11px;margin:4px 0 2px;padding-top:3px;border-top:1px dashed var(--line)"><b>🛡 耐久反推</b>（'+defLbl+'向；min EV 约束）<br>'+svTxt(sv1,1)+'<br>'+svTxt(sv2,2)+
+    '<br><span style="color:var(--sub);font-size:10px">若需保留速度 252，则耐久档不可全取；防守性格(+'+defLbl+')可再降 EV。</span></div>';
+}
+function dmgApplySolve(ev){__spdSl.eAtk=ev;spdSliderRender()}
 /* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
 /* v4.81 P1：联防聚合热力卡（18 属性 × 全队承受倍率聚合，复用 defCellTrio 同源克制表；与②联防文字卡互补不重复） */
 function teamDefHeatHtml(R){
@@ -4159,7 +5381,15 @@ function teamSpeedCardHtml(){
     var q=speedPctiles();
     var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
     var mn=arr[0],mx=arr[arr.length-1],span=(mx-mn)||1;
-    var tm=(typeof team!=='undefined'&&team)?team.filter(function(x){return x&&isValidSp(x)}):[];
+    /* v4.87 BUG-1 修复：改吃 anLastR.members（当前配置来源的队伍），不再直读全局 team[]——
+       manual 源用 scratch 列表不碰 team[]（原实现张冠李戴 sav 旧队数据）；sav 源同样走 R 不依赖 team[] 被覆写。
+       兜底：anLastR 无成员时回退全局 team[]（myCoreTeam 等非分析页调用路径，行为不变）。 */
+    var tm=[];
+    try{
+      var _mem=(typeof anLastR!=='undefined'&&anLastR&&anLastR.members)?anLastR.members:null;
+      if(_mem&&_mem.length)_mem.forEach(function(m){var s=null;try{s=speciesById(m.id)}catch(e){}if(s&&s.base)tm.push(s)});
+    }catch(eTm){}
+    if(!tm.length&&(typeof team!=='undefined'&&team))tm=team.filter(function(x){return x&&isValidSp(x)});
     if(!tm.length)return '';
     function pos(v){return Math.round((v-mn)*100/span)}
     var rowsH='',fast=0,mid=0,slow=0,best=null;
@@ -4191,9 +5421,22 @@ function _spdBadge(p){   /* v4.72 P3：分位徽标（与 speedPctileRankOf 同�
 function speedRenderTable(){
   var q=speedPctiles();
   var qv=(document.getElementById('spdSearch')&&document.getElementById('spdSearch').value||'').trim().toLowerCase();
+  var f=window._spdFilter||{};
   var rows=ERDATA.species.filter(function(s){
     if(!qv)return true;
     return (''+s.zh).toLowerCase().indexOf(qv)>-1||(''+s.en).toLowerCase().indexOf(qv)>-1||(''+s.id).indexOf(qv)>-1;
+  }).filter(function(s){
+    if(f.pct){var mx=spdMaxOf(s); /* v4.94 A：分位区间 chip 筛选 */
+      if(f.pct==='p90+'&&mx<q.P90)return false;
+      if(f.pct==='p75'&&!(mx>=q.P75&&mx<q.P90))return false;
+      if(f.pct==='p50'&&!(mx>=q.P50&&mx<q.P75))return false;
+      if(f.pct==='p50-'&&mx>=q.P50)return false;}
+    if(f.role){var r=speedRole(s); /* v4.94 A：定位 chip 筛选（速攻/空间/清场） */
+      if(f.role==='fast'&&r!=='fast')return false;
+      if(f.role==='space'&&r!=='space')return false;
+      if(f.role==='clear'&&r!=='clear')return false;}
+    if(f.type&&!(isType(s,f.type)))return false; /* v4.94 A：属性 chip 筛选 */
+    return true;
   });
   var sort=window._spdSort||'maxdesc';
   rows.sort(function(a,b){
@@ -4223,23 +5466,41 @@ function speedRenderTable(){
 function speedRefreshTable(){var b=document.getElementById('spdTableBox');if(b)b.innerHTML=speedRenderTable()}
 var _spdDbt=null;
 function speedOnSearch(){clearTimeout(_spdDbt);_spdDbt=setTimeout(speedRefreshTable,150)}   /* v4.72 P2③：150ms 防抖 */
-function speedSetN(n){window._spdN=n;speedRefreshTable()}
-function speedSetSort(v){window._spdSort=v;speedRefreshTable()}
-function speedRender(){try{var q=speedPctiles();
+function speedSetN(n){window._spdN=n;speedRender(true)}
+function speedSetSort(v){window._spdSort=v;speedRender(true)}
+/* v4.94 A：chip 筛选切换（同 chip 再点=取消；整页重渲染同步 active 样式） */
+function speedToggleFilter(k,v){window._spdFilter=window._spdFilter||{};if(window._spdFilter[k]===v)delete window._spdFilter[k];else window._spdFilter[k]=v;speedRender(true)}
+function speedRender(){if(!window.__erReady||!ERDATA.species||!ERDATA.species.length){var _sb=document.getElementById('speedBox');if(_sb)_sb.innerHTML='<div class="tip">数据加载中…</div>';return}try{var q=speedPctiles();
   var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
   h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
   h+=speedDistBarHtml(); /* v4.69 P3：全库速度分布条（P50/75/90/95/99 切点静态标注） */
   h+='<div class="tip">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div>';
   h+='<div class="bar" style="margin-top:8px;flex-wrap:wrap;gap:6px"><input type="text" id="spdSearch" placeholder="搜索物种/编号，如 皮卡丘 / 25" oninput="speedOnSearch()" style="flex:1;min-width:160px">';
-  h+='<label style="font-size:12px;color:var(--sub)">排序 <select id="spdSortSel" onchange="speedSetSort(this.value)" style="font-size:12px"><option value="maxdesc" selected>极速降序</option><option value="maxasc">极速升序(慢端/空间手)</option><option value="fulldesc">满速降序</option><option value="zerodesc">0努力降序</option><option value="idasc">编号升序</option></select></label>';
-  h+='<label style="font-size:12px;color:var(--sub)">前 <select id="spdNSel" onchange="speedSetN(this.value)" style="font-size:12px"><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="400" selected>400</option><option value="all">全部</option></select></label></div>';
+  /* v4.94 A：排序 chip 组（替换旧下拉，禁下拉硬规则；点击切换↑/↓，active 高亮） */
+  var sorts=[['maxdesc','极速↓'],['maxasc','极速↑'],['fulldesc','满速↓'],['zerodesc','0努力↓'],['idasc','编号']];
+  h+='<span style="font-size:12px;color:var(--sub)">排序</span>';
+  sorts.forEach(function(x){var act=(window._spdSort||'maxdesc')===x[0];h+='<button class="btn-mini" style="font-size:11px;'+(act?'background:var(--accent);color:#fff':'')+'" onclick="speedSetSort(\''+x[0]+'\')">'+x[1]+'</button>'});
+  /* v4.94 A：前N chip（替换旧下拉） */
+  h+='<span style="font-size:12px;color:var(--sub)">前</span>';
+  ['50','100','200','400','all'].forEach(function(n){var act=(String(window._spdN||'400'))===n;h+='<button class="btn-mini" style="font-size:11px;'+(act?'background:var(--accent);color:#fff':'')+'" onclick="speedSetN(\''+n+'\')">'+(n==='all'?'全部':n)+'</button>'});
+  /* v4.94 A：分位/定位/属性 chip 筛选行（flex-wrap，375px 自动换行无横溢） */
+  var f=window._spdFilter||{};
+  function ch(k,v,txt){var act=f[k]===v;return '<button class="btn-mini" style="font-size:11px;'+(act?'background:var(--ok,#2e7d32);color:#fff':'')+'" onclick="speedToggleFilter(\''+k+'\',\''+v+'\')">'+txt+'</button>'}
+  h+='<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px;align-items:center">';
+  h+='<span style="font-size:11px;color:var(--sub)">分位</span>'+ch('pct','p90+','P90+')+ch('pct','p75','P75-90')+ch('pct','p50','P50-75')+ch('pct','p50-','&lt;P50');
+  h+='<span style="font-size:11px;color:var(--sub);margin-left:6px">定位</span>'+ch('role','fast','速攻')+ch('role','space','空间')+ch('role','clear','清场');
+  h+='</div>';
+  h+='<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px;align-items:center">';
+  h+='<span style="font-size:11px;color:var(--sub)">属性</span>';
+  ['一般','火','水','草','电','冰','格斗','毒','地面','飞行','超能力','虫','岩石','幽灵','龙','钢','恶','妖精'].forEach(function(t){h+=ch('type',t,t)});
+  h+='</div></div>';
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
   var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
-  /* v4.68 黑盒P1-2：全库表懒渲染——仅在速度线 Tab 首次打开时构建400行，避免 DOMContentLoaded/开卡阻塞 */
-  window._speedTableBuilt=false;
+  if(arguments[0]===true){ /* chip/排序/前N 触发：整页重渲染后立即填表格 */ speedRefreshTable();window._speedTableBuilt=true }
+  else{ /* v4.68 黑盒P1-2 懒渲染：DOMContentLoaded 仅建壳，首次开 Tab 才建 400 行 */ window._speedTableBuilt=false }
  }catch(e){var el=document.getElementById('speedBox');if(el)el.innerHTML='<div class="tip">速度线计算失败：'+e.message+'</div>'}}
-function speedEnsureTable(){if(window._speedTableBuilt)return;var b=document.getElementById('spdTableBox');if(!b)return;speedRefreshTable();window._speedTableBuilt=true}
+function speedEnsureTable(){var b=document.getElementById('spdTableBox');if(!b)return;try{speedRefreshTable()}catch(e){}}
 /* 配速提示按物种 id 缓存（黑盒P1-2：开卡热路径零重算） */
 var _speedHintCache={};
 function speedHintHtmlCached(s){var k=(s&&s.id)||'';if(_speedHintCache[k]==null){try{_speedHintCache[k]=speedHintHtml(s)}catch(e){_speedHintCache[k]=''}}return _speedHintCache[k]}
@@ -8327,7 +9588,7 @@ function threatPriorLine(){
   THREAT_LIB.forEach(function(t){t.prior=ln;t.priorSrc=src||'none'})})();
 var RESIST_BERRY={'火':105,'水':106,'电':107,'草':108,'冰':109,'格斗':110,'毒':111,'地面':112,'飞行':113,'超能':114,'虫':115,'岩石':116,'幽灵':117,'龙':118,'恶':119,'钢':120,'妖精':122,'一般':121};
 var _thrMemo={},_spAllMemo=null,_medSpeMemo=null;
-function spAll(){if(!_spAllMemo)_spAllMemo=ERDATA.species.filter(function(x){return isValidSp(x)});return _spAllMemo}
+function spAll(){if(!ERDATA.species||!ERDATA.species.length)return [];if(!_spAllMemo)_spAllMemo=ERDATA.species.filter(function(x){return isValidSp(x)});return _spAllMemo}
 function medSpe(){if(_medSpeMemo===null){var a=spAll().map(function(x){return x.base[5]}).sort(function(x,y){return x-y});_medSpeMemo=a[Math.floor(a.length/2)]||80}return _medSpeMemo}
 /* 可学某类招者的占比（代理口径：无使用率数据） */
 function thrFrac(ids){
@@ -12571,7 +13832,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.84';
+var ER_ENGINE_VER='v4.104';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -12900,6 +14161,7 @@ function oneLiner(bd){
   return bits.join('，')+'。';
 }
 function renderCore(s){
+  if(!window.__erReady){var _co=document.getElementById('coreOut');if(_co)_co.innerHTML='<div class="tip">数据加载中…</div>';return}
   if(!s){$('coreOut').innerHTML='<div class="tip">先在上方搜索并选定一只核心宝可梦</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   if(!isValidSp(s)){$('coreOut').innerHTML='<div class="tip">该编号为占位/无效物种（种族值六项为 0），已过滤、不参与配队推荐。</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   var _ftC={};
@@ -12997,6 +14259,7 @@ function renderCore(s){
       ' <span class="bigsub">'+esc(bd.side)+'向 · 推荐特性 '+esc(bSet)+'</span>'+
       '<span class="oltext">'+esc(oneLiner(bd))+'</span>'+
       ((bd&&bd.warn)?' <span class="badge badge-warnimm">注意 '+esc(bd.warn)+'</span>':'')+'</summary>';
+    html+=roleCard5Html(s,bd,null);   /* v4.91 复核P2-3：核心配队 Tab 流派卡同接五段式（行内短述=上方 oltext，展开=完整五段） */
     /* ② 设计亮点 1–3 条 + 机制溯源（可展开） */
     var bs=basisList(bd);
     html+='<div class="fld"><div class="fhd"><span class="fno">2</span>设计亮点</div>';
@@ -13266,7 +14529,9 @@ function selectCore(id){
   renderCore(s);
   corePhase('detail');
 }
-(function(){
+function _initCoreList(){
+  if(window._coreListInit)return;window._coreListInit=true;
+  (function(){
   var coreFilter={types:{}},coreRoleCache={};
   function coreRoleOf(s){var k=''+s.id;if(!coreRoleCache[k])coreRoleCache[k]=coreRole(s).role;return coreRoleCache[k]}
   function renderCoreTypes(){
@@ -13359,6 +14624,8 @@ function selectCore(id){
   renderCoreTypes();
   draw();
 })();
+}
+if(window.__erReady){_initCoreList()}else{document.addEventListener('er-ready',function(){setTimeout(_initCoreList,100)})}
 /* ============ 规格 v1.0 初始化：机制口径折叠块 + ER 提示文案（全部读 WCONF） ============ */
 function wxRuleRefHtml(){return '<div class="ruleline">📐 机制数值（参数 ↔ 当前值）：完整表在「核心配队」页统一展示（同一份内容不再三处重复）。<button class="btn-mini" style="margin-left:8px" onclick="gotoRule()">查看机制数值</button></div>'}
 function gotoRule(){switchTab('core');var e=$('ruleBoxCore');if(!e)return;var d=e.querySelector?e.querySelector('details'):null;if(d)d.open=true;if(e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'})}
