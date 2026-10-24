@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.101</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.102</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3646,11 +3646,11 @@ function teamQA(){
   var dupIt=Object.keys(itCount).filter(function(k){return itCount[k]>=2});
   if(dupIt.length)warns.push({icon:'⚠',label:'重复道具 ×'+dupIt.length,detail:dupIt.join('、')});
   /* ③ 无除钉 */
-  var REMOVAL=['高速旋转','清除浓雾','龙尾','旋灭裂空','除雪'];
+  var REMOVAL=['高速旋转','清除浓雾','龙尾']; /* v4.102 对齐 data.js 真名：旋灭裂空/除雪 无对应招式已移除 */
   var hasRemoval=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){return REMOVAL.indexOf(m)>-1})});
   if(!hasRemoval)warns.push({icon:'⚠',label:'全队无除钉招式',detail:'建议带高速旋转/清除浓雾等除钉招式应对场地钉子'});
   /* ④ 无回复 */
-  var RECOVER=['羽栖','许愿','睡眠','生蛋','自我再生','鸟栖'];
+  var RECOVER=['羽栖','祈愿','睡觉','生蛋','自我再生','月光']; /* v4.102 对齐 data.js 真名：许愿→祈愿/睡眠→睡觉/鸟栖→羽栖 移除/新增月光 */
   var hasRec=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){return RECOVER.indexOf(m)>-1})});
   if(!hasRec)warns.push({icon:'⚠',label:'全队无回复招式',detail:'建议带羽栖/许愿/再生力特性等回复手段'});
   if(!warns.length)return '';
@@ -3714,7 +3714,7 @@ function smartSuggest(){
   var cand=pool.map(function(s){
     var why='';
     try{var sp=spdMaxOf(s)}catch(e){sp=0}
-    if(d.spdGap&&sp>d.mx){why='补速线：队伍极速 '+d.mx+' 低于 P75（'+d.q.P75+'）；推荐 '+s.zh+' 极速 '+sp+' 可压该段';return {s:s,why:why,val:sp}}
+    if(d.spdGap&&sp>d.mx){why='补速线：队伍极速 '+d.mx+' 低于 P75（'+d.q.P75+'）；推荐 '+s.zh+' 极速 '+sp+' 可压该段';if(d.noResistWeak.length)why+='；同时可联防 '+d.noResistWeak.join('/');return {s:s,why:why,val:sp}}
     if(d.noResistWeak.length){
       var at=d.noResistWeak[0];
       try{var c=defCellTrio(s,at).inn;if(c<=0.5){why='补联防：队伍 4 倍弱 '+at+' 且无人联防；推荐 '+s.zh+' 对 '+at+' 耐受力 '+c+'×';return {s:s,why:why,val:(1-c)}}}catch(e){}
@@ -13722,7 +13722,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.101';
+var ER_ENGINE_VER='v4.102';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
