@@ -1681,3 +1681,27 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.104=index 4119E5AACB579055 1,486,725B
 - 部署 master 11d10c58/gh-pages 67b0dde
+
+## v4.105 挖掘4项落地（2026-10-25）
+
+### 引入项
+- 防守方载入：NPC_TEAM_SAMPLES 2队×4特性 + SAV_ROWS 中文键适配（名字/道具/特性）
+- 伤害面板容器补建：v4.89 起 12 版 UI 缺失真 bug 修复（dmgOut/dmgDefList/dmgMvList + 攻方入口 dmgAtkPick + 16段分布/KO概率呈现）
+- EV 迷你横条：六段 EV/总EV 口径
+- 配速反推：Gen3 公式与滑块同算法（baseSpd 种族值输入）
+- 收藏星标：toggleFav/isFav localStorage + ★已收藏筛选开关
+- 速度线执行链修复：switchTab('speed') → speedRender(true)
+
+### 重大发现与教训
+- 伤害判定 UI 面板 v4.89 起 12 版从未存在（纯黑盒 12 版报「不渲染」被误归因环境误报=真 bug——方法论：渲染类持续缺失不得归因环境，须查 HTML 容器存在性）
+- 服务目录错位致复验旧版误报（残留 http.server 进程占端口服务旧目录——实施流程内建服务目录一致性检查）
+- 技术黑盒本轮浅测局限（多次复验只报渲染链单点）——三线配合调整为引擎 node 断言+纯黑盒交互为主
+
+### 三线
+- P0 防守方/配速/收藏/EV/伤害输出 node 层 PASS；UI 完整点选=黑盒自动化限制登记玩家手动验证
+- 引擎 N1=N2/hunk 零回归/分片一致
+- 纯黑盒 面板首现+载入成功+console 0+观感 93
+
+### 版本链
+- v4.105=index FCD420AFF0E7E351 1,493,162B
+- 部署 master 9fa875b7/gh-pages 73e66ade
