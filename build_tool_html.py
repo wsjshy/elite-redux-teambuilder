@@ -458,6 +458,7 @@ details.big[open]>summary::before{content:"▾ "}
 .mxc .mcspr,.mxc .spmid,.mxc .spsp{width:40px; height:40px; margin:0 auto}
 .spthumb .mcspr{width:26px; height:26px}
 .slothead .spinl .spsp{width:28px; height:28px}
+#savPcList .spsp{width:48px; height:48px} /* v4.93 P2-1：电脑区清单行精灵尺寸（否则 0×0 不渲染） */
 .spmiss{background:#eceff3;position:relative}
 /* v4.84 P1-2：spmiss 缺图占位升级——灰底+形态名文字（非裸空白；小尺寸容器下 overflow 截断不破版） */
 .spmiss .sphint{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:8px;line-height:1.15;color:#90a4ae;padding:1px;overflow:hidden;word-break:break-all}
@@ -818,7 +819,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.92</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.93</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4230,6 +4231,64 @@ function rowsToCsv(rows){if(!rows.length)return '';var cols=Object.keys(rows[0])
 var lastSavCsv='';
 /* v4.92 D-3：队伍明细行点击就地展开/收起（无弹窗/无抽屉） */
 function savRowToggle(el){var d=el.nextElementSibling;if(!d||d.className.indexOf('savrowdet')<0)return;var open=d.style.display==='none';d.style.display=open?'block':'none';var c=el.querySelector('.savrowcaret');if(c)c.textContent=open?'▾':'▸'}
+/* v4.93 D-6：电脑区清单渲染/搜索/入队/满队槽位替换 */
+function savPcRowHtml(r,rowIdx){
+  var isBox=/^BOX/.test(r.来源);
+  var btn=isBox?'<button class="btn-mini" onclick="savPcEnqueue('+rowIdx+')" style="margin-left:4px">＋入队</button>':'';
+  return '<div style="padding:3px 4px;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:center;font-size:12px">'+
+    sprEl('span',r.图鉴编号,'spsp')+
+    '<span style="flex:1;min-width:0"><span style="color:var(--accent);cursor:pointer" onclick="openSpById(\''+r.图鉴编号+'\')">'+esc(r.宝可梦)+'</span> '+
+    '<span class="dim">'+esc(r.来源)+' '+esc(r.位置)+' · Lv'+esc(String(r.等级||''))+' · '+esc(r.性格||'—')+'</span></span>'+btn+'</div>';
+}
+function savPcListRender(rows){
+  var boxN=rows.filter(function(x){return /^BOX/.test(x.r.来源)});
+  var h='';
+  var spcN=rows.filter(function(x){return x.r.来源.indexOf('特殊区')===0});
+  if(boxN.length)h+='<div class="dim" style="font-size:11px;padding:2px 4px">电脑区（'+boxN.length+'，点＋入队）</div>'+boxN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
+  if(spcN.length)h+='<div class="dim" style="font-size:11px;padding:4px 4px 2px">特殊区（仅展示，不可入队）</div>'+spcN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
+  if(!h)h='<div class="dim" style="padding:6px">无匹配</div>';
+  var el=$('savPcList');if(el)el.innerHTML=h;
+}
+var _pcSearchT=null;
+function savPcSearch(){
+  var q=($('savPcQ')?$('savPcQ').value:'').trim();
+  if(_pcSearchT)clearTimeout(_pcSearchT);
+  _pcSearchT=setTimeout(function(){
+    var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[];
+    var pool=rows.map(function(r,i){return {r:r,i:i}}).filter(function(x){return /^BOX/.test(x.r.来源)||x.r.来源.indexOf('特殊区')===0});
+    if(!q){savPcListRender(pool.filter(function(x){return x.r.来源==='BOX1'}).slice(0,12));return} /* 空搜：BOX1 前 12 兜底 */
+    var m=pool.filter(function(x){return (x.r.宝可梦||'').indexOf(q)>-1||(x.r.英文名||'').toLowerCase().indexOf(q.toLowerCase())>-1});
+    savPcListRender(m.slice(0,60));
+  },150);
+}
+var _pcSlotQ=null;
+function savPcEnqueue(idx){
+  var r=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS[idx]:null;if(!r)return;
+  var s=speciesById(r.图鉴编号);if(!s){toast('未知物种 #'+r.图鉴编号);return}
+  var info=savRowToInfo(r);
+  if(team.length>=6){savPcSlotPick(s,info);return}
+  if(team.indexOf(s)>-1)toast('「'+s.zh+'」已在队伍：新个体实配将覆盖原实配'); /* 同号不同个体：允许入队，teamInfo 按 id 键覆盖 */
+  team.push(s);teamInfo[s.id]=info;renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('已入队：'+s.zh+'（'+team.length+'/6）');
+}
+function savPcSlotPick(s,info){
+  _pcSlotQ={s:s,info:info};
+  var h='<div id="savSlotPick" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">'+
+    '<div style="background:var(--card,#fff);border:1px solid var(--line);border-radius:8px;padding:14px;max-width:min(92vw,520px);width:100%;box-sizing:border-box">'+ /* v4.93 P2-2：375px 视口不横溢 */
+    '<div style="font-weight:600;margin-bottom:8px">队伍已满 6 只，用「'+esc(s.zh)+'」替换：</div><div style="display:flex;flex-wrap:wrap;gap:4px">';
+  team.forEach(function(t,i){h+='<button class="btn-mini" onclick="savPcDoReplace('+i+')">'+(i+1)+'. '+esc(t.zh)+'</button>'});
+  h+='<div style="margin-top:8px"><button class="btn-mini" onclick="savPcCancelReplace()">取消</button></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',h);
+}
+function savPcDoReplace(i){
+  var old=team[i];team.splice(i,1);delete teamInfo[old.id];
+  var q=_pcSlotQ;_pcSlotQ=null;
+  team.push(q.s);teamInfo[q.s.id]=q.info;
+  var o=$('savSlotPick');if(o)o.remove();
+  renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('已替换：'+old.zh+' → '+q.s.zh);
+}
+function savPcCancelReplace(){var o=$('savSlotPick');if(o)o.remove();_pcSlotQ=null}
 function parseSavFile(input){
   var f=input.files&&input.files[0];if(!f)return;
   var rd=new FileReader();
@@ -4263,14 +4322,20 @@ function parseSavFile(input){
           '</div>';
       });
       _tbl+='</div></div>';
+      /* v4.93 D-6：电脑区清单（搜索驱动 C + 空搜 BOX1 前12兜底 A；BOX 行可＋入队，特殊区仅展示） */
+      var _pcHtml='<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:6px">'+
+        '<div style="font-size:13px;font-weight:600">📦 电脑区清单（'+res.summary.pc+' 只 · 搜物种名过滤 · 空搜显示 BOX1 前 12）</div>'+
+        '<input id="savPcQ" type="text" placeholder="搜索物种名（如：喷火龙）" style="width:100%;box-sizing:border-box;padding:4px 6px;font-size:12px;margin:4px 0;border:1px solid var(--line);border-radius:6px" oninput="savPcSearch()">'+
+        '<div id="savPcList" style="max-height:300px;overflow-y:auto"></div></div>';
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
         '<div style="font-size:13px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+
         '<div style="margin:4px 0">锚点：'+(res.summary.anchorsOk.length?res.summary.anchorsOk.map(function(a){return '<span style="color:#2e7d32">✓ '+esc(a)+'</span>'}).join(' '):'')+(res.summary.anchorsFail.length?' <span style="color:var(--warnred)">✗ '+esc(res.summary.anchorsFail.join('；'))+'</span>':'')+'</div>'+
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
-        ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+'</div>';
+        ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+_pcHtml+'</div>';
       $('savParseOut').innerHTML=html;
       autoImportParty(res);
       SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
+      savPcSearch(); /* v4.93 D-6：默认渲染 BOX1 前 12 兜底 */
     }catch(e){toast('解析失败: '+e.message)}
   };
   rd.readAsArrayBuffer(f);
@@ -4284,6 +4349,13 @@ function clearTeamForImport(){
   if(n){team.length=0;Object.keys(teamInfo).forEach(function(k){delete teamInfo[k]})}
   return n;
 }
+/* v4.93 D-6：row → 实配 info 公共构造（autoImportParty 与电脑区入队共用，零行为差异） */
+function savRowToInfo(r){
+  var info={fromSave:true,item:r.道具,moves:[],pps:[]};
+  [r.招式1,r.招式2,r.招式3,r['招式4(末招)']].forEach(function(n){info.moves.push(String(n||'').replace(/\(id=\d+\)$/,''))});
+  [r.PP1,r.PP2,r.PP3,r.PP4].forEach(function(p){info.pps.push(p)});
+  return info;
+}
 function autoImportParty(res){
   var cleared=clearTeamForImport(),added=0;
   res.rows.forEach(function(r){
@@ -4291,10 +4363,7 @@ function autoImportParty(res){
     var s=speciesById(r.图鉴编号);if(!s)return;
     if(team.indexOf(s)>-1)return;
     if(team.length>=6)return;
-    var info={fromSave:true,item:r.道具,moves:[],pps:[]};
-    [r.招式1,r.招式2,r.招式3,r['招式4(末招)']].forEach(function(n){info.moves.push(String(n||'').replace(/\(id=\d+\)$/,''))});
-    [r.PP1,r.PP2,r.PP3,r.PP4].forEach(function(p){info.pps.push(p)});
-    addToTeam(s,info);added++;
+    addToTeam(s,savRowToInfo(r));added++;
   });
   if(added){renderTm(true);renderSlots();renderAnalyze()}
   var note=$('savImpNote');
@@ -13480,7 +13549,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.92';
+var ER_ENGINE_VER='v4.93';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
