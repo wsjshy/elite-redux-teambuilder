@@ -819,7 +819,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.95</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.96</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -933,8 +933,9 @@ details.inline,.details.inline{cursor:pointer}
     <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
     <button class="btn" onclick="toggleCsvPanel()">📥 粘贴 CSV</button>
-    <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.95：随机生成 6 只队伍（默认排除 BST≥580 传说/幻兽档）">🎲 随机队</button>
+    <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.96：随机生成 6 只队伍">🎲 随机队</button>
     <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:11px">传说档:关</button>
+    <button class="btn-mini" onclick="window._randMode=(window._randMode==='template'?'pure':'template');toast(window._randMode==='template'?'随机队：官方模板模式':'随机队：纯随机模式')" id="randModeBtn" style="font-size:11px">模板:开</button>
   </div>
   <div class="sec" style="margin:6px 0">
     <div class="tmfilter">
@@ -3761,8 +3762,17 @@ function renderSlots(){
   $('tmCount').textContent=team.length;
   $('tmSlots').innerHTML=html;
 }
-/* ============ v4.95 B：随机队池（娱乐/测试向；生成后直接进入既有队伍渲染/分析链路） ============ */
+/* ============ v4.96：Showdown 官方模板 sets 懒加载（assets/showdown_sets_v496.json，独立 json 不进首屏） ============ */
+function loadShowdownSets(cb){
+  if(window._SH_CACHE!==undefined){cb(window._SH_CACHE);return}
+  fetch('assets/showdown_sets_v496.json').then(function(r){return r.json()}).then(function(j){window._SH_CACHE=j;cb(j)}).catch(function(){window._SH_CACHE=null;cb(null)});
+}
+/* ============ v4.95 B：随机队池（娱乐/测试向；v4.96 增加官方模板模式） ============ */
 function randomTeamGen(){
+  loadShowdownSets(function(sets){ randomTeamGenImpl(sets) });
+}
+function randomTeamGenImpl(sets){
+  var mode=(window._randMode==='pure')?'pure':'template';
   var allowL=!!window._randLegends;
   /* 池：有效物种；默认排除 BST≥580（传说/幻兽/高准神档），开关允许 */
   var pool=ERDATA.species.filter(function(s){
@@ -3773,6 +3783,16 @@ function randomTeamGen(){
   });
   clearTeamForImport();
   var picked=[];
+  /* 模板模式：优先从有官方 sets 的物种取；sets 加载失败=整体回退纯随机 */
+  if(mode==='template'&&sets){
+    var keys=Object.keys(sets).filter(function(zh){return pool.find(function(s){return s.zh===zh})});
+    while(picked.length<6&&keys.length){
+      var zh=keys[Math.floor(Math.random()*keys.length)];
+      var sp=pool.find(function(s){return s.zh===zh});
+      if(sp&&picked.indexOf(sp)<0)picked.push(sp);
+      keys.splice(keys.indexOf(zh),1);
+    }
+  }
   while(picked.length<6&&pool.length){
     var sp=pool[Math.floor(Math.random()*pool.length)];
     if(picked.indexOf(sp)<0)picked.push(sp);
@@ -3780,14 +3800,24 @@ function randomTeamGen(){
   var nats=Object.keys(NATURES);
   picked.forEach(function(s){
     var nat=nats[Math.floor(Math.random()*nats.length)];
-    /* 招式：从可学池取样 4 个有威力招，同队物种不重复 */
-    var mvIds=[];for(var id in learnOf(s)){var m=ERDATA.moves[id];if(m&&+m[5]>0)mvIds.push(id)}
-    var moves=[];for(var k=0;k<4&&mvIds.length;k++){var j=Math.floor(Math.random()*mvIds.length);moves.push(mvIds.splice(j,1)[0])}
-    var mnames=moves.map(function(id){var m=ERDATA.moves[id];return m?m[1]:''});
-    team.push(s);teamInfo[s.id]={fromSave:false,nature:nat,moves:mnames,pps:moves.map(function(){return 16})};
+    var mnames=[],mids=[];
+    var useTpl=(mode==='template'&&sets&&sets[s.zh]);
+    if(useTpl){
+      /* 官方模板：从该种随机一个 role 的 moves 池取 4 个（已映射为中文名） */
+      var role=sets[s.zh].sets[Math.floor(Math.random()*sets[s.zh].sets.length)];
+      var poolM=role.moves.slice();
+      for(var k=0;k<4&&poolM.length;k++){var j=Math.floor(Math.random()*poolM.length);mnames.push(poolM.splice(j,1)[0])}
+    }
+    if(mnames.length<4){
+      /* 回退：可学池随机 4 个有威力招 */
+      var mvIds=[];for(var id in learnOf(s)){var m=ERDATA.moves[id];if(m&&+m[5]>0)mvIds.push(id)}
+      for(var k=mnames.length;k<4&&mvIds.length;k++){var j=Math.floor(Math.random()*mvIds.length);var id=mvIds.splice(j,1)[0];mnames.push(ERDATA.moves[id][1]);mids.push(+id)}
+    }
+    var pps=mnames.map(function(){return 16});
+    team.push(s);teamInfo[s.id]={fromSave:false,nature:nat,moves:mnames,pps:pps};
   });
   renderTm(true);renderSlots();renderAnalyze();saveTeam();
-  toast('🎲 随机队已生成 6 只'+(allowL?'（含传说档）':'（排除 BST≥580）'));
+  toast('🎲 随机队已生成 6 只['+(mode==='template'?(sets?'官方模板':'模板加载失败→纯随机'):'纯随机')+']'+(allowL?'（含传说档）':'（排除 BST≥580）'));
 }
 /* ============ v4.94 B：队伍分享卡（Canvas 16:9，零外部依赖；精灵图跨域失败=纯文本卡兜底） ============ */
 function shareCardOpen(){
@@ -13689,7 +13719,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.95';
+var ER_ENGINE_VER='v4.96';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
