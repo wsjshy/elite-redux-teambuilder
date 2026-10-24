@@ -623,12 +623,27 @@ details.inline,.details.inline{cursor:pointer}
 }
 .slot{padding:6px 8px;margin-bottom:6px}
 .tab{padding:10px 12px}
+
+/* v4.101 队检 chip 行 */
+.qa-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;cursor:pointer;margin:2px}
+.qa-chip:hover{background:#ffe0b2}
+.qa-detail{padding:4px 8px;font-size:11px;color:var(--sub);display:none}
+.qa-detail.open{display:block}
+/* v4.101 速度线分位染色 */
+.spd-p50{background:rgba(0,0,0,.03)}
+.spd-p50-75{background:rgba(21,101,192,.06)}
+.spd-p75-90{background:rgba(21,101,192,.12)}
+.spd-p90-99{background:rgba(21,101,192,.2)}
+.spd-p99{background:rgba(21,101,192,.3);font-weight:600}
+/* v4.101 迷你联防条 */
+.mini-def{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+.mini-def span{padding:2px 6px;border-radius:6px;font-size:10px;background:#fce4ec;color:#c62828}
 </style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.100</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.101</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3611,6 +3626,59 @@ function renderSlots(){
   $('tmCount').textContent=team.length;
   $('tmSlots').innerHTML=html;
 }
+
+/* v4.101 队检 chip 展开 */
+function qaToggle(el){
+  var i=el.getAttribute('data-idx');
+  var d=document.getElementById('qa-d'+i);
+  if(d)d.classList.toggle('open');
+}
+/* v4.101 队检聚合告警 */
+function teamQA(){
+  if(!window.__erReady)return '';
+  var warns=[];
+  /* ① 重复物种 */
+  var spCount={};team.forEach(function(s){spCount[s.id]=(spCount[s.id]||0)+1});
+  var dupSp=Object.keys(spCount).filter(function(k){return spCount[k]>=2});
+  if(dupSp.length)warns.push({icon:'⚠',label:'重复物种 ×'+dupSp.length,detail:dupSp.map(function(id){var s=ERDATA.species.filter(function(x){return x.id==id})[0];return s?s.zh:id}).join('、')});
+  /* ② 重复道具 */
+  var itCount={};team.forEach(function(s){var it=teamInfo[s.id]&&teamInfo[s.id].item;if(it)itCount[it]=(itCount[it]||0)+1});
+  var dupIt=Object.keys(itCount).filter(function(k){return itCount[k]>=2});
+  if(dupIt.length)warns.push({icon:'⚠',label:'重复道具 ×'+dupIt.length,detail:dupIt.join('、')});
+  /* ③ 无除钉 */
+  var REMOVAL=['高速旋转','清除浓雾','龙尾','旋灭裂空','除雪'];
+  var hasRemoval=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){return REMOVAL.indexOf(m)>-1})});
+  if(!hasRemoval)warns.push({icon:'⚠',label:'全队无除钉招式',detail:'建议带高速旋转/清除浓雾等除钉招式应对场地钉子'});
+  /* ④ 无回复 */
+  var RECOVER=['羽栖','许愿','睡眠','生蛋','自我再生','鸟栖'];
+  var hasRec=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){return RECOVER.indexOf(m)>-1})});
+  if(!hasRec)warns.push({icon:'⚠',label:'全队无回复招式',detail:'建议带羽栖/许愿/再生力特性等回复手段'});
+  if(!warns.length)return '';
+  var h='<div style="margin:6px 0;padding:6px;border:1px solid #ffcc80;border-radius:8px;background:#fff8e1">';
+  h+='<div style="font-size:11px;font-weight:600;margin-bottom:4px">队检告警</div><div>';
+  warns.forEach(function(w,i){
+    h+='<span class="qa-chip" data-idx="'+i+'" onclick="qaToggle(this)">'+w.icon+' '+w.label+'</span>';
+  });
+  h+='</div>';
+  warns.forEach(function(w,i){
+    h+='<div class="qa-detail" id="qa-d'+i+'">'+w.detail+'</div>';
+  });
+  h+='</div>';
+  return h;
+}
+/* v4.101 迷你联防条 */
+function miniDefBar(){
+  if(!window.__erReady)return '';
+  var weak={};
+  ERDATA.types.forEach(function(at){
+    var w=0;team.forEach(function(s){try{var c=defCellTrio(s,at).inn;if(c>=2)w++}catch(e){}});
+    if(w>=2)weak[at]=w;
+  });
+  var keys=Object.keys(weak).sort(function(a,b){return weak[b]-weak[a]}).slice(0,6);
+  if(!keys.length)return '';
+  return '<div style="margin:6px 0"><div style="font-size:11px;color:var(--sub)">共同薄弱系</div><div class="mini-def">'+keys.map(function(at){return '<span>'+at+' ×'+weak[at]+'</span>'}).join('')+'</div></div>';
+}
+
 /* ============ v4.97 A：智能补位（规则叙事型，无机械评分） ============ */
 function teamDiag(){
   /* 三面诊断：速度线 / 属性联防 / 体系 */
@@ -4585,6 +4653,7 @@ function _abiOwnersPush(o,id,s,key){
 }
 function abiOwners(){
   if(_abiOwners)return _abiOwners;
+  if(!ERDATA.species||!ERDATA.species.length)return {};
   var o={};
   ERDATA.species.forEach(function(s){
     if(!isValidSp(s))return;
@@ -4789,7 +4858,7 @@ function spdScarfOf(s){var b=bstI(s,5);return Math.floor((2*b+99)*1.5)} /* 讲�
 function spdWeatherOf(s){var W=['轻装','悠游自如','叶绿素','拨雪'];var hit=null;(s.abis||[]).forEach(function(a){if(a&&W.indexOf(a)>-1)hit=a});return hit} /* 天气×2特性（参考列） */
 function spdWeatherVal(s){var h=spdWeatherOf(s);return h?Math.floor(spdMaxOf(s)*2):null}
 var _spdPct=null;
-function speedPctiles(){if(_spdPct)return _spdPct;
+function speedPctiles(){if(!ERDATA.species||!ERDATA.species.length)return {n:0,P50:0,P75:0,P90:0,P95:0,P99:0};if(_spdPct)return _spdPct;
   var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
   var n=arr.length;function pct(p){return arr[Math.min(n-1,Math.floor(n*p))]}
   _spdPct={n:n,P50:pct(.50),P75:pct(.75),P90:pct(.90),P95:pct(.95),P99:pct(.99)};return _spdPct}
@@ -9409,7 +9478,7 @@ function threatPriorLine(){
   THREAT_LIB.forEach(function(t){t.prior=ln;t.priorSrc=src||'none'})})();
 var RESIST_BERRY={'火':105,'水':106,'电':107,'草':108,'冰':109,'格斗':110,'毒':111,'地面':112,'飞行':113,'超能':114,'虫':115,'岩石':116,'幽灵':117,'龙':118,'恶':119,'钢':120,'妖精':122,'一般':121};
 var _thrMemo={},_spAllMemo=null,_medSpeMemo=null;
-function spAll(){if(!_spAllMemo)_spAllMemo=ERDATA.species.filter(function(x){return isValidSp(x)});return _spAllMemo}
+function spAll(){if(!ERDATA.species||!ERDATA.species.length)return [];if(!_spAllMemo)_spAllMemo=ERDATA.species.filter(function(x){return isValidSp(x)});return _spAllMemo}
 function medSpe(){if(_medSpeMemo===null){var a=spAll().map(function(x){return x.base[5]}).sort(function(x,y){return x-y});_medSpeMemo=a[Math.floor(a.length/2)]||80}return _medSpeMemo}
 /* 可学某类招者的占比（代理口径：无使用率数据） */
 function thrFrac(ids){
@@ -13653,7 +13722,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.100';
+var ER_ENGINE_VER='v4.101';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
