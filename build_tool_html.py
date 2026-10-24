@@ -818,7 +818,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.89</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.91</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2998,6 +2998,66 @@ function anSpDetail(id){
   var d=$('anDetail');if(d&&d.classList)d.classList.add('open');
 }
 function closeAnDetail(){var d=$('anDetail');if(d&&d.classList)d.classList.remove('open')}
+/* ===== v4.91 任务A：五段式流派角色定位卡（Smogon StrategyDex 结构，全部程序化生成、零手写叙事） =====
+   数据源：deriveBuilds 既有字段（name/side/roleTag/mv.main/it/abi/nat/ev/warn）+ 速度线 speedPctileRankOf
+   + dmgCalc 现算注入（非写死）：主攻招对「克制代表目标」的 OHKO 击杀线（目标=该招属性克制 opt≥2 中 HP 最高的耐久标杆）。
+   五段：①概述 ②核心机制（含现算击杀线）③典型用法 ④注意与局限（弱点/ warn）⑤推荐队友（补盲）。每段 ≤3 行。 */
+function roleCard5TargetOf(mvId){
+  var mv=ERDATA.moves[mvId];if(!mv)return null;
+  var mt=mv[3],best=null;
+  ERDATA.species.forEach(function(t){
+    if(!t||!t.base)return;try{if(typeof isValidSp==='function'&&!isValidSp(t))return}catch(e0){}
+    var opt=1;try{opt=defCellTrio(t,mt,null).opt}catch(e1){opt=1}
+    if(opt>=2&&(!best||t.base[0]>best.base[0]))best=t;
+  });
+  return best;
+}
+function roleCard5Html(s,bd,R){
+  try{
+    if(!bd)return '';
+    var pct=0;try{pct=speedPctileRankOf(s)}catch(eP){}
+    var spd=0;try{spd=spdMaxOf(s)}catch(eS){}
+    var mv0=(bd.mv&&bd.mv.main&&bd.mv.main[0])?bd.mv.main[0].id:null;
+    var evA=0,isPhysMain=true;
+    if(mv0){var mm0=ERDATA.moves[mv0];if(mm0){isPhysMain=(mm0[4]==='物理');evA=(bd.ev&&bd.ev.alloc)?(+bd.ev.alloc[isPhysMain?1:3]||0):0}}
+    var tgt=mv0?roleCard5TargetOf(mv0):null;
+    var dmgRes=null,hpT=0;
+    if(tgt&&mv0){
+      var itemA=(bd.it&&bd.it[0])?String(bd.it[0][0]||''):'';
+      var natA5=(bd.nat&&bd.nat[0])?String(bd.nat[0][0]||''):'';
+      dmgRes=dmgCalc({sA:s,sD:tgt,moveId:mv0,evA:evA,evD:0,natA:natA5,natD:'',itemA:itemA,weather:'',terrain:'',crit:false});
+      hpT=dmgStatOf(bstI(tgt,0),0,31,0,'');
+    }
+    var wks=[];ERDATA.types.forEach(function(at){var c=defCellTrio(s,at).inn;if(c>1)wks.push(at)});
+    var h='<div class="fld"><div class="fhd"><span class="fno">🎭</span>角色定位（五段式）</div><div style="font-size:11px;line-height:1.8">';
+    h+='<b>① 概述：</b>'+esc(oneLiner(bd))+'（速度线 P'+pct+' · 极速 '+spd+'）<br>';
+    var mechBits=[];
+    if(mv0){var mm=ERDATA.moves[mv0];mechBits.push('主攻「'+(mm?mm[1]:mv0)+'」（威力 '+(mm?mm[5]:'-')+'）')}
+    if(bd.it&&bd.it[0])mechBits.push('道具「'+String(bd.it[0][0]||'')+'」');
+    /* v4.91 复核P3-4：②段特性名取推荐特性字段的规范中文名（与详情卡 anAbiChipH 同一反查链），消除「复仇 vs 猛鬼」不一致 */
+    var _ab0=bd.abi&&bd.abi[0];
+    if(_ab0){var _abN='';
+      try{_abN=(_ab0.id!=null&&_ab0.id!==''&&typeof ABI!=='undefined'&&ABI[_ab0.id])?(ABI[_ab0.id][2]||ABI[_ab0.id][1]||('#'+_ab0.id)):((typeof abiNameZh==='function')?abiNameZh(_ab0.n):(_ab0.n||''))}catch(eN){_abN=_ab0.n||''}
+      if(_abN)mechBits.push('特性「'+String(_abN)+'」')}
+    h+='<b>② 核心机制：</b>'+(mechBits.join('、')||'—');
+    if(dmgRes&&tgt){
+      h+='。<span style="color:var(--sub)">现算：'+esc(s.zh)+' 主攻 → '+esc(tgt.zh)+'（HP '+hpT+'）伤害 <b>'+dmgRes.lo+'–'+dmgRes.hi+'</b>'+
+        (dmgRes.lo>=hpT?'，<span style="color:var(--ok)">确定 OHKO</span>':(dmgRes.hi>=hpT?'，概率 OHKO（击杀线边缘）':'，2HKO 起（需更多攻端 EV）'))+'</span>';
+    }
+    h+='<br>';
+    var evStr=(bd.ev&&bd.ev.alloc)?bd.ev.alloc.join('/'):'-';
+    h+='<b>③ 典型用法：</b>'+((bd.nat&&bd.nat[0])?('性格「'+bd.nat[0][0]+'」'):'')+' · EV '+evStr+'（HP/攻/防/特攻/特防/速）'+
+      ((bd.ev&&bd.ev.template)?(' · 模板「'+bd.ev.template+'」'):'')+' · 速度 P'+pct+' 节奏。<br>';
+    var limBits=[];
+    if(wks.length)limBits.push('弱点 '+wks.map(function(t){return tlabel(t)}).join(' '));
+    if(bd.warn)limBits.push(String(bd.warn));
+    if(!limBits.length)limBits.push('弱点已被天性/特性覆盖，无显著短板');
+    h+='<b>④ 注意与局限：</b>'+limBits.join('；')+'<br>';
+    h+='<b>⑤ 推荐队友：</b>'+(wks.length?('需队友补 '+wks.join('、')+' 的抗性或打击面'):'本只抗性网完整，队友优先补队伍体系短板')+'。';
+    h+='</div></div>';
+    return h;
+  }catch(e){return ''}
+}
 function anDetailHtml(s,bd,R){
   var h='';
   h+='<div class="andethead">'+sprImg(s.id,'spinl')+'<b>'+esc(s.zh)+'</b> <span class="dim">'+esc(s.en)+' #'+s.id+' · '+esc(s.t1)+(s.t2!==s.t1?(' / '+esc(s.t2)):'')+' · 种族值（总值 '+spBst(s)+'）</span>'+
@@ -3008,6 +3068,7 @@ function anDetailHtml(s,bd,R){
     '<span class="dim">'+esc(bd.side||'')+'向 · '+esc(bd.roleTag||'')+'</span><div class="oltext">'+esc(oneLiner(bd))+'</div>'+
     (bd.warn?'<div class="tip" style="margin-top:3px"><span class="badge badge-warnimm">注意</span> '+esc(bd.warn)+'</div>':'')+
     '</div></div>';
+  h+=roleCard5Html(s,bd,R);   /* v4.91 任务A：五段式角色定位卡（接在流派一句话之后，风格同 fld） */
   /* D-1 推荐特性 + 为什么选它（bd.abi[].why；点特性名看完整描述） */
   h+='<div class="fld"><div class="fhd"><span class="fno">2</span>推荐特性 + 理由</div>';
   var _ab=(bd.abi||[]);
@@ -4683,7 +4744,7 @@ function spdNatAdvice(s,p,M){
   return '中性';
 }
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
-var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',crit:false,dmgItem:'',eAtk:null};
+var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null};
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx)m*=2;if(__spdSl.tailwind)m*=2;return m}
 function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" onclick="'+onclick+'">'+label+'</span>'}
 function speedSliderHtml(s){
@@ -4732,7 +4793,16 @@ function speedSliderHtml(s){
         '<div style="font-size:11px;margin-top:2px">天气：<span class="chipgrp">'+
           spdSlChip('无',!__spdSl.weather,'dmgSet(\'weather\',\'\')')+
           spdSlChip('晴',__spdSl.weather==='晴','dmgSet(\'weather\',\'晴\')')+
-          spdSlChip('雨',__spdSl.weather==='雨','dmgSet(\'weather\',\'雨\')')+'</span> '+
+          spdSlChip('雨',__spdSl.weather==='雨','dmgSet(\'weather\',\'雨\')')+
+          spdSlChip('沙',__spdSl.weather==='沙','dmgSet(\'weather\',\'沙\')')+
+          spdSlChip('雪',__spdSl.weather==='雪','dmgSet(\'weather\',\'雪\')')+'</span> '+
+          '<span style="color:var(--sub)">场地：</span><span class="chipgrp">'+
+          spdSlChip('无',!__spdSl.terrain,'dmgSet(\'terrain\',\'\')')+
+          spdSlChip('电气',__spdSl.terrain==='电气','dmgSet(\'terrain\',\'电气\')')+
+          spdSlChip('青草',__spdSl.terrain==='青草','dmgSet(\'terrain\',\'青草\')')+
+          spdSlChip('精神',__spdSl.terrain==='精神','dmgSet(\'terrain\',\'精神\')')+
+          spdSlChip('薄雾',__spdSl.terrain==='薄雾','dmgSet(\'terrain\',\'薄雾\')')+'</span>'+
+          '<div style="font-size:9px;color:var(--sub)">沙/雪=防御向无伤害档；场地 ×'+WCONF.terrainBoost+'（薄雾对龙系×0.5）</div>'+
         '道具：<span class="chipgrp">'+
           spdSlChip('无',!__spdSl.dmgItem,'dmgSet(\'dmgItem\',\'\')')+
           spdSlChip('命玉',__spdSl.dmgItem==='生命宝珠','dmgSet(\'dmgItem\',\'生命宝珠\')')+
@@ -4770,6 +4840,11 @@ function spdSliderRender(){
     h+='<div style="margin:4px 0"><span class="abi" style="border-color:var(--accent)"><b>'+main.nat+'</b> · '+glossify('EV')+' '+main.ev+'速 → 自然 '+main.val+'（有效 '+eff+'）</span>';
     plans.forEach(function(pl){if(pl!==main)h+=' <span class="abi" style="color:var(--sub)">备选 '+pl.nat+' EV '+pl.ev+' → '+pl.val+'</span>'});
     h+='<span style="font-size:10px;color:var(--sub)">省 '+main.saved+' EV 挪耐久</span></div>';
+    /* v4.91 任务C：P50 性格优化提示层——中性方案为主但加速性格同目标可达时，提示「建议加速性格」（不改默认推荐逻辑） */
+    var _accPl=null;plans.forEach(function(pl){if(pl.nat==='加速'&&!_accPl)_accPl=pl});
+    if(_accPl&&main.nat!=='加速'){
+      h+='<div style="font-size:10px;color:var(--sub)">💡 建议加速性格：中性需 '+main.ev+'EV 达目标，<b style="color:var(--ok)">+Spe 仅需 '+_accPl.ev+'EV → '+_accPl.val+'</b>（省 '+_accPl.saved+' EV 挪耐久；目标 P'+p+' 偏高速线时优先）</div>';
+    }
     /* 攻击阈值 OHKO 线反解（§2.3：e=252−4((m/倍率)−t0)，t0=0EV 攻击实数） */
     var t0=2*bstI(s,1)+31+5,eAtk=0;
     if(__spdSl.atkM>0){eAtk=252-4*((__spdSl.atkM/__spdSl.mult)-t0);if(eAtk<0)eAtk=0;if(eAtk>252)eAtk=252;eAtk=Math.floor(eAtk/4)*4}
@@ -4847,6 +4922,12 @@ function dmgCalc(o){
   mod*=eff;
   if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
   if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
+  /* v4.91 任务B：场地 boost 接线（WCONF.terrainBoost=1.3 考古定稿；薄雾=龙系减伤×0.5）。
+     沙/雪 在 ER 为防御向（WCONF 口径注释：无伤害档）→ MOD 不加乘，仅 UI 可选标注。 */
+  if(o.terrain==='电气'&&mType==='电')mod*=WCONF.terrainBoost;
+  if(o.terrain==='青草'&&mType==='草')mod*=WCONF.terrainBoost;
+  if(o.terrain==='精神'&&mType==='超能力')mod*=WCONF.terrainBoost;   /* v4.91 复核P2-1：ER 类型名=「超能力」（原误写「超能」死线） */
+  if(o.terrain==='薄雾'&&mType==='龙'&&sD&&(sD.t1==='龙'||sD.t2==='龙'))mod*=0.5;   /* v4.91 复核P2-2：ER 口径=龙系招仅对龙系守方×0.5 */
   if(/生命宝珠/.test(o.itemA||''))mod*=1.3;
   if(isPhys&&/讲究头带/.test(o.itemA||''))mod*=1.5;
   if(!isPhys&&/讲究眼镜/.test(o.itemA||''))mod*=1.5;
@@ -4856,7 +4937,7 @@ function dmgCalc(o){
 /* 反解：evA 从 0 按 4 步递增，首个 min-roll ≥ 对手HP 的 EV（OHKO 线） */
 function ohkoSolveEv(o,hpD){
   for(var ev=0;ev<=252;ev+=4){
-    var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,crit:o.crit});
+    var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
     if(r&&r.lo>=hpD)return ev;
   }
   return -1;
@@ -4886,7 +4967,7 @@ function dmgRender(){
   var sD=__spdSl.defId?speciesById(__spdSl.defId):null;
   if(!sD||!__spdSl.mvId){box.innerHTML='<div style="font-size:10px;color:var(--sub)">选对手 + 选我方招式后出伤害范围与 OHKO 判定</div>';return}
   var natA=__spdSl.natOv||'';
-  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',crit:!!__spdSl.crit};
+  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit};
   var r=dmgCalc(o);if(!r){box.innerHTML='<div style="font-size:10px;color:var(--warnred)">该招式无威力</div>';return}
   var hpD=dmgStatOf(bstI(sD,0),0,31,0,'');
   var verdict=r.lo>=hpD?'<span style="color:var(--ok)">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub)">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred)">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
@@ -13372,7 +13453,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.89';
+var ER_ENGINE_VER='v4.91';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -13798,6 +13879,7 @@ function renderCore(s){
       ' <span class="bigsub">'+esc(bd.side)+'向 · 推荐特性 '+esc(bSet)+'</span>'+
       '<span class="oltext">'+esc(oneLiner(bd))+'</span>'+
       ((bd&&bd.warn)?' <span class="badge badge-warnimm">注意 '+esc(bd.warn)+'</span>':'')+'</summary>';
+    html+=roleCard5Html(s,bd,null);   /* v4.91 复核P2-3：核心配队 Tab 流派卡同接五段式（行内短述=上方 oltext，展开=完整五段） */
     /* ② 设计亮点 1–3 条 + 机制溯源（可展开） */
     var bs=basisList(bd);
     html+='<div class="fld"><div class="fhd"><span class="fno">2</span>设计亮点</div>';
