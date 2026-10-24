@@ -601,12 +601,34 @@ details.inline,.details.inline{cursor:pointer}
 .slot,.badge,.tab,.card,[class*=box]{}
 .btn{border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .slot{border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+
+/* v4.100 观感收尾：语义色统一+微交互规范 */
+:root{
+  --ok:#2e7d32;       /* 成功：入队/生成 */
+  --warn:#ed6c02;     /* 警示：警告/冲突 */
+  --danger:#c62828;   /* 危险：删除/清空 */
+  --hi:#1565c0;       /* 数据高亮：主蓝 */
+  --hi2:#6a1b9a;      /* 次高亮：紫 */
+}
+.btn,.badge,.chip,.slot{
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover,.badge:hover,.chip:hover{
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+.btn:active,.chip:active{
+  transform:translateY(1px);
+  box-shadow:0 1px 2px rgba(0,0,0,.1);
+}
+.slot{padding:6px 8px;margin-bottom:6px}
+.tab{padding:10px 12px}
 </style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.99</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.100</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -13631,7 +13653,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.99';
+var ER_ENGINE_VER='v4.100';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
