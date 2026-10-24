@@ -819,7 +819,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.94</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.95</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -933,6 +933,8 @@ details.inline,.details.inline{cursor:pointer}
     <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
     <button class="btn" onclick="toggleCsvPanel()">📥 粘贴 CSV</button>
+    <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.95：随机生成 6 只队伍（默认排除 BST≥580 传说/幻兽档）">🎲 随机队</button>
+    <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:11px">传说档:关</button>
   </div>
   <div class="sec" style="margin:6px 0">
     <div class="tmfilter">
@@ -3759,6 +3761,34 @@ function renderSlots(){
   $('tmCount').textContent=team.length;
   $('tmSlots').innerHTML=html;
 }
+/* ============ v4.95 B：随机队池（娱乐/测试向；生成后直接进入既有队伍渲染/分析链路） ============ */
+function randomTeamGen(){
+  var allowL=!!window._randLegends;
+  /* 池：有效物种；默认排除 BST≥580（传说/幻兽/高准神档），开关允许 */
+  var pool=ERDATA.species.filter(function(s){
+    if(!s||!s.base||!isValidSp(s))return false;
+    var tot=s.base[0]+s.base[1]+s.base[2]+s.base[3]+s.base[4]+s.base[5];
+    if(!allowL&&tot>=580)return false;
+    return true;
+  });
+  clearTeamForImport();
+  var picked=[];
+  while(picked.length<6&&pool.length){
+    var sp=pool[Math.floor(Math.random()*pool.length)];
+    if(picked.indexOf(sp)<0)picked.push(sp);
+  }
+  var nats=Object.keys(NATURES);
+  picked.forEach(function(s){
+    var nat=nats[Math.floor(Math.random()*nats.length)];
+    /* 招式：从可学池取样 4 个有威力招，同队物种不重复 */
+    var mvIds=[];for(var id in learnOf(s)){var m=ERDATA.moves[id];if(m&&+m[5]>0)mvIds.push(id)}
+    var moves=[];for(var k=0;k<4&&mvIds.length;k++){var j=Math.floor(Math.random()*mvIds.length);moves.push(mvIds.splice(j,1)[0])}
+    var mnames=moves.map(function(id){var m=ERDATA.moves[id];return m?m[1]:''});
+    team.push(s);teamInfo[s.id]={fromSave:false,nature:nat,moves:mnames,pps:moves.map(function(){return 16})};
+  });
+  renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('🎲 随机队已生成 6 只'+(allowL?'（含传说档）':'（排除 BST≥580）'));
+}
 /* ============ v4.94 B：队伍分享卡（Canvas 16:9，零外部依赖；精灵图跨域失败=纯文本卡兜底） ============ */
 function shareCardOpen(){
   if(!team.length){toast('队伍为空，先添加宝可梦');return}
@@ -5089,6 +5119,20 @@ function dmgCalc(o){
   return {lo:Math.floor(base*mod*0.85),hi:Math.floor(base*mod),eff:eff,stab:stab,base:base,mod:mod};
 }
 /* 反解：evA 从 0 按 4 步递增，首个 min-roll ≥ 对手HP 的 EV（OHKO 线） */
+/* v4.95 A：耐久反推——给定威胁(o)与存活次数 N，求最省 EV(HP+单防)。
+   算法：HP EV 升序(0..252 step4) 外层、单防 EV 升序内层；首个「hi-roll × N ≤ 当前 HP」组合即最省（HP 优先协调折线）。 */
+function surviveSolve(o,N){
+  N=N||1;
+  for(var evHp=0;evHp<=252;evHp+=4){
+    var hp=dmgStatOf(bstI(o.sD,0),evHp,31,0,'');
+    for(var evD=0;evD<=252;evD+=4){
+      var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:o.evA||0,evD:evD,natA:o.natA||'',natD:'',itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
+      if(!r)return null;
+      if(r.hi*N<=hp)return {hpEv:evHp,defEv:evD,tot:evHp+evD,hp:hp,dmgHi:r.hi,dmgLo:r.lo};
+    }
+  }
+  return null; /* 252/252 也扛不住 */
+}
 function ohkoSolveEv(o,hpD){
   for(var ev=0;ev<=252;ev+=4){
     var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
@@ -5131,6 +5175,13 @@ function dmgRender(){
     '<br>'+(solve>=0
       ?'达到 OHKO 最低攻端 EV = <b>'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
       :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
+  /* v4.95 A：防守向反推（同输入面，反向解「扛 N 下」） */
+  var mv=ERDATA.moves[__spdSl.mvId];var phys=mv&&mv[4]==='物理';
+  var defLbl=phys?'物防':'特防';
+  var sv1=surviveSolve(o,1),sv2=surviveSolve(o,2);
+  function svTxt(sv,N){return sv?('扛'+N+'下：HP+'+sv.hpEv+' / '+defLbl+'+'+sv.defEv+'（耐久 HP '+sv.hp+' · 威胁 max '+sv.dmgHi+'）'):'扛'+N+'下：<span style="color:var(--warnred)">252/252 也必死</span>'}
+  box.innerHTML+='<div style="font-size:11px;margin:4px 0 2px;padding-top:3px;border-top:1px dashed var(--line)"><b>🛡 耐久反推</b>（'+defLbl+'向；min EV 约束）<br>'+svTxt(sv1,1)+'<br>'+svTxt(sv2,2)+
+    '<br><span style="color:var(--sub);font-size:10px">若需保留速度 252，则耐久档不可全取；防守性格(+'+defLbl+')可再降 EV。</span></div>';
 }
 function dmgApplySolve(ev){__spdSl.eAtk=ev;spdSliderRender()}
 /* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
@@ -13638,7 +13689,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.94';
+var ER_ENGINE_VER='v4.95';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
