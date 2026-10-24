@@ -601,7 +601,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.93</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.94</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3536,9 +3536,67 @@ function renderSlots(){
       html+='<div class="slot empty">空位</div>';
     }
   }
+  /* v4.94 B：分享卡入口（当前队伍处） */
+  html='<div style="margin:2px 0 8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-mini" onclick="shareCardOpen()" title="Canvas 生成 16:9 队伍分享卡（下载PNG/复制文字）">📤 分享队伍卡</button></div>'+html;
   $('tmCount').textContent=team.length;
   $('tmSlots').innerHTML=html;
 }
+/* ============ v4.94 B：队伍分享卡（Canvas 16:9，零外部依赖；精灵图跨域失败=纯文本卡兜底） ============ */
+function shareCardOpen(){
+  if(!team.length){toast('队伍为空，先添加宝可梦');return}
+  var h='<div id="shareCardOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">'+
+    '<div style="background:#fff;border-radius:10px;padding:12px;max-width:min(94vw,640px);width:100%;box-sizing:border-box">'+
+    '<div style="font-weight:600;margin-bottom:8px;font-size:14px">📤 队伍分享卡</div>'+
+    '<canvas id="shareCv" style="width:100%;height:auto;border-radius:8px;background:#f7f9fc;display:block"></canvas>'+
+    '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'+
+    '<button class="btn-mini" onclick="shareCardDownload()">⬇ 下载 PNG</button>'+
+    '<button class="btn-mini" onclick="shareCardCopy()">📋 复制文字</button>'+
+    '<button class="btn-mini" onclick="shareCardClose()">关闭</button></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',h);
+  shareCardDraw();
+}
+function shareCardClose(){var o=document.getElementById('shareCardOverlay');if(o)o.remove()}
+function shareCardDraw(){
+  var cv=document.getElementById('shareCv');if(!cv)return;
+  cv.width=960;cv.height=540; /* 16:9 固定画布 */
+  var ctx=cv.getContext('2d');
+  ctx.fillStyle='#f7f9fc';ctx.fillRect(0,0,960,540);
+  ctx.fillStyle='#1a2332';ctx.font='bold 26px sans-serif';
+  ctx.fillText('Elite Redux 队伍分享卡',28,42);
+  ctx.fillStyle='#78909c';ctx.font='14px sans-serif';
+  ctx.fillText('共 '+team.length+'/6 只 · ER Teambuilder v4.94',28,66);
+  team.forEach(function(s,i){
+    var x=28+(i%3)*308, y=92+Math.floor(i/3)*200;
+    ctx.fillStyle='#fff';ctx.strokeStyle='#d0d7e2';ctx.lineWidth=1.5;
+    ctx.fillRect(x,y,292,180);ctx.strokeRect(x,y,292,180);
+    ctx.fillStyle='#1a2332';ctx.font='bold 19px sans-serif';
+    ctx.fillText(s.zh+' #'+s.id,x+12,y+30);
+    var info=teamInfo[s.id]||{};
+    ctx.font='14px sans-serif';ctx.fillStyle='#546e7a';
+    ctx.fillText('道具: '+(info.item||'无'),x+12,y+58);
+    ctx.fillText('招式: '+(info.moves?info.moves.slice(0,3).join(' / '):'—'),x+12,y+82,268);
+    ctx.fillStyle='#2e7d32';ctx.font='bold 14px sans-serif';
+    ctx.fillText('速度 '+spdMaxOf(s)+'（满速'+spdFullOf(s)+'）',x+12,y+106);
+    /* v4.94 P3：类型色块（本地色表——原引用 window.TYPE_COLORS 全局不存在故落灰） */
+    var TC={'一般':'#a8a77a','火':'#ee8130','水':'#6390f0','草':'#7ac74c','电':'#f7d02c','冰':'#96d9d6','格斗':'#c22e28','毒':'#a33ea1','地面':'#e2bf65','飞行':'#a98ff3','超能力':'#f95587','虫':'#a6b91a','岩石':'#b6a136','幽灵':'#735797','龙':'#6f35fc','钢':'#b7b7ce','恶':'#705746','妖精':'#d685ad'};
+    ctx.fillStyle=TC[s.t1]||'#90a4ae';
+    ctx.fillRect(x+200,y+14,72,26);
+    ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';
+    ctx.fillText(s.t1,x+218,y+32);
+    if(s.t2&&s.t2!==s.t1){ctx.fillStyle=TC[s.t2]||'#b0bec5';ctx.fillRect(x+200,y+46,72,26);ctx.fillText(s.t2,x+218,y+64)}
+  });
+}
+function shareCardDownload(){
+  var cv=document.getElementById('shareCv');if(!cv)return;
+  try{var a=document.createElement('a');a.download='er-team.png';a.href=cv.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();toast('已生成 PNG 下载')}
+  catch(e){toast('PNG 生成失败：'+e.message)}
+}
+function shareCardCopy(){
+  var txt=team.map(function(s,i){return (i+1)+'. '+s.zh+(teamInfo[s.id]&&teamInfo[s.id].item?'（'+teamInfo[s.id].item+'）':'')}).join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt);toast('队伍文字已复制')}
+  else{toast('复制不可用，请手动选择')}
+}
+/* ============ v4.94 结束 ============ */
 function removeFromTeamById(id){
   for(var i=0;i<team.length;i++)if(team[i].id==id){removeFromTeam(team[i]);return}
 }
@@ -4951,9 +5009,22 @@ function _spdBadge(p){   /* v4.72 P3：分位徽标（与 speedPctileRankOf 同�
 function speedRenderTable(){
   var q=speedPctiles();
   var qv=(document.getElementById('spdSearch')&&document.getElementById('spdSearch').value||'').trim().toLowerCase();
+  var f=window._spdFilter||{};
   var rows=ERDATA.species.filter(function(s){
     if(!qv)return true;
     return (''+s.zh).toLowerCase().indexOf(qv)>-1||(''+s.en).toLowerCase().indexOf(qv)>-1||(''+s.id).indexOf(qv)>-1;
+  }).filter(function(s){
+    if(f.pct){var mx=spdMaxOf(s); /* v4.94 A：分位区间 chip 筛选 */
+      if(f.pct==='p90+'&&mx<q.P90)return false;
+      if(f.pct==='p75'&&!(mx>=q.P75&&mx<q.P90))return false;
+      if(f.pct==='p50'&&!(mx>=q.P50&&mx<q.P75))return false;
+      if(f.pct==='p50-'&&mx>=q.P50)return false;}
+    if(f.role){var r=speedRole(s); /* v4.94 A：定位 chip 筛选（速攻/空间/清场） */
+      if(f.role==='fast'&&r!=='fast')return false;
+      if(f.role==='space'&&r!=='space')return false;
+      if(f.role==='clear'&&r!=='clear')return false;}
+    if(f.type&&!(isType(s,f.type)))return false; /* v4.94 A：属性 chip 筛选 */
+    return true;
   });
   var sort=window._spdSort||'maxdesc';
   rows.sort(function(a,b){
@@ -4983,8 +5054,10 @@ function speedRenderTable(){
 function speedRefreshTable(){var b=document.getElementById('spdTableBox');if(b)b.innerHTML=speedRenderTable()}
 var _spdDbt=null;
 function speedOnSearch(){clearTimeout(_spdDbt);_spdDbt=setTimeout(speedRefreshTable,150)}   /* v4.72 P2③：150ms 防抖 */
-function speedSetN(n){window._spdN=n;speedRefreshTable()}
-function speedSetSort(v){window._spdSort=v;speedRefreshTable()}
+function speedSetN(n){window._spdN=n;speedRender(true)}
+function speedSetSort(v){window._spdSort=v;speedRender(true)}
+/* v4.94 A：chip 筛选切换（同 chip 再点=取消；整页重渲染同步 active 样式） */
+function speedToggleFilter(k,v){window._spdFilter=window._spdFilter||{};if(window._spdFilter[k]===v)delete window._spdFilter[k];else window._spdFilter[k]=v;speedRender(true)}
 function speedRender(){try{var q=speedPctiles();
   var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
@@ -4992,12 +5065,28 @@ function speedRender(){try{var q=speedPctiles();
   h+=speedDistBarHtml(); /* v4.69 P3：全库速度分布条（P50/75/90/95/99 切点静态标注） */
   h+='<div class="tip">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div>';
   h+='<div class="bar" style="margin-top:8px;flex-wrap:wrap;gap:6px"><input type="text" id="spdSearch" placeholder="搜索物种/编号，如 皮卡丘 / 25" oninput="speedOnSearch()" style="flex:1;min-width:160px">';
-  h+='<label style="font-size:12px;color:var(--sub)">排序 <select id="spdSortSel" onchange="speedSetSort(this.value)" style="font-size:12px"><option value="maxdesc" selected>极速降序</option><option value="maxasc">极速升序(慢端/空间手)</option><option value="fulldesc">满速降序</option><option value="zerodesc">0努力降序</option><option value="idasc">编号升序</option></select></label>';
-  h+='<label style="font-size:12px;color:var(--sub)">前 <select id="spdNSel" onchange="speedSetN(this.value)" style="font-size:12px"><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="400" selected>400</option><option value="all">全部</option></select></label></div>';
+  /* v4.94 A：排序 chip 组（替换旧下拉，禁下拉硬规则；点击切换↑/↓，active 高亮） */
+  var sorts=[['maxdesc','极速↓'],['maxasc','极速↑'],['fulldesc','满速↓'],['zerodesc','0努力↓'],['idasc','编号']];
+  h+='<span style="font-size:12px;color:var(--sub)">排序</span>';
+  sorts.forEach(function(x){var act=(window._spdSort||'maxdesc')===x[0];h+='<button class="btn-mini" style="font-size:11px;'+(act?'background:var(--accent);color:#fff':'')+'" onclick="speedSetSort(\''+x[0]+'\')">'+x[1]+'</button>'});
+  /* v4.94 A：前N chip（替换旧下拉） */
+  h+='<span style="font-size:12px;color:var(--sub)">前</span>';
+  ['50','100','200','400','all'].forEach(function(n){var act=(String(window._spdN||'400'))===n;h+='<button class="btn-mini" style="font-size:11px;'+(act?'background:var(--accent);color:#fff':'')+'" onclick="speedSetN(\''+n+'\')">'+(n==='all'?'全部':n)+'</button>'});
+  /* v4.94 A：分位/定位/属性 chip 筛选行（flex-wrap，375px 自动换行无横溢） */
+  var f=window._spdFilter||{};
+  function ch(k,v,txt){var act=f[k]===v;return '<button class="btn-mini" style="font-size:11px;'+(act?'background:var(--ok,#2e7d32);color:#fff':'')+'" onclick="speedToggleFilter(\''+k+'\',\''+v+'\')">'+txt+'</button>'}
+  h+='<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px;align-items:center">';
+  h+='<span style="font-size:11px;color:var(--sub)">分位</span>'+ch('pct','p90+','P90+')+ch('pct','p75','P75-90')+ch('pct','p50','P50-75')+ch('pct','p50-','&lt;P50');
+  h+='<span style="font-size:11px;color:var(--sub);margin-left:6px">定位</span>'+ch('role','fast','速攻')+ch('role','space','空间')+ch('role','clear','清场');
+  h+='</div>';
+  h+='<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px;align-items:center">';
+  h+='<span style="font-size:11px;color:var(--sub)">属性</span>';
+  ['一般','火','水','草','电','冰','格斗','毒','地面','飞行','超能力','虫','岩石','幽灵','龙','钢','恶','妖精'].forEach(function(t){h+=ch('type',t,t)});
+  h+='</div></div>';
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
   var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
-  /* v4.68 黑盒P1-2：全库表懒渲染——仅在速度线 Tab 首次打开时构建400行，避免 DOMContentLoaded/开卡阻塞 */
-  window._speedTableBuilt=false;
+  if(arguments[0]===true){ /* chip/排序/前N 触发：整页重渲染后立即填表格 */ speedRefreshTable();window._speedTableBuilt=true }
+  else{ /* v4.68 黑盒P1-2 懒渲染：DOMContentLoaded 仅建壳，首次开 Tab 才建 400 行 */ window._speedTableBuilt=false }
  }catch(e){var el=document.getElementById('speedBox');if(el)el.innerHTML='<div class="tip">速度线计算失败：'+e.message+'</div>'}}
 function speedEnsureTable(){if(window._speedTableBuilt)return;var b=document.getElementById('spdTableBox');if(!b)return;speedRefreshTable();window._speedTableBuilt=true}
 /* 配速提示按物种 id 缓存（黑盒P1-2：开卡热路径零重算） */
@@ -13331,7 +13420,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.93';
+var ER_ENGINE_VER='v4.94';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
