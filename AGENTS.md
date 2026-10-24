@@ -208,6 +208,18 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
   - **经验沉淀（§7 同步：视觉语义统一经验）**：①红色三级语义分层=阻断/错误（--bad 深红实心，负面状态）｜警示/失败（--warnred + ⚠/✗ 图标）｜数据高亮（浅红底+深红字，无图标非错误）——警示红与数据高亮红必须可辨；②搜索命中/当前选中等信息态一律蓝（--acc），不用红；③条形图色板分工=速度类蓝系（定位时序感）+多物种对比 6 色（跨只区分），同语义同色、不同语义可区分，图例注明；④术语口径统一「种族值（总值 N）」；⑤Redux 形态家族补充守卫=自身已带 mega/prim/form 即跳过标准族归并（防双区重复），无形态记录才归并（暴鲤龙R→Mega X/Y 先例）。
   - **遗留（如实登记）**：浏览器运行时交互观感（toast/chip 点击/tooltip hover/375px 滚动真机观感）未真机实测（bu 通道本机不可用，stub 等价验证），建议部署后线上抽查或下轮黑盒补测；超级喷火龙X 单流派 P3；长期顺延 v4.72 分段/排序按钮逐点测、补盲文案真实 UI 样例（登记关闭）。
 
+- ✅ **v4.96 轮：Random Battle sets 池（Showdown 官方模板融入随机队，工具融合实质落地）（2026-10-24 部署，线上验证命中）**：
+  - 标签行 `…引擎 v4.96`；master 链 HEAD=`1fb1ec4`（4e3ba17..1fb1ec4，v485:master push，ls-remote 确认）；gh-pages=`b6140021`（55990d6..b6140021，`--force` push，ls-remote 确认）。
+  - 产物哈希：index.html **=`CCD9DE66C8A40507`**（1,443,403 B）；**新资产 assets/showdown_sets_v496.json**=74,346 B（懒加载，不进首屏）；data.js 2456881 B = `7DB7FBB3…`（冻结未变）。
+  - **数据获取+体积决策**：源=pokemon-showdown 官方仓库 `data/random-battles/gen9/sets.json`（raw 267,488 B，SHA16=2BBB7C3748117912，2026-10-24 抓取；结构=level+movepool+abilities+teraTypes，**无 items/nature/ev**——Showdown 新版格式由 format 脚本派生，故模板=官方等级+招式池，性格/道具随机，如实登记）；实测 **gzip=24.5KB << 200KB 阈值**→体积决策=**独立 json 懒加载**（assets/showdown_sets_v496.json 裁剪后 74,346 B，gz≈15KB；fetch+cache+catch→null，**fetch 失败自动回退纯随机**；与「拆包懒加载」遗留联动，不擅自引入首屏体积）。
+  - **ER 适配映射覆盖率**：物种 **472/509（92.7%）**，37 回退=阿罗拉/伽勒尔/洗翠地区形态 ER 无对应；招式 **3979/4021（99%）**，42 未映射（Tera Blast 等 Gen9 新招，取招自动跳过回退）；映射表=100% 命中 ER 库（引擎复核：sets 472 物种键全命中，吉利蛋 movepool 完整）；映射表落盘 `C:\temp\er-v489-impl\sets_mapping_v496.md`。
+  - **功能升级**：「模板:开/纯随机」chip（**默认模板**）+传说档并存；模板队=随机选 6 只→每只取官方模板（等级+招式池，招式从官方 movepool 随机 4 招不重复，招池<4 自动续补 learnOf），性格/道具/EV 走 ER 随机合规（≤252/≤510）；进现有渲染/分析链路零改动。
+  - **验收链（三线全 PASS）**：**引擎复核**——N1=N2 逐位相同（er-n519==er-n518 13.5min，sets 资产随构建就位）、hunk +40/-10 共 100 行逐行审完（loadShowdownSets 懒加载纯新增/randomTeamGen 改壳双模式；**v4.95 纯随机路径/传说档/surviveSolve/shareCard 零触碰**）、映射 100% 命中+回退三场景干净（sets=null/无模板物种/招池<4 均出 6 只不抛错）、**模板队一致性：连跑 2 队 12 只招式 24/24 全部出自官方 movepool**（沙奈朵=冥想/真气弹/魔法火焰/精神冲击）、pokepast 四路链路 ✓、守门全绿；**技术黑盒真机**——sets 懒加载 200（47,191 字节结构 `{"妙蛙花":{"level":84,"sets":[{"moves":[...]}]}}`）、模板队 roll 6 只、分析链路 PASS（空间队·进攻队画像/速度线 372/全队速度结构条）、375px PASS（chip 组折行/sprite 可见无横滚）；**纯黑盒走查**——模板/纯随机切换闭环顺滑（toast「官方模板」/「纯随机模式」明确、来回切换不报错、传说档仍生效）、队伍分析联动正常，**评分 87→89/100（+2）**；两个遗留 P1（核心配队空白/伤害判定不渲染）仍为其环境误报（v4.91 已核谳，本轮未触及）。
+  - **诚实记录（技术黑盒）**：队伍构建/分析面板**不内联展示每只招式明细**（仅类型/特性/联防剖面），无法逐招式与 sets.json 物种池逐字比对——建议后续在成员卡补招式行以便黑盒核对（登记为增强候选）。
+  - **拆包联动状态**：sets 走独立懒加载资产（74KB 不进首屏）；**data.js 2.46MB 拆包懒加载仍登记待用户拍板**（本轮未动 index 首屏体积）。
+  - **部署记录（v4.85 固化流程，新增资产同步）**：master `1fb1ec4` + 5 项 gitignored 输入全在位 + gh-pages `b6140021`（Rename .v495 归档+Copy er-n518 产物**含 assets/showdown_sets_v496.json**+force push）+ 线上验证（?nocache 命中）：index 1,443,403B `CCD9DE66C8A40507`==本地+「引擎 v4.96」+`ER_ENGINE_VER='v4.96'`、**assets/sets json=200 74,346B**、data `7DB7FBB3`；主工作区物理同步（root index/data+**sets json**+配招助手_ER.html 对齐+sheets 9 文件逐文件一致）；localhost:8899 未碰；8892 复验服务已停。
+  - **遗留（如实登记，不阻塞）**：拆包懒加载待用户决策；纯黑盒 375px 观感待设备模拟权限（技术黑盒容器强制 375px 口径已覆盖）；纯黑盒持续误报项不重复核谳；**成员卡招式行**（黑盒核对 sets 一致性用，增强候选）；sets 模板增强候选=items/nature/ev 官方完整字段（Showdown 新格式需 format 脚本派生，可后续对齐 random-teams 旧格式）、Pikalytics 呈现框架（后置）、AI 组队闭环（analyzerVNN 冻结待启动）。
+
 - ✅ **v4.95 轮：耐久反推（伤害引擎防守向延伸）+ 随机队池（娱乐/测试向快赢）（2026-10-24 部署，线上验证命中）**：
   - 标签行 `…引擎 v4.95`；master 链 HEAD=`ccd0753`（1cdf992..ccd0753，v485:master push，ls-remote 确认）；gh-pages=`55990d6`（66895d8..55990d6，`--force` push，ls-remote 确认）。
   - 产物哈希：index.html **=`64024395AF7B09A3`**（1,441,592 B）；data.js 2456881 B = `7DB7FBB3…`（冻结未变）。
