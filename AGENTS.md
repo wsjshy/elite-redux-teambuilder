@@ -1799,3 +1799,18 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.110=index A00AA7C572BC2336 1,498,694B
 - 部署 master 142b97be/gh-pages b57b291f
+
+## v4.111 v4.110遗留两缺口快修（2026-10-26）
+
+### 修复内容
+- 缺口1 spdMultiBox容器补建（详情卡配速区——修复容器缺失致多目标配速表静默跳过）
+- 缺口2 存档档位选择UI（renderSavSlots读er_savs_v1渲染历史档chip横排+loadSavSlot点击载入对应档喂renderMyPool）
+
+### 方法论沉淀
+- 渲染类功能验收必须含容器存在性检查（v4.110 P4 只写渲染函数未建容器=静默跳过）
+- 「只写写入不写读取/只写渲染不建容器」类偷工模式（v4.110 P1 存档写入在案但无读取UI）——实施代理交付须自查「写入↔读取/渲染↔容器」对称性
+- 挖掘路线图「全落地」判定以MainAgent真浏览器逐项实测为准
+
+### 版本链
+- v4.111=index DC337F9E55E5893A 1,499,752B
+- 部署 master 6617dd5/gh-pages 2736e84
