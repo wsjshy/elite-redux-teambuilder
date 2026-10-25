@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.111</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.111.1</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -5611,6 +5611,7 @@ function speedEnsureTable(){var b=document.getElementById('spdTableBox');if(!b)r
 var _speedHintCache={};
 function speedHintHtmlCached(s){var k=(s&&s.id)||'';if(_speedHintCache[k]==null){try{_speedHintCache[k]=speedHintHtml(s)}catch(e){_speedHintCache[k]=''}}return _speedHintCache[k]}
 document.addEventListener('DOMContentLoaded',speedRender);
+document.addEventListener('DOMContentLoaded',function(){try{renderSavSlots()}catch(e){}}); /* v4.111.1 首载渲染档位chip */
 function atkBest(s){return Math.max(bstI(s,1),bstI(s,3))}
 function bulkOf(s){return bstI(s,0)+bstI(s,2)+bstI(s,4)}
 function isType(s,t){return s.t1===t||s.t2===t}
@@ -13938,7 +13939,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.111';
+var ER_ENGINE_VER='v4.111.1';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
