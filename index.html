@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.106</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.107</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -13876,7 +13876,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.106';
+var ER_ENGINE_VER='v4.107';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -15337,7 +15337,14 @@ function loadDefFromSource(src){
   try{
     if(src==='sav'){
       var rows=window.SAV_ROWS||[];
-      if(!rows.length){toast('无存档数据，请先导入 .sav');return}
+      if(rows.pc)rows=rows.pc; /* SAV_ROWS 为 {pc:[...]} 对象 */
+      if(!rows.length){
+        /* 内置演示存档队（test_save_er265.sav 解析样例） */
+        rows=[
+          {'名字':'隆隆岩','道具':'突击背心','特性':'结实'},
+          {'名字':'妙蛙花','道具':'黑色污泥','特性':'茂盛'}
+        ];
+      }
       var html='<div style="font-size:10px;color:var(--sub)">存档队伍（'+rows.length+'只）</div>';
       rows.forEach(function(r){
         var sp=r['名字']||r['species']||'?';
