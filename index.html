@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.105</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.106</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -5302,7 +5302,14 @@ function dmgAtkQ(v){
   $('dmgAtkList').innerHTML=hits.map(function(x){
     return '<span class="chipopt" role="button" tabindex="0" onclick="dmgAtkPick(\''+x.id+'\')">'+esc(x.zh)+'</span>'}).join('');
 }
-function dmgAtkPick(id){__spdSl.s=speciesById(id);var el=$('dmgAtkList');if(el)el.innerHTML='<span class="chipopt on">'+esc((speciesById(id)||{zh:'#'+id}).zh)+'</span>';dmgRender()}
+function dmgAtkPick(id){
+  var sp=speciesById(id);
+  if(!sp){for(var i=0;i<ERDATA.species.length;i++){if(ERDATA.species[i].zh===id){sp=ERDATA.species[i];break}}}
+  if(!sp){toast('找不到攻方: '+id);return}
+  __spdSl.s=sp;
+  var el=$('dmgAtkList');if(el)el.innerHTML='<span class="chipopt on">'+esc(sp.zh)+'</span>';
+  dmgRender();
+}
 function loadAtkFromTeam(){
   var el=$('dmgAtkList');if(!el)return;
   if(!team.length){toast('队伍为空');return}
@@ -5316,7 +5323,16 @@ function dmgDefQ(v){
   $('dmgDefList').innerHTML=hits.map(function(x){
     return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\')">'+esc(x.zh)+'</span>'}).join('');
 }
-function dmgDefPick(id){__spdSl.defId=id;var el=$('dmgDefList');if(el)el.innerHTML='<span class="chipopt on">'+esc((speciesById(id)||{zh:'#'+id}).zh)+'</span>';dmgRender()}
+function dmgDefPick(id){
+  var sp=speciesById(id);
+  if(!sp){
+    for(var i=0;i<ERDATA.species.length;i++){if(ERDATA.species[i].zh===id){sp=ERDATA.species[i];break}}
+  }
+  if(!sp){toast('找不到物种: '+id);return}
+  __spdSl.defId=sp.id;
+  var el=$('dmgDefList');if(el)el.innerHTML='<span class="chipopt on">'+esc(sp.zh)+'</span>';
+  dmgRender();
+}
 function dmgMvQ(v){
   var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgMvList');if(el)el.innerHTML='';return}
   var real=mvAliasOf(String(v||'').trim());   /* v4.89 P3：旧译别名命中→按真实名搜索 */
@@ -5329,8 +5345,9 @@ function dmgMvPick(id){__spdSl.mvId=id;var el=$('dmgMvList');if(el)el.innerHTML=
 function dmgTgl(k){__spdSl[k]=!__spdSl[k];dmgRender()}
 function dmgSet(k,v){__spdSl[k]=v;dmgRender()}
 function dmgRender(){
-  var box=$('dmgOut');if(!box)return;
-  var sA=__spdSl.s;if(!sA){box.innerHTML='';return}
+  var box=$('dmgOut');if(!box){console.warn('[dmgRender] no #dmgOut container');return}
+  try{
+  var sA=__spdSl.s;if(!sA){box.innerHTML='<div style="font-size:10px;color:var(--sub">选我方宝可梦后出伤害</div>';return}
   var sD=__spdSl.defId?speciesById(__spdSl.defId):null;
   if(!sD||!__spdSl.mvId){box.innerHTML='<div style="font-size:10px;color:var(--sub)">选对手 + 选我方招式后出伤害范围与 OHKO 判定</div>';return}
   var natA=__spdSl.natOv||'';
@@ -5351,6 +5368,7 @@ function dmgRender(){
   function svTxt(sv,N){return sv?('扛'+N+'下：HP+'+sv.hpEv+' / '+defLbl+'+'+sv.defEv+'（耐久 HP '+sv.hp+' · 威胁 max '+sv.dmgHi+'）'):'扛'+N+'下：<span style="color:var(--warnred)">252/252 也必死</span>'}
   box.innerHTML+='<div style="font-size:11px;margin:4px 0 2px;padding-top:3px;border-top:1px dashed var(--line)"><b>🛡 耐久反推</b>（'+defLbl+'向；min EV 约束）<br>'+svTxt(sv1,1)+'<br>'+svTxt(sv2,2)+
     '<br><span style="color:var(--sub);font-size:10px">若需保留速度 252，则耐久档不可全取；防守性格(+'+defLbl+')可再降 EV。</span></div>';
+  }catch(err){console.error('[dmgRender] err:',err);box.innerHTML='<div style="font-size:10px;color:var(--warnred)">渲染错误: '+esc(err.message)+'</div>'}
 }
 function dmgApplySolve(ev){__spdSl.eAtk=ev;spdSliderRender()}
 /* 全库速度线表（可查；v4.72 UX 改造：分段显示/搜索计数/分位徽标/排序切换/响应式） */
@@ -13858,7 +13876,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.105';
+var ER_ENGINE_VER='v4.106';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
