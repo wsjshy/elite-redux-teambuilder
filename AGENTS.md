@@ -1749,3 +1749,19 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.107=index 72DE1B0266955D87 1,494,092B
 - 部署 master 8f47daa6/gh-pages 216410e9
+
+## v4.108 挖掘路线图 P1-P4 落地（2026-10-25）
+
+### 落地项
+- P1 队检⑤全队无控速手段告警（FUNC_MV.speed 目录驱动：电磁波86/岩石封锁317/顺风366/戏法空间433）
+- P1 teamQA③④目录化改造：REMOVAL_IDS=[229,432,525]/RECOVER_IDS=8项+别名表（羽栖/祈愿/许愿/影子球→暗影球等），根治硬编码中文名单技术债
+- P2 roll16 KO 分界染色条带：16 段 flex 四档（绿=OHKO/橙≥75%/黄≥50%/蓝<50%，禁红）
+- P3 图鉴最近浏览 chip：openSp localStorage 8 只 FIFO+toggleRecentOnly 过滤
+- P4 速度线分位过滤：P90+/P75-90/P50-75/<P50 四档 chip（v4.94 既有，本轮确认落地）
+
+### 等价断言
+- Test1 高速旋转+羽栖不告警 / Test2 撞击叫声全告警 / Test3 祈愿清除浓雾顺风别名不告警 / Test4 许愿 alias ④不告警——全过
+
+### 版本链
+- v4.108=index 9021C86933ECFE11 1,496,134B
+- 部署 master 31efe4ae/gh-pages 9ff6aec4
