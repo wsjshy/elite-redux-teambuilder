@@ -1705,3 +1705,25 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.105=index FCD420AFF0E7E351 1,493,162B
 - 部署 master 9fa875b7/gh-pages 73e66ade
+
+## v4.106 伤害判定面板传参断点修复（2026-10-25）
+
+### 修复内容
+- dmgDefPick/dmgAtkPick 中文名→数字 id 兼容（zh 名匹配+未知名 toast 不静默）
+- dmgRender try/catch 暴露异常不静默
+- 全链路 onclick 传参规范（展示中文名/传数字 id）
+
+### 方法论沉淀
+- node 层模拟绕过 UI 传参断点教训：node PASS≠UI 可用——MainAgent 真浏览器实锤 defId="班基拉斯" 中文名传参断点；历轮 node 断言用数字 id 直调 dmgCalc 掩盖了 UI 断点
+- onclick 内嵌中文名传参规范：展示名/传 id——dmgDefPick/dmgAtkPick 已加 zh 名兼容层
+- 自动化点击命中错误元素教训：纯黑盒 14 版「伤害判定不渲染」实为点到顶部队伍 chip 而非面板内 dmgAtkList chip——自动化须先查 DOM 容器实际目标再点
+- 技术黑盒交互局限持续（点选链复现能力不足）——三线配合以纯黑盒 DOM 级点击+引擎 node 断言为主
+
+### 三线
+- P0 MainAgent 实锤断点修复+纯黑盒三链路闭环（NPC 下石鸟→班基拉斯 137-162 2HKO+搜对手+攻方）+中文名→数字 id 解析一致
+- 引擎 PASS（N1=N2/hunk 零回归/分片一致/node 断言中文名=数字 id 输出逐位一致）
+- 黑盒 三链路+可读性+console 0 运行时错误
+
+### 版本链
+- v4.106=index 1518B5DA9C45E71B 1,493,810B
+- 部署 master efaae522/gh-pages 0025c266
