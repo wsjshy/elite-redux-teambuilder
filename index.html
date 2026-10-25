@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.109</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.110</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4323,6 +4323,12 @@ function renderAnalyze(){
     }
   }
   html+='</div>';
+  /* v4.110 P3：打击面覆盖色带（18 属性 chips 折 3 行） */
+  var atkCov={};team.forEach(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];mv.forEach(function(m){var mid=anMvId(m);var mv2=ERDATA.moves[mid];if(mv2&&+mv2[5]>0){var t=mv2[3];atkCov[t]=(atkCov[t]||0)+1}})});
+  html+='<div style="margin:8px 0"><h3>打击面覆盖（全队攻击招式属性分布）</h3>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+  ERDATA.types.forEach(function(t){var n=atkCov[t]||0;var bg=n>0?'#c8e6c9':'#eceff1';var lbl=n>0?t+' ×'+n:t;html+='<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:'+bg+'">'+lbl+'</span>'});
+  html+='</div></div>';
   box.innerHTML=html;
 }
 
@@ -4525,6 +4531,8 @@ function parseSavFile(input){
       $('savParseOut').innerHTML=html;
       autoImportParty(res);
       SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
+      /* v4.110 P1：存档多档保存（localStorage er_savs_v1，FIFO 3 档） */
+      try{var svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]');svs.push({t:Date.now(),rows:(SAV_ROWS||[]).slice(0,6)});if(svs.length>3)svs=svs.slice(-3);localStorage.setItem('er_savs_v1',JSON.stringify(svs))}catch(e){}
       savPcSearch(); /* v4.93 D-6：默认渲染 BOX1 前 12 兜底 */
     }catch(e){toast('解析失败: '+e.message)}
   };
@@ -5177,6 +5185,13 @@ function spdSliderOn(p){__spdSl.p=+p;spdSliderRender()}
 function spdSliderSet(p){var r=$('spdSlRange');if(r)r.value=p;__spdSl.p=p;spdSliderRender()}
 function spdSliderRender(){
   var s=__spdSl.s;if(!s)return;
+  /* v4.110 P4：多目标对比表 */
+  try{var p=speedPctiles();var box=$('spdMultiBox');if(box){
+    var rows=[['P50',p.P50],['P75',p.P75],['P90',p.P90],['P95',p.P95]];
+    var h='<div style="margin-top:6px;font-size:11px"><b>多目标配速对比</b><table style="width:100%;border-collapse:collapse"><tr><th>目标</th><th>速度线</th><th>所需EV</th><th>性格</th></tr>';
+    rows.forEach(function(r){var plan=spdPlanForTarget(s,r[1]);h+='<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+(plan.ev||0)+'</td><td>'+(plan.nat||'')+'</td></tr>'});
+    h+='</table></div>';box.innerHTML=h;
+  }}catch(e){}
   var b=bstI(s,5),p=__spdSl.p,T=spdPctileVal(p),M=spdModMul(),Te=Math.ceil(T/M);
   var vMax=spdMaxOf(s),vMin=Math.floor((2*b+36)*0.9);
   var plans=spdPlanForTarget(s,Te);
@@ -5377,7 +5392,10 @@ function dmgRender(){
     '<br>'+(solve>=0
       ?'达到 OHKO 最低攻端 EV = <b>'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
       :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
-  /* v4.108 P2：16 段条带 + KO 分界染色 */
+  /* v4.110 P2：命中率 chip */
+  var acc=(ERDATA.moves[__spdSl.mvId]||[])[6]||100;
+  var accHtml='<span style="font-size:10px;color:var(--sub);margin-left:6px">命中 '+acc+'%'+(acc<100?' · 期望折算':'')+'</span>';
+  box.innerHTML+='<div style="font-size:10px;color:var(--sub)">'+accHtml+'</div>';
   var barHtml='<div style="display:flex;height:12px;margin:4px 0;border-radius:3px;overflow:hidden">';
   var step=(r.hi-r.lo)/15;
   for(var i=0;i<16;i++){
@@ -13902,7 +13920,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.109';
+var ER_ENGINE_VER='v4.110';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
