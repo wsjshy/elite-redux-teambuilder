@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.110</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.111</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -768,6 +768,7 @@ details.inline,.details.inline{cursor:pointer}
     </select>
     <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
+    <div id="savSlotsBox" style="display:inline-block;margin-left:6px;font-size:11px"></div> <!-- v4.111 档位选择UI -->
     <button class="btn" onclick="toggleCsvPanel()">📥 粘贴 CSV</button>
     <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.96：随机生成 6 只队伍">🎲 随机队</button>
     <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:11px">传说档:关</button>
@@ -4485,6 +4486,22 @@ function savPcDoReplace(i){
   toast('已替换：'+old.zh+' → '+q.s.zh);
 }
 function savPcCancelReplace(){var o=$('savSlotPick');if(o)o.remove();_pcSlotQ=null}
+/* v4.111 档位选择UI */
+function renderSavSlots(){
+  var box=document.getElementById('savSlotsBox');if(!box)return;
+  var svs=[];try{svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]')}catch(e){}
+  if(!svs.length){box.innerHTML='';return}
+  var h='<span style="color:var(--sub);margin-right:4px">历史档:</span>';
+  svs.forEach(function(s,i){var d=new Date(s.t);var lbl='档'+(i+1)+' '+d.getHours()+':'+d.getMinutes();h+='<span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin-right:3px" onclick="loadSavSlot('+i+')">'+lbl+'</span>'});
+  box.innerHTML=h;
+}
+function loadSavSlot(i){
+  var svs=[];try{svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]')}catch(e){}
+  if(!svs[i])return;
+  SAV_ROWS=svs[i].rows||[];
+  renderMyPool();savPcSearch();
+  toast('已载入历史档 '+(i+1));
+}
 function parseSavFile(input){
   var f=input.files&&input.files[0];if(!f)return;
   var rd=new FileReader();
@@ -4532,7 +4549,7 @@ function parseSavFile(input){
       autoImportParty(res);
       SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
       /* v4.110 P1：存档多档保存（localStorage er_savs_v1，FIFO 3 档） */
-      try{var svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]');svs.push({t:Date.now(),rows:(SAV_ROWS||[]).slice(0,6)});if(svs.length>3)svs=svs.slice(-3);localStorage.setItem('er_savs_v1',JSON.stringify(svs))}catch(e){}
+      try{var svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]');svs.push({t:Date.now(),rows:(SAV_ROWS||[]).slice(0,6)});if(svs.length>3)svs=svs.slice(-3);localStorage.setItem('er_savs_v1',JSON.stringify(svs));renderSavSlots()}catch(e){}
       savPcSearch(); /* v4.93 D-6：默认渲染 BOX1 前 12 兜底 */
     }catch(e){toast('解析失败: '+e.message)}
   };
@@ -5136,6 +5153,7 @@ function speedSliderHtml(s){
         spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
         spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
         spdSlChip('−Spe',__spdSl.natOv==='减速','spdSet(\'natOv\',\'减速\')')+'</span></div>'+
+      '<div id="spdMultiBox"></div>'+ /* v4.111 P4 容器补建 */
       '<div style="font-size:11px;margin:4px 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px">击杀线伤害折算 <input type="number" id="spdAtkM" value="'+__spdSl.atkM+'" style="width:64px;font-size:11px" placeholder="0" oninput="__spdSl.atkM=+this.value;spdSliderRender()">'+
         '<span class="chipgrp">'+
         spdSlChip('×1.0',__spdSl.mult==1,'spdSet(\'mult\',1)')+
@@ -13920,7 +13938,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.110';
+var ER_ENGINE_VER='v4.111';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
