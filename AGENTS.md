@@ -1787,3 +1787,15 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.109=index 36F8AF061817D2FE 1,496,807B
 - 部署 master c62cfcc9/gh-pages de4c8911
+
+## v4.110 v509挖掘路线图P1-P4落地（2026-10-26）
+
+### 落地项
+- P1 存档多档保存：er_savs_v1 localStorage FIFO 3档（{t:Date.now,rows:SAV_ROWS[:6]}）
+- P2 命中chip：dmgOut 追加 accuracy 中性色显示（<100% 带期望折算提示）
+- P3 打击面覆盖色带：18属性chips折3行（全队攻击招式覆盖标注，绿底/灰底）
+- P4 多目标配速对比表：P50/75/90/95 所需EV+性格建议（复用spdPlanForTarget）
+
+### 版本链
+- v4.110=index A00AA7C572BC2336 1,498,694B
+- 部署 master 142b97be/gh-pages b57b291f
