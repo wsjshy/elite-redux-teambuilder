@@ -1765,3 +1765,25 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.108=index 9021C86933ECFE11 1,496,134B
 - 部署 master 31efe4ae/gh-pages 9ff6aec4
+
+## v4.109 切Tab自动关浮层体验修复（2026-10-26）
+
+### 修复内容
+- header z-index 50→100（Tab栏高于modal 80/drawer 60）
+- switchTab() 直接 DOM 操作关闭 6 类浮层：spDrawer/mvDrawer/glModal/shareCard/anDetail/ppModal
+- 跨Tab跳转「以它为核心」先取数据再关不回退
+
+### 6轮修复过程与教训
+- n608 挂接声称未生效=close函数undefined（switchTab调未定义函数静默失败——实施代理「声称已修」未验证函数存在性）
+- n609 z-index修正（header 50→100）
+- n610 关错容器（spDrawer非详情卡容器——详情卡=mvDrawer内mbox）
+- node模拟无法验证DOM渲染——实施代理自验须真机/DOM级，否则以纯黑盒DOM级实测为准
+- 容器id与实际渲染容器逐一核对
+
+### 工具挖掘 v509 摘要（推荐 v4.110 路线图）
+- P1 存档多档保存→P2 命中chip→P3 打击面色带→P4 多目标配速表
+- 候选④收藏+最近双筛选=探针实证已落地排除
+
+### 版本链
+- v4.109=index 36F8AF061817D2FE 1,496,807B
+- 部署 master c62cfcc9/gh-pages de4c8911
