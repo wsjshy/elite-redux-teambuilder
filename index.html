@@ -17,7 +17,7 @@
 *{box-sizing:border-box; margin:0; padding:0}
 html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{font-family:"Segoe UI","Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); font-size:14px}
-header{background:var(--card); border-bottom:1px solid var(--line); padding:10px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; position:sticky; top:0; z-index:50}
+header{background:var(--card); border-bottom:1px solid var(--line); padding:10px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; position:sticky; top:0; z-index:100}
 header h1{font-size:17px; font-weight:700}
 header .tag{font-size:12px; color:var(--sub)}
 nav{display:flex; gap:4px; margin-left:auto; flex-wrap:wrap}
@@ -643,7 +643,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.108</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.109</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -1948,6 +1948,13 @@ function tmRow(r){
 }
 var _currentTab='build';
 function switchTab(name){
+  /* v4.109：Tab 切换自动关闭所有浮层（直接 DOM 操作，不依赖闭包函数） */
+  try{var sd=document.getElementById('spDrawer');if(sd)sd.classList.remove('open')}catch(e){}
+  try{var gm=document.getElementById('glModal');if(gm)gm.classList.remove('open')}catch(e){}
+  try{var sc=document.getElementById('shareCard');if(sc)sc.classList.remove('open')}catch(e){}
+  try{var ad=document.getElementById('anDetail');if(ad)ad.classList.remove('open')}catch(e){}
+  try{var pm=document.getElementById('ppModal');if(pm)pm.classList.remove('open')}catch(e){}
+  try{var mvd=document.getElementById('mvDrawer');if(mvd)mvd.classList.remove('open')}catch(e){}
   _currentTab=name;
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name)});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
@@ -13895,7 +13902,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.108';
+var ER_ENGINE_VER='v4.109';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
