@@ -1814,3 +1814,17 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.111=index DC337F9E55E5893A 1,499,752B
 - 部署 master 6617dd5/gh-pages 2736e84
+
+## v4.111.1 微修（2026-10-26）
+
+### 修复内容
+- renderSavSlots缺初始化调用：DOMContentLoaded首载即渲染存档档位chip
+- 修复刷新后localStorage有档但chip不显示
+
+### 对称性检查清单（更新）
+- 渲染函数三要素对称：①容器存在性②初始化调用（首载可见）③写入触发
+- v4.111.1 补齐初始化缺口
+
+### 版本链
+- v4.111.1=index 91764E8E24985C23 1,499,886B
+- 部署 master aed1431/gh-pages b90ea66
