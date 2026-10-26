@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.113</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.114</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -799,7 +799,7 @@ details.inline,.details.inline{cursor:pointer}
     <h3>🎮 存档联动组队（我的宝可梦）<span class="mini" style="color:var(--sub);font-weight:400"> · 与下方「全图鉴组队」并列，互不替换</span></h3>
     <div id="myPickWrap" class="phasefade">
     <div class="mini" style="color:var(--sub);line-height:1.9"><span style="display:block">① 点上方「📂 解析存档 .sav」选文件（或粘贴 CSV 导入）</span><span style="display:block">② 下方出现你的队伍与箱子</span><span style="display:block">③ 点一只精灵 = 以它为核，走同一套需求驱动引擎出完整队伍方案</span></div>
-    <div class="poolgrid" id="myPoolWrap"><div class="mini" style="color:var(--sub)">尚未解析存档 —— 解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 末招）。</div></div>
+    <div class="poolgrid" id="myPoolWrap"><div class="mini" style="color:var(--sub)">尚未解析存档 —— 解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 招式）。</div></div>
     </div><!-- /#myPickWrap：挑选阶段（我的宝可梦池） -->
     <div id="myDetailWrap" class="phasefade" style="display:none">
       <div class="corebackbar"><button class="btn coreback" onclick="myPhase('pick')" title="返回挑选（我的宝可梦池原样保留）">← 返回挑选</button><span class="mini" style="color:var(--sub)">此核心（来自存档）的完整配队方案</span></div>
@@ -2447,7 +2447,7 @@ function anSetCfgSrc(src){
 }
 /* 存档实配行 → 与 anRowOf 同形 row（吃玩家真实配招/道具/EV/性格/特性，区别于 anBuildOf 引擎推荐） */
 function savRowOf(s,row){
-  var mvIds=[row['招式1'],row['招式2'],row['招式3'],row['招式4(末招)']].map(function(x){
+  var mvIds=[row['招式1'],row['招式2'],row['招式3'],row['招式4']].map(function(x){
       var m=String(x||'').match(/\(id=(\d+)\)$/);return m?+m[1]:0}).filter(function(id){return id>0});
   var phys=0,spec=0;
   mvIds.forEach(function(id){var mm=MV[id];if(!mm||mm[4]==='变化')return;if(mm[4]==='特殊')spec++;else phys++});
@@ -2565,7 +2565,7 @@ function pokepastImport(){
     });
     addToTeam(x.s,{fromSave:false,item:x.itemZh,moves:x.movesZh,pps:[],ev:x.ev,nat:x.nat});
     ppRows.push({'来源':'队伍','图鉴编号':String(x.s.id),'等级':'100','道具':x.itemZh,
-      '主特性(当前生效)':x.abiZh||'','招式1':mvRows[0]||'','招式2':mvRows[1]||'','招式3':mvRows[2]||'','招式4(末招)':mvRows[3]||'',
+      '主特性(当前生效)':x.abiZh||'','招式1':mvRows[0]||'','招式2':mvRows[1]||'','招式3':mvRows[2]||'','招式4':mvRows[3]||'',
       'EV_HP':x.ev[0],'EV_攻击':x.ev[1],'EV_防御':x.ev[2],'EV_特攻':x.ev[3],'EV_特防':x.ev[4],'EV_速度':x.ev[5],'性格':x.nat});
   });
   SAV_ROWS=ppRows;anCfgSrc='sav';
@@ -4472,7 +4472,7 @@ function buildRowJs(src,pos,off,spec,lv,exp,evs,moves4,item,stats,pp,enc,extra12
   var lup=(sp?(sp.lv||[]):[]).slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1]}).slice(0,8);
   var lv_up=lup.map(function(p){var m=MV[p[1]];return (m?m[1]:p[1])+'@'+p[0]}).join(' ');
   var nUp=(sp?(sp.lv||[]):[]).length,nTut=(sp?(sp.tut||[]):[]).length;
-  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,'主特性(当前生效)':abis[abiSel]||'',可选特性2:abis[1]||'',可选特性3:abis[2]||'',主特性选中索引:abiSel,'天性1(固定)':inns[0]||'','天性2(固定)':inns[1]||'','天性3(固定)':inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4(末招)':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,性格:NATURE_ZH[nature]||'',性格画像:nprof,OTID:otidHex||'','+0x12(语言/等级/闪光/特性)':extra12?('0x'+extra12.toString(16).toUpperCase()):'',加密块:enc||''};
+  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,'主特性(当前生效)':abis[abiSel]||'',可选特性2:abis[1]||'',可选特性3:abis[2]||'',主特性选中索引:abiSel,'天性1(固定)':inns[0]||'','天性2(固定)':inns[1]||'','天性3(固定)':inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,性格:NATURE_ZH[nature]||'',性格画像:nprof,OTID:otidHex||'','+0x12(语言/等级/闪光/特性)':extra12?('0x'+extra12.toString(16).toUpperCase()):'',加密块:enc||''};
 }
 function parseSavBytes(d){
   var recs=scanRecords(d);
@@ -4591,15 +4591,16 @@ function parseSavFile(input){
       var arr=new Uint8Array(rd.result);
       var res=parseSavBytes(arr);
       lastSavCsv=rowsToCsv(res.rows);
-      /* v4.92 D-2：锚点失败时的玩家可读提示（非技术细节） */
-      var d2Tip=res.summary.anchorsFail.length?'<div style="color:var(--warnred);font-size:12px;margin:2px 0">⚠ 该存档段定位失败，队伍行可能不全（可对照上方 ✗ 明细）</div>':'';
+      /* v4.114 A：ANCHORS 自检保留为内部逻辑（仅 console，不下发 UI） */
+      if(res.summary.anchorsFail&&res.summary.anchorsFail.length)console.log('[ER-sav anchors FAIL]',res.summary.anchorsFail);
+      if(res.summary.anchorsOk&&res.summary.anchorsOk.length)console.log('[ER-sav anchors OK]',res.summary.anchorsOk);
       /* v4.92 D-1/D-3：队伍逐只紧凑表（行点击就地展开全字段；物种名联动图鉴 openSpById） */
       var _pr=res.rows.filter(function(r){return r.来源==='队伍'});
-      var _tbl='<div style="margin-top:6px"><div style="font-size:13px;font-weight:600">队伍逐只明细（'+_pr.length+' 只 · 点行展开全字段，点名跳图鉴）</div>'+d2Tip+
+      var _tbl='<div style="margin-top:6px"><div style="font-size:13px;font-weight:600">队伍逐只明细（'+_pr.length+' 只 · 点行展开全字段，点名跳图鉴）</div>'+
         '<div style="max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:6px">';
       _pr.forEach(function(r){
         var _ev=r.EV_HP+'/'+r.EV_攻击+'/'+r.EV_防御+'/'+r.EV_特攻+'/'+r.EV_特防+'/'+r.EV_速度;
-        var _mv=[r.招式1,r.招式2,r.招式3,r['招式4(末招)']].map(function(m){return String(m||'').replace(/\(id=\d+\)$/,'')}).join(' · ');
+        var _mv=[r.招式1,r.招式2,r.招式3,r['招式4']].map(function(m){return String(m||'').replace(/\(id=\d+\)$/,'')}).join(' · ');
         var _it=String(r.道具||'').replace(/\(id=\d+\)$/,'');
         _tbl+='<div class="savrow" onclick="savRowToggle(this)" style="padding:4px 6px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:6px;align-items:center;font-size:12px">'+
           sprEl('span',r.图鉴编号,'spsp')+
@@ -4623,7 +4624,6 @@ function parseSavFile(input){
         '<div id="savPcList" style="max-height:300px;overflow-y:auto"></div></div>';
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
         '<div style="font-size:13px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+
-        '<div style="margin:4px 0">锚点：'+(res.summary.anchorsOk.length?res.summary.anchorsOk.map(function(a){return '<span style="color:#2e7d32">✓ '+esc(a)+'</span>'}).join(' '):'')+(res.summary.anchorsFail.length?' <span style="color:var(--warnred)">✗ '+esc(res.summary.anchorsFail.join('；'))+'</span>':'')+'</div>'+
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
         ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+_pcHtml+'</div>';
       $('savParseOut').innerHTML=html;
@@ -4648,7 +4648,7 @@ function clearTeamForImport(){
 /* v4.93 D-6：row → 实配 info 公共构造（autoImportParty 与电脑区入队共用，零行为差异） */
 function savRowToInfo(r){
   var info={fromSave:true,item:r.道具,moves:[],pps:[]};
-  [r.招式1,r.招式2,r.招式3,r['招式4(末招)']].forEach(function(n){info.moves.push(String(n||'').replace(/\(id=\d+\)$/,''))});
+  [r.招式1,r.招式2,r.招式3,r['招式4']].forEach(function(n){info.moves.push(String(n||'').replace(/\(id=\d+\)$/,''))});
   [r.PP1,r.PP2,r.PP3,r.PP4].forEach(function(p){info.pps.push(p)});
   return info;
 }
@@ -4678,7 +4678,7 @@ function myPoolFromSav(rows){
     var s=speciesById(id);if(!s||!isValidSp(s))return;
     if(seen[id])return;seen[id]=1;
     out.push({id:s.id,s:s,src:String(r.来源||''),level:r.等级,item:String(r.道具||''),abi:String(r.特性1||''),
-      moves:[r.招式1,r.招式2,r.招式3,r['招式4(末招)']].map(function(x){return String(x||'').replace(/\(id=\d+\)$/,'')}).filter(function(x){return x})});
+      moves:[r.招式1,r.招式2,r.招式3,r['招式4']].map(function(x){return String(x||'').replace(/\(id=\d+\)$/,'')}).filter(function(x){return x})});
   });
   return out;
 }
@@ -4688,17 +4688,18 @@ function renderMyPool(){
   var w=$('myPoolWrap');if(!w)return;
   myPhase('pick',true); /* v4.6.3：重新解析/重置选择池 → 回到挑选阶段（noscroll，不抢当前滚动） */
   var list=myPoolFromSav(SAV_ROWS);
-  if(!list.length){w.innerHTML='<div class="mini" style="color:var(--sub)">尚未解析存档 —— 点上方「📂 解析存档 .sav」选文件，或用 CSV 导入；解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 末招）。</div>';return}
+  if(!list.length){w.innerHTML='<div class="mini" style="color:var(--sub)">尚未解析存档 —— 点上方「📂 解析存档 .sav」选文件，或用 CSV 导入；解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 招式）。</div>';return}
   w.innerHTML='<div class="mini" style="color:var(--sub);grid-column:1/-1">共 '+list.length+' 只（队伍优先、按存档顺序去重）—— 点卡片 = 以它为核出方案；悬停看招式/道具/特性明细</div>'+
     list.map(function(x){
-      var last=x.moves.length?x.moves[x.moves.length-1]:'—';
       var t='招式：'+(x.moves.join(' / ')||'—')+'　道具：'+(x.item||'—')+'　特性：'+(x.abi||'—');
+      /* v4.114 B：卡片 4 招全展示（紧凑竖排 4 个 shortTag，375px 不横溢） */
+      var mvTags=(x.moves||[]).filter(Boolean).slice(0,4).map(function(m){return '<span class="ptag">'+esc(shortTag(m))+'</span>'}).join('');
       return '<div class="poolcard" onclick="myCoreTeam('+x.id+')" title="'+escq(t)+'">'+
         '<span class="psrc">'+esc(String(x.src).indexOf('队伍')>-1?'队伍':'BOX')+'</span>'+sprImgMid(x.id)+
         '<div class="pn">'+esc(x.s.zh)+'</div>'+
         '<div class="pl">Lv.'+esc(String(x.level||'?'))+'</div>'+
         '<div><span class="ptag">'+esc(shortTag(x.item)||'无道具')+'</span><span class="ptag">'+esc(shortTag(x.abi)||'—')+'</span></div>'+
-        '<div class="pl">末招 '+esc(shortTag(last))+'</div></div>';
+        '<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">'+mvTags+'</div></div>';
     }).join('');
 }
 function myCoreTeam(id){
@@ -4774,7 +4775,7 @@ function importSaveBox(){
     if(team.indexOf(s)>-1)continue;
     if(team.length>=6)break;
     var info={fromSave:true,item:r[idx['道具']]||'',moves:[],pps:[]};
-    ['招式1','招式2','招式3','招式4(末招)'].forEach(function(n){if(idx[n]!==undefined)info.moves.push(r[idx[n]]||'')});
+    ['招式1','招式2','招式3','招式4'].forEach(function(n){if(idx[n]!==undefined)info.moves.push(r[idx[n]]||'')});
     ['PP1','PP2','PP3','PP4'].forEach(function(n){if(idx[n]!==undefined)info.pps.push(r[idx[n]]||'')});
     addToTeam(s,info);
     added++;
@@ -7842,7 +7843,7 @@ function mechPool(){
     rows.forEach(function(r){
       if(!r)return;
       var sid=r['图鉴编号'];if(sid!==undefined&&sid!==null&&String(sid).trim()!=='')sp[String(sid).trim()]=1;
-      ['招式1','招式2','招式3','招式4(末招)'].forEach(function(f){
+      ['招式1','招式2','招式3','招式4'].forEach(function(f){
         var n=String(r[f]||'').replace(/\(id=\d+\)$/,'').trim();if(!n)return;
         var id=mvIdByZhOrEn(n);if(id!==null&&id!==undefined)mv[''+id]=1;});
       var iname=String(r['道具']||'').trim();
@@ -14013,7 +14014,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.113';
+var ER_ENGINE_VER='v4.114';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
