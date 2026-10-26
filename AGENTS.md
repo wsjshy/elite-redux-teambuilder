@@ -1876,3 +1876,36 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 新增 assets/qrcode_v498.js=0C77B013D8501760 25,196B
 - 部署 master 925a0e3/gh-pages 687cd62
 
+## v4.114 存档解析 UI 优化+全面排查（2026-10-26）
+
+### A. 移除「锚点：…」UI 展示块
+- 删除原 savParseOut 中「锚点：✓护城龙 BOX1第1格 …」整块 div（约 L4626）
+- `d2Tip` 锚点提示改为 `console.log('[ER-sav anchors OK/FAIL]', ...)` 内部自检，不下发 UI
+- ANCHORS 数据结构（L4442）/ anchorsOk/Fail 数组 / 返回字段保留为内部逻辑，console 输出保留可观测性
+- 解析定位本身按逻辑段布局扫描（段8=BOX1-7/段15=BOX20-26），不依赖锚点，保持不动
+
+### B. 全文件「末招」字面清点替换（共 11 处，grep 实证）
+1. 选择池卡片（L4701）：原 `<div class="pl">末招 '+shortTag(last)+'</div>` → `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px">` 4 个 `<span class="ptag">shortTag(move)</span>` 横排（375px flex-wrap 不横溢），title 属性保留完整「招式：x / y / z / w」悬浮提示；删除 `last` 变量
+2. 提示文案：L802、L4691「…道具 / 末招」→「…道具 / 招式」
+3. CSV/JSON 导出列名：「招式4(末招)」→「招式4」（L2450/2568/4475/4777/7845 等 8 处字段引用同步）
+- 内部 `moves4` 数组语义不变（仍读 r['招式4']）
+
+### C. 全面排查结论
+1. **真实存档核对表**（ERv2.65-beta2-debug汉化版.sav 131,088B，parse_er_save_v4.py 解析 431 条）：
+   - 队伍 6 只全 Lv100：超级土王Mega/坚果哑铃/Storming(英文ID)/雷电云-灵兽/洛奇亚/鳃鱼龙——4 招/PP/能力 7 项/主特性/天性/道具/性格逐项与游戏内一致
+   - 5 锚点全 ✓：护城龙#411 BOX1第1格 Lv36 / 花舞鸟-热辣热辣#741 BOX20第1格 Lv80 / 土王#980 BOX22第18格 Lv55 / 超级化石翼龙#1513 BOX26第28格 Lv60 / 远古巨蜓 / 超级土王Mega
+2. **背包道具探针**：网页 JS 与 Python parse_er_save_v4.py 均无背包/pocket/item bag 解析代码（grep bag/背包/ITEM_BAG 仅命中记录内道具掩码 0x1FF→0x3FF 注释）——**结论：未实现，本轮只评估不落地**；ER 背包 pocket 布局需下轮逆向（FRLG 原版背包在 0x560 起 42 格×4B，ER 改版可能平移，需二进制 diff 实证）
+3. **特殊区 15 条性质**：特殊区A 6 条（超级晶光花#1907/果然翁#202/铁火辉夜#797/长毛巨魔#861/超级拉帝亚斯#1539/超级烈空坐#1548，全 Lv100）+ 特殊区B 9 条（雪妖女R#2626 Lv80/超级喷火龙Z#2191 Lv80/花叶蒂-永恒之花#1716 Lv80/魔幻假面喵#908 Lv60/纸御剑#798 Lv45/幸福蛋R#2633 Lv80/美录梅塔#809 Lv100/超级骨纹巨声鳄#2224 Lv80/超级颤弦蝾螈R#2178 Lv80）——等级整齐（Lv100/80/60/45）、招式配置固定，**判定为对战设施预设 battle box 宝可梦，非玩家持有**
+4. **待定字段观察**：+0x0A / +0x0E 两字节**已被 4 招加密块消费**（parse 脚本 v04/v08/v0A/v0E → decode4_moves），并非自由字段；+0x48..0x4B 位于 7 维 stats 块（+0x3A..+0x47）之后，属 0x60 记录尾部 padding/ribbon 区——用户原假设「+0x0A bit9-5=分组N / +0x0E 高5位」不成立
+5. **375px/console 0**：真机 DOM 走查通过，body 无「锚点：」/「末招」字样，console 0 error，ER_ENGINE_VER=v4.114
+
+### 守门+自验
+- grep「末招|锚点：」= 0 命中
+- 5 个内联 script 块 new Function() 语法检查全 PASS
+- 真机注入 SAV_ROWS 验证选择池卡片：4 个 ptag 招式标签横排 flex-wrap，375px 无横溢
+- 冻结分片逐位一致（data_lite/species/adv_v498 + qrcode_v498.js + showdown_sets_v496 未改）
+
+### 版本链
+- v4.114=index AC0B7D2D18FDEFDC 1,481,438B（−146B vs v4.113 1,481,584B：删锚点 UI 块 -~200B + 4-tag flex-wrap 新增 +~50B + 「末招→招式」同字符数零差）
+- 部署 master TBD/gh-pages TBD
+
