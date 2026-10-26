@@ -1874,5 +1874,5 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.113=index 232460B74951D1DB 1,481,584B（−18,298B vs v4.112 1,499,882B）
 - 新增 assets/qrcode_v498.js=0C77B013D8501760 25,196B
-- 部署 master TBD/gh-pages TBD
+- 部署 master 925a0e3/gh-pages 687cd62
 
