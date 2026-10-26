@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.120</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.121</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4526,7 +4526,7 @@ function savPcListRender(rows){
   var h='';
   var spcN=rows.filter(function(x){return x.r.来源.indexOf('特殊区')===0});
   if(boxN.length)h+='<div class="dim" style="font-size:11px;padding:2px 4px">电脑区（'+boxN.length+'，点＋入队）</div>'+boxN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
-  if(spcN.length)h+='<div class="dim" style="font-size:11px;padding:4px 4px 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">特殊区·设施预设（'+spcN.length+'，可＋入队调优）<button class="btn-mini" onclick="savPcEnqueueAllSpc()" style="margin-left:auto">一键入队设施队（前6）</button></div>'+spcN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
+  if(spcN.length)h+='<div class="dim" style="font-size:11px;padding:4px 4px 2px">特殊区·设施预设（'+spcN.length+'，＋入队调优；一键入队见上方橙色按钮）</div>'+spcN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
   if(!h)h='<div class="dim" style="padding:6px">无匹配</div>';
   var el=$('savPcList');if(el)el.innerHTML=h;
 }
@@ -4686,6 +4686,8 @@ function parseSavFile(input){
         '<div id="savPcList" style="max-height:300px;overflow-y:auto"></div></div>';
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
         '<div style="font-size:13px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+
+        /* v4.121 P0：一键入队按钮常驻在解析结果区（不再藏在电脑区清单内） */
+        (res.summary.special>0?'<div style="margin-top:4px;padding:4px 6px;background:#fff3e0;border-radius:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:11px;color:var(--sub)">特殊区·设施预设 '+res.summary.special+' 条：</span><button class="btn-mini" onclick="savPcEnqueueAllSpc()" style="background:var(--accent);color:#fff">一键入队前 6</button></div>':'')+
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
         ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+_pcHtml+'</div>';
       $('savParseOut').innerHTML=html;
@@ -14080,7 +14082,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.120';
+var ER_ENGINE_VER='v4.121';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
