@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.119</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.120</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3975,6 +3975,9 @@ function renderShareQr(){
       qc.style.display='';
       var qr=new QRCode(fullUrl);
       qr.draw(qc);
+      /* v4.120 P1：QR 绘出后清除「加载中」hint（二次打开分片已缓存不再出现文案） */
+      var hintClear=qc.nextElementSibling;
+      if(hintClear)hintClear.textContent='';
     }
   }catch(e){
     console.log('QR err',e);
@@ -4593,12 +4596,24 @@ function renderSavSlots(){
   box.innerHTML=h;
 }
 /* v4.119：存档双档 diff——队伍级（localStorage 仅存前6只队伍摘要） */
+/* v4.120 P2：升级为可选源/目标档（默认最近两档；点 chip 切换；loadSavSlot 加载语义零改动） */
+var _diffSel={a:-1,b:-1};
 function savSlotsDiffToggle(){
   var box=document.getElementById('savSlotsDiffBox');if(!box)return;
   if(box.innerHTML){box.innerHTML='';return}
   var svs=[];try{svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]')}catch(e){}
   if(svs.length<2){box.innerHTML='<div class="dim" style="font-size:10px">至少需 2 档</div>';return}
-  var A=svs[svs.length-2].rows||[], B=svs[svs.length-1].rows||[];
+  _diffSel.a=svs.length-2;_diffSel.b=svs.length-1;
+  savSlotsDiffRender(svs);
+}
+function savSlotsDiffPick(side,i){
+  _diffSel[side]=i;
+  var svs=[];try{svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]')}catch(e){}
+  savSlotsDiffRender(svs);
+}
+function savSlotsDiffRender(svs){
+  var box=document.getElementById('savSlotsDiffBox');if(!box)return;
+  var A=(svs[_diffSel.a]&&svs[_diffSel.a].rows)||[], B=(svs[_diffSel.b]&&svs[_diffSel.b].rows)||[];
   var mapA={},mapB={};
   A.forEach(function(r){mapA[r.图鉴编号]=r});
   B.forEach(function(r){mapB[r.图鉴编号]=r});
@@ -4610,7 +4625,13 @@ function savSlotsDiffToggle(){
   Object.keys(mapA).forEach(function(id){if(!mapB[id])removed.push(mapA[id])});
   function row(r){return esc(r.宝可梦||'?')+' Lv'+esc(String(r.等级||'?'))}
   var h='<div style="margin-top:4px;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:11px">';
-  h+='<div style="font-weight:600;margin-bottom:4px">对比：档'+(svs.length-1)+' → 档'+svs.length+'</div>';
+  h+='<div style="font-weight:600;margin-bottom:4px">对比差异</div>';
+  h+='<div style="margin-bottom:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center">';
+  h+='<span style="color:var(--sub)">源:</span>';
+  svs.forEach(function(s,i){var act=i===_diffSel.a;h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;'+(act?'background:#bbdefb;font-weight:600':'background:#e3f2fd')+'" onclick="savSlotsDiffPick(\'a\','+i+')">档'+(i+1)+'</span>'});
+  h+='<span style="color:var(--sub);margin-left:6px">目标:</span>';
+  svs.forEach(function(s,i){var act=i===_diffSel.b;h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;'+(act?'background:#bbdefb;font-weight:600':'background:#e3f2fd')+'" onclick="savSlotsDiffPick(\'b\','+i+')">档'+(i+1)+'</span>'});
+  h+='</div>';
   h+='<div style="margin-bottom:3px"><span style="color:var(--sub)">新增（'+added.length+'）：</span>'+(added.length?added.map(row).join('、'):'—')+'</div>';
   h+='<div style="margin-bottom:3px"><span style="color:var(--sub)">移除（'+removed.length+'）：</span>'+(removed.length?removed.map(row).join('、'):'—')+'</div>';
   h+='<div><span style="color:var(--sub)">等级变化（'+levelChanged.length+'）：</span>'+(levelChanged.length?levelChanged.map(function(x){return esc(x.a.宝可梦||'?')+' Lv'+esc(String(x.a.等级||'?'))+'→Lv'+esc(String(x.b.等级||'?'))}).join('、'):'—')+'</div>';
@@ -14059,7 +14080,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.119';
+var ER_ENGINE_VER='v4.120';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
