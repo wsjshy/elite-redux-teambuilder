@@ -1841,3 +1841,38 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 版本链
 - v4.112=index 6C7AAD3DA19198D2 1,499,882B
 - 部署 master 8618440/gh-pages e67be9d
+
+## v4.113 v512挖掘路线图P1-P2落地（2026-10-26）
+
+### P1 QR bundle 抽分片懒加载（手机端首屏瘦身）
+- 抽出 v4.103 内联 qrcode esbuild bundle（24,993B）→ 新增 `assets/qrcode_v498.js`（25,196B，含头部注释；暴露全局 `var QRLIB` + `function QRCode`，与 v4.103 内联版逐字一致）
+- index.html 原位替换为 `var QRLIB=null` + `__erLoadQrLib(cb)` 懒加载器（复用 v4.96 showdown_sets 已验证的按需 fetch 模式：动态 `<script src="assets/qrcode_v498.js?v=v498">` 注入 + 队列去重 + onload 回调重绘 + onerror 降级「二维码库加载失败，请复制链接分享」）
+- `renderShareQr()` 守卫升级：QRLIB 未就绪时隐藏 canvas + 文案「二维码加载中…（首次使用）」→ 触发 `__erLoadQrLib` → onload 自动重绘（不报错不空白）
+- **首屏静态 `<script src=qrcode>` 引用数=0**（仅动态注入）；调用处 QRLIB 存在性守卫保持
+
+### P2 分析器双队快照对比（er_teamSnap_v1）
+- localStorage key `er_teamSnap_v1`（与 `er_savs_v1` 同前缀防污染）；`anSnapSave()` 序列化当前 `anLastR` 的 7 维字段（members/sys/roles/side/speed/weak/cover）
+- 新增容器 `#anSnapBar`（插在 `#anCfgBar` 与 `#anOut` 之间）；无快照时仅渲染「📷 存为快照」按钮不占额外空间
+- 三 chip：当前队 / 快照队 / 对比（仅存快照后出现）；`anSnapBlockHtml(R,title,badge)` 渲染 4 维（六维 `teamStatsChartHtml(R)` / 速度 `teamSpeedCardHtml(R)` / 联防 `teamDefHeatHtml(R)` / 打击面 cover 卡）
+- `teamSpeedCardHtml(_R)` 加可选 R 形参（缺省回退 anLastR，零回归）
+- 对比模式上下堆叠两块（🟢 当前队在上 / 📸 快照队在下），flex-wrap+垂直流，禁并排防 375px 横溢
+
+### 附带修复
+- favicon.ico 404 噪音消除：head 加内联 SVG data-URI favicon（精灵球红/黑/白），浏览器不再自动请求 /favicon.ico
+
+### 路线图完成标记
+- **v512 挖掘 P1-P2 全落地**——手机端加载优化剩余空间收口（QR 分片 + 既有 data_lite/species/adv 三 shard + showdown_sets 按需 fetch 模式已统一）
+
+### 守门+自验
+- 引擎断言：静态 qrcode 引用 0 / 动态注入 2 / QRLIB stub 守卫在 / 瘦身 −18,298B
+- 快照 schema 断言：er_teamSnap_v1 localStorage / anSnapSave / anSnapBlockHtml / 三 chip 全在
+- hunk 零回归：anRender ①~⑩ 区块渲染链未删（仅 renderAnTab 尾部 anSnapView 分支，cur 路径逐字走 anRender）
+- 冻结分片逐位一致：data_lite/species/adv_v498 + showdown_sets_v496 SHA256 全 match=True
+- 5 个内联 `<script>` 块 `new Function()` 语法检查全 PASS
+- 真机 DOM 级：首屏 QRLIB=null 且 qrcode_v498.js 未 fetch；触发分享后分片按需加载、canvas 17,350 非白像素（QR 图案真实渲染）；快照存/切/无快照空态/三 chip 对比全通过；375px 无横溢；console 0 error
+
+### 版本链
+- v4.113=index 232460B74951D1DB 1,481,584B（−18,298B vs v4.112 1,499,882B）
+- 新增 assets/qrcode_v498.js=0C77B013D8501760 25,196B
+- 部署 master TBD/gh-pages TBD
+
