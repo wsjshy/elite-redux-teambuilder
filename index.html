@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.118</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.119</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4588,6 +4588,33 @@ function renderSavSlots(){
   if(!svs.length){box.innerHTML='';return}
   var h='<span style="color:var(--sub);margin-right:4px">历史档:</span>';
   svs.forEach(function(s,i){var d=new Date(s.t);var lbl='档'+(i+1)+' '+d.getHours()+':'+d.getMinutes();h+='<span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin-right:3px" onclick="loadSavSlot('+i+')">'+lbl+'</span>'});
+  /* v4.119：双档对比入口（≥2 档才显示；纯读取，不改既有加载） */
+  if(svs.length>=2){h+='<button class="btn-mini" onclick="savSlotsDiffToggle()" style="margin-left:4px">对比近两档</button><div id="savSlotsDiffBox"></div>'}
+  box.innerHTML=h;
+}
+/* v4.119：存档双档 diff——队伍级（localStorage 仅存前6只队伍摘要） */
+function savSlotsDiffToggle(){
+  var box=document.getElementById('savSlotsDiffBox');if(!box)return;
+  if(box.innerHTML){box.innerHTML='';return}
+  var svs=[];try{svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]')}catch(e){}
+  if(svs.length<2){box.innerHTML='<div class="dim" style="font-size:10px">至少需 2 档</div>';return}
+  var A=svs[svs.length-2].rows||[], B=svs[svs.length-1].rows||[];
+  var mapA={},mapB={};
+  A.forEach(function(r){mapA[r.图鉴编号]=r});
+  B.forEach(function(r){mapB[r.图鉴编号]=r});
+  var added=[],removed=[],levelChanged=[];
+  Object.keys(mapB).forEach(function(id){
+    if(!mapA[id])added.push(mapB[id]);
+    else if(String(mapA[id].等级)!=String(mapB[id].等级))levelChanged.push({a:mapA[id],b:mapB[id]});
+  });
+  Object.keys(mapA).forEach(function(id){if(!mapB[id])removed.push(mapA[id])});
+  function row(r){return esc(r.宝可梦||'?')+' Lv'+esc(String(r.等级||'?'))}
+  var h='<div style="margin-top:4px;padding:6px;border:1px solid var(--line);border-radius:6px;font-size:11px">';
+  h+='<div style="font-weight:600;margin-bottom:4px">对比：档'+(svs.length-1)+' → 档'+svs.length+'</div>';
+  h+='<div style="margin-bottom:3px"><span style="color:var(--sub)">新增（'+added.length+'）：</span>'+(added.length?added.map(row).join('、'):'—')+'</div>';
+  h+='<div style="margin-bottom:3px"><span style="color:var(--sub)">移除（'+removed.length+'）：</span>'+(removed.length?removed.map(row).join('、'):'—')+'</div>';
+  h+='<div><span style="color:var(--sub)">等级变化（'+levelChanged.length+'）：</span>'+(levelChanged.length?levelChanged.map(function(x){return esc(x.a.宝可梦||'?')+' Lv'+esc(String(x.a.等级||'?'))+'→Lv'+esc(String(x.b.等级||'?'))}).join('、'):'—')+'</div>';
+  h+='</div>';
   box.innerHTML=h;
 }
 function loadSavSlot(i){
@@ -14032,7 +14059,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.118';
+var ER_ENGINE_VER='v4.119';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
