@@ -1907,5 +1907,33 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 
 ### 版本链
 - v4.114=index AC0B7D2D18FDEFDC 1,481,438B（−146B vs v4.113 1,481,584B：删锚点 UI 块 -~200B + 4-tag flex-wrap 新增 +~50B + 「末招→招式」同字符数零差）
-- 部署 master TBD/gh-pages TBD
+- 部署 master 2f87801/gh-pages c8c3246
+
+## v4.115 背包探针二轮结论（2026-10-26）
+
+### 探针方法
+- 解码段轮换 K=3，20 逻辑段 active/inactive 副本对（+0xFF4 save counter 高者为 active）
+- 全文件逐 4 字节扫描：(item_id u16, count u16) 对，item_id ∈ gameData.items keys（929 个，0-1022），count ∈ 1..99
+- 期望背包特征：连续 ≥20 条合法 (id,count) 对，(0,0) 结尾，pocket 之间以 pocket 边界分隔
+
+### 实证结果
+- **全文件最长连续合法对仅 4 条**（logical3 phys 0x0 +0xE1C）：Master Ball×1 / (0,9) / (0,5) / Great Ball×3——其中 2 条 id=0 空槽，**不构成背包**
+- logical0（phys 0x11）：player name/OTID/money 区，无 (id,count) 连续段
+- logical2（phys 0x13）+0x28 Super Potion×19 / +0x164 Repel×207 / +0x27C Power Anklet×55 等孤立命中——但周围是 6528/25671/33472/39062 重复 0x10 间隔模式，**判定为 checksum/hash 表或宝可梦邻接数据，非背包**
+- L8/L12/L15/L16/L17 box 段中反复出现的 Smoke Ball×6 为宝可梦记录内 held-item mask 误命中（id=252 & count=6 恰好落在记录位）
+
+### 结论
+- **ER v2.65 存档中无明文 (id,count) 连续背包段**——背包数据要么加密、要么压缩、要么存放在未映射的物理区
+- 现有两个存档（ER 2.5 vs ER 2.65）版本差过大，diff 噪音远超信号，无法做受控 before/after 定位
+- **本轮不输出伪 parser**（critical collaboration：宁可不做也不做错）
+
+### 下轮落地前置条件
+- 需用户提供**受控实验档对**：游戏内打开背包 → 记录当前状态 → 购买/使用 1 个道具 → 存档 → 再存一份
+- 对两档做字节级 diff，差异区即背包 pocket 位置
+- 若 diff 后仍无连续 (id,count) 段 → 背包已加密，需逆向 ER 源码 bagSave/bagLoad 函数
+
+### 版本链
+- v4.115=index 198057D05FE2CFB7 1,481,438B（与 v4.114 同字节数，仅版本号两处 bump）
+- 部署 master b1a6331/gh-pages 8b53ecc
+
 
