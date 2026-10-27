@@ -1981,6 +1981,7 @@ function switchTab(name){
     else if(name==='core'&&window.drawCoreList){drawCoreList()}
     else if(name==='analyze'){renderAnalyze();if(typeof dmgRender==='function'){try{dmgRender()}catch(e){}}}
     else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
+    else if(name==='team'&&typeof renderTm==='function'){renderTm(true)}   /* v4.124 修复：队伍构建 Tab 切来时未调 renderTm → 选择池空白 */
   }catch(e){console.warn('tab render fail',name,e)}
 }
 document.addEventListener('er-ready',function(){
