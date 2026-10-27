@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.129</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.130</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -790,7 +790,8 @@ details.inline,.details.inline{cursor:pointer}
     <div id="multiPickBar" style="display:none;margin-top:6px;padding:6px;background:#e3f2fd;border-radius:8px;font-size:12px">已选 <b id="multiPickCount">0</b> 只 <button class="btn-mini" onclick="multiPickEnqueue()">确认入队</button> <button class="btn-mini" onclick="toggleMultiPick()">取消</button></div>
   </div>
   <div class="sec" style="margin:6px 0">
-    <div class="tmfilter">
+    <button class="btn-mini" onclick="toggleTmFilter()" id="tmFilterToggle" style="margin-bottom:4px">▾ 筛选区</button>
+    <div class="tmfilter" id="tmFilterBox">
       <span class="mini">属性：</span><div class="chips" id="tmTypeChips"></div>
       <span class="mini">定位：</span>
       <select id="tmRole"><option value="">全部</option><option value="物攻手">物攻手</option><option value="特攻手">特攻手</option><option value="盾">盾</option><option value="速攻">速攻</option><option value="空间向">空间向</option></select>
@@ -3653,6 +3654,16 @@ function tmFilterReset(){
      顶层同步调用会在其初始化前抛错并中断整块执行（NM2ID 永不建立）→ 整体延迟到脚本块结束后执行 */
   setTimeout(function(){try{loadTeam()}catch(e){}},0);
 })();
+/* v4.130：筛选区折叠（375px 首屏释放） */
+function toggleTmFilter(){
+  var box=document.getElementById('tmFilterBox');
+  var btn=document.getElementById('tmFilterToggle');
+  if(!box||!btn)return;
+  var hidden=box.style.display==='none';
+  box.style.display=hidden?'':'none';
+  btn.textContent=hidden?'▾ 筛选区':'▸ 筛选区';
+}
+toggleTmFilter();  /* 默认折叠 */
 /* v4.129：多选入队模式 */
 var _multiPickSet={};
 function toggleMultiPick(){
@@ -14148,7 +14159,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.129';
+var ER_ENGINE_VER='v4.130';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
