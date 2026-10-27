@@ -1979,10 +1979,10 @@ function switchTab(name){
   try{
     if(name==='speed'){speedRender(true)}
     else if(name==='core'&&window.drawCoreList){
-      /* v4.126 P2：核心配队 tab 首载白屏 ~20s——先渲染 loading 占位，再异步执行重计算（让 loading 先 paint） */
-      var _coreBox=document.getElementById('tab-core');
-      if(_coreBox)_coreBox.innerHTML='<div style="padding:60px 20px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…（首次生成推荐方案约需数秒）</div>';
-      setTimeout(function(){try{drawCoreList()}catch(e){console.warn('core render fail',e)}},50);
+      /* v4.126 P2：核心配队 tab 首载白屏——在 grid 区显示 loading（不破坏表单元素），再异步执行重计算 */
+      var _g=document.getElementById('coreGrid');
+      if(_g)_g.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div>';
+      setTimeout(function(){try{drawCoreList()}catch(e){console.warn('core render fail',e)}},200);
     }
     else if(name==='analyze'){renderAnalyze();if(typeof dmgRender==='function'){try{dmgRender()}catch(e){}}}
     else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
