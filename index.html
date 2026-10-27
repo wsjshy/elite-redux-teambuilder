@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.128</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.129</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -786,6 +786,8 @@ details.inline,.details.inline{cursor:pointer}
     <button class="btn-mini" onclick="window._randMode=(window._randMode==='template'?'pure':'template');toast(window._randMode==='template'?'随机队：官方模板模式':'随机队：纯随机模式')" id="randModeBtn" style="font-size:11px">模板:开</button>
     <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="v4.97：基于速度线/联防/体系缺口推荐补位">🧠 智能补位</button>
     <button class="btn-mini" onclick="window._sugPool=(window._sugPool==='pc'?'dex':'pc');toast('补位候选池：'+(window._sugPool==='pc'?'存档电脑区':'全图鉴'))" id="sugPoolBtn" style="font-size:11px">候选:存档区</button>
+    <button class="btn-mini" onclick="toggleMultiPick()" id="multiPickBtn" style="font-size:11px" title="v4.129：勾选多只精灵后一键入队">☑ 多选入队</button>
+    <div id="multiPickBar" style="display:none;margin-top:6px;padding:6px;background:#e3f2fd;border-radius:8px;font-size:12px">已选 <b id="multiPickCount">0</b> 只 <button class="btn-mini" onclick="multiPickEnqueue()">确认入队</button> <button class="btn-mini" onclick="toggleMultiPick()">取消</button></div>
   </div>
   <div class="sec" style="margin:6px 0">
     <div class="tmfilter">
@@ -3649,6 +3651,28 @@ function tmFilterReset(){
      顶层同步调用会在其初始化前抛错并中断整块执行（NM2ID 永不建立）→ 整体延迟到脚本块结束后执行 */
   setTimeout(function(){try{loadTeam()}catch(e){}},0);
 })();
+/* v4.129：多选入队模式 */
+var _multiPickSet={};
+function toggleMultiPick(){
+  window._multiPickOn=!window._multiPickOn;
+  var bar=document.getElementById('multiPickBar');if(bar)bar.style.display=window._multiPickOn?'block':'none';
+  var btn=document.getElementById('multiPickBtn');if(btn)btn.style.background=window._multiPickOn?'var(--accent)':'';
+  if(!window._multiPickOn)_multiPickSet={};
+  renderTm(true);
+}
+function multiPickEnqueue(){
+  var ids=Object.keys(_multiPickSet);
+  var added=0;
+  ids.forEach(function(id){
+    if(team.length>=6)return;
+    var s=speciesById(id);if(!s)return;
+    if(team.indexOf(s)>-1)return;
+    addToTeam(s,null);added++;
+  });
+  toast('已批量入队 '+added+' 只');
+  _multiPickSet={};
+  toggleMultiPick();
+}
 function renderTm(reset){
   var q=$('tmSearch').value.trim();
   var role=$('tmRole')?$('tmRole').value:'';
@@ -3666,6 +3690,13 @@ function renderTm(reset){
       '</div><div class="bs">种族值（总值 '+spBst(s)+'）</div>'+
       '<div style="margin-top:6px">'+(inTeam?'<span class="badge badge-res">已入队</span>':'<span class="badge badge-neu">＋ 入队</span>')+'</div>';
     c.onclick=function(){
+      if(window._multiPickOn){
+        if(_multiPickSet[s.id]){delete _multiPickSet[s.id];c.style.background=''}
+        else{if(Object.keys(_multiPickSet).length>=6){toast('最多选 6 只');return}
+          _multiPickSet[s.id]=1;c.style.background='#e3f2fd'}
+        var mc=document.getElementById('multiPickCount');if(mc)mc.textContent=Object.keys(_multiPickSet).length;
+        return;
+      }
       if(team.indexOf(s)>-1)return;
       addToTeam(s,null);
     };
@@ -14115,7 +14146,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.128';
+var ER_ENGINE_VER='v4.129';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
