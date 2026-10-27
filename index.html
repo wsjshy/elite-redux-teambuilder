@@ -515,10 +515,10 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 .anslots .slot .x{min-width:44px; min-height:44px; font-size:16px; margin-left:auto}
 .anmemline,.animline{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
 .anmem{display:inline-flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:8px;
-  padding:2px 6px; cursor:pointer; min-height:44px; background:var(--card); max-width:100%}
+  padding:2px 6px; cursor:pointer; min-height:44px; background:var(--card); max-width:100%; flex-wrap:wrap}
 .anmem .spinl{width:40px; height:40px; margin-right:2px}
 .anmem .spthumb{width:28px; height:28px}
-.anmemnm{font-size:12px; overflow-wrap:anywhere}
+.anmemnm{font-size:12px; overflow-wrap:anywhere; flex:1 1 auto; min-width:0}
 .anspcard{display:block; cursor:pointer; min-height:44px}
 .anspcard:hover{background:#f7faff}
 .anspcard .spinl{width:44px; height:44px; margin:0 6px 4px 0}
@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.125</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.126</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -772,7 +772,7 @@ details.inline,.details.inline{cursor:pointer}
     <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
     <div id="savSlotsBox" style="display:inline-block;margin-left:6px;font-size:11px"></div> <!-- v4.111 档位选择UI -->
-    <button class="btn" onclick="toggleCsvPanel()">📥 粘贴 CSV</button>
+    <button class="btn" onclick="toggleCsvPanel()" title="CSV 名单导入队伍（前6只），不填充下方全图鉴组队池">📥 粘贴 CSV</button>
     <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.96：随机生成 6 只队伍">🎲 随机队</button>
     <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:11px">传说档:关</button>
     <button class="btn-mini" onclick="window._randMode=(window._randMode==='template'?'pure':'template');toast(window._randMode==='template'?'随机队：官方模板模式':'随机队：纯随机模式')" id="randModeBtn" style="font-size:11px">模板:开</button>
@@ -1978,7 +1978,12 @@ function switchTab(name){
   }
   try{
     if(name==='speed'){speedRender(true)}
-    else if(name==='core'&&window.drawCoreList){drawCoreList()}
+    else if(name==='core'&&window.drawCoreList){
+      /* v4.126 P2：核心配队 tab 首载白屏 ~20s——先渲染 loading 占位，再异步执行重计算（让 loading 先 paint） */
+      var _coreBox=document.getElementById('tab-core');
+      if(_coreBox)_coreBox.innerHTML='<div style="padding:60px 20px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…（首次生成推荐方案约需数秒）</div>';
+      setTimeout(function(){try{drawCoreList()}catch(e){console.warn('core render fail',e)}},50);
+    }
     else if(name==='analyze'){renderAnalyze();if(typeof dmgRender==='function'){try{dmgRender()}catch(e){}}}
     else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
     else if(name==='team'&&typeof renderTm==='function'){renderTm(true)}   /* v4.124 修复：队伍构建 Tab 切来时未调 renderTm → 选择池空白 */
@@ -14101,7 +14106,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.125';
+var ER_ENGINE_VER='v4.126';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
