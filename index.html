@@ -41,6 +41,7 @@ main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); o
 .bar input[type=number]{width:64px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px}
 .bar select{padding:7px 8px; border:1px solid var(--line); border-radius:8px; background:var(--card)}
 .chips{display:flex; flex-wrap:wrap; gap:4px}
+.chips-horiz{display:flex; flex-wrap:nowrap; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
 .chips button{border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:12px}
 .chips button.on{background:var(--accent); color:#fff; border-color:var(--accent)}
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px}
@@ -5350,7 +5351,7 @@ function speedSliderHtml(s){
         '<span style="font-size:20px;font-weight:700;color:var(--accent)" id="spdSlVal">'+spdPctileVal(p0)+'</span>'+
         '<span style="font-size:11px;color:var(--sub)" id="spdSlRank">P'+p0+' · 极速 '+spdMaxOf(s)+'=P'+p0+'</span>'+
       '</div>'+
-      '<input type="range" min="0" max="99" step="1" value="'+p0+'" id="spdSlRange" style="width:100%;margin:6px 0;accent-color:var(--accent)" oninput="spdSliderOn(this.value)">'+
+      '<input type="range" min="0" max="99" step="1" value="'+p0+'" id="spdSlRange" style="width:100%;margin:6px 0;min-height:44px;accent-color:var(--accent)" oninput="spdSliderOn(this.value)">'+
       '<div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:10px;color:var(--sub)">'+
         ['P50','P75','P90','P95','P99'].map(function(a){var v=+a.slice(1);return '<span style="cursor:pointer" onclick="spdSliderSet('+v+')" title="吸附到 '+a+' 锚点">'+a+' '+spdPctileVal(v)+'</span>'}).join('')+
       '</div>'+
