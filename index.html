@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.126</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.127</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -672,6 +672,13 @@ details.inline,.details.inline{cursor:pointer}
     <div id="dmgAtkList" style="margin-bottom:4px"></div>
     <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
     <div id="dmgDefList" style="margin-bottom:4px"></div>
+    <div style="font-size:11px;margin-bottom:4px;color:var(--sub)">常用对手：
+      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('超级土王')">超级土王</span>
+      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('坚果哑铃')">坚果哑铃</span>
+      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('洛奇亚')">洛奇亚</span>
+      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('耿鬼')">耿鬼</span>
+      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('巨金怪')">巨金怪</span>
+    </div>
     <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" style="width:120px" oninput="dmgMvQ(this.value)"></div>
     <div id="dmgMvList" style="margin-bottom:4px"></div>
     <div id="dmgOut"></div>
@@ -5528,6 +5535,7 @@ function loadAtkFromTeam(){
     return '<span class="chipopt" role="button" onclick="dmgAtkPick(\''+s.id+'\')">'+esc(s.zh||s.id)+'</span>'
   }).join('');
 }
+function dmgDefQuick(name){var el=document.getElementById('dmgDefQ');if(el){el.value=name;dmgDefQ(name)}}
 function dmgDefQ(v){
   var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgDefList');if(el)el.innerHTML='';return}
   var hits=[];ERDATA.species.forEach(function(x){if(hits.length<12&&String(x.zh).toLowerCase().indexOf(q)>-1)hits.push(x)});
@@ -14106,7 +14114,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.126';
+var ER_ENGINE_VER='v4.127';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
