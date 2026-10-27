@@ -2035,4 +2035,33 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 主工作区已同步
 - 增量 +613B < 15KB，零新分片
 
+## v4.126 第三轮修复（2026-10-27，P1/P2/P3 全修+hotfix）
+
+### P1 375px 成员卡截断
+- **根因**：`.anmem` 是 `inline-flex` 无 `flex-wrap`，精灵图(40px)+名字+定位在 375px 下挤成一行溢出截断
+- **修复**：`.anmem` 加 `flex-wrap:wrap`；`.anmemnm` 加 `flex:1 1 auto; min-width:0`——名字换行不截断
+
+### P2 核心配队首载白屏根治+hotfix
+- **根因**：switchTab('core') 同步调 drawCoreList()，引擎长计算阻塞 UI 线程
+- **初版 bug**：loading 占位覆盖整个 tab-core innerHTML → 清掉搜索表单元素 → drawCoreList 读 `$('coreSearch').value` 抛 null → 永远卡 loading（轻量黑盒「仍空白」根因实锤）
+- **hotfix**：loading 仅写 `#coreGrid` 容器（保留上方搜索表单/类型 chip）+ 200ms 延迟确保 loading paint
+- **教训**：loading 占位必须作用域收敛——只覆盖被替换的容器，不得清掉表单等既有交互元素
+
+### P3 CSV 名单不填 BOX 池
+- **设计正确**（职责分离：CSV→队伍前6；BOX 池=存档/全图鉴独立管理）
+- CSV 按钮加 `title="CSV 名单导入队伍（前6只），不填充下方全图鉴组队池"`——悬停即见说明
+
+### 轻量黑盒第三轮
+- 观感 96（v4.123 基准恢复）+ console 0 + 核心配队渲染正常 + 成员卡正常
+- 报告：`C:\temp\er-v526-blackbox\blackbox_v526.md`
+
+### 版本链
+- er-n649 初版=1,489,151B sha16=6B41936ED7A1E993
+- er-n649 hotfix=1,489,089B sha16=B0CD6D75C17DF5CD
+- master：526f233（v4.126）→ 9f25922（hotfix）→ 登记 commit
+- gh-pages：9061a5d（v4.126）→ 2c87b0d（hotfix）
+- 线上 v4.126 已部署验证
+- 主工作区已同步
+- 增量 +535B < 8KB，零新分片
+
 
