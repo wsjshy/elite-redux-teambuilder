@@ -646,7 +646,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.130</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.131</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4664,10 +4664,24 @@ function renderSavSlots(){
   var svs=[];try{svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]')}catch(e){}
   if(!svs.length){box.innerHTML='';return}
   var h='<span style="color:var(--sub);margin-right:4px">历史档:</span>';
-  svs.forEach(function(s,i){var d=new Date(s.t);var lbl='档'+(i+1)+' '+d.getHours()+':'+d.getMinutes();var sel=(i===_loadedSlot);h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;margin-right:3px;'+(sel?'background:#bbdefb;font-weight:600;border:1px solid #1976d2':'background:#e3f2fd;border:1px solid transparent')+'" onclick="loadSavSlot('+i+')">'+lbl+'</span>'});
+  svs.forEach(function(s,i){
+    var d=new Date(s.t);var lbl='档'+(i+1)+' '+d.getHours()+':'+d.getMinutes();
+    var nm=localStorage.getItem('er_savName_'+i)||'';
+    var sel=(i===_loadedSlot);
+    h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;margin-right:3px;'+(sel?'background:#bbdefb;font-weight:600;border:1px solid #1976d2':'background:#e3f2fd;border:1px solid transparent')+'" onclick="loadSavSlot('+i+')" ondblclick="renameSavSlot('+i+')" title="双击改名">'+(nm||lbl)+'</span>'
+  });
   /* v4.119：双档对比入口（≥2 档才显示；纯读取，不改既有加载） */
   if(svs.length>=2){h+='<button class="btn-mini" onclick="savSlotsDiffToggle()" style="margin-left:4px">对比近两档</button><div id="savSlotsDiffBox"></div>'}
   box.innerHTML=h;
+}
+/* v4.131：历史档双击改名 */
+function renameSavSlot(i){
+  var cur=localStorage.getItem('er_savName_'+i)||'';
+  var nm=prompt('档'+(i+1)+' 改名：',cur);
+  if(nm===null)return;
+  nm=nm.trim();
+  if(nm){localStorage.setItem('er_savName_'+i,nm)}else{localStorage.removeItem('er_savName_'+i)}
+  renderSavSlots();
 }
 /* v4.119：存档双档 diff——队伍级（localStorage 仅存前6只队伍摘要） */
 /* v4.120 P2：升级为可选源/目标档（默认最近两档；点 chip 切换；loadSavSlot 加载语义零改动） */
@@ -14160,7 +14174,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.130';
+var ER_ENGINE_VER='v4.131';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
