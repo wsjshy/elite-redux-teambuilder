@@ -645,7 +645,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.127</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.128</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -731,6 +731,7 @@ details.inline,.details.inline{cursor:pointer}
     </select>
     <button class="btn-mini" id="favOnlyBtn" onclick="toggleFavOnly()" style="margin-left:4px">★ 已收藏</button>
     <button class="btn-mini" id="recentBtn" onclick="toggleRecentOnly()" style="margin-left:4px">🕘 最近浏览</button>
+    <div id="recentChips" style="margin-top:4px;font-size:11px;color:var(--sub)"></div>
     <div class="chips" id="spFormChips" style="margin-top:4px"></div>
     <div class="chips" id="spTypeChips"></div>
   </div>
@@ -1998,7 +1999,7 @@ function switchTab(name){
 }
 document.addEventListener('er-ready',function(){
   window._speedTableBuilt=false;
-  setTimeout(function(){try{speedRender(true)}catch(e){};try{if(window._initCoreList)window._initCoreList()}catch(e){};switchTab(_currentTab)},100);
+  setTimeout(function(){try{speedRender(true)}catch(e){};try{if(window._initCoreList)window._initCoreList()}catch(e){};try{if(typeof renderRecentChips==='function')renderRecentChips()}catch(e){};switchTab(_currentTab)},100);
 });
 document.querySelectorAll('nav button').forEach(function(b){
   b.onclick=function(){switchTab(b.dataset.tab)};
@@ -3294,7 +3295,7 @@ function sprImg(id,cls){
 /* v4.x：裸精灵图（紧凑卡片网格用，无外层灰框）：<div class="mcspr" ...> */
 function sprRaw(id,cls){return sprEl('div',id,cls||'mcspr')}
 function openSp(s){
-  try{var rb=JSON.parse(localStorage.getItem('er_recent')||'[]');rb=rb.filter(function(x){return x!==s.id});rb.unshift(s.id);if(rb.length>8)rb=rb.slice(0,8);localStorage.setItem('er_recent',JSON.stringify(rb))}catch(e){}
+  try{var rb=JSON.parse(localStorage.getItem('er_recent')||'[]');rb=rb.filter(function(x){return x!==s.id});rb.unshift(s.id);if(rb.length>8)rb=rb.slice(0,8);localStorage.setItem('er_recent',JSON.stringify(rb));try{renderRecentChips()}catch(e){}}catch(e){}
   var base=s.base,names=['HP','攻击','防御','特攻','特防','速度'];
   var html='<h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:13px;color:var(--sub)">'+esc(s.en)+' #'+s.id+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div>';
@@ -14114,7 +14115,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.127';
+var ER_ENGINE_VER='v4.128';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -15657,6 +15658,16 @@ function toggleRecentOnly(){
   window._recentOnly=!window._recentOnly;
   var b=$('recentBtn');if(b)b.style.background=window._recentOnly?'var(--accent)':'';
   renderSp(true);
+}
+/* v4.128：最近浏览 mini chips——点击跳转到对应精灵 */
+function renderRecentChips(){
+  var box=document.getElementById('recentChips');if(!box)return;
+  var rb=[];try{rb=JSON.parse(localStorage.getItem('er_recent')||'[]')}catch(e){}
+  if(!rb.length){box.innerHTML='';return}
+  box.innerHTML='最近：'+rb.slice(0,6).map(function(id){
+    var s=speciesById(id);if(!s)return '';
+    return '<span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="openSpById(\''+s.id+'\')">'+esc(s.zh)+'</span>';
+  }).join('');
 }
 </script>
 </body>
