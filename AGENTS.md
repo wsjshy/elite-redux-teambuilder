@@ -2145,4 +2145,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 增量 +1,931B < 12KB，零新分片
 - 引擎计算零改动
 
+## v4.130 体验增强第四批（2026-10-28，用户偏好重点=进化链/信息密度/移动端触控）
+
+### 五项探针结论+落地
+- **①进化链面包屑**：探针确认**已存在**（evochip onclick closeSp();openSpById + chipcur 当前态高亮——无需新增）
+- **②历史档徽标+改名**：预算未做，留待下轮
+- **③375px 弹窗 chip 横滚**：**已落地**（.chips-horiz flex-wrap:nowrap + overflow-x:auto + -webkit-overflow-scrolling:touch）
+- **④击杀线 slider 拇指区**：**已落地**（spdSlRange min-height:44px——触控 44px 最低原则）
+- **⑤筛选区折叠**：**已落地**（「▸ 筛选区」toggle + tmFilterBox 默认折叠——375px 首屏释放，选择池卡直接可见）
+
+### gh-pages SSL 经验
+- force push SSL handshake 失败——sleep 15 重试配方仍适用（本轮重试成功补推 91a4193）
+
+### 剩余候选滚动入库
+- 历史档徽标+改名 / 方案卡折叠 / 对比图形化
+
+### 版本链
+- er-n657 初版=1,493,324B sha16=DFA62C1E7FB969F6
+- er-n657 hotfix=1,493,466B sha16=823A42B9CFACE2AF
+- master：8864f55（v4.130）→ 4705713（hotfix）→ 登记 commit
+- gh-pages：a9fcc73 → 91a4193
+- 线上 v4.130 已部署验证（VER_OK + CHIPS_HORIZ_OK + SLIDER_OK）
+- 主工作区已同步
+- 增量 +681B < 10KB，零新分片
+- 引擎计算零改动
+
 
