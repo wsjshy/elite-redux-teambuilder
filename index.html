@@ -1982,8 +1982,10 @@ function switchTab(name){
   try{var _m=document.querySelector('main');if(_m)_m.scrollTop=0;else window.scrollTo(0,0)}catch(e){}
   /* v4.99 Tab 渲染链守卫：数据未就绪→显示 loading；就绪后自动渲染该 Tab */
   if(!window.__erReady){
-    var box=document.getElementById('tab-'+name);
-    if(box)box.innerHTML='<div style="padding:40px;text-align:center;color:var(--sub)">数据加载中…</div>';
+    /* v4.129 fix：不要覆盖整个 tab innerHTML（会破坏工具栏/按钮）——仅在 grid 区显示 loading */
+    var _gridMap={team:'tmGrid',dex:'spGrid',speed:'speedTable',analyze:'dmgOut',core:'coreGrid'};
+    var _gid=_gridMap[name];
+    if(_gid){var _g=document.getElementById(_gid);if(_g)_g.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">数据加载中…</div>'}
     return;
   }
   try{
