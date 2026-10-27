@@ -4551,7 +4551,7 @@ function savPcSearch(){
   if(_pcSearchT)clearTimeout(_pcSearchT);
   _pcSearchT=setTimeout(function(){
     var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[];
-    var pool=rows.map(function(r,i){return {r:r,i:i}}).filter(function(x){return /^BOX/.test(x.r.来源)||x.r.来源.indexOf('特殊区')===0});
+    var pool=rows.map(function(r,i){return {r:r,i:i}}).filter(function(x){return x.r.来源&&(/^BOX/.test(x.r.来源)||x.r.来源.indexOf('特殊区')===0)});
     if(!q){savPcListRender(pool.filter(function(x){return x.r.来源==='BOX1'}).slice(0,12));return} /* 空搜：BOX1 前 12 兜底 */
     var m=pool.filter(function(x){return (x.r.宝可梦||'').indexOf(q)>-1||(x.r.英文名||'').toLowerCase().indexOf(q.toLowerCase())>-1});
     savPcListRender(m.slice(0,60));
