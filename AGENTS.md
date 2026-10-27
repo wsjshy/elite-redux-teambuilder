@@ -1969,4 +1969,40 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.123=纯文档轮，index.html 无改动（线上保持 v4.122=F96797C535026EA4 1,486,764B）
 - 部署：仅 AGENTS.md commit 至 master（无 index 改动，gh-pages 不动）
 
+## v4.124 黑盒问题修复轮（2026-10-27，P1 五项全修）
+
+### P1-1 伤害面板 Enter 误触焦点隔离
+- 全局 keydown 监听：INPUT/TEXTAREA 聚焦 + Enter → preventDefault+stopPropagation
+- 真机验证：dmgDefQ 输入「耿鬼」+ Enter → 弹窗不关，不触发全局快捷键 ✓
+
+### P1-2 首屏白屏根因=anMvId 未定义
+- **根因**：`anMvId(m)` 在 L3752/3757/3761/4412 被调用（除钉/回复/控速/打击面覆盖），但函数从未定义——首屏 renderAnalyze 遍历 team 招式时抛 `ReferenceError: anMvId is not defined`，渲染中断白屏 8-10s
+- **修复**：L1078 后新增 `anMvId(m)`（数字直返/字符串走 mvIdByZhOrEn 反查/未知返 0）；顺手修 L4419 `ERDATA.moves[mid]`→`MV[mid]`
+- console 0 error ✓
+
+### P1-3 一键入队历史档路径
+- **根因**：v4.121 常驻按钮渲染条件=`res.summary.special>0`（完整 .sav 解析才有）；历史档 chip 加载（loadSavSlot）rows 无 special 字段
+- **修复**：loadSavSlot toast 改为「已载入历史档 N；如需一键入队设施队，请重新解析存档 .sav」——明确降级，不误导
+
+### P1-4 Modal 误触关闭+滚动冲突
+- **根因**：L3236 `spDrawer.onclick=function(ev){if(ev.target===spDrawer)closeSp()}` 点背景误关；modal 打开时背景仍可滚
+- **修复**：删除背景点击关闭；openSp 加 `document.body.style.overflow='hidden'`；closeSp 恢复 `''`
+- 真机逐项：点内部不关/点背景不关/Escape 关/内滚不外滚 ✓
+
+### P1-5 队伍构建 Tab 选择池空白（黑盒连续两轮报，hotfix）
+- **根因**：switchTab 渲染守卫（L1979-1984）缺 `name==='team'` 分支——点队伍构建 Tab 只切 active class，不调 renderTm(true)，tmGrid 空 innerHTML
+- **修复**：L1984 补 `else if(name==='team'&&typeof renderTm==='function'){renderTm(true)}`
+- **DOM 级实锤**：tmGrid.children 0→60（妙蛙种子/妙蛙草/妙蛙花…卡片渲染）
+- **方法论命中**：渲染验收三要素对称（容器存在/初始化调用/写入触发——缺初始化调用）
+
+### P2/P3 未修
+- P2 六项（Mega 筛选语义/BOX 明细—/chip 选中态/成员卡截断/速度线留白/搜索不过滤 BOX 池）：下轮验证真伪后修
+- P3 三项（速度线加宽/伤害 chip 拥挤/速度分布直方图）：未做，如实标注
+
+### 版本链
+- er-n644=1,487,941B sha16=3F874A55A5F76C7B
+- master 7d58919 / gh-pages 4a8f99c
+- 线上 v4.124 已部署验证
+- 主工作区已同步
+
 
