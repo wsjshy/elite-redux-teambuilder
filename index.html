@@ -43,6 +43,9 @@ main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); o
 .chips{display:flex; flex-wrap:wrap; gap:4px}
 .chips-horiz{display:flex; flex-wrap:nowrap; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
 .chip{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px}
+.chipgrp{display:inline-flex; flex-wrap:nowrap; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%}
+.chipgrp .chip{max-width:100px}
+.abi{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; display:inline-block}
 .chips button{border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:12px}
 .chips button.on{background:var(--accent); color:#fff; border-color:var(--accent)}
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px}
