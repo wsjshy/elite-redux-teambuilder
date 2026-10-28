@@ -42,6 +42,7 @@ main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); o
 .bar select{padding:7px 8px; border:1px solid var(--line); border-radius:8px; background:var(--card)}
 .chips{display:flex; flex-wrap:wrap; gap:4px}
 .chips-horiz{display:flex; flex-wrap:nowrap; gap:4px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
+.chip{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px}
 .chips button{border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:12px}
 .chips button.on{background:var(--accent); color:#fff; border-color:var(--accent)}
 .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px}
@@ -646,7 +647,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.132</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.134</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2005,6 +2006,10 @@ function switchTab(name){
 }
 document.addEventListener('er-ready',function(){
   window._speedTableBuilt=false;
+  /* v4.134 S1：首屏默认渲染路径同样先 paint loading（仅写 grid 容器——作用域收敛硬规则） */
+  var _gMap={team:'tmGrid',dex:'spGrid',speed:'speedTable',analyze:'dmgOut',core:'coreGrid'};
+  var _gid=_gMap[_currentTab];
+  if(_gid){var _g=document.getElementById(_gid);if(_g)_g.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div>'}
   setTimeout(function(){try{speedRender(true)}catch(e){};try{if(window._initCoreList)window._initCoreList()}catch(e){};try{if(typeof renderRecentChips==='function')renderRecentChips()}catch(e){};switchTab(_currentTab)},100);
 });
 document.querySelectorAll('nav button').forEach(function(b){
@@ -14186,7 +14191,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.132';
+var ER_ENGINE_VER='v4.134';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
