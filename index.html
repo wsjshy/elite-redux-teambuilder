@@ -2007,9 +2007,8 @@ function switchTab(name){
 document.addEventListener('er-ready',function(){
   window._speedTableBuilt=false;
   /* v4.134 S1：首屏默认渲染路径同样先 paint loading（仅写 grid 容器——作用域收敛硬规则） */
-  var _gMap={team:'tmGrid',dex:'spGrid',speed:'speedTable',analyze:'dmgOut',core:'coreGrid'};
-  var _gid=_gMap[_currentTab];
-  if(_gid){var _g=document.getElementById(_gid);if(_g)_g.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div>'}
+  /* v4.134 S1 hotfix：coreGrid 单独写 loading（黑盒实测首屏 core 路径未生效——_currentTab='build' 时 _gMap 命中不到 core） */
+  var _cg=document.getElementById('coreGrid');if(_cg)_cg.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div>';
   setTimeout(function(){try{speedRender(true)}catch(e){};try{if(window._initCoreList)window._initCoreList()}catch(e){};try{if(typeof renderRecentChips==='function')renderRecentChips()}catch(e){};switchTab(_currentTab)},100);
 });
 document.querySelectorAll('nav button').forEach(function(b){
