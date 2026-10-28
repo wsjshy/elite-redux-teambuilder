@@ -5374,7 +5374,7 @@ function spdNatAdvice(s,p,M){
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
 var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null};
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx)m*=2;if(__spdSl.tailwind)m*=2;return m}
-function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" onclick="'+onclick+'">'+label+'</span>'}
+function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'">'+label+'</span>'}
 function speedSliderHtml(s){
   try{
     var p0=speedPctileRankOf(s);__spdSl.s=s;__spdSl.p=p0;
@@ -5392,11 +5392,11 @@ function speedSliderHtml(s){
         spdSlChip('围巾×1.5',__spdSl.scarf,'spdTgl(\'scarf\')')+
         spdSlChip('天气×2',__spdSl.wx,'spdTgl(\'wx\')')+
         spdSlChip('顺风×2',__spdSl.tailwind,'spdTgl(\'tailwind\')')+'</span></div>'+
-      '<div style="font-size:11px;margin:4px 0">耐久分配 bias：<span class="chipgrp" id="spdBiasG">'+
+      '<div style="font-size:11px;margin:4px 0;white-space:nowrap">耐久分配 bias：<span class="chipgrp" id="spdBiasG">'+
         spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
         spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
         spdSlChip('特殊端',__spdSl.bias==='special','spdSet(\'bias\',\'special\')')+'</span> '+
-      '性格：<span class="chipgrp" id="spdNatG">'+
+      '<span style="white-space:nowrap">性格：</span><span class="chipgrp" id="spdNatG">'+
         spdSlChip('自动',!__spdSl.natOv,'spdSet(\'natOv\',\'\')')+
         spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
         spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
