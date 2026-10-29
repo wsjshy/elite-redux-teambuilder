@@ -17,6 +17,11 @@ v4.11 拆包 / CDN 择优（只改「谁去取」不改「取到什么」）：
 import os
 import re
 
+# ===== v4.136 债务登记 =====
+# 本模板内容停在 v4.98 时代（页面正文/引擎版本标记均旧）；v4.127+ 实际工作流为「直接编辑部署 index.html」，
+# 模板仅用于 N1=N2 确定性重建仪式，不得用其产物覆盖主工作区或部署（末段 sync 已脱钩，见文件尾）。
+# 主工作区/gh-pages 的 index.html 同步由部署流程负责（运维手册 §6/§7）。
+# ===== ====================
 BASE = r'D:\game\elite-redux'
 
 # ---- v4.11 CDN 镜像前缀（gcore.jsdelivr.net：大陆实测 ~118KB/s，github.io 直连 ~46KB/s）----
@@ -15403,13 +15408,30 @@ final = final.replace('var _ER_BOOST_ROLE=null;', 'var _ER_BOOST_ROLE=' + _json.
 open(out, 'w', encoding='utf-8').write(final)
 print('v4.68p0 强化表注入完成：%d 只强化角色，out 重写 %d bytes' % (len(_br_obj), os.path.getsize(out)))
 
-# ---- v4.35：index.html 同步（与 配招助手_ER.html 逐字同源）----
-#   历史做法是人工复制，易与正文漂移（本轮核查发现 index.html 与正文逐字相同但无任何自动步骤）。
-#   自 v4.35 起由构建脚本单一写入口同步，避免「页面/工具读到的引擎版本不一致」。
+# ---- v4.35→v4.136：index.html 同步【已脱钩（v4.136 安全修复）】----
+#   v4.35 起由构建脚本单一写入口同步主工作区 index.html（BASE=D:\game\elite-redux）。
+#   v4.136 治理：模板内容仍为 v4.98 时代（v4.127+ 实际为「直接编辑 index.html」工作流），
+#   无条件同步会把旧模板产物覆盖主工作区（v4.135 实测踩坑：覆盖 1,448,248B v4.98 产物）。
+#   现默认【拒绝覆盖】：目标存在且与构建产物内容不一致 → 跳过并告警（宁可失败不误覆盖）；
+#   仅当目标不存在或与产物逐位一致时才同步；如需强制覆盖设环境变量 ER_BUILD_FORCE_SYNC=1
+#   （仅供确认模板与部署产物同源等受控场景，正常流程禁止使用）。
+import hashlib as _hl
+def _sha1f(p):
+    h = _hl.sha1()
+    with open(p, 'rb') as f:
+        for chunk in iter(lambda: f.read(65536), b''):
+            h.update(chunk)
+    return h.hexdigest()
 _idx_out = BASE + r'\index.html'
 import shutil as _sh
-_sh.copyfile(out, _idx_out)
-print('synced:', _idx_out, os.path.getsize(_idx_out), 'bytes')
+if os.environ.get('ER_BUILD_FORCE_SYNC') == '1':
+    _sh.copyfile(out, _idx_out)
+    print('synced(FORCE):', _idx_out, os.path.getsize(_idx_out), 'bytes')
+elif os.path.exists(_idx_out) and _sha1f(_idx_out) != _sha1f(out):
+    print('[SKIP] sync 已脱钩（v4.136）：主工作区 index.html 与模板产物不一致（模板=v4.98 时代），拒绝覆盖。主工作区同步由部署流程负责。')
+else:
+    _sh.copyfile(out, _idx_out)
+    print('synced:', _idx_out, os.path.getsize(_idx_out), 'bytes')
 
 # ---- v4.35 任务3：守门常驻化（方案 A）——构建末尾跑 node 门闩：
 #   引擎内 engineGuardSelfCheck（天气岩禁推 4a + basis 自身设置手 4b1/4b2）
