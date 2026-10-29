@@ -2236,3 +2236,60 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 
 
 
+
+
+## v4.134 S1/S2/S3 收尾（2026-10-29，补登记——上轮缺失登记）
+
+### 落地 3 项（S1/S2/S3 闭环，观感 96）
+- **S1 首屏 loading**：coreGrid 在 er-ready 显式 loading 占位（非 _currentTab 映射路径——508bddb）
+- **S2 统一完成态 toast**：操作完成态统一 toast 反馈
+- **S3 375px chip 断词闭环**：chipgrp/abi nowrap ellipsis + 横向滚动（e951b56）+ label nowrap + chip title 悬浮（18f5086）
+
+### ⚠️ P0 白屏回归（线上实证，铁证 C:\temp\er-v535-hier\finding_online-blank-P0.md）
+- 线上 committed 版存在整页白屏：`_currentTab='build'` + er-ready 处理器新增 `switchTab(_currentTab)` → 渲染完 60 卡后全部 `.tab{display:none}` 且无自动切回 → DOM 实测 activeTabs=0/visibleTabs=0
+- **修复 = 12 行 delta（worktree 未提交）**：`_currentTab='core'` + coreGrid HTML 级「⚙️ 引擎计算中…」占位 + spdBias/spdNatG flex 横滚 + 速度 chip title 悬浮
+- **该 delta 随 v4.135 一并部署**（v4.134 线上 committed 版不可直接用）
+
+### 版本链
+- master：508bddb（S1）→ e951b56（S3 hotfix）→ 18f5086（S3 hotfix2）
+- gh-pages：dbcc94d → 1a5ae2d → 7340c60（线上部署）
+- 引擎计算零改动
+
+## v4.135 信息层级审视轮（2026-10-30，用户全局体验原则入硬规则）
+
+### 全局体验原则（入硬规则）
+**最重要的信息在任何情况下必须显眼（大字/高对比/突出位置）；小字只在补充说明等特殊情况使用；多用图表但不要太过扎堆；用户友好。**
+
+### 审计框架（UI 设计原则转可执行清单，7 项）
+视觉层级（F/Z 扫视 + 关键数字大号一眼可见）/ 三级排版（正文≥16px 可读、辅助 12-14px 仅补充、>3-4 层级=混乱）/ 眯眼测试（缩至 1/4 眯眼，第一眼分清先后）/ 5 秒测试 / 图表密度与数据墨水比（60-30-10 配色、危险红禁数据高亮）/ 渐进披露 / 一致性（同类同风格、同语义同色）
+
+### 执行过程
+- 全局 DOM+截图盘点（每区正常视口 + 25% 眯眼各 1 张；证据 23 张 C:\temp\er-v535-hier\shots\；眯眼实现=CDP 缩放通道不生效退 Pillow LANCZOS 25%）
+- 问题清单：C:\temp\er-v535-hier\er-v535-hier-list.md（全局 5 项 + 7 区 20 条，每条=功能区+现状+问题+建议+工作量 P0-2h/P1-半天/P2-1天）
+- 核心结论：字号层级落差小（卡名 14px 即多数区最大）；关键结论数字未突出（伤害 11px / 种族值 12px 灰 / 极速 13px）；`.sec h3` 区块标题 13px 灰=层级倒挂；颜色双轨（存档 chip/对比堆叠条/伤害 16 段条 3 处硬编码不走变量）；小字 285 处（CSS79/inline206）
+- 择优落地 3 项（纯样式、引擎零改动、无重排、增量 +191B < 15KB、零新分片）：
+  1. `.sec h3` 区块标题 13px 灰 → 15px/600/近黑（全 25 处真实标题统一受益）
+  2. 伤害面板关键数字：伤害范围 17px/700 accent、OHKO 所需 EV 14px/700 accent
+  3. 速度线极速列 14px/700 var(--hi) 数据高亮
+- 危险红零新增（数据高亮仅用 accent/hi 蓝系——用户硬规则「危险红禁用于数据高亮」）
+- 12 行 delta（P0 白屏修复）随本版一并部署
+
+### 黑盒验收
+- DOM 级 8/8 PASS：版本双查 / .sec h3 15px600 / 伤害 17px+EV 14px accent / 极速列 14px hi / 375px 三 Tab 无溢出 / console 0 新错误 / loading 占位回归护栏 / 眯眼截图 6 张（C:\temp\er-v535-hier\audit-visual-v135.md + shots-v135\）
+- MainAgent 线上真浏览器复核 PASS（版本 tag+ER_ENGINE_VER 双 v4.135、H3 计算样式、极速列计算样式、60 卡渲染、console 0、线上同源 fetch 正常）
+
+### 版本链
+- er-n665 N1=N2 重建：index.html 双跑恒=661CABFE（v4.135 手改产物逐位一致）TRUE；守门 [BUILD OK] exit 0（0 违规）；配招助手_ER.html=787D0CB8（v4.98 模板双写产物——双写已脱钩，遗留债务）
+- v4.135 index.html：1,496,627B，SHA-1=661CABFEA93506805C0083C5A5DA9E8C33618AC8
+- master：6779c47（v4.135 信息层级审视）→ 登记 commit（本块）
+- gh-pages：2f4ad61（7340c60..2f4ad61，--force push，SSL 0 重试）
+- 线上 v4.135 已部署验证：sha16=661CABFEA9350680（抓取 2 次命中）+「引擎 v4.135」/「ER_ENGINE_VER='v4.135'」双标记在位
+- 主工作区已同步：15/15 SHA-1 全 MATCH（index.html=661CABFE…；含 AGENTS.md 首次同步——历史「主工作区同步」从未含 AGENTS.md，债务处理）
+- 增量 +191B < 15KB，零新分片；引擎计算零改动
+
+### 遗留债务登记
+- **build_tool_html.py 模板停在 v4.98**：v4.127+ 全部直接编辑 index.html 工作流；N1=N2 重建只证生成器确定性。**新发现陷阱：模板末段硬编码 sync 到 D:\game\elite-redux\index.html——每次重建会覆盖主工作区（本轮 00:5x 命中已恢复）**；重建后必须用部署产物恢复主工作区
+- **data_lite/species/adv_v498.js 三分片在 er-wt484 无实体无 git 追踪**（构建输出、仅部署树持有）；配招助手_ER.html 停在 v4.83 与 index 长期不同步（非部署集）
+- **AGENTS.md 主工作区副本历史从未同步**：本轮首次同步 D:\game\elite-redux（改善「唯一入口」一致性）
+- **D:\game\elite-redux .git 垃圾 ref**（.git/refs 下 4 个 er48x.lock.bak* + remotes 下 3 个）：需 git 操作时先删文件清理（非提交内容）
+- 背包解析待用户受控实验档对（已明确暂缓）；NN 组队 v2 未拍板（未授权不得开工）；工具挖掘季度复审
