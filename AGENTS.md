@@ -2293,3 +2293,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **AGENTS.md 主工作区副本历史从未同步**：本轮首次同步 D:\game\elite-redux（改善「唯一入口」一致性）
 - **D:\game\elite-redux .git 垃圾 ref**（.git/refs 下 4 个 er48x.lock.bak* + remotes 下 3 个）：需 git 操作时先删文件清理（非提交内容）
 - 背包解析待用户受控实验档对（已明确暂缓）；NN 组队 v2 未拍板（未授权不得开工）；工具挖掘季度复审
+
+## v4.136 信息层级第二批 + build 模板债务治理（2026-10-30）
+
+### Part 1 · 信息层级第二批（清单 C1/C3/G3，纯样式、引擎零改动、无重排、375px 合格）
+1. **种族值总值提权（C1）**：`.card .bs` 12px 灰 → 13px/600 近黑（core/team/dex 三区卡片共用类统一受益——「卡名 14px 即最大」的层级落差收窄；线上实测 computed 13px/600/#23272f）
+2. **方案卡队友评分提权（C3）**：tmRow `+score` → 13px/700 accent（方案卡核心决策数字；实测 +58 蓝粗清晰；L4482 补位表同型 r.sc 本轮范围外留 P1）
+3. **颜色双轨治理（G3 一致性）**：对比堆叠条 Material 三色 #4caf50/#2196f3/#f44336 → var(--ok)/var(--accent)/var(--warnred)（语义=新增正面/等级变化中性高亮/移除警示；实测三段 rgb(46,125,50)/rgb(37,99,235)/rgb(198,40,40)）；存档档位与对比面板 chip 蓝系硬编码 → 新增 :root `--acc-tint:#e3f2fd / --acc-tint2:#bbdefb / --acc-edge:#1976d2` accent 系变量（改 accent 系一处生效）
+- 危险红仅作移除/警示语义色，未用于数据高亮（用户硬规则保持）
+
+### Part 2 · build 模板债务治理（P1 安全修复，2026-10-30）
+- **build_tool_html.py 末段 v4.35 同步块脱钩（L15408-15436）**：默认拒绝覆盖主工作区——目标存在且与模板产物内容不一致 → `[SKIP] sync 已脱钩…拒绝覆盖` 告警不写盘（宁可失败不误覆盖）；仅目标不存在/逐位一致时同步；`ER_BUILD_FORCE_SYNC=1` 可强制（受控场景，正常流程禁止）
+- 头部登记注释（L20 前）：模板停在 v4.98 时代（v4.127+ 实际为直接编辑 index.html 工作流），模板仅用于 N1=N2 确定性仪式，产物不得覆盖主工作区/部署；同步由部署流程负责（运维手册 §6/§7）
+- **验证（er-n666）**：N1/N2 两次构建后主工作区 index.html SHA 恒 `6D4DBAC4…`（未被覆盖，protected=True）×2；build exit 0 ×2；守门 `[BUILD OK] exit 0（0 违规）`×2；N1==N2=双胞胎产物 `787D0CB88F8D75A2DF5B503F69DA65D6E900E8FD`（1,369,067B）逐位一致（与 v4.135 轮 er-n665 同哈希——跨轮确定性）
+
+### 黑盒验收
+- DOM 级 8/8 PASS（audit-visual-v136.md + shots-v136\ 6 张）：版本双查 / .bs 13px600 / 评分 13px700 / 堆叠条三色+chip 双色变量化实测 / 375px 三 Tab 无溢出 / console 0 新错误 / loading 占位回归护栏 / 眯眼 3 张
+- MainAgent 线上真浏览器复核 PASS：版本 tag+ER_ENGINE_VER 双 v4.136、.bs computed 13px/600、无溢出（sw1905<iw1920）、console 0、60 卡渲染
+
+### 版本链
+- v4.136 index.html：1,496,935B，SHA-1=6D4DBAC441505497C29D99C78DDA6126C20D9C9C（+308B）
+- master：45d3015（信息层级第二批）→ 6f9c41c（build sync 脱钩治理）→ 登记 commit（本块）
+- gh-pages：6dd7fb3（2f4ad61..6dd7fb3，--force push，SSL 0 重试）
+- 线上 v4.136 已部署验证：sha16=6D4DBAC441505497（抓取 1 次命中）+「引擎 v4.136」/「ER_ENGINE_VER='v4.136'」双标记在位
+- 主工作区已同步：15/15 SHA-1 全 MATCH（index=6D4DBAC4…；AGENTS.md 保持同步）
+- 增量 +308B < 15KB，零新分片；引擎计算零改动
+- 遗留跟进：补位建议表评分（L4482 r.sc）P1 候选；16 段伤害条硬编码色未统一（眯眼锚点强、改色有视觉回归风险——保留登记）；模板本体内容仍 v4.98（生成器大同步 P2+ 未授权不开工）
