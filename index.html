@@ -53,7 +53,7 @@ main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); o
 .card:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}
 .card .nm{font-weight:600; font-size:14px}
 .card .en{font-size:11px; color:var(--sub)}
-.card .bs{font-size:12px; color:var(--sub); margin-top:4px}
+.card .bs{font-size:13px; font-weight:600; color:var(--text); margin-top:4px}
 /* 精灵图（v4.6.2 合图）：div 背景定位到 assets/sheets/s<idx>.webp；缺图 → .spmiss 空占位（不请求、不破版） */
 .spbox{background:#eceff3; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden}
 .spbox img,.spbox .spsp{width:100%; height:100%; image-rendering:pixelated; display:block}
@@ -616,6 +616,9 @@ details.inline,.details.inline{cursor:pointer}
   --danger:#c62828;   /* 危险：删除/清空 */
   --hi:#1565c0;       /* 数据高亮：主蓝 */
   --hi2:#6a1b9a;      /* 次高亮：紫 */
+  --acc-tint:#e3f2fd;   /* accent 系浅底（存档/对比 chip 未选） */
+  --acc-tint2:#bbdefb;  /* accent 系选中底 */
+  --acc-edge:#1976d2;   /* accent 系选中边/字 */
 }
 .btn,.badge,.chip,.slot{
   cursor:pointer;
@@ -650,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.135</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.136</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -1969,7 +1972,7 @@ function coreRuleBrief(s,bd){
 }
 /* 队友行（整体列表 + 各流派列表共用） */
 function tmRow(r){
-  return '<tr><td><span class="spthumb">'+sprRaw(r.s.id)+'</span> <b>'+esc(r.s.zh)+'</b> <span style="font-size:11px;color:var(--sub)">#'+r.s.id+'</span></td><td>'+tlabel(r.s.t1)+(r.s.t2!==r.s.t1?' '+tlabel(r.s.t2):'')+'</td><td><b style="color:var(--accent)">+'+r.score+'</b></td><td style="font-size:12px">'+esc(r.why.join('；'))+'</td>'+
+  return '<tr><td><span class="spthumb">'+sprRaw(r.s.id)+'</span> <b>'+esc(r.s.zh)+'</b> <span style="font-size:11px;color:var(--sub)">#'+r.s.id+'</span></td><td>'+tlabel(r.s.t1)+(r.s.t2!==r.s.t1?' '+tlabel(r.s.t2):'')+'</td><td><b style="color:var(--accent);font-size:13px;font-weight:700">+'+r.score+'</b></td><td style="font-size:12px">'+esc(r.why.join('；'))+'</td>'+
     '<td><button class="btn-mini" onclick="addToTeam(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0],null);renderCore(coreSel)" title="加入队伍">➕</button> '+
     '<button class="btn-mini" onclick="openSp(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0])" title="看详情">🔍</button></td></tr>';
 }
@@ -4675,7 +4678,7 @@ function renderSavSlots(){
     var d=new Date(s.t);var lbl='档'+(i+1)+' '+d.getHours()+':'+d.getMinutes();
     var nm=localStorage.getItem('er_savName_'+i)||'';
     var sel=(i===_loadedSlot);
-    h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;margin-right:3px;'+(sel?'background:#bbdefb;font-weight:600;border:1px solid #1976d2':'background:#e3f2fd;border:1px solid transparent')+'" onclick="loadSavSlot('+i+')" ondblclick="renameSavSlot('+i+')" title="双击改名">'+(nm||lbl)+'</span>'
+    h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;margin-right:3px;'+(sel?'background:var(--acc-tint2);font-weight:600;border:1px solid var(--acc-edge)':'background:var(--acc-tint);border:1px solid transparent')+'" onclick="loadSavSlot('+i+')" ondblclick="renameSavSlot('+i+')" title="双击改名">'+(nm||lbl)+'</span>'
   });
   /* v4.119：双档对比入口（≥2 档才显示；纯读取，不改既有加载） */
   if(svs.length>=2){h+='<button class="btn-mini" onclick="savSlotsDiffToggle()" style="margin-left:4px">对比近两档</button><div id="savSlotsDiffBox"></div>'}
@@ -4725,9 +4728,9 @@ function savSlotsDiffRender(svs){
   var total=added.length+removed.length+levelChanged.length;
   if(total){
     h+='<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:6px">';
-    if(added.length)h+='<div style="flex:'+added.length+';background:#4caf50" title="新增 '+added.length+'"></div>';
-    if(levelChanged.length)h+='<div style="flex:'+levelChanged.length+';background:#2196f3" title="等级变化 '+levelChanged.length+'"></div>';
-    if(removed.length)h+='<div style="flex:'+removed.length+';background:#f44336" title="移除 '+removed.length+'"></div>';
+    if(added.length)h+='<div style="flex:'+added.length+';background:var(--ok)" title="新增 '+added.length+'"></div>';
+    if(levelChanged.length)h+='<div style="flex:'+levelChanged.length+';background:var(--accent)" title="等级变化 '+levelChanged.length+'"></div>';
+    if(removed.length)h+='<div style="flex:'+removed.length+';background:var(--warnred)" title="移除 '+removed.length+'"></div>';
     h+='</div>';
     h+='<div style="font-size:10px;color:var(--sub);margin-bottom:4px">🟢新增 '+added.length+' · 🔵等级变化 '+levelChanged.length+' · 🔴移除 '+removed.length+'</div>';
   }else{
@@ -4735,9 +4738,9 @@ function savSlotsDiffRender(svs){
   }
   h+='<div style="margin-bottom:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center">';
   h+='<span style="color:var(--sub)">源:</span>';
-  svs.forEach(function(s,i){var act=i===_diffSel.a;h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;'+(act?'background:#bbdefb;font-weight:600':'background:#e3f2fd')+'" onclick="savSlotsDiffPick(\'a\','+i+')">档'+(i+1)+'</span>'});
+  svs.forEach(function(s,i){var act=i===_diffSel.a;h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;'+(act?'background:var(--acc-tint2);font-weight:600':'background:var(--acc-tint)')+'" onclick="savSlotsDiffPick(\'a\','+i+')">档'+(i+1)+'</span>'});
   h+='<span style="color:var(--sub);margin-left:6px">目标:</span>';
-  svs.forEach(function(s,i){var act=i===_diffSel.b;h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;'+(act?'background:#bbdefb;font-weight:600':'background:#e3f2fd')+'" onclick="savSlotsDiffPick(\'b\','+i+')">档'+(i+1)+'</span>'});
+  svs.forEach(function(s,i){var act=i===_diffSel.b;h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;'+(act?'background:var(--acc-tint2);font-weight:600':'background:var(--acc-tint)')+'" onclick="savSlotsDiffPick(\'b\','+i+')">档'+(i+1)+'</span>'});
   h+='</div>';
   h+='<div style="margin-bottom:3px"><span style="color:var(--sub)">新增（'+added.length+'）：</span>'+(added.length?added.map(row).join('、'):'—')+'</div>';
   h+='<div style="margin-bottom:3px"><span style="color:var(--sub)">移除（'+removed.length+'）：</span>'+(removed.length?removed.map(row).join('、'):'—')+'</div>';
@@ -14193,7 +14196,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.135';
+var ER_ENGINE_VER='v4.136';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
