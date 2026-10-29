@@ -64,7 +64,7 @@ main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); o
 .drawer.open{transform:translateX(0)}
 .drawer .close{float:right; border:none; background:var(--line); width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px}
 .sec{margin:14px 0}
-.sec h3{font-size:13px; color:var(--sub); margin-bottom:6px; border-bottom:1px solid var(--line); padding-bottom:4px}
+.sec h3{font-size:15px; font-weight:600; color:var(--text); margin-bottom:6px; border-bottom:1px solid var(--line); padding-bottom:4px}
 .barstat{display:flex; align-items:center; gap:8px; margin:3px 0; font-size:12px}
 .barstat .lb{width:34px; color:var(--sub)}
 .barstat .tk{width:34px; text-align:right; font-weight:600}
@@ -650,7 +650,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.134</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.135</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -885,7 +885,7 @@ details.inline,.details.inline{cursor:pointer}
     <label style="font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:2px"><input type="checkbox" id="coreMega" checked onchange="coreMegaToggle()"> Mega 形态优先（过滤可 Mega 的非 Mega）</label>
   </div>
   <div class="chips" id="coreTypes"></div>
-  <div class="grid" id="coreGrid"></div>
+  <div class="grid" id="coreGrid"><div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div></div>
   <div id="coreMore" style="text-align:center;color:var(--sub);padding:10px"></div>
   </div><!-- /#corePickWrap：挑选阶段（工具栏 + 属性筛选 + 候选网格 = 仅此一屏） -->
   <div id="coreDetailWrap" class="phasefade" style="display:none">
@@ -1973,7 +1973,7 @@ function tmRow(r){
     '<td><button class="btn-mini" onclick="addToTeam(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0],null);renderCore(coreSel)" title="加入队伍">➕</button> '+
     '<button class="btn-mini" onclick="openSp(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0])" title="看详情">🔍</button></td></tr>';
 }
-var _currentTab='build';
+var _currentTab='core'; /* v4.134 终版S1：与 HTML 默认 active(tab-core) 对齐——原值 'build' 在 er-ready 后 switchTab('build') 命中不到任何 tab(data-tab/tab-* 均无 build)→全部 tab 被隐藏→首屏白屏 */
 function switchTab(name){
   /* v4.109：Tab 切换自动关闭所有浮层（直接 DOM 操作，不依赖闭包函数） */
   try{var sd=document.getElementById('spDrawer');if(sd)sd.classList.remove('open')}catch(e){}
@@ -5392,11 +5392,11 @@ function speedSliderHtml(s){
         spdSlChip('围巾×1.5',__spdSl.scarf,'spdTgl(\'scarf\')')+
         spdSlChip('天气×2',__spdSl.wx,'spdTgl(\'wx\')')+
         spdSlChip('顺风×2',__spdSl.tailwind,'spdTgl(\'tailwind\')')+'</span></div>'+
-      '<div style="font-size:11px;margin:4px 0;white-space:nowrap">耐久分配 bias：<span class="chipgrp" id="spdBiasG">'+
+      '<div style="font-size:11px;margin:4px 0;display:flex;align-items:center;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%"><span style="white-space:nowrap;flex:0 0 auto">耐久分配 bias：</span><span class="chipgrp" id="spdBiasG" style="flex:0 0 auto;max-width:none">'+
         spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
         spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
         spdSlChip('特殊端',__spdSl.bias==='special','spdSet(\'bias\',\'special\')')+'</span> '+
-      '<span style="white-space:nowrap">性格：</span><span class="chipgrp" id="spdNatG">'+
+      '<span style="white-space:nowrap;flex:0 0 auto">性格：</span><span class="chipgrp" id="spdNatG" style="flex:0 0 auto;max-width:none">'+
         spdSlChip('自动',!__spdSl.natOv,'spdSet(\'natOv\',\'\')')+
         spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
         spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
@@ -5473,8 +5473,8 @@ function spdSliderRender(){
       :'<div style="color:var(--warnred);font-size:11px">⚠️ 已到本只上限：目标 P'+p+' 需原始速度 '+Te+'，即使加速+252 极速 '+vMax+' 仍差 '+(Te-vMax)+' 点，乘区关闭或修正后仍不可达 → 开启围巾×1.5 / 顺风×2 / 换高速手</div>';
   }else{
     var eff=Math.floor(main.val*M);
-    h+='<div style="margin:4px 0"><span class="abi" style="border-color:var(--accent)"><b>'+main.nat+'</b> · '+glossify('EV')+' '+main.ev+'速 → 自然 '+main.val+'（有效 '+eff+'）</span>';
-    plans.forEach(function(pl){if(pl!==main)h+=' <span class="abi" style="color:var(--sub)">备选 '+pl.nat+' EV '+pl.ev+' → '+pl.val+'</span>'});
+    h+='<div style="margin:4px 0"><span class="abi" style="border-color:var(--accent)" title="'+main.nat+' · '+glossify('EV')+' '+main.ev+'速 → 自然 '+main.val+'（有效 '+eff+'）"><b>'+main.nat+'</b> · '+glossify('EV')+' '+main.ev+'速 → 自然 '+main.val+'（有效 '+eff+'）</span>';
+    plans.forEach(function(pl){if(pl!==main)h+=' <span class="abi" style="color:var(--sub)" title="备选 '+pl.nat+' EV '+pl.ev+' → '+pl.val+'">备选 '+pl.nat+' EV '+pl.ev+' → '+pl.val+'</span>'});
     h+='<span style="font-size:10px;color:var(--sub)">省 '+main.saved+' EV 挪耐久</span></div>';
     /* v4.91 任务C：P50 性格优化提示层——中性方案为主但加速性格同目标可达时，提示「建议加速性格」（不改默认推荐逻辑） */
     var _accPl=null;plans.forEach(function(pl){if(pl.nat==='加速'&&!_accPl)_accPl=pl});
@@ -5655,9 +5655,9 @@ function dmgRender(){
   var verdict=r.lo>=hpD?'<span style="color:var(--ok)">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub)">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred)">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
   var solve=ohkoSolveEv(o,hpD);
   box.innerHTML='<div style="font-size:11px;margin:2px 0">'+esc(sA.zh)+' → '+esc(sD.zh)+'（HP '+hpD+'）'+
-    '<br>伤害 <b>'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+'）'+verdict+
+    '<br>伤害 <b style="font-size:17px;font-weight:700;color:var(--accent)">'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+'）'+verdict+
     '<br>'+(solve>=0
-      ?'达到 OHKO 最低攻端 EV = <b>'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
+      ?'达到 OHKO 最低攻端 EV = <b style="font-size:14px;font-weight:700;color:var(--accent)">'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
       :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
   /* v4.110 P2：命中率 chip；v4.117 P2：命中<100 追加期望折算行（仅渲染层，不改 dmgCalc） */
   var acc=(ERDATA.moves[__spdSl.mvId]||[])[6]||100;
@@ -5815,7 +5815,7 @@ function speedRenderTable(){
     var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:10px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b>'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td>'+_spdBadge(p)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
+    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:14px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td>'+_spdBadge(p)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
   });
   h+='</tbody></table></div>';
   /* v4.72 P2：命中计数 + 空结果提示 + 截断提示 */
@@ -14193,7 +14193,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.134';
+var ER_ENGINE_VER='v4.135';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
