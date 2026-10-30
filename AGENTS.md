@@ -2358,3 +2358,33 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 入队按钮已选态（P1）/载入后视线引导 smooth-scroll（P1）/速度线→伤害跨功能快捷链（P1）/伤害计算器完成态+缺项高亮（P1，疑真 bug 需 v4.139 探针复验）/配速滑块吸附完成态反馈（P2）/对比差异标题 V1 提权（P2）
 ### 环境结论
 - 375px 三路零横向溢出（scrollWidth=375）；B chips 236px 折 2 行；C 物种表 11→7 列折叠生效；localStorage 注入已清理
+
+## v4.139 修复轮（四项修复+伤害计算器探针定案，2026-10-30）
+
+### 探针定案（四项）
+- P0-1 `.phasefade` 池子 opacity 卡 0：CSS L309-310 无 fill-mode/无 base 兜底 → 根因确认为缺 `animation-fill-mode:forwards` + `opacity:1` 兜底（375px 因 animation:none 豁免）；浏览器诊断（MutationObserver+getAnimations 10.5s）证实无无限重启循环
+- P0-2 配招行裸露 HTML `<span class="t-t钢">`：源码/data.js 均无字面量、LEAK_RULES 逐条核对无此产物 → 定案为 L10885 补盲招 why 误拼 `tlabel()`（HTML chip）后被 `esc()` 当纯文本转义（D1 历史 bug 复发，L7019 注释已记）
+- P1 评分族：落点 = 校准强度 L13444（tip 12px/400）+ 奇石权衡 L13462 三数字 + **A 路「12px/600 灰」定案 = 方案卡成员行 badge L13419 + 需求清单顶选行 L13355**（智能补位表不渲染分数，入队后经同一 renderPlanSet 输出）
+- 伤害计算器「三项全选无输出」**定案为真缺陷（ID 冲突）**：队伍分析伤害面板（L679-692）与图鉴详情弹窗速度滑块区伤害面板（L5421-5444）五组 id 重复（dmgDefQ/dmgDefList/dmgMvQ/dmgMvList/dmgOut），getElementById 首命中分析页 → 弹窗侧输入/输出全落进分析页容器 → **升 P0 一并修复**（v4.138 登记「未选入预选」该条状态更新：已定案、已修复）
+
+### 修复落地（仅 index.html 渲染层/CSS/id；引擎计算零改动）
+1. **P0-1**：`.phasefade{opacity:1;animation:phasein .18s ease-out;animation-fill-mode:forwards}` + myPhase 幂等写守卫（目标值与现状一致则 return）——池子持续可见
+2. **P0-2**：L10885 补盲招 why 去 `tlabel(t)` 改纯类型名 join——全站文本节点 `<span`/`class=` 复扫 0 命中（仅 SCRIPT 源码例外）
+3. **P1**：校准强度（L13444）+ 奇石权衡三数字（L13462）+ 成员行 badge（L13419 `m.score`）+ 需求清单顶选行 badge（L13355 `top.score`）统一 13px/700/var(--accent)；危险红（--warnred）警示数字语义保留未动
+4. **伤害计算器（探针升 P0）**：弹窗侧五组 id 唯一化 `dmgDefQ2/dmgDefList2/dmgMvQ2/dmgMvList2/dmgOut2` + 处理函数 suffix 参数化（dmgRender 默认 'dmgOut' 保持分析页路径）+ 缺项动态提示「还差：对手、我方招式」+ accent 边框（rgb(37,99,235)），补齐后清除
+
+### 黑盒验收（site-v139 测试树 + bu 通道 DOM 级，观感 96-97）
+- 四项 PASS：①P0-1 池子 opacity=1、切档/返回/进出方案 10s 不消失、375px 两列 157.6px 零溢出；②P0-2 可见文本 0 脏字符；③P1 校准强度 32.9=13px/700/accent、奇石权衡三列同、危险红「2HKO 起」保灰语义；④伤害双路径：分析页 dmgOut=喷火龙→耿鬼 133-157，弹窗 dmgOut2 独立=喷火龙→水箭龟 41-48 互不污染，缺项提示+accent 边框、补齐后清除
+- badge 补丁复验 PASS：10 个评分 badge 全 13px/700/rgb(37,99,235)；console 0；375px 零溢出；遗留 0（观感 A 96 / B 97（v4.138 的 88 大幅回升）/ C 96）
+- MainAgent 线上真浏览器复核 PASS（2026-10-30）：线上 URL `?nocache=1391` 首抓 sha16=A1AC8775DFE882A1；UI tag 引擎 v4.139 在位；存档注入（er_savs_v1 档1/档2）→ 队伍构建档1/档2 往返池子 opacity 恒 1、3+3 卡完整、动画 finished 无重启；全可见文本脏字符 0；方案卡评分 badge computed 13px/700/rgb(37,99,235)；伤害弹窗五组唯一 id 在位与分析页 dmgOut 共存；清理注入后 console 0（中途 51016/BU_RUNTIME 两次，重试恢复后完成复核）
+
+### 版本链
+- v4.139 index.html：1,498,529B，SHA-1=A1AC8775DFE882A1B0ED4F4EFB29355E1DD130AA（+1,453B ≪15KB；第一轮中间态 39F400E1）
+- master（er-wt484 分支 v485）：498adb19（四项修复）→ 73ddc0e（P1 badge 补丁）→ 登记 commit（本块）
+- gh-pages：69aeea1（3b376bb..69aeea1，--force push，SSL 0 重试；deploy 代理 s_000pLM8Ewr6）
+- 线上 v4.139 已部署验证：sha16=A1AC8775DFE882A1 首抓命中（CDN 即时传播）+「引擎 v4.139」tag 在位
+- 主工作区已同步：15/15 SHA-1 全 MATCH（index=A1AC8775…；AGENTS.md 本块同步）
+- N1=N2（er-n668）：双胞胎产物恒 `787D0CB88F8D75A2DF5B503F69DA65D6E900E8FD`（与 er-n666/667 同哈希=跨轮确定性）；build exit 0 ×2；守门 `[OK] v4.50 守门自检通过…0 违规` + `[BUILD OK] exit 0` ×2（全量 4896 流派+子区 48+S6 287）；N1=N2 时点主工作区 index SHA 前后恒 `B60757A2…`（v4.137 基线，sync 脱钩保护 protected=True）
+- 增量 +1,453B < 15KB，零新分片；引擎计算零改动
+- **新观察（v4.140 候选）**：存档 chip 标签「档1 NaN:NaN」显示 NaN（CSV/JSON 导入路径字段映射问题，非本轮回归；.sav 文件正常路径未测）
+- 遗留跟进：模板本体内容仍 v4.98（生成器大同步 P2+ 未授权不开工）；G2 叶子小字/G3 剩余硬编码色（P2 队列）不变
