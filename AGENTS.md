@@ -2469,3 +2469,25 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 线上：仍 v4.141（EFC0EC64…）——待网络恢复补推 v4.142
 - 遗留跟进：下轮预选 3 项（modal Enter/CSV toast 合并/伤害回车直选）；模板 v4.98 债务不变；G2/G3 P2 队列不变
 - [部署恢复 2026-10-31] 根因=git 全局死代理 http.https://github.com.proxy=127.0.0.1:7890（未监听）致 schannel 握手失败；git -c "http.https://github.com.proxy=" 清代理后补推成功：gh-pages 1f43290（d27f073..1f43290）、master 1418fcd（56d621f..1418fcd）。线上 ?nocache=1421 try1（约30s 传播）sha16=04CC280B83399015CD PASS；MainAgent 线上复核：版本双查 v4.142 + 招式反查「火焰放射」命中「喷射火焰」PASS（首次空表为 503 分片抖动，重触发即中，console 0）。v4.142 全链路闭环。
+
+## v4.143 交互微调轮（v4.142 预选 3 项落地：键盘可达性+toast 统一+回车直选，2026-10-31）
+
+### 探针定案
+- ① confirmImportIfTeam（L4850）仅 Escape→取消、无 Enter 无焦点管理——补
+- ② autoImportParty/CSV 块逐行 addToTeam（L3760）发「已加入队伍：X（N/6）」toast×N 堆叠——补 quiet 合并
+- ③ 伤害四输入框（dmgDefQ/dmgMvQ/dmgDefQ2/dmgMvQ2）无回车行为（全局 L3275 仅拦默认提交）——补 Enter 直选首项
+
+### 落地（+1,110B，17 insertions/13 deletions，引擎计算零改动）
+- ① 确认弹窗：escH 改 Escape→取消 / Enter→继续；appendChild 后 impConfirmCancel.focus()（焦点在取消防误触）；禁背景点关保持
+- ② addToTeam 第 3 参 quiet（三处 toast 包 if(!quiet)）；autoImportParty 传 quiet=true + 循环后一条合并 toast「已导入队伍 N 只（已清空原队伍 M 只）」；CSV 块（L5001）自有循环同步 quiet=true；savImpNote 文案保持
+- ③ 新 helper dmgEnterPick(ev,s,k)（L5673，Enter→点首个 .chipopt）；四输入框 onkeydown 绑定；无建议回车不误触发
+
+### 验收
+- 黑盒（第 9 轮，C:\temp\er-v543-blackbox\）：① PASS（Enter 导入/Escape 取消/焦点在取消/禁背景点关）② PASS（toast 1 条合并「已清空原队伍 2 只 → 已导入 3 只队伍成员」，无逐条堆叠）③ PASS（「喷射」回车→喷射火焰、「喷」回车→喷火龙、zzzzz 回车不误触、伤害 60-71）；回归 6/6；观感 **98.0**（较 v4.142 96.5 ↑1.5）；console 0；预选下轮 3 项：dmgAtkQ 补 Enter、s='2' 弹窗回车手工回归、合并 toast 带首只名
+- 引擎（er-n672）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 9 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位
+- 部署：v4.143 deploy commit 41edeaf 本地落库（er-gh474，仅 index.html 17+/13-）；push 被 github.com 网络阻断（直连 connection reset/timeout=GFW 抖动、7890 代理 schannel 握手失败；死代理 `http.https://github.com.proxy=http://127.0.0.1:7890` 全局残留已登记，本轮沿用每调用 `-c` 清代理）；主工作区 15/15 已本地同步（index=4882FE07…）；有界自动重试轮询 pushretry-v4143.log 运行中；线上仍 v4.142（04CC280B，稳定）
+
+### 版本链
+- v4.143 index.html：1,504,640B，SHA-1=4882FE07217775C87F93105C966EA1AAC246380F（+1,110B ≪15KB，零新分片）
+- 本地 commit：c512041（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 41edeaf（待推）
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
