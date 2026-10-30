@@ -13352,7 +13352,7 @@ function renderNeedPlan(s,vi){
     var pk=plan.pools[n.id],top=pk&&pk.list&&pk.list[0]?pk.list[0]:null;
     if(top){
       h+='<div class="needrow">'+sprImg(top.s.id,'spinl')+'<b>'+esc(top.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+top.s.id+'</span>'+
-        ' <span class="badge">'+esc(String(Math.round(top.score*10)/10))+' 分</span>'+
+        ' <span class="badge" style="font-size:13px;font-weight:700;color:var(--accent)">'+esc(String(Math.round(top.score*10)/10))+' 分</span>'+
         (top.multi>1?(' <span class="badge">多功能 ×'+top.multi+'（+'+((top.multi-1)*NEED_CFG.MULTI_ROLE_BONUS)+'）</span>'):'')+
         ' <button class="btn-mini" onclick="event.stopPropagation();addToTeam(spId2Obj('+top.s.id+'),null)" title="加入队伍构建">➕ 入队</button>'+
         ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+top.s.id+')" title="设为核心">🎯 核心</button>'+
@@ -13416,7 +13416,7 @@ function renderNeedPlan(s,vi){
     h+='<div class="slotbody'+(m.fill?' fillrow':'')+'"><div class="slothead">'+sprImg(m.s.id,'spinl')+'<b>'+esc(m.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+m.s.id+'</span>'+
       (m.core?' <span class="badge">核心</span>':'')+
       (m.fill?' <span class="badge" style="background:#e3f2fd">补位（非需求驱动）</span>':(m.need?' <span class="badge">'+esc(m.need.label)+'</span>':''))+
-      (m.score!=null?(' <span class="badge">'+esc(String(Math.round(m.score*10)/10))+' 分</span>'):'')+
+      (m.score!=null?(' <span class="badge" style="font-size:13px;font-weight:700;color:var(--accent)">'+esc(String(Math.round(m.score*10)/10))+' 分</span>'):'')+
       (m.multi>1?(' <span class="badge">多功能 ×'+m.multi+'</span>'):'')+
       /* v4.49 M-2：多样性锚点落选记录（可翻转档内改选异族候选；纯展示，不参与评分/门控） */
       (m.divAnchor?(' <span class="badge" style="background:#ede7f6" title="该需求处于可翻转档（(s1−s2)/s1 ≤ 5%）：本轮原 top-1 与已入队队友同族，改选异族候选以提升队友可替率（设计书 §3.4 多样性锚点）">🔀 异族锚</span>'):'')+
