@@ -2445,3 +2445,26 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 主工作区已同步：15/15 SHA-1 全 MATCH（index=EFC0EC64…；AGENTS.md 本块同步）
 - N1=N2（er-n670）：双胞胎产物恒 `787D0CB88F8D75A2DF5B503F69DA65D6E900E8FD`（跨轮确定性 7 连）；build exit 0 ×2；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0` ×2；主工作区 index 构建前后恒 A0001199（v4.140 部署版，sync 脱钩保护 protected=True）
 - 遗留跟进：预选 3 项待 v4.142 探针；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+## v4.142 预选三项落地轮（第七轮黑盒预选 → 探针定案 → 落地，2026-10-30/31）
+
+### 探针定案（三项全为真缺口；MainAgent 静态探针证据）
+- ① 招式别名：dmgMvQ 已走 mvAliasOf（MV_ALIAS 原 13 条），但缺「火焰放射/大地神力/意念/十万伏」等高频旧译名；招式反查 mvSearch（renderMv L3458 fzAny）**完全未用别名**——双缺口
+- ② coreGrid 卡（L14998-15006）无任何已入队态（点卡=selectCore 设核心）——真缺口
+- ③ .sav/CSV 导入 autoImportParty→clearTeamForImport 静默清队无确认（输出文案仅事后告知）——真缺口；loadSavSlot 不碰队伍无需弹
+
+### 落地（+2,167B，28 insertions/6 deletions，引擎计算零改动）
+- ① MV_ALIAS（L2520）补 6 条（火焰放射→喷射火焰/大地神力→大地之力/意念→精神强念/十万伏→十万伏特/冰冻之牙→冰霜之牙/火焰牙→火焰之牙，经 data.js 实查官方名，精神冲击本身即官方名不入）；renderMv（L3458）加 `q=mvAliasOf(q)||q`——招式反查搜「火焰放射」命中喷射火焰
+- ② coreGrid 角标：L15020 卡片右上角 accent 白字「已入队」10px 角标（position:absolute;top:2px;right:2px;z-index:1，与「点击生成组队建议」共存）；实测喷火龙基础形有角标、Mega 形态无
+- ③ 新增 `confirmImportIfTeam(cb)`（L4850；禁背景点关、仅取消/继续/Escape），挂 .sav 解析（L4830）与 CSV 导入（L4984）；实测队 2 只弹「当前队伍 2 只将被清空，继续导入？」取消保留/继续清空导入/空队不弹
+
+### 验收
+- 黑盒（第 8 轮补验，C:\temp\er-v542-blackbox\）：③ 确认 modal 7/7 子项全 PASS（动态 N/禁背景点关/取消保留/Escape/继续导入+toast「已清空原队伍 2 只 → 已导入 3 只」/空队不弹）；回归 6/6（版本双查 v4.142/方案卡即时翻转/池卡绿徽/伤害 105-124/375px 三 Tab 零溢出/console 0）；观感 **96.5**（≥96 过线）；预选下轮 3 项：modal Enter=继续快捷键、CSV toast 合并单条摘要、伤害计算器回车直选首项
+- 引擎（er-n671）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 8 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区 index 构建前后恒 EFC0EC64（v4.141，protected）
+- 部署：**push 被 github.com TLS 端点阻断（schannel handshake fail，DNS=坏节点 20.205.243.166；curl 级 github.com:443 亦不通=外部网络抖动，github.io 正常）**——deploy commit 1f43290 已本地落库 er-gh474，主工作区 15/15 已同步为 04CC280B；恢复命令：`git -C C:\temp\er-gh474 push --force github er-gh474:gh-pages` 后抓 `?nocache=1421` 断言 04CC280B83399015CD；master 登记推送同样待网络恢复
+
+### 版本链
+- v4.142 index.html：1,503,530B，SHA-1=04CC280B83399015CD20A1158BE2ACD2A897DCB9（+2,167B ≪15KB，零新分片）
+- 本地 commit：bca2479（三项落地，er-wt484 分支 v485）→ 登记 commit（本块）；er-gh474 deploy commit 1f43290（未推）
+- 线上：仍 v4.141（EFC0EC64…）——待网络恢复补推 v4.142
+- 遗留跟进：下轮预选 3 项（modal Enter/CSV toast 合并/伤害回车直选）；模板 v4.98 债务不变；G2/G3 P2 队列不变
