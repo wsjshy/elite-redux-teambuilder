@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.142</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.143</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -678,7 +678,7 @@ details.inline,.details.inline{cursor:pointer}
     <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 伤害判定 / OHKO 反解</div>
     <div style="font-size:11px;margin-bottom:4px">攻方（我方）：<input id="dmgAtkQ" placeholder="搜索攻方…" style="width:120px" oninput="dmgAtkQ(this.value)"> <button class="btn-mini" onclick="loadAtkFromTeam()">从队伍选</button></div>
     <div id="dmgAtkList" style="margin-bottom:4px"></div>
-    <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
+    <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)" onkeydown="dmgEnterPick(event,'','def')"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
     <div id="dmgDefList" style="margin-bottom:4px"></div>
     <div style="font-size:11px;margin-bottom:4px;color:var(--sub)">常用对手：
       <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('超级土王')">超级土王</span>
@@ -687,7 +687,7 @@ details.inline,.details.inline{cursor:pointer}
       <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('耿鬼')">耿鬼</span>
       <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('巨金怪')">巨金怪</span>
     </div>
-    <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" style="width:120px" oninput="dmgMvQ(this.value)"></div>
+    <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" style="width:120px" oninput="dmgMvQ(this.value)" onkeydown="dmgEnterPick(event,'','mv')"></div>
     <div id="dmgMvList" style="margin-bottom:4px"></div>
     <div id="dmgOut"></div>
   </div>
@@ -3757,14 +3757,14 @@ function loadTeam(){
     setTimeout(function(){try{renderAnalyze()}catch(e){}},0);
   }catch(e){}
 }
-function addToTeam(s,info){
+function addToTeam(s,info,quiet){   /* v4.143：quiet=true 时不发逐行 toast（导入批处理由调用方发一条合并 toast） */
   if(!isValidSp(s))return; /* B7：无效/占位物种不进队伍（coreMatch 与导入路径统一过滤） */
-  if(team.length>=6){toast('最多 6 只');return}
-  if(team.indexOf(s)>-1){toast('已在队伍中：'+s.zh);return}   /* v4.83 P2-1：重复入队轻反馈（此前静默 return，须切队伍页确认） */
+  if(team.length>=6){if(!quiet)toast('最多 6 只');return}
+  if(team.indexOf(s)>-1){if(!quiet)toast('已在队伍中：'+s.zh);return}   /* v4.83 P2-1：重复入队轻反馈（此前静默 return，须切队伍页确认） */
   team.push(s);
   if(info)teamInfo[s.id]=info;else teamInfo[s.id]={fromSave:false};
   try{renderTm(true)}catch(e){}try{renderSlots()}catch(e){}try{renderAnalyze()}catch(e){}saveTeam();
-  toast('已加入队伍：'+s.zh+'（'+team.length+'/6）');   /* v4.83 P2-1：入队成功可见反馈 */
+  if(!quiet)toast('已加入队伍：'+s.zh+'（'+team.length+'/6）');   /* v4.83 P2-1：入队成功可见反馈 */
 }
 /* v4.140：行级入队按钮统一 helper —— 已在队则置灰「✓ 已入队」(disabled 不发 click)；allowDup=true 时（电脑区覆盖重入队语义）保留可点「✓ 重新入队」；未入队则原样返回按钮 HTML（保留各调用点 onclick 回调） */
 function enqueueBtnHtml(sp, btnHtml, allowDup){
@@ -4858,10 +4858,11 @@ function confirmImportIfTeam(cb){
     '<button class="btn-mini" id="impConfirmOk" style="background:var(--accent);color:#fff">继续</button></div></div>';
   document.body.appendChild(m);
   var done=function(ok){m.remove();document.removeEventListener('keydown',escH);if(ok)cb()};
-  var escH=function(e){if(e.key==='Escape')done(false)};
+  var escH=function(e){if(e.key==='Escape')done(false);if(e.key==='Enter')done(true)};   /* v4.143：Enter=继续，Escape=取消 */
   document.getElementById('impConfirmCancel').onclick=function(){done(false)};
   document.getElementById('impConfirmOk').onclick=function(){done(true)};
   document.addEventListener('keydown',escH);
+  document.getElementById('impConfirmCancel').focus();   /* v4.143：焦点在「取消」防误触，Enter 才继续 */
 }
 /* v4.93 D-6：row → 实配 info 公共构造（autoImportParty 与电脑区入队共用，零行为差异） */
 function savRowToInfo(r){
@@ -4877,11 +4878,12 @@ function autoImportParty(res){
     var s=speciesById(r.图鉴编号);if(!s)return;
     if(team.indexOf(s)>-1)return;
     if(team.length>=6)return;
-    addToTeam(s,savRowToInfo(r));added++;
+    addToTeam(s,savRowToInfo(r),true);added++;   /* v4.143：quiet 逐行不发 toast，改循环后一条合并 */
   });
   if(added){renderTm(true);renderSlots();renderAnalyze()}
   var note=$('savImpNote');
   if(note)note.textContent=(cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入队伍 '+added+' 只；全量 CSV 可复制/下载';
+  toast('已导入队伍 '+added+' 只'+(cleared?('（已清空原队伍 '+cleared+' 只）'):''));   /* v4.143：单条合并 toast，替代逐行 N 条 */
   return {cleared:cleared,added:added};
 }
 /* ============ v4.6-B：存档联动组队（我的宝可梦 → 需求驱动引擎）============
@@ -4996,7 +4998,7 @@ function importSaveBox(){
     var info={fromSave:true,item:r[idx['道具']]||'',moves:[],pps:[]};
     ['招式1','招式2','招式3','招式4'].forEach(function(n){if(idx[n]!==undefined)info.moves.push(r[idx[n]]||'')});
     ['PP1','PP2','PP3','PP4'].forEach(function(n){if(idx[n]!==undefined)info.pps.push(r[idx[n]]||'')});
-    addToTeam(s,info);
+    addToTeam(s,info,true);   /* v4.143：quiet 逐行不发 toast，块末已有合并 toast */
     added++;
   }
   var objRows=[];for(var qi=1;qi<rows.length;qi++){var qr=rows[qi],qo={};for(var qc in idx){qo[qc]=qr[idx[qc]]}objRows.push(qo)}
@@ -5461,9 +5463,9 @@ function speedSliderHtml(s){
       '<div id="spdPlanBox" style="margin-top:2px"></div>'+
       '<div style="border-top:1px solid var(--line,rgba(255,255,255,.12));margin-top:6px;padding-top:4px">'+
         '<div style="font-size:11px;color:var(--sub)">🎯 '+esc('伤害判定 / OHKO 反解')+'（Gen3 公式 × ER 数据）</div>'+
-        '<input type="text" id="dmgDefQ2" placeholder="搜对手，如：耿鬼" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgDefQ(this.value,\'2\')">'+
+        '<input type="text" id="dmgDefQ2" placeholder="搜对手，如：耿鬼" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgDefQ(this.value,\'2\')" onkeydown="dmgEnterPick(event,\'2\',\'def\')">'+
         '<div id="dmgDefList2" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
-        '<input type="text" id="dmgMvQ2" placeholder="搜我方招式，如：暗影球" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgMvQ(this.value,\'2\')">'+
+        '<input type="text" id="dmgMvQ2" placeholder="搜我方招式，如：暗影球" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgMvQ(this.value,\'2\')" onkeydown="dmgEnterPick(event,\'2\',\'mv\')">'+
         '<div id="dmgMvList2" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
         '<div style="font-size:11px;margin-top:2px">天气：<span class="chipgrp">'+
           spdSlChip('无',!__spdSl.weather,'dmgSet(\'weather\',\'\')')+
@@ -5668,6 +5670,8 @@ function dmgDefQ(v,s){
   $('dmgDefList'+s).innerHTML=hits.map(function(x){
     return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\',\''+s+'\')">'+esc(x.zh)+'</span>'}).join('');
 }
+/* v4.143：伤害计算器输入回车直选首个建议 chip（无建议则不做） */
+function dmgEnterPick(ev,s,k){if(ev.key!=='Enter')return;var c=document.querySelector('#dmg'+(k==='mv'?'Mv':'Def')+'List'+s+' .chipopt');if(!c)return;ev.preventDefault();ev.stopPropagation();c.click()}
 function dmgDefPick(id,s){
   s=s||'';
   var sp=speciesById(id);
@@ -14257,7 +14261,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.142';
+var ER_ENGINE_VER='v4.143';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
