@@ -2468,3 +2468,4 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 本地 commit：bca2479（三项落地，er-wt484 分支 v485）→ 登记 commit（本块）；er-gh474 deploy commit 1f43290（未推）
 - 线上：仍 v4.141（EFC0EC64…）——待网络恢复补推 v4.142
 - 遗留跟进：下轮预选 3 项（modal Enter/CSV toast 合并/伤害回车直选）；模板 v4.98 债务不变；G2/G3 P2 队列不变
+- [部署恢复 2026-10-31] 根因=git 全局死代理 http.https://github.com.proxy=127.0.0.1:7890（未监听）致 schannel 握手失败；git -c "http.https://github.com.proxy=" 清代理后补推成功：gh-pages 1f43290（d27f073..1f43290）、master 1418fcd（56d621f..1418fcd）。线上 ?nocache=1421 try1（约30s 传播）sha16=04CC280B83399015CD PASS；MainAgent 线上复核：版本双查 v4.142 + 招式反查「火焰放射」命中「喷射火焰」PASS（首次空表为 503 分片抖动，重触发即中，console 0）。v4.142 全链路闭环。
