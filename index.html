@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.140</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.141</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3773,6 +3773,8 @@ function enqueueBtnHtml(sp, btnHtml, allowDup){
   }
   return btnHtml;
 }
+/* v4.141：方案卡/补位行 ➕ 入队就地翻转——addToTeam 成功后（team 含该精灵）把本按钮 outerHTML 换成 disabled 灰「✓ 已入队」；入队失败（满6队 toast）则不动原按钮 */
+function enqFlip(b,sp){addToTeam(sp,null);if(b&&b.outerHTML!==undefined&&team.indexOf(sp)>-1){b.outerHTML=enqueueBtnHtml(sp,null);}}
 function removeFromTeam(s){
   var i=team.indexOf(s);
   if(i>-1){team.splice(i,1);delete teamInfo[s.id]}
@@ -3943,7 +3945,7 @@ function smartSuggest(){
   picks.forEach(function(p){
     html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-top:1px dashed var(--line)">'+
       '<span style="font-size:11px;flex:1">'+p.s.zh+'<br><span style="color:var(--sub);font-size:10px">'+p.why+'</span></span>'+
-      enqueueBtnHtml(p.s,'<button class="btn-mini" onclick="addToTeam(ERDATA.species.find(function(x){return x.id===\''+p.s.id+'\'}))" style="font-size:11px">＋入队</button>')+'</div>';
+      enqueueBtnHtml(p.s,'<button class="btn-mini" onclick="enqFlip(this,ERDATA.species.find(function(x){return x.id===\''+p.s.id+'\'}))" style="font-size:11px">＋入队</button>')+'</div>';
   });
   html+='</div>';
   var old=document.getElementById('sugBox');
@@ -13375,7 +13377,7 @@ function renderNeedPlan(s,vi){
       h+='<div class="needrow">'+sprImg(top.s.id,'spinl')+'<b>'+esc(top.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+top.s.id+'</span>'+
         ' <span class="badge" style="font-size:13px;font-weight:700;color:var(--accent)">'+esc(String(Math.round(top.score*10)/10))+' 分</span>'+
         (top.multi>1?(' <span class="badge">多功能 ×'+top.multi+'（+'+((top.multi-1)*NEED_CFG.MULTI_ROLE_BONUS)+'）</span>'):'')+
-        enqueueBtnHtml(top.s,' <button class="btn-mini" onclick="event.stopPropagation();addToTeam(spId2Obj('+top.s.id+'),null)" title="加入队伍构建">➕ 入队</button>')+
+        enqueueBtnHtml(top.s,' <button class="btn-mini" onclick="event.stopPropagation();enqFlip(this,spId2Obj('+top.s.id+'))" title="加入队伍构建">➕ 入队</button>')+
         ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+top.s.id+')" title="设为核心">🎯 核心</button>'+
         '<div style="font-size:11px;color:var(--sub)">推荐理由：'+esc(top.gate||'')+'；'+(top.dims||[]).slice(0,4).map(function(d){return esc(d.dim+' '+d.txt)}).join(' ｜ ')+
         '<br>合计 '+esc(String(Math.round(top.score*10)/10))+' 分（原始 '+esc(String(Math.round(top.base*10)/10))+' + 多功能 +'+((top.multi-1)*NEED_CFG.MULTI_ROLE_BONUS)+'）</div>'+
@@ -13441,7 +13443,7 @@ function renderNeedPlan(s,vi){
       (m.multi>1?(' <span class="badge">多功能 ×'+m.multi+'</span>'):'')+
       /* v4.49 M-2：多样性锚点落选记录（可翻转档内改选异族候选；纯展示，不参与评分/门控） */
       (m.divAnchor?(' <span class="badge" style="background:#ede7f6" title="该需求处于可翻转档（(s1−s2)/s1 ≤ 5%）：本轮原 top-1 与已入队队友同族，改选异族候选以提升队友可替率（设计书 §3.4 多样性锚点）">🔀 异族锚</span>'):'')+
-      enqueueBtnHtml(m.s,' <button class="btn-mini" onclick="event.stopPropagation();addToTeam(spId2Obj('+m.s.id+'),null)">➕ 入队</button>')+
+      enqueueBtnHtml(m.s,' <button class="btn-mini" onclick="event.stopPropagation();enqFlip(this,spId2Obj('+m.s.id+'))">➕ 入队</button>')+
       ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+m.s.id+')">🎯 设为核心</button></div>';
     if(L.length)h+='<div style="font-size:11px;margin:2px 0">↔ '+L.map(function(x){return esc(x.txt)}).join('；')+'</div>';
     if(m.fill)h+='<div style="font-size:11px;color:var(--sub);margin:2px 0">补位依据（广义正向分，非需求匹配）：'+esc(m.gate||'')+
@@ -14235,7 +14237,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.140';
+var ER_ENGINE_VER='v4.141';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
