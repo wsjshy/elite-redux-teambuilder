@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.143</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.144</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -676,7 +676,7 @@ details.inline,.details.inline{cursor:pointer}
   <div id="anOut"></div>
   <div style="margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:6px">
     <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 伤害判定 / OHKO 反解</div>
-    <div style="font-size:11px;margin-bottom:4px">攻方（我方）：<input id="dmgAtkQ" placeholder="搜索攻方…" style="width:120px" oninput="dmgAtkQ(this.value)"> <button class="btn-mini" onclick="loadAtkFromTeam()">从队伍选</button></div>
+    <div style="font-size:11px;margin-bottom:4px">攻方（我方）：<input id="dmgAtkQ" placeholder="搜索攻方…" style="width:120px" oninput="dmgAtkQ(this.value)" onkeydown="dmgEnterPick(event,'','atk')"> <button class="btn-mini" onclick="loadAtkFromTeam()">从队伍选</button></div>
     <div id="dmgAtkList" style="margin-bottom:4px"></div>
     <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)" onkeydown="dmgEnterPick(event,'','def')"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
     <div id="dmgDefList" style="margin-bottom:4px"></div>
@@ -4872,18 +4872,19 @@ function savRowToInfo(r){
   return info;
 }
 function autoImportParty(res){
-  var cleared=clearTeamForImport(),added=0;
+  var cleared=clearTeamForImport(),added=0,firstAdded='';
   res.rows.forEach(function(r){
     if(r.来源!=='队伍')return;
     var s=speciesById(r.图鉴编号);if(!s)return;
     if(team.indexOf(s)>-1)return;
     if(team.length>=6)return;
     addToTeam(s,savRowToInfo(r),true);added++;   /* v4.143：quiet 逐行不发 toast，改循环后一条合并 */
+    if(added===1)firstAdded=s.zh;   /* v4.144：记录首只名 */
   });
   if(added){renderTm(true);renderSlots();renderAnalyze()}
   var note=$('savImpNote');
   if(note)note.textContent=(cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入队伍 '+added+' 只；全量 CSV 可复制/下载';
-  toast('已导入队伍 '+added+' 只'+(cleared?('（已清空原队伍 '+cleared+' 只）'):''));   /* v4.143：单条合并 toast，替代逐行 N 条 */
+  toast('已导入队伍 '+added+' 只'+(firstAdded?'（含 '+firstAdded+'）':'')+(cleared?('（已清空原队伍 '+cleared+' 只）'):''));   /* v4.143 单条合并；v4.144 带首只名 */
   return {cleared:cleared,added:added};
 }
 /* ============ v4.6-B：存档联动组队（我的宝可梦 → 需求驱动引擎）============
@@ -4985,7 +4986,7 @@ function importSaveBox(){
   }
   confirmImportIfTeam(function(){   /* v4.142：非空队 CSV 导入前确认 */
   var cleared=clearTeamForImport(); /* D2：导入前清空既有队伍，保证 6 只全导入 */
-  var added=0;
+  var added=0,firstAdded='';
   for(var i=1;i<rows.length;i++){
     var r=rows[i];
     if((r[idx['来源']]||'').indexOf('队伍')<0)continue;
@@ -4999,11 +5000,11 @@ function importSaveBox(){
     ['招式1','招式2','招式3','招式4'].forEach(function(n){if(idx[n]!==undefined)info.moves.push(r[idx[n]]||'')});
     ['PP1','PP2','PP3','PP4'].forEach(function(n){if(idx[n]!==undefined)info.pps.push(r[idx[n]]||'')});
     addToTeam(s,info,true);   /* v4.143：quiet 逐行不发 toast，块末已有合并 toast */
-    added++;
+    added++;if(added===1)firstAdded=s.zh;   /* v4.144：记录首只名 */
   }
   var objRows=[];for(var qi=1;qi<rows.length;qi++){var qr=rows[qi],qo={};for(var qc in idx){qo[qc]=qr[idx[qc]]}objRows.push(qo)}
   SAV_ROWS=objRows;renderMyPool(); /* v4.6-B：CSV 导入同样喂给选择池 */
-  toast(added?((cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入 '+added+' 只队伍成员'):'未找到「来源=队伍」的行，或都已入队');
+  toast(added?((cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入 '+added+' 只队伍成员'+(firstAdded?'（含 '+firstAdded+'）':'')):'未找到「来源=队伍」的行，或都已入队');
   });
 }
 
@@ -5670,8 +5671,8 @@ function dmgDefQ(v,s){
   $('dmgDefList'+s).innerHTML=hits.map(function(x){
     return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\',\''+s+'\')">'+esc(x.zh)+'</span>'}).join('');
 }
-/* v4.143：伤害计算器输入回车直选首个建议 chip（无建议则不做） */
-function dmgEnterPick(ev,s,k){if(ev.key!=='Enter')return;var c=document.querySelector('#dmg'+(k==='mv'?'Mv':'Def')+'List'+s+' .chipopt');if(!c)return;ev.preventDefault();ev.stopPropagation();c.click()}
+/* v4.143：伤害计算器输入回车直选首个建议 chip（无建议则不做）；v4.144：kind 三态 mv/def/atk */
+function dmgEnterPick(ev,s,k){if(ev.key!=='Enter')return;var c=document.querySelector('#dmg'+(k==='mv'?'Mv':(k==='def'?'Def':'Atk'))+'List'+s+' .chipopt');if(!c)return;ev.preventDefault();ev.stopPropagation();c.click()}
 function dmgDefPick(id,s){
   s=s||'';
   var sp=speciesById(id);
@@ -14261,7 +14262,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.143';
+var ER_ENGINE_VER='v4.144';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
