@@ -2485,9 +2485,34 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 验收
 - 黑盒（第 9 轮，C:\temp\er-v543-blackbox\）：① PASS（Enter 导入/Escape 取消/焦点在取消/禁背景点关）② PASS（toast 1 条合并「已清空原队伍 2 只 → 已导入 3 只队伍成员」，无逐条堆叠）③ PASS（「喷射」回车→喷射火焰、「喷」回车→喷火龙、zzzzz 回车不误触、伤害 60-71）；回归 6/6；观感 **98.0**（较 v4.142 96.5 ↑1.5）；console 0；预选下轮 3 项：dmgAtkQ 补 Enter、s='2' 弹窗回车手工回归、合并 toast 带首只名
 - 引擎（er-n672）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 9 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位
-- 部署：v4.143 deploy commit 41edeaf 本地落库（er-gh474，仅 index.html 17+/13-）；push 被 github.com 网络阻断（直连 connection reset/timeout=GFW 抖动、7890 代理 schannel 握手失败；死代理 `http.https://github.com.proxy=http://127.0.0.1:7890` 全局残留已登记，本轮沿用每调用 `-c` 清代理）；主工作区 15/15 已本地同步（index=4882FE07…）；有界自动重试轮询 pushretry-v4143.log 运行中；线上仍 v4.142（04CC280B，稳定）
+- 部署：v4.143 deploy commit 41edeaf 本地落库（er-gh474，仅 index.html 17+/13-）；push 一度被 github.com 网络阻断（直连 connection reset/timeout=GFW 抖动、7890 代理 schannel 握手失败；死代理 `http.https://github.com.proxy=http://127.0.0.1:7890` 全局残留已登记，本轮沿用每调用 `-c` 清代理）；**部署恢复**：有界自动重试轮询 pushretry-v4143.log 首试即通（SUCCESS ghpages+master_ok 02:10:24）——gh-pages `41edeaf`（d27f073..1f43290..41edeaf）✅ + master 登记 commit `ecaac27` ✅；线上 `?nocache=1431` try3 断言 SHA-1=4882FE07217775C87F93105C966EA1AAC246380F（CDN ~60s 传播）；主工作区 15/15 已同步（index=4882FE07…）+ AGENTS_match=True
 
 ### 版本链
 - v4.143 index.html：1,504,640B，SHA-1=4882FE07217775C87F93105C966EA1AAC246380F（+1,110B ≪15KB，零新分片）
 - 本地 commit：c512041（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 41edeaf（待推）
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+---
+
+## v4.144 交互收官轮（上库强制）— 2026-10-31
+
+### 本轮三项（v4.143 预选 3 项落地）
+- ① **攻方输入 Enter 选首项**：dmgAtkQ（L679）补 `onkeydown="dmgEnterPick(event,'','atk')"`；helper dmgEnterPick（L5673）kind 映射扩三态 mv/def/atk（atk 恒 s='' 选 #dmgAtkList 首 .chipopt）；至此五输入框（atk/def/mv/Q2×2）键盘直达闭环
+- ② **s='2' 弹窗 Enter 回归**：Grep 确认 dmgDefQ2（L5467）/dmgMvQ2（L5469）onkeydown 在 v4.143 已绑在位，无缺口未改
+- ③ **合并 toast 带首只成员名**：autoImportParty（L4874）与 CSV 块（L4988）各记 firstAdded 名，toast 加「（含 首只名）」段（N=0 无该段），单条不堆叠；savImpNote 不变
+
+### 验收（三线全 PASS）
+- 黑盒（第 10 轮，C:\temp\er-v544-blackbox\）：① PASS（「喷」回车→dmgAtkList 变已选「喷火龙」，五框闭环，zzzzz 不误触，端到端 60-71 无 NaN）② PASS（弹窗 dmgDefQ2 喷→喷火龙 / dmgMvQ2 喷射→喷射火焰 / dmgOut2 妙蛙种子→喷火龙 26-31 克制×0.5 无 NaN）③ PASS（toast 1 条「已清空原队伍 2 只 → 已导入 3 只队伍成员（含 妙蛙花）」）；回归 6/6；观感 **99.0**（较 v4.143 98.0 ↑1.0，历史最高）；console 0；预选下轮 3 项：CSV 面板首用脉冲引导、弹窗天气/场地 chips 键盘可达、toast 首只名可点小 chip
+- 引擎（er-n673）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 10 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区保护复验（index 构建前后恒 4882FE07）
+- P0 线上（MainAgent 真浏览器）：版本双查 v4.144；① dmgAtkQ「喷」回车→列表区变已选「喷火龙」（onkeydown=dmgEnterPick(event,'','atk') 实测）；② 弹窗绑定代码级核验+黑盒同源手工回归；③ modal（焦点=impConfirmCancel）→ Enter → toastBox **1 条**「已清空原队伍 1 只 → 已导入 2 只队伍成员（含 妙蛙花）」；console 0
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `c9ea947`（41edeaf..c9ea947 er-gh474 -> gh-pages，pushretry-v4144.log SUCCESS 03:45:07；清代理每调用 `-c "http.https://github.com.proxy="`，3 次 connect timeout 后通）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1441` try1 命中 SHA-1=`D9FF840A2809E4B18F8529F8D0548A5B7CD72A33`（1,504,970B），sha16=`D9FF840A`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.144 index.html：1,504,970B，SHA-1=D9FF840A2809E4B18F8529F8D0548A5B7CD72A33（+330B ≪15KB，零新分片）
+- 本地 commit：96fd220（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit c9ea947
 - 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
