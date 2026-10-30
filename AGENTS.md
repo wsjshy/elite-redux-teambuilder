@@ -2388,3 +2388,34 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 增量 +1,453B < 15KB，零新分片；引擎计算零改动
 - **新观察（v4.140 候选）**：存档 chip 标签「档1 NaN:NaN」显示 NaN（CSV/JSON 导入路径字段映射问题，非本轮回归；.sav 文件正常路径未测）
 - 遗留跟进：模板本体内容仍 v4.98（生成器大同步 P2+ 未授权不开工）；G2 叶子小字/G3 剩余硬编码色（P2 队列）不变
+
+## v4.140 登记遗留修复轮（探针四项 + 三修落地，2026-10-30）
+
+### 探针定案（四项，probe-v4140.md）
+- ①「档1 NaN:NaN」= **健壮性缺口**（非 CSV 写入错）：实测 CSV 导入从不写 er_savs_v1（只入队不建档）；唯一写入点 L4810 `svs.push({t:Date.now(),...})` 永远合法；坏数据仅来自旧版残留/外部写入 → L4678 `new Date(s.t)` 无 Invalid Date 兜底
+- ② 行级入队按钮已选态 = **真缺口**：池卡 L3715 已有绿「已入队」态；核心行 L1976 / 补位行 L3938 / 分析行 L4486 / 电脑区 L4600 / 方案卡 L13357·L13423 入队后按钮逐字仍「➕」，无置灰/对勾
+- ③ 载入后视线引导 = **真缺口**：loadSavSlot 后仅瞬态 toast（L4759），池区无持久提示
+- ④ 速度线→伤害快捷链 = **误解关闭**：详情弹窗速度滑块区 L5419-5445 已内嵌完整伤害面板（搜对手/招式+天气场地道具+结果），链路「速度线/分析→🔍→弹窗→同屏伤害」已存在，无需新增跳转
+
+### 修复落地（仅 UI 渲染层，引擎计算零改动；+2,481B，32 insertions/11 deletions）
+1. **① renderSavSlots Invalid Date 兜底（L4678）**：`new Date(s.t)` 判 `!isNaN(getTime())`，坏 t/缺 t 只显「档N」，合法时间戳照旧「档N HH:MM」并分钟补零（`('0'+getMinutes()).slice(-2)`）；兼容旧数据
+2. **② enqueueBtnHtml helper（新增于 addToTeam 后，替换 6 处）**：已在队→disabled 灰「✓ 已入队」；电脑区 allowDup=true 保留「✓ 重新入队」覆盖重入队语义；未在队原样返回，各调用点 onclick 回调（renderCore/renderAnalyze 等）零改动
+3. **③ showPoolHint 池区引导（loadSavSlot 后 + .sav 解析 L4828 后同源）**：`#myPickWrap` 头部插一次性 accent 淡条「✅ 已从「档N」载入 N 只·点卡片出方案」+✕，6s 自动淡出，非遮挡
+
+### 版本链
+- v4.140 index.html：1,501,010B，SHA-1=A0001199773FF7EAFE257C9386B0C59ACBBB5A5F（+2,481B ≪15KB，零新分片）
+- master（er-wt484 分支 v485）：9e0ca71（三修）→ 登记 commit（本块）
+- gh-pages：7eb6897（69aeea1..7eb6897，--force push；CDN 第 3 次抓取命中，约 30s 传播）
+- 线上 v4.140 已部署验证：sha16=A0001199773FF7EA（`?nocache=1401`）+「引擎 v4.140」tag 在位
+- 主工作区已同步：15/15 SHA-1 全 MATCH（index=A0001199…；AGENTS.md 本块同步）
+- N1=N2（er-n669）：双胞胎产物恒 `787D0CB88F8D75A2DF5B503F69DA65D6E900E8FD`（跨轮确定性 6 连）；build exit 0 ×2；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0` ×2；主工作区 index 构建前后恒 A1AC8775（v4.139 部署版，sync 脱钩保护 protected=True）
+
+### 黑盒验收（site-v140 + bu 通道，观感 96.5）
+- ① 版本双查 PASS；② NaN 兜底 PASS（档1 17:34/档2 16:34 补零、档3 坏字符串只显「档3」、全页 NaN=0）；③ 行级按钮 PASS（重进方案 disabled 灰「✓ 已入队」、未入队仍 ➕）；④ 淡条 PASS（accent+✕、~6s 淡出、非遮挡）
+- 观感 96.5（A96/B97/C96）；console 0；375px 三 Tab 零溢出
+- MainAgent 线上真浏览器复核 PASS（2026-10-30）：三档 chip「档1 19:04/档2 19:03/档3」无 NaN；档2 载入淡条渲染；雷公入队→toast「已加入队伍：雷公（1/6）」→重进方案「✓ 已入队」disabled 在位；清理注入后 console 0（51016/BU_RUNTIME 两次后重试恢复）
+
+### 候选/遗留（非阻断）
+- **v4.141 候选**：方案卡点 ➕ 入队后按钮不即时翻转（仍显 ➕，toast+队伍计数器即时；重进方案态正确）——建议补方案卡局部重渲染
+- 后台标签页动画冻结导致的 opacity=0 为测试伪影（切前台恢复），非 bug
+- 模板本体内容仍 v4.98（生成器大同步 P2+ 未授权不开工）；G2/G3 P2 队列不变
