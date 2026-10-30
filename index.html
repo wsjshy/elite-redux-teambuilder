@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.141</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.142</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -2517,7 +2517,7 @@ function savTeamReport(){
 /* ============ v4.88 pokepast 文本互操作（第四路输入：粘贴导入 / 导出分享；解析容错：中/英/图鉴名，招式道具中文名映射复用 MV/ERDATA.items） ============ */
 var PP_NAT_ALIAS={'活泼':'开朗','活潑':'开朗','任性':'固执','固執':'固执','大膽':'大胆','內斂':'内敛','安靜':'冷静','沈着':'沉着','膽小':'胆小','認真':'认真','溫和':'温和','溫順':'温顺','慎重':'慎重','淘氣':'淘气','樂天':'乐天','悠閑':'悠闲','頑皮':'顽皮','馬虎':'马虎'};
 /* v4.89 P3：招式经典旧译别名表（搜索容错 + pokepast 导入复用；键=旧名/错名，值=数据内真实中文名） */
-var MV_ALIAS={'影子球':'暗影球','精神干扰':'精神强念','精神強念':'精神强念','大字火':'大字爆炎','冷冻光束':'冰冻光束','急冻光线':'冰冻光束','急凍光線':'冰冻光束','冰冻光线':'冰冻光束','氣合拳':'真气拳','气合拳':'真气拳','瓦割':'劈瓦','翅膀拍':'翅膀攻击','飛光':'幻象光线'};
+var MV_ALIAS={'影子球':'暗影球','精神干扰':'精神强念','精神強念':'精神强念','大字火':'大字爆炎','冷冻光束':'冰冻光束','急冻光线':'冰冻光束','急凍光線':'冰冻光束','冰冻光线':'冰冻光束','氣合拳':'真气拳','气合拳':'真气拳','瓦割':'劈瓦','翅膀拍':'翅膀攻击','飛光':'幻象光线','火焰放射':'喷射火焰','大地神力':'大地之力','意念':'精神强念','十万伏':'十万伏特','冰冻之牙':'冰霜之牙','火焰牙':'火焰之牙'};
 function mvAliasOf(n){n=String(n||'').trim();return MV_ALIAS[n]||MV_ALIAS[n.toLowerCase()]||null}
 var PP_NAT={jolly:['开朗',1],timid:['胆小',1],hasty:['急躁',1],naive:['天真',1],
   hardy:['勤奋',0],docile:['坦率',0],bashful:['害羞',0],quirky:['浮躁',0],serious:['认真',0],
@@ -3456,6 +3456,7 @@ function mvRow(tr){tr.classList.toggle('open')}
 })();
 function renderMv(){
   var q=$('mvSearch').value.trim(),ty=$('mvType').value,sp=$('mvSplit').value;
+  q=mvAliasOf(q)||q;   /* v4.142：招式反查搜索词先过别名表（与伤害计算器 dmgMvQ 同源） */
   var pmin=$('mvPowMin').value===''?-1:parseInt($('mvPowMin').value),pmax=$('mvPowMax').value===''?-1:parseInt($('mvPowMax').value);
   var ppmin=$('mvPpMin').value===''?-1:parseInt($('mvPpMin').value),prmin=$('mvPrMin').value===''?-1:parseInt($('mvPrMin').value);
   var tb=$('mvTable').querySelector('tbody');tb.innerHTML='';
@@ -4826,7 +4827,7 @@ function parseSavFile(input){
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
         ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+_pcHtml+'</div>';
       $('savParseOut').innerHTML=html;
-      autoImportParty(res);
+      confirmImportIfTeam(function(){autoImportParty(res);});   /* v4.142：非空队导入前确认 */
       SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
       showPoolHint(SAV_ROWS.length,'本次解析');   /* v4.140：.sav 解析后同源池区引导提示 */
       /* v4.110 P1：存档多档保存（localStorage er_savs_v1，FIFO 3 档） */
@@ -4844,6 +4845,23 @@ function clearTeamForImport(){
   var n=team.length;
   if(n){team.length=0;Object.keys(teamInfo).forEach(function(k){delete teamInfo[k]})}
   return n;
+}
+/* v4.142：导入前非空队伍确认——team.length>0 时弹轻量 modal（禁背景点关，仅 取消/继续/Escape；继续才走 cb），空队直接 cb */
+function confirmImportIfTeam(cb){
+  if(!team.length){cb();return}
+  var m=document.createElement('div');m.id='impConfirmModal';
+  m.style='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
+  m.innerHTML='<div style="background:var(--card,#fff);border:1px solid var(--line);border-radius:8px;padding:14px;max-width:min(92vw,420px);width:100%;box-sizing:border-box">'+
+    '<div style="font-weight:600;margin-bottom:10px">当前队伍 '+team.length+' 只将被清空，继续导入？</div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+    '<button class="btn-mini" id="impConfirmCancel">取消</button>'+
+    '<button class="btn-mini" id="impConfirmOk" style="background:var(--accent);color:#fff">继续</button></div></div>';
+  document.body.appendChild(m);
+  var done=function(ok){m.remove();document.removeEventListener('keydown',escH);if(ok)cb()};
+  var escH=function(e){if(e.key==='Escape')done(false)};
+  document.getElementById('impConfirmCancel').onclick=function(){done(false)};
+  document.getElementById('impConfirmOk').onclick=function(){done(true)};
+  document.addEventListener('keydown',escH);
 }
 /* v4.93 D-6：row → 实配 info 公共构造（autoImportParty 与电脑区入队共用，零行为差异） */
 function savRowToInfo(r){
@@ -4963,6 +4981,7 @@ function importSaveBox(){
     if(got>0){toast('已按名单导入 '+got+' 只');return}
     toast('表头不匹配：需「来源/图鉴编号」列（网页版存档解析导出格式），或每行一个宝可梦名/编号（如 妙蛙花 / #3）');return;
   }
+  confirmImportIfTeam(function(){   /* v4.142：非空队 CSV 导入前确认 */
   var cleared=clearTeamForImport(); /* D2：导入前清空既有队伍，保证 6 只全导入 */
   var added=0;
   for(var i=1;i<rows.length;i++){
@@ -4983,6 +5002,7 @@ function importSaveBox(){
   var objRows=[];for(var qi=1;qi<rows.length;qi++){var qr=rows[qi],qo={};for(var qc in idx){qo[qc]=qr[idx[qc]]}objRows.push(qo)}
   SAV_ROWS=objRows;renderMyPool(); /* v4.6-B：CSV 导入同样喂给选择池 */
   toast(added?((cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入 '+added+' 只队伍成员'):'未找到「来源=队伍」的行，或都已入队');
+  });
 }
 
 /* ============ 特性反查 ============ */
@@ -14237,7 +14257,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.141';
+var ER_ENGINE_VER='v4.142';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -14995,8 +15015,10 @@ function _initCoreList(){
     arr=sortedSp(arr,$('coreSort').value);
     var box=$('coreGrid');box.innerHTML='';
     arr.slice(0,60).forEach(function(s){
-      var c=document.createElement('div');c.className='card';
-      c.innerHTML=sprImg(s.id)+
+      var c=document.createElement('div');c.className='card';c.style.position='relative';   /* v4.142：右上角已入队角标定位 */
+      var _inTeam=team.indexOf(s)>-1;
+      c.innerHTML=(_inTeam?'<span style="position:absolute;top:2px;right:2px;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;z-index:1">已入队</span>':'')+
+        sprImg(s.id)+
         '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+'</div>'+
         '<div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div><div class="bs">种族值（总值 '+spBst(s)+'）</div>'+
         '<div class="mini" style="color:var(--accent);margin-top:4px">点击生成组队建议</div>';
