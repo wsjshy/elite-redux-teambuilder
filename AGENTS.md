@@ -2419,3 +2419,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **v4.141 候选**：方案卡点 ➕ 入队后按钮不即时翻转（仍显 ➕，toast+队伍计数器即时；重进方案态正确）——建议补方案卡局部重渲染
 - 后台标签页动画冻结导致的 opacity=0 为测试伪影（切前台恢复），非 bug
 - 模板本体内容仍 v4.98（生成器大同步 P2+ 未授权不开工）；G2/G3 P2 队列不变
+
+## v4.141 清尾修复轮（方案卡➕即时翻转 + 第七轮轻量黑盒，2026-10-30）
+
+### 清尾修复（Part 1，P2 单点；+353B，7 insertions/5 deletions）
+- 探针：方案卡 ➕ 入队按钮不即时翻转根因 = 三处 onclick 内联 addToTeam 后无局部重渲染——L13378（需求清单顶选行）/ L13444（方案卡成员行）/ L3946（队伍分析补位行同型）；L1976/L4494 因 onclick 带 renderCore/renderAnalyze 已即时翻转
+- 修复：新增 `enqFlip(b,sp)` helper（addToTeam 成功后经 enqueueBtnHtml 就地翻转按钮 outerHTML → disabled 灰「✓ 已入队」，失败不动）；三处 onclick 改 `enqFlip(this,…)`；toast/计数逻辑零改动；池卡/电脑区 allowDup 语义零改动
+- 验证：浏览器实测点 ➕ 后同页 ~0.4s 即翻转 ✓ disabled（无需重开），console 空
+
+### 第七轮轻量黑盒（Part 2，双路；C:\temp\er-v541-blackbox\）
+- A 路 存档联动+队伍构建 **97**（v4.138 的 88 → v4.139/140 修复后稳定 97；池子可见性/已选态/引导条实测顺畅、切档稳定、队伍保留正确）/ B 路 伤害计算器+方案卡 **96**（分析页 133-157 2HKO、缺项提示正常）/ 总评 **96.5**（与基准持平）
+- 产出 8 条建议（A 4 + B 4，含现状/痛点/改进/收益/工作量）；375px 三 Tab 零溢出；console 0；localStorage 清理
+- **预选 ≤3 项（下轮探针确认）**：① 招式别名/模糊搜索映射表（dmgMvQ+招式反查，~1h；**探针注意**：MainAgent 线上抽查「火焰放射」可模糊命中「喷射火焰(教学)」——前提弱化，需确认 dmgMvQ 具体缺口再定）② 已入队精灵全图鉴网格角标（~1h）③ 载入新档队伍冲突确认弹窗（~0.5h）
+- 诚实声明：弹窗 dmgOut2 数值闭环本轮未完整复现（依赖 v4.139 已验证结论，代码路径未变）；L3946 补位行即时翻转未单独点验（同 enqFlip helper，MainAgent 线上抽查补验结构）
+
+### MainAgent 线上真浏览器复核 PASS（2026-10-30）
+- 版本双查 v4.141；档1 载入池子 opacity=1/皮卡丘卡就位；方案卡点 ➕ **不重开即翻转**「✓ 已入队」disabled + toast「已加入队伍：雷公（1/6）」；弹窗 dmgDefQ2/dmgOut2 结构在位 + 缺项提示「还差：对手、我方招式」；脏字符 0；清理注入后 console 0
+- 环境记录：线上数据分片/CDN 偶发卡顿（ERR_HTTP2_PING_FAILED/503/document.write 警告），重载 + 轮询（ERDATA+MV 双就绪）后恢复——环境抖动非应用缺陷
+
+### 版本链
+- v4.141 index.html：1,501,363B，SHA-1=EFC0EC64A251820ED85AD6A861D4AD97EE6E0A1D（+353B ≪15KB，零新分片）
+- master（er-wt484 分支 v485）：257a5d7（清尾）→ 登记 commit（本块）
+- gh-pages：d27f073（7eb6897..d27f073，--force push；CDN try1 命中，约 15s 传播）
+- 线上 v4.141 已部署验证：sha16=EFC0EC64A251820E（`?nocache=1411`）+「引擎 v4.141」tag 在位
+- 主工作区已同步：15/15 SHA-1 全 MATCH（index=EFC0EC64…；AGENTS.md 本块同步）
+- N1=N2（er-n670）：双胞胎产物恒 `787D0CB88F8D75A2DF5B503F69DA65D6E900E8FD`（跨轮确定性 7 连）；build exit 0 ×2；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0` ×2；主工作区 index 构建前后恒 A0001199（v4.140 部署版，sync 脱钩保护 protected=True）
+- 遗留跟进：预选 3 项待 v4.142 探针；模板 v4.98 债务不变；G2/G3 P2 队列不变
