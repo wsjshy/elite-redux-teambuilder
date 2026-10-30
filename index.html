@@ -306,7 +306,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 /* v4.6.3 两段式互斥视图（挑选 ⇄ 详情）：纯视图切换，引擎零改动 */
 .corebackbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:4px 0 8px}
 .coreback{min-height:44px; padding:10px 16px; font-size:15px; display:inline-flex; align-items:center; gap:6px; cursor:pointer}
-.phasefade{animation:phasein .18s ease-out}
+.phasefade{opacity:1;animation:phasein .18s ease-out;animation-fill-mode:forwards}
 @keyframes phasein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
 @media(prefers-reduced-motion:reduce){.phasefade{animation:none}}
 /* ===== v4.11 详情页三层信息架构（L1 基础信息 / L2 流派玩法 / L3 引擎细节） =====
@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.137</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.139</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -5418,10 +5418,10 @@ function speedSliderHtml(s){
       '<div id="spdPlanBox" style="margin-top:2px"></div>'+
       '<div style="border-top:1px solid var(--line,rgba(255,255,255,.12));margin-top:6px;padding-top:4px">'+
         '<div style="font-size:11px;color:var(--sub)">🎯 '+esc('伤害判定 / OHKO 反解')+'（Gen3 公式 × ER 数据）</div>'+
-        '<input type="text" id="dmgDefQ" placeholder="搜对手，如：耿鬼" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgDefQ(this.value)">'+
-        '<div id="dmgDefList" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
-        '<input type="text" id="dmgMvQ" placeholder="搜我方招式，如：暗影球" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgMvQ(this.value)">'+
-        '<div id="dmgMvList" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
+        '<input type="text" id="dmgDefQ2" placeholder="搜对手，如：耿鬼" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgDefQ(this.value,\'2\')">'+
+        '<div id="dmgDefList2" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
+        '<input type="text" id="dmgMvQ2" placeholder="搜我方招式，如：暗影球" style="width:100%;font-size:11px;margin-top:2px" oninput="dmgMvQ(this.value,\'2\')">'+
+        '<div id="dmgMvList2" style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px"></div>'+
         '<div style="font-size:11px;margin-top:2px">天气：<span class="chipgrp">'+
           spdSlChip('无',!__spdSl.weather,'dmgSet(\'weather\',\'\')')+
           spdSlChip('晴',__spdSl.weather==='晴','dmgSet(\'weather\',\'晴\')')+
@@ -5441,7 +5441,7 @@ function speedSliderHtml(s){
           spdSlChip('头带',__spdSl.dmgItem==='讲究头带','dmgSet(\'dmgItem\',\'讲究头带\')')+
           spdSlChip('眼镜',__spdSl.dmgItem==='讲究眼镜','dmgSet(\'dmgItem\',\'讲究眼镜\')')+'</span> '+
         spdSlChip('暴击',__spdSl.crit,'dmgTgl(\'crit\')')+'</div>'+
-        '<div id="dmgOut" style="margin-top:2px"></div>'+
+        '<div id="dmgOut2" style="margin-top:2px"></div>'+
       '</div>'+
     '</div>';
     setTimeout(function(){try{spdSliderRender()}catch(e){}},0);   /* v4.88 修复GAP-C：详情打开瞬间即首渲染一次方案（不等首次交互） */
@@ -5511,7 +5511,7 @@ function spdSliderRender(){
     spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
     spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
     spdSlChip('−Spe',__spdSl.natOv==='减速','spdSet(\'natOv\',\'减速\')');
-  dmgRender();   /* v4.89：伤害判定面板随滑块状态同步刷新 */
+  dmgRender('dmgOut2');   /* v4.89：伤害判定面板随滑块状态同步刷新；v4.139：弹窗容器 id=2 */
 }
 /* ===== v4.89 伤害引擎 spike（Gen3 基 + ER 自有数据，路径C：算法移植，零外部 API/LLM、零 npm 依赖） =====
    公式骨架（Bulbapedia Gen3 / ER GBA 基版）：
@@ -5618,39 +5618,57 @@ function loadAtkFromTeam(){
   }).join('');
 }
 function dmgDefQuick(name){var el=document.getElementById('dmgDefQ');if(el){el.value=name;dmgDefQ(name)}}
-function dmgDefQ(v){
-  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgDefList');if(el)el.innerHTML='';return}
+function dmgDefQ(v,s){
+  s=s||'';   /* v4.139：suffix='' = 分析页面板；'2' = 图鉴详情弹窗（id 冲突修复） */
+  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgDefList'+s);if(el)el.innerHTML='';return}
   var hits=[];ERDATA.species.forEach(function(x){if(hits.length<12&&String(x.zh).toLowerCase().indexOf(q)>-1)hits.push(x)});
-  $('dmgDefList').innerHTML=hits.map(function(x){
-    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\')">'+esc(x.zh)+'</span>'}).join('');
+  $('dmgDefList'+s).innerHTML=hits.map(function(x){
+    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\',\''+s+'\')">'+esc(x.zh)+'</span>'}).join('');
 }
-function dmgDefPick(id){
+function dmgDefPick(id,s){
+  s=s||'';
   var sp=speciesById(id);
   if(!sp){
     for(var i=0;i<ERDATA.species.length;i++){if(ERDATA.species[i].zh===id){sp=ERDATA.species[i];break}}
   }
   if(!sp){toast('找不到物种: '+id);return}
   __spdSl.defId=sp.id;
-  var el=$('dmgDefList');if(el)el.innerHTML='<span class="chipopt on">'+esc(sp.zh)+'</span>';
-  dmgRender();
+  var el=$('dmgDefList'+s);if(el)el.innerHTML='<span class="chipopt on">'+esc(sp.zh)+'</span>';
+  dmgRender('dmgOut'+s);
 }
-function dmgMvQ(v){
-  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgMvList');if(el)el.innerHTML='';return}
+function dmgMvQ(v,s){
+  s=s||'';
+  var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgMvList'+s);if(el)el.innerHTML='';return}
   var real=mvAliasOf(String(v||'').trim());   /* v4.89 P3：旧译别名命中→按真实名搜索 */
   if(real)q=real.toLowerCase();
   var hits=[];for(var id in ERDATA.moves){var m=ERDATA.moves[id];if(+m[5]>0&&String(m[1]).toLowerCase().indexOf(q)>-1){hits.push(m);if(hits.length>=12)break}}
-  $('dmgMvList').innerHTML=hits.map(function(m){
-    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgMvPick(\''+m[0]+'\')">'+esc(m[1])+'('+m[5]+')</span>'}).join('');
+  $('dmgMvList'+s).innerHTML=hits.map(function(m){
+    return '<span class="chipopt" role="button" tabindex="0" onclick="dmgMvPick(\''+m[0]+'\',\''+s+'\')">'+esc(m[1])+'('+m[5]+')</span>'}).join('');
 }
-function dmgMvPick(id){__spdSl.mvId=id;var el=$('dmgMvList');if(el)el.innerHTML='<span class="chipopt on">'+esc(anMvZh(id))+'</span>';dmgRender()}
-function dmgTgl(k){__spdSl[k]=!__spdSl[k];dmgRender()}
-function dmgSet(k,v){__spdSl[k]=v;dmgRender()}
-function dmgRender(){
-  var box=$('dmgOut');if(!box){console.warn('[dmgRender] no #dmgOut container');return}
+function dmgMvPick(id,s){s=s||'';__spdSl.mvId=id;var el=$('dmgMvList'+s);if(el)el.innerHTML='<span class="chipopt on">'+esc(anMvZh(id))+'</span>';dmgRender('dmgOut'+s)}
+function dmgTgl(k){__spdSl[k]=!__spdSl[k];dmgRender('dmgOut2')}   /* v4.139：天气/暴击 chip 仅存在于详情弹窗 */
+function dmgSet(k,v){__spdSl[k]=v;dmgRender('dmgOut2')}
+function dmgRender(boxId){
+  var bid=boxId||'dmgOut';
+  var box=$(bid);if(!box){console.warn('[dmgRender] no #'+bid+' container');return}
+  var suf=(bid==='dmgOut2')?'2':'';   /* v4.139：图鉴详情弹窗 suffix */
   try{
-  var sA=__spdSl.s;if(!sA){box.innerHTML='<div style="font-size:10px;color:var(--sub">选我方宝可梦后出伤害</div>';return}
+  var sA=__spdSl.s;
+  /* v4.139：缺项动态提示「还差：…」+ accent 高亮未填输入框边框 */
+  var dq=$('dmgDefQ'+suf),mvq=$('dmgMvQ'+suf);
+  if(dq)dq.style.borderColor='';
+  if(mvq)mvq.style.borderColor='';
+  if(!sA){box.innerHTML='<div style="font-size:10px;color:var(--sub)">选我方宝可梦后出伤害</div>';return}
   var sD=__spdSl.defId?speciesById(__spdSl.defId):null;
-  if(!sD||!__spdSl.mvId){box.innerHTML='<div style="font-size:10px;color:var(--sub)">选对手 + 选我方招式后出伤害范围与 OHKO 判定</div>';return}
+  var _miss=[];
+  if(!sD)_miss.push('对手');
+  if(!__spdSl.mvId)_miss.push('我方招式');
+  if(_miss.length){
+    box.innerHTML='<div style="font-size:11px;color:var(--sub)">还差：'+_miss.join('、')+'</div>';
+    if(!sD&&dq)dq.style.borderColor='var(--accent)';
+    if(!__spdSl.mvId&&mvq)mvq.style.borderColor='var(--accent)';
+    return;
+  }
   var natA=__spdSl.natOv||'';
   var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit};
   var r=dmgCalc(o);if(!r){box.innerHTML='<div style="font-size:10px;color:var(--warnred)">该招式无威力</div>';return}
@@ -10864,7 +10882,7 @@ function deriveBuilds(s,team){
             if(['cover','wear','protect','hazard','speed','pivot'].indexOf(b.mv.main[_kB].kind)>-1){_dB=_kB;break}}
           if(_dB>-1){
             b.mv.main[_dB]={id:_cvB.id,kind:'cover',tag:'补盲',
-              why:['威力'+_cvB.pow,'覆盖盲点 '+_cvB.hit.map(function(t){return tlabel(t)}).join('/')+'（×2 以上）',
+              why:['威力'+_cvB.pow,'覆盖盲点 '+_cvB.hit.join('/')+'（×2 以上）',
                 mvWhyStd('cover',roleTag,{id:_cvB.id,tys:_cvB.hit,cover:_cvB.hit.length,prin:['P2']})]};
             b.coverFixed={now:_cvB.id,tys:_cvB.hit};
           }else{
@@ -13334,7 +13352,7 @@ function renderNeedPlan(s,vi){
     var pk=plan.pools[n.id],top=pk&&pk.list&&pk.list[0]?pk.list[0]:null;
     if(top){
       h+='<div class="needrow">'+sprImg(top.s.id,'spinl')+'<b>'+esc(top.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+top.s.id+'</span>'+
-        ' <span class="badge">'+esc(String(Math.round(top.score*10)/10))+' 分</span>'+
+        ' <span class="badge" style="font-size:13px;font-weight:700;color:var(--accent)">'+esc(String(Math.round(top.score*10)/10))+' 分</span>'+
         (top.multi>1?(' <span class="badge">多功能 ×'+top.multi+'（+'+((top.multi-1)*NEED_CFG.MULTI_ROLE_BONUS)+'）</span>'):'')+
         ' <button class="btn-mini" onclick="event.stopPropagation();addToTeam(spId2Obj('+top.s.id+'),null)" title="加入队伍构建">➕ 入队</button>'+
         ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+top.s.id+')" title="设为核心">🎯 核心</button>'+
@@ -13398,7 +13416,7 @@ function renderNeedPlan(s,vi){
     h+='<div class="slotbody'+(m.fill?' fillrow':'')+'"><div class="slothead">'+sprImg(m.s.id,'spinl')+'<b>'+esc(m.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+m.s.id+'</span>'+
       (m.core?' <span class="badge">核心</span>':'')+
       (m.fill?' <span class="badge" style="background:#e3f2fd">补位（非需求驱动）</span>':(m.need?' <span class="badge">'+esc(m.need.label)+'</span>':''))+
-      (m.score!=null?(' <span class="badge">'+esc(String(Math.round(m.score*10)/10))+' 分</span>'):'')+
+      (m.score!=null?(' <span class="badge" style="font-size:13px;font-weight:700;color:var(--accent)">'+esc(String(Math.round(m.score*10)/10))+' 分</span>'):'')+
       (m.multi>1?(' <span class="badge">多功能 ×'+m.multi+'</span>'):'')+
       /* v4.49 M-2：多样性锚点落选记录（可翻转档内改选异族候选；纯展示，不参与评分/门控） */
       (m.divAnchor?(' <span class="badge" style="background:#ede7f6" title="该需求处于可翻转档（(s1−s2)/s1 ≤ 5%）：本轮原 top-1 与已入队队友同族，改选异族候选以提升队友可替率（设计书 §3.4 多样性锚点）">🔀 异族锚</span>'):'')+
@@ -13423,7 +13441,7 @@ function renderNeedPlan(s,vi){
     var rc=rsTeamCard(plan.team);
     if(rc){
       h+='<div class="tip" style="font-size:11px;background:#eef7ff;border-color:#90caf9"><b>强度校准</b>：'+
-        '引擎位次均分 '+rc.E.toFixed(1)+' → 校准强度 <b>'+rc.S.toFixed(1)+'</b>（'+(rc.d>=0?'+':'')+rc.d.toFixed(1)+'）'+
+        '引擎位次均分 '+rc.E.toFixed(1)+' → 校准强度 <b style="font-size:13px;font-weight:700;color:var(--accent)">'+rc.S.toFixed(1)+'</b>（'+(rc.d>=0?'+':'')+rc.d.toFixed(1)+'）'+
         '<br>逐维度（标准化得分）：速度线 '+rc.z.slow.toFixed(2)+'｜单体强度 '+rc.z.bst.toFixed(2)+'｜体系协同 '+rc.z.syscnt.toFixed(2)+'｜阵容修正 '+rc.z.sh.toFixed(2)+
         '<br><span style="color:var(--sub)">口径：用 4000 支真实对局队伍的胜负结果校准排序权重，修正「只看种族值堆砌传说精灵」的偏差——校准系数为确定性规则，可一键回退。</span></div>';
     }
@@ -13441,7 +13459,7 @@ function renderNeedPlan(s,vi){
       vs.list.forEach(function(x){
         h+='<div style="font-size:11px;margin:2px 0">'+sprImg(x.s.id,'spinl')+
           '<span class="abi" onclick="openSpById('+x.s.id+')">'+esc(x.s.zh)+'</span> <span style="color:var(--sub)">#'+x.s.id+'</span>：权衡否决 → <b>'+esc(x.fam)+'</b>+'+esc(x.itemB)+
-          ' 更优（有效耐久 '+Math.round(x.A.bulk)+' vs '+Math.round(x.B.bulk)+'，综合权衡 '+x.S+'）'+
+          ' 更优（有效耐久 <b style="font-size:13px;font-weight:700;color:var(--accent)">'+Math.round(x.A.bulk)+'</b> vs <b style="font-size:13px;font-weight:700;color:var(--accent)">'+Math.round(x.B.bulk)+'</b>，综合权衡 <b style="font-size:13px;font-weight:700;color:var(--accent)">'+x.S+'</b>）'+
           ' <span style="color:var(--sub)" title="'+escq(x.why)+'">ℹ️ 依据</span></div>';
       });
       h+='<div class="tip" style="font-size:11px">共 '+vs.n+' 只，按 S 升序（越靠前 = 与同族终态+其道具的差距越大）；<b>全部列出、不隐藏中间位次</b>，折叠块默认收起、不占主推荐位。</div>';
@@ -14196,7 +14214,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.137';
+var ER_ENGINE_VER='v4.139';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
@@ -14878,8 +14896,10 @@ var myPhaseMode='pick';
 function myPhase(m,noscroll){
   myPhaseMode=(m==='detail')?'detail':'pick';
   var pw=$('myPickWrap'),dw=$('myDetailWrap');
-  if(pw&&pw.style)pw.style.display=(myPhaseMode==='pick')?'':'none';
-  if(dw&&dw.style)dw.style.display=(myPhaseMode==='detail')?'':'none';
+  var wantPick=(myPhaseMode==='pick');
+  /* v4.139 幂等守卫：目标 display 与现状一致则不写 style，避免无谓写回触发 .phasefade 动画重启 */
+  if(pw&&pw.style){var want=wantPick?'':'none';if(pw.style.display!==want)pw.style.display=want}
+  if(dw&&dw.style){var want=wantPick?'none':'';if(dw.style.display!==want)dw.style.display=want}
   if(noscroll)return;
   var host=$('mySavCard');
   if(host&&host.scrollIntoView){try{host.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}}
