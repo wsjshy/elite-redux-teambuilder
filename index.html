@@ -364,7 +364,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .fhd{font-size:13px; font-weight:700; display:flex; align-items:center; gap:2px; margin-bottom:2px}
 .fno{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%;
   background:var(--accent); color:#fff; font-size:11px; flex:0 0 auto; margin-right:5px}
-.oltext{display:block; font-size:13px; line-height:1.85; margin-top:3px; font-weight:400}
+.oltext{display:block; font-size:14px; line-height:1.85; margin-top:3px; font-weight:600}
 .hlbox{border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:6px; padding:6px 9px;
   margin:4px 0; background:#f8fbff; font-size:13px; line-height:1.9}
 .mvlist{margin:2px 0}
@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.136</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.137</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4482,7 +4482,7 @@ function renderAnalyze(){
     if(best.length){
       html+='<div class="sec" style="margin-top:8px"><h3>🎯 补位建议（应对共同弱点/覆盖缺口）</h3><div class="scroll"><table><thead><tr><th>候选</th><th>属性</th><th>评分</th><th>理由</th><th></th></tr></thead><tbody>';
       best.slice(0,4).forEach(function(r){
-        html+='<tr><td><b>'+esc(r.s.zh)+'</b> <span style="font-size:11px;color:var(--sub)">#'+r.s.id+'</span></td><td>'+tlabel(r.s.t1)+(r.s.t2!==r.s.t1?' '+tlabel(r.s.t2):'')+'</td><td><b style="color:var(--accent)">+'+r.sc+'</b></td><td style="font-size:12px">'+esc(r.why.join('；'))+'</td>'+
+        html+='<tr><td><b>'+esc(r.s.zh)+'</b> <span style="font-size:11px;color:var(--sub)">#'+r.s.id+'</span></td><td>'+tlabel(r.s.t1)+(r.s.t2!==r.s.t1?' '+tlabel(r.s.t2):'')+'</td><td><b style="color:var(--accent);font-size:13px;font-weight:700">+'+r.sc+'</b></td><td style="font-size:12px">'+esc(r.why.join('；'))+'</td>'+
           '<td><button class="btn-mini" onclick="addToTeam(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0],null);renderAnalyze()" title="加入队伍">➕</button> '+
           '<button class="btn-mini" onclick="openSp(ERDATA.species.filter(function(x){return x.id==\''+r.s.id+'\'})[0])" title="看详情">🔍</button></td></tr>';
       });
@@ -5655,7 +5655,7 @@ function dmgRender(){
   var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit};
   var r=dmgCalc(o);if(!r){box.innerHTML='<div style="font-size:10px;color:var(--warnred)">该招式无威力</div>';return}
   var hpD=dmgStatOf(bstI(sD,0),0,31,0,'');
-  var verdict=r.lo>=hpD?'<span style="color:var(--ok)">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub)">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred)">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
+  var verdict=r.lo>=hpD?'<span style="color:var(--ok);font-size:12px;font-weight:700">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub);font-size:12px;font-weight:700">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred);font-size:12px;font-weight:700">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
   var solve=ohkoSolveEv(o,hpD);
   box.innerHTML='<div style="font-size:11px;margin:2px 0">'+esc(sA.zh)+' → '+esc(sD.zh)+'（HP '+hpD+'）'+
     '<br>伤害 <b style="font-size:17px;font-weight:700;color:var(--accent)">'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+'）'+verdict+
@@ -5668,7 +5668,7 @@ function dmgRender(){
   box.innerHTML+='<div style="font-size:10px;color:var(--sub)">'+accHtml+'</div>';
   if(acc<100){
     var expLo=Math.round(r.lo*acc/100), expHi=Math.round(r.hi*acc/100);
-    box.innerHTML+='<div style="font-size:10px;color:var(--sub);margin-top:1px">期望伤害（×命中 '+acc+'%）= <b style="color:var(--accent)">'+expLo+'–'+expHi+'</b></div>';
+    box.innerHTML+='<div style="font-size:12px;color:var(--sub);margin-top:1px">期望伤害（×命中 '+acc+'%）= <b style="color:var(--accent);font-weight:700">'+expLo+'–'+expHi+'</b></div>';
   }
   var barHtml='<div style="display:flex;height:12px;margin:4px 0;border-radius:3px;overflow:hidden">';
   var step=(r.hi-r.lo)/15;
@@ -5677,7 +5677,7 @@ function dmgRender(){
     var color=dmg>=hpD?'#66bb6a':(dmg>=hpD*0.75?'#ffa726':(dmg>=hpD*0.5?'#ffd54f':'#90caf9'));
     barHtml+='<div style="flex:1;background:'+color+';border-right:1px solid #fff"></div>';
   }
-  barHtml+='</div><div style="font-size:9px;color:var(--sub)">16 段伤害分布（绿=OHKO / 橙≥75% / 黄≥50% / 蓝<50%）</div>';
+  barHtml+='</div><div style="font-size:10px;color:var(--sub)">16 段伤害分布（绿=OHKO / 橙≥75% / 黄≥50% / 蓝<50%）</div>';
   box.innerHTML+=barHtml;
   /* v4.95 A：防守向反推（同输入面，反向解「扛 N 下」） */
   var mv=ERDATA.moves[__spdSl.mvId];var phys=mv&&mv[4]==='物理';
@@ -14196,7 +14196,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.136';
+var ER_ENGINE_VER='v4.137';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
