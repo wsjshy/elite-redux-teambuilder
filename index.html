@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.144</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.145</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4872,19 +4872,19 @@ function savRowToInfo(r){
   return info;
 }
 function autoImportParty(res){
-  var cleared=clearTeamForImport(),added=0,firstAdded='';
+  var cleared=clearTeamForImport(),added=0,firstS=null;
   res.rows.forEach(function(r){
     if(r.来源!=='队伍')return;
     var s=speciesById(r.图鉴编号);if(!s)return;
     if(team.indexOf(s)>-1)return;
     if(team.length>=6)return;
     addToTeam(s,savRowToInfo(r),true);added++;   /* v4.143：quiet 逐行不发 toast，改循环后一条合并 */
-    if(added===1)firstAdded=s.zh;   /* v4.144：记录首只名 */
+    if(added===1)firstS=s;   /* v4.145：记录首只对象（可点跳详情） */
   });
   if(added){renderTm(true);renderSlots();renderAnalyze()}
   var note=$('savImpNote');
   if(note)note.textContent=(cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入队伍 '+added+' 只；全量 CSV 可复制/下载';
-  toast('已导入队伍 '+added+' 只'+(firstAdded?'（含 '+firstAdded+'）':'')+(cleared?('（已清空原队伍 '+cleared+' 只）'):''));   /* v4.143 单条合并；v4.144 带首只名 */
+  toast('已导入队伍 '+added+' 只'+(firstS?'（含 <span class="chipopt" style="padding:0 6px;margin-left:2px;cursor:pointer" onclick="openSpById(\''+firstS.id+'\')">'+esc(firstS.zh)+'</span>）':'')+(cleared?('（已清空原队伍 '+cleared+' 只）'):''),2800,true);   /* v4.145：html 模式首只可点 */
   return {cleared:cleared,added:added};
 }
 /* ============ v4.6-B：存档联动组队（我的宝可梦 → 需求驱动引擎）============
@@ -4930,17 +4930,29 @@ function myCoreTeam(id){
   myPhase('detail'); /* v4.6.3：进入详情阶段（方案置顶、池隐藏、带返回按钮） */
 }
 /* v4.6 收尾：页内轻提示（替代原生 alert —— 原生 alert 阻塞 JS 线程，历史 bu 事故同源） */
-function toast(msg,ms){
+function toast(msg,ms,html){
   var box=document.getElementById('toastBox');
   if(!box){box=document.createElement('div');box.id='toastBox';document.body.appendChild(box)}
-  var el=document.createElement('div');el.className='toastmsg';el.textContent=String(msg==null?'':msg);
+  var el=document.createElement('div');el.className='toastmsg';
+  if(html){el.innerHTML=String(msg)}else{el.textContent=String(msg==null?'':msg)}   /* v4.145：html 可选模式（仅导入合并 toast 用，其余默认 textContent 安全） */
   box.appendChild(el);
   setTimeout(function(){try{if(el.parentNode)el.parentNode.removeChild(el)}catch(e){}},ms||2800);
   return el;
 }
 function copySavCsv(){if(!lastSavCsv){toast('暂无解析结果');return}var ta=document.createElement('textarea');ta.value=lastSavCsv;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(ta);toast('已复制 '+lastSavCsv.split('\n').length+' 行 CSV')}
 function downloadSavCsv(){if(!lastSavCsv){toast('暂无解析结果');return}var blob=new Blob(['\ufeff'+lastSavCsv],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='存档解析_网页版_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);document.body.removeChild(a)},500)}
-function toggleCsvPanel(){var p=$('csvPanel');p.style.display=p.style.display==='none'?'block':'none'}
+function toggleCsvPanel(){
+  var p=$('csvPanel');p.style.display=p.style.display==='none'?'block':'none';
+  /* v4.145：CSV 面板首次打开一次性脉冲引导（localStorage 标记不重复闪） */
+  if(p.style.display==='block'&&!localStorage.getItem('er_csvGuide')){
+    localStorage.setItem('er_csvGuide','1');
+    var g=document.createElement('div');
+    g.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease';
+    g.textContent='首次使用：粘贴 CSV → 点「导入」（前 6 只入队）';
+    p.insertBefore(g,p.firstChild);
+    setTimeout(function(){try{if(g.parentNode)g.parentNode.removeChild(g)}catch(e){}},3800);
+  }
+}
 /* v4.33 N7：简单名单导入——每行第 0 列可为 宝可梦中文名/英文名/编号（数字或 #N）；返回成功入队数 */
 function importNameList(rows){
   var added=0,seen={};
@@ -4986,7 +4998,7 @@ function importSaveBox(){
   }
   confirmImportIfTeam(function(){   /* v4.142：非空队 CSV 导入前确认 */
   var cleared=clearTeamForImport(); /* D2：导入前清空既有队伍，保证 6 只全导入 */
-  var added=0,firstAdded='';
+  var added=0,firstS=null;
   for(var i=1;i<rows.length;i++){
     var r=rows[i];
     if((r[idx['来源']]||'').indexOf('队伍')<0)continue;
@@ -5000,11 +5012,11 @@ function importSaveBox(){
     ['招式1','招式2','招式3','招式4'].forEach(function(n){if(idx[n]!==undefined)info.moves.push(r[idx[n]]||'')});
     ['PP1','PP2','PP3','PP4'].forEach(function(n){if(idx[n]!==undefined)info.pps.push(r[idx[n]]||'')});
     addToTeam(s,info,true);   /* v4.143：quiet 逐行不发 toast，块末已有合并 toast */
-    added++;if(added===1)firstAdded=s.zh;   /* v4.144：记录首只名 */
+    added++;if(added===1)firstS=s;   /* v4.145：记录首只对象 */
   }
   var objRows=[];for(var qi=1;qi<rows.length;qi++){var qr=rows[qi],qo={};for(var qc in idx){qo[qc]=qr[idx[qc]]}objRows.push(qo)}
   SAV_ROWS=objRows;renderMyPool(); /* v4.6-B：CSV 导入同样喂给选择池 */
-  toast(added?((cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入 '+added+' 只队伍成员'+(firstAdded?'（含 '+firstAdded+'）':'')):'未找到「来源=队伍」的行，或都已入队');
+  toast(added?((cleared?('已清空原队伍 '+cleared+' 只 → '):'')+'已导入 '+added+' 只队伍成员'+(firstS?'（含 <span class="chipopt" style="padding:0 6px;margin-left:2px;cursor:pointer" onclick="openSpById(\''+firstS.id+'\')">'+esc(firstS.zh)+'</span>）':'')):'未找到「来源=队伍」的行，或都已入队',2800,true);
   });
 }
 
@@ -5423,7 +5435,7 @@ function spdNatAdvice(s,p,M){
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
 var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null};
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx)m*=2;if(__spdSl.tailwind)m*=2;return m}
-function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'">'+label+'</span>'}
+function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+onclick+'}">'+label+'</span>'}
 function speedSliderHtml(s){
   try{
     var p0=speedPctileRankOf(s);__spdSl.s=s;__spdSl.p=p0;
@@ -14262,7 +14274,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.144';
+var ER_ENGINE_VER='v4.145';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
