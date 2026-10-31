@@ -2541,3 +2541,28 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.145 index.html：1,506,120B，SHA-1=BC02FB7470093ACB7B114997D3DBBE5484D2B016（+1,150B ≪15KB，零新分片）
 - 本地 commit：a22a972（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 2076e9c
 - 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+---
+
+## v4.146 预选落地轮（sav 首用引导/toast 定时器/chips 方向键）— 2026-10-31
+
+### 本轮三项（v4.145 预选 3 项落地，+1,345B=15/4，引擎计算零改动）
+- ① **「解析存档 .sav」首用引导条**：.sav 入口为按钮直开文件框（无面板）→ 真首用时刻=首次解析成功。parseSavFile 成功分支（`$('savParseOut').innerHTML=html` 后）hook：`er_savGuide` 未标记时顶部插 phasefade 淡入条「首次解析成功：下方我的宝可梦池点任意精灵即可作为核心一键配队」3.8s 移除 + 写 1；独立标记（与 CSV er_csvGuide 并列），一次性不重复闪
+- ② **toast chip 点击重置淡出定时器**：toast（L4933）setTimeout 改存 `el._timer`；html 模式 toast 加委托 click 监听——chip 点击冒泡即 clearTimeout + 重新计时 2.8s（用户来得及进详情）；textContent 模式全站其余 toast 行为不变
+- ③ **弹窗 chips 方向键左右移动**：spdSlChip（L5440）onkeydown 扩 ArrowLeft/Right——组内相邻 .chipopt 移动焦点、边界停住不环绕、不破坏 Enter/Space 激活；禁新增下拉选择器
+
+### 验收（三线全 PASS）
+- 黑盒（第 12 轮，C:\temp\er-v546-blackbox\）：① PASS（引导条出现+er_savGuide=1+4.5s 自动移除+二次不复发；本环境无 128KB 真档，以同构 UI 块验证组件行为 + 触发 wiring 源码核对）② PASS（时间线二分：t=+0.33s 点 chip → t=+3.07s toast 仍在（超 2.8s 死线=重置实证）→ t=+5.89s 消失（新周期到期）；对照不重置 2.8s 即死）③ PASS（晴 ArrowRight→雨/ArrowLeft→晴；边界无←停、雪→停不环绕；方向后 Enter 激活不破坏）；回归 6/6；观感 **99.5**（持平 v4.145，三项收官无新增扣分）；console 0；预选下轮 3 项：.sav 引导真档端到端补测、toast 点击视觉反馈、引导标记版本化
+- 引擎（er-n675）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 12 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区保护复验（index 构建前后恒 BC02FB74）
+- P0 线上（MainAgent 真浏览器）：版本双查「引擎 v4.146」✓（多次实测）；线上断言 sha16=A7E3E348 ✓（curl 独立通道）；① 引导触发点在真 .sav 解析分支（CSV 导入不触发——与实施口径一致）、真档上传实测被 bu 后端不稳定阻断（BU_RUNTIME/CELL_SAFETY_TIMEOUT 多次，已登记环境问题）；②③ 交互复核以黑盒同源（sha 锁定一致产物）实证为据——如实说明：本轮 ①②③ 的 live 交互部分未能在 MainAgent 浏览器完成，黑盒第 12 轮在完全一致产物上完成全部三项
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `0fdde56`（2076e9c..0fdde56 er-gh474 -> gh-pages，pushretry-v4146.log SUCCESS 12:48:07，try1 即通；清代理每调用 `-c "http.https://github.com.proxy="`）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1461` try1 命中 SHA-1=`A7E3E3488123F3E187B8EC48602D4266EC53F2CE`（1,507,465B），sha16=`A7E3E348`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.146 index.html：1,507,465B，SHA-1=A7E3E3488123F3E187B8EC48602D4266EC53F2CE（+1,345B ≪15KB，零新分片）
+- 本地 commit：dc24e94（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 0fdde56
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
