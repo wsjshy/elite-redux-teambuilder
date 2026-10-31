@@ -653,7 +653,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.145</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.146</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4827,6 +4827,15 @@ function parseSavFile(input){
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
         ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+_pcHtml+'</div>';
       $('savParseOut').innerHTML=html;
+      /* v4.146：首次解析成功一次性引导（独立标记 er_savGuide，与 CSV 的 er_csvGuide 并列） */
+      if(!localStorage.getItem('er_savGuide')){
+        localStorage.setItem('er_savGuide','1');
+        var sg=document.createElement('div');
+        sg.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease';
+        sg.textContent='首次解析成功：下方「我的宝可梦」池点任意精灵即可作为核心一键配队';
+        $('savParseOut').insertBefore(sg,$('savParseOut').firstChild);
+        setTimeout(function(){try{if(sg.parentNode)sg.parentNode.removeChild(sg)}catch(e){}},3800);
+      }
       confirmImportIfTeam(function(){autoImportParty(res);});   /* v4.142：非空队导入前确认 */
       SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
       showPoolHint(SAV_ROWS.length,'本次解析');   /* v4.140：.sav 解析后同源池区引导提示 */
@@ -4936,7 +4945,9 @@ function toast(msg,ms,html){
   var el=document.createElement('div');el.className='toastmsg';
   if(html){el.innerHTML=String(msg)}else{el.textContent=String(msg==null?'':msg)}   /* v4.145：html 可选模式（仅导入合并 toast 用，其余默认 textContent 安全） */
   box.appendChild(el);
-  setTimeout(function(){try{if(el.parentNode)el.parentNode.removeChild(el)}catch(e){}},ms||2800);
+  var dur=ms||2800;
+  el._timer=setTimeout(function(){try{if(el.parentNode)el.parentNode.removeChild(el)}catch(e){}},dur);   /* v4.146：存句柄可重置 */
+  if(html){el.addEventListener('click',function(){clearTimeout(el._timer);el._timer=setTimeout(function(){try{if(el.parentNode)el.parentNode.removeChild(el)}catch(e){}},dur)},false)}   /* v4.146：chip 点击冒泡重置淡出 */
   return el;
 }
 function copySavCsv(){if(!lastSavCsv){toast('暂无解析结果');return}var ta=document.createElement('textarea');ta.value=lastSavCsv;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(ta);toast('已复制 '+lastSavCsv.split('\n').length+' 行 CSV')}
@@ -5435,7 +5446,7 @@ function spdNatAdvice(s,p,M){
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
 var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null};
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx)m*=2;if(__spdSl.tailwind)m*=2;return m}
-function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+onclick+'}">'+label+'</span>'}
+function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+onclick+'}else if(event.key===\'ArrowLeft\'||event.key===\'ArrowRight\'){event.preventDefault();var g=this.parentNode;var cs=[].slice.call(g.children).filter(function(x){return x.classList&&x.classList.contains(\'chipopt\')});var i=cs.indexOf(this);var d=event.key===\'ArrowLeft\'?-1:1;var n=i+d;if(n>=0&&n<cs.length)cs[n].focus();}">'+label+'</span>'}
 function speedSliderHtml(s){
   try{
     var p0=speedPctileRankOf(s);__spdSl.s=s;__spdSl.p=p0;
@@ -14274,7 +14285,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.145';
+var ER_ENGINE_VER='v4.146';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
