@@ -2566,3 +2566,28 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.146 index.html：1,507,465B，SHA-1=A7E3E3488123F3E187B8EC48602D4266EC53F2CE（+1,345B ≪15KB，零新分片）
 - 本地 commit：dc24e94（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 0fdde56
 - 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+---
+
+## v4.147 预选落地轮（sav 真档补测/toast 视觉反馈/引导版本化）— 2026-10-31
+
+### 本轮三项（v4.146 预选 3 项，+266B=2/0，引擎计算零改动）
+- ① **.sav 引导端到端真档补测（P0 优先，测试活动）**：v4.146 诚实缺口（live 端到端被 bu 不稳阻断）本轮闭合——黑盒第 13 轮用**真实主存档**（ER2.65-beta2-debug汉化版.sav，131,088B）在 8901 实测：上传→解析成功（总记录 431 | 队伍 6 | 电脑区 425 | 特殊区 15）→ 引导条出现 + er_savGuide='v2' → 4.5s 自动移除 → 二次上传不复发；老用户态（预置 '1'）重看一次并升级 'v2'。**mock 档评估=不做**（真档在手+上传通道可复现，内置 mock 冗余且违「零新分片」精神，已记录决策）
+- ② **toast/chips 按压视觉反馈**：`.chipgrp .chipopt:active,.chipopt:active{transform:translateY(1px);background:#e8edff;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}`（CSS L606）——toast chip 与全部 chips 统一按压反馈，纯 CSS 不改任何 onclick 行为，hover 不变，不用危险红
+- ③ **引导标记版本化**：er_csvGuide / er_savGuide 键名不变、值改版本号——`!=='v2'` 判断 + setItem('v2')（.sav L4833 / CSV L4960）；旧值 '1'≠'v2' 老用户重看一次，未来文案变更 bump 'v3'；引导仍一次性（每版本一次）
+
+### 验收（三线）
+- 黑盒（第 13 轮，C:\temp\er-v547-blackbox\）：① **PASS（真档实跑）**——431 只全渲染（队伍 6：超级土王/坚果哑铃/Storming/雷电云-灵兽/洛奇亚/鳃鱼龙 Lv100+EV+道具+招式）、BOX1 前 12 带「+入队」、引导条+er_savGuide='v2'+4.5s 移除+二次不复发、老用户 '1' 重看一次；② PASS（:active 样式表核对 + 天气 chip 点击 dmgSet 26–31→39–46 未破坏）；③ PASS（er_csvGuide='1' → 开面板重看一次 → 'v2' → 不复发）；回归全 PASS（含 toast 定时器重置继承 v4.146）；观感 **99.7**（较 v4.146 99.5 ↑0.2，历史新高；真档队伍分析页「雨×2 沙×1 顺风×1 钉×1 墙×1」体系识别+极速 350 P81 洛奇亚清场位）；console 0；预选下轮 3 项：375px 真实移动视口截图、savParseOut 电脑区 425 只分页/虚拟滚动、引导条手动「不再提示」关闭钮
+- 引擎（er-n676）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 13 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区保护复验（index 构建前后恒 A7E3E348）
+- P0 线上（MainAgent 真浏览器，如实记录）：版本双查「引擎 v4.147」✓ + 线上断言 sha16=75E04CDC ✓（均非 bu 通道，独立可复现）；①②③ live 交互复核本窗口再被 bu 后端不稳定阻断（51016 + BU_RUNTIME「All connection attempts failed」×2，环境问题已登记）——以黑盒第 13 轮**同源（sha 锁定一致产物）真档实跑**为证据收口
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `3f03442`（0fdde56..3f03442 er-gh474 -> gh-pages，pushretry-v4147.log 首轮 8/8 全败=github.com 断连窗口（GFW 抖动，connect timeout/reset ~9 分钟），pushretry-v4147b.log 长退避轮 SUCCESS 00:55:27 恢复后 try1 即通；清代理每调用 `-c "http.https://github.com.proxy="`）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1471` try1 命中 SHA-1=`75E04CDC658B961A9F6D233CBF06D0E196089B7E`（1,507,731B），sha16=`75E04CDC`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.147 index.html：1,507,731B，SHA-1=75E04CDC658B961A9F6D233CBF06D0E196089B7E（+266B ≪12KB，零新分片）
+- 本地 commit：c461c88（两项落地）→ 登记 commit（本块）；er-gh474 deploy commit 3f03442
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
