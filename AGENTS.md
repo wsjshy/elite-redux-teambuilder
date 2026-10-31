@@ -2516,3 +2516,28 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.144 index.html：1,504,970B，SHA-1=D9FF840A2809E4B18F8529F8D0548A5B7CD72A33（+330B ≪15KB，零新分片）
 - 本地 commit：96fd220（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit c9ea947
 - 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+---
+
+## v4.145 预选落地轮（首用引导/键盘可达/toast 可点）— 2026-10-31
+
+### 本轮三项（v4.144 预选 3 项落地，+1,150B=24/12，引擎计算零改动）
+- ① **CSV 面板首用脉冲引导**：toggleCsvPanel 打开时若 `er_csvGuide` 未标记 → #csvPanel 顶部插 phasefade 淡入条「首次使用：粘贴 CSV → 点「导入」（前 6 只入队）」，3.8s 自动移除 + localStorage 写 1（一次性不重复闪；与 v4.140 showPoolHint 载入淡条同族但场景区分）
+- ② **弹窗天气/场地 chips 键盘激活**：spdSlChip（L5437）已有 role/tabindex（Tab 可达为既成事实），补 `onkeydown` Enter/Space preventDefault 后直接拼触发既有 onclick——一处覆盖速度线 mult/HP 断点 + 弹窗天气/场地全部 spdSlChip chips；禁新增下拉选择器
+- ③ **toast 首只名可点 chip**：toast（L4933）加第 3 参 `html`（默认仍 textContent 安全，无注入面）；autoImportParty 与 CSV 块记 firstS，合并 toast 切 html：「（含 `<span class="chipopt" onclick="openSpById(id)">名</span>`）」，esc() 转义防注入，openSpById（L1764）点跳详情
+
+### 验收（三线全 PASS）
+- 黑盒（第 11 轮，C:\temp\er-v545-blackbox\）：① PASS（引导条出现+er_csvGuide=1+4.5s 自动移除+重开不复现）② PASS（晴 chip 聚焦+Enter → dmgSet('weather','晴') → dmgOut2 26–31→**39–46** 实证，mult/HP 断点同规抽查）③ PASS（toast 1 条含 `<span onclick="openSpById('3')">妙蛙花</span>` esc 转义、点击→详情弹窗打开）；回归 6/6；观感 **99.5**（较 v4.144 99.0 ↑0.5，历史最高）；console 0；预选下轮 3 项：「解析存档 .sav」首用引导条复用、toast chip 点击重置淡出定时器、弹窗 chips 方向键左右移动
+- 引擎（er-n674）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 11 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区保护复验（index 构建前后恒 D9FF840A）
+- P0 线上（MainAgent 真浏览器）：版本双查 v4.145；① 引导条实测（「首次使用：粘贴 CSV → 点「导入」」+ er_csvGuide=1）；③ toast innerHTML 实测含 `onclick="openSpById('3')">妙蛙花` span、点击执行（clicked:卡比兽）；② 32 个可见 spdSlChip 全带 Enter/Space 处理器实测 + 物理端（默认 on）Enter 幂等保持 + 黑盒晴 chip 非 on→on 翻转实证（26-31→39-46）；console 0
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `2076e9c`（c9ea947..2076e9c er-gh474 -> gh-pages，pushretry-v4145.log SUCCESS 09:54:25；清代理每调用 `-c "http.https://github.com.proxy="`，try1 connect timeout 后 try2 通）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1451` try1 命中 SHA-1=`BC02FB7470093ACB7B114997D3DBBE5484D2B016`（1,506,120B），sha16=`BC02FB74`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.145 index.html：1,506,120B，SHA-1=BC02FB7470093ACB7B114997D3DBBE5484D2B016（+1,150B ≪15KB，零新分片）
+- 本地 commit：a22a972（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 2076e9c
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
