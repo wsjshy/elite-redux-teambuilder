@@ -603,6 +603,8 @@ details.inline,.details.inline{cursor:pointer}
   background:var(--card); font-size:12px; color:var(--text); cursor:pointer; min-height:30px; line-height:22px; font-family:inherit}
 .chipgrp .chipopt:hover{border-color:var(--accent)}
 .chipgrp .chipopt.on{border-color:var(--accent); background:#eef2ff; color:var(--accent); font-weight:600}
+/* v4.147：chips 统一按压反馈（toast chip 与全部 chips，纯 CSS 不改行为） */
+.chipgrp .chipopt:active,.chipopt:active{transform:translateY(1px);background:#e8edff;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 
 /* v4.99 观感：卡片圆角+轻阴影 */
 .slot,.badge,.tab,.card,[class*=box]{}
@@ -653,7 +655,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.146</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.147</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4828,8 +4830,8 @@ function parseSavFile(input){
         ' <span id="savImpNote" style="font-size:11px;color:var(--sub)">队伍 6 只已自动导入；全量 CSV 可复制/下载</span></div>'+_tbl+_pcHtml+'</div>';
       $('savParseOut').innerHTML=html;
       /* v4.146：首次解析成功一次性引导（独立标记 er_savGuide，与 CSV 的 er_csvGuide 并列） */
-      if(!localStorage.getItem('er_savGuide')){
-        localStorage.setItem('er_savGuide','1');
+      if(localStorage.getItem('er_savGuide')!=='v2'){
+        localStorage.setItem('er_savGuide','v2');
         var sg=document.createElement('div');
         sg.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease';
         sg.textContent='首次解析成功：下方「我的宝可梦」池点任意精灵即可作为核心一键配队';
@@ -4955,8 +4957,8 @@ function downloadSavCsv(){if(!lastSavCsv){toast('暂无解析结果');return}var
 function toggleCsvPanel(){
   var p=$('csvPanel');p.style.display=p.style.display==='none'?'block':'none';
   /* v4.145：CSV 面板首次打开一次性脉冲引导（localStorage 标记不重复闪） */
-  if(p.style.display==='block'&&!localStorage.getItem('er_csvGuide')){
-    localStorage.setItem('er_csvGuide','1');
+  if(p.style.display==='block'&&localStorage.getItem('er_csvGuide')!=='v2'){
+    localStorage.setItem('er_csvGuide','v2');
     var g=document.createElement('div');
     g.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease';
     g.textContent='首次使用：粘贴 CSV → 点「导入」（前 6 只入队）';
@@ -14285,7 +14287,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.146';
+var ER_ENGINE_VER='v4.147';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
