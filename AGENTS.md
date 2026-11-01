@@ -2738,3 +2738,36 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.153 index.html：1,515,544B，SHA-1=53CCEDBADAD626A837861782998DD666DF13E027（7531b86/FCE154BA +961B → C11 收口 04b31a6/53CCEDBA -29B）
 - 本地 commit：7531b86（Phase2 减负）→ 04b31a6（C11 收口）→ 登记 commit（本块）；er-gh474 deploy commit 8364d12
 - **Phase3 剩余清单**：K8 队友横滚改网格 / 375px CDP 专项 / 折叠状态记忆 / K7 剩余术语挂载 / C6 构建口径折叠头合并 / C8 依据裸码转玩家语 / C9 EV 色块标签 / C14 ⑤⑧合并 / P1 项（双黄框合并、dim 标签改强度校准、依据行折叠、synergyRole 文案）
+
+---
+
+## v4.154 Phase3 一致性收尾轮（重构收官；重构三轮完成标记）— 2026-11-02
+
+### 本轮落地（纯呈现+措辞；引擎计算零改动；e319bd3 +803B → f697272 +2,207B → 观感收口 ef9eb62 +488B 最终 68EBE153，累计 +3,498B ≪12KB×3 零新分片）
+- **K8 队友横滚改网格** ✅：`.mateline`（L385）删 overflow-x:auto 改 flex-wrap:wrap，第 5 人不再藏右屏外
+- **折叠状态记忆** ✅：尾部 toggle 捕获 + `_restoreFolds()`，localStorage `er_planFold`，_planRefresh 渲染后自动恢复
+- **K7 术语挂载** ✅：ER_TERMS 扩至 11 词（+天性/四特性/超速线/OHKO/模板）；OHKO 挂 L682 伤害面板 title「一击必杀」；四特性/超速线/回复招/回半血/灼伤 确认为 AXIS_LIB 数据串+MECH_STATUS_ZH/GLOSSARY 映射渲染（非主区裸串）
+- **C6 口径合并** ✅：构建口径降为「📐 评分口径」子块并入外层依据 details
+- **C8 依据玩家语** ✅：GLOSSARY_ZH 30+ 词条 + glossaryZh() 走依据行渲染（recover→回复招/回半血、status_burn→灼伤(攻减半)…裸码归零）
+- **C9 EV 标签** ✅：EV 彩块可见短标签「252HP」「252/252/4」（非仅 hover title）
+- **P1 dim 标签** ✅：L12633 dim 改「强度校准」
+- **375px 显式媒体查询** ✅（观感收口）：L585-593 `@media(max-width:480px)` 安全块（planbar/scalebar flex-wrap、btn-mini 收紧、details 压缩、main padding 8px）；CSSOM 4 块生效、桌面无影响
+- **裸 ✗ 分类定案** ✅：L4456 队伍分析区 ✗（✗本系输出/✗缺回复/✗缺强化/✗缺保命）为功能性数据标记（独立语义保留合理）；计划卡徽标仍「⚠ 配装偏离」无裸 ✗
+- **⏸ 重构终结剩余项（记录为可选优化）**：C14 ⑤⑧跨页合并（⑤物种详情页/⑧队伍方案页，跨页重构超预算）、P1 双黄框分级（轴库静态 vs 引擎实时语义不同需视觉分级设计）、P1 synergyRole 文案清理（跨函数定位超预算）、K7 术语逐处挂载补全（数据串天然无挂载点）
+
+### 验收（三线）
+- 黑盒（第 19 轮 + 观感收口复验，C:\temp\er-v554-blackbox\）：A 375px——桌面 1035px 无横向滚动、mateline wrap 5 children 无溢出；媒体查询 CSSOM 4 块确认；B 九项验证表（K8✅/折叠记忆✅/K7✅(数据串定案)/C6✅/C8✅(裸码归零)/C9✅(可见标签)/dim✅/未做项无回归）；C **三轮全量回归走查 4.5s**（两级 chips/折叠 12 条/P0 benefit=1/徽标/C11/真档 431/6/425/引导 v2/console 0/LS 清理 全 PASS）；观感 **100/100**（首轮 99.5：B3 部分+375px 媒体查询 → 收口复验回升满分）；预选下轮 3 项：术语 title 补全验证/375px 专项截图/bare ✗ 残留清理（已分类定案）
+- 引擎（er-n682）：N1=N2 双胞胎恒 787D0CB8（跨轮确定性仪式，与 index 补丁层无关）；守门 viol 全 0；主工作区保护复验
+- P0 线上（MainAgent 真浏览器）：线上断言 sha16=68EBE153 ✓（curl 独立通道，?nocache=1541 try2 命中，CDN 60s 后生效，--max-time 120 --retry 2 防截断）；**live tag「引擎 v4.154」✓ + 无横向滚动 ✓ + console 0 ✓**（bu 本窗口可读）
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `7c70c0c`（8364d12..7c70c0c er-gh474 -> gh-pages，pushretry-v4154.log SUCCESS 03:31:30，try1-2 失败后 try3 通）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1541` try2 命中 SHA-1=`68EBE153B3295F43EFDA5C358ABFA7028C7CE99C`（1,519,042B），sha16=`68EBE153`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链 + 重构三轮总账
+- v4.154 index.html：1,519,042B，SHA-1=68EBE153B3295F43EFDA5C358ABFA7028C7CE99C（e319bd3 +803B → f697272 +2,207B → ef9eb62 +488B）
+- 本地 commit：e319bd3 → f697272 → ef9eb62 → 登记 commit（本块）；er-gh474 deploy commit 7c70c0c
+- **重构三轮总账（v4.152→v4.154，用户拍板三项全落地）**：Phase1 架构（两级化+流派区首屏+依据区折叠）→ Phase2 减负（P0 三条去重+徽标+术语 6 词+C11 禁下拉收口）→ Phase3 一致性（K8 网格/折叠记忆/K7 11 词/C6 合并/C8 玩家语/C9 EV 标签/375px 媒体查询）；走查 136s→8.6s→4.5s；观感全程 100/100；引擎 N1=N2 恒 787D0CB8 跨轮 19 连未破；增量累计 +8,200B 以内零新分片
+- 遗留跟进：重构终结剩余项（C14 跨页合并/双黄框/synergyRole）为可选优化；模板 v4.98 债务不变
