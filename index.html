@@ -13205,10 +13205,11 @@ function stopReasonZh(r){return ({STOP_ALL_NEEDS_MET:'需求已清零',STOP_BELO
    设计（正向引导，非硬剔除）：目标规模 = 上限（默认 6）；补位 = 用户主动追加（候选池从不枯竭）；
    重渲染只替换本核心的方案块（#teamPlan_<id>）——两段式互斥视图、其它 Tab 与输入状态均不受影响。 */
 function planTargetHtml(coreId,plan){
-  var tgt=plan.target||teamTarget(),n=plan.team.length,opts='';
+  var tgt=plan.target||teamTarget(),n=plan.team.length;
+  var h='<div class="scalebar"><b>目标队伍规模</b>：<span style="display:inline-flex;gap:2px;flex-wrap:nowrap" title="可选 3/4/5/6，默认 6；调小 = 上限收紧">';
   for(var v=TEAM_CFG.TARGET_MIN;v<=TEAM_CFG.TARGET_MAX;v++)
-    opts+='<option value="'+v+'"'+(v===tgt?' selected':'')+'>'+v+' 只'+(v===TEAM_CFG.TARGET_MAX?'（默认）':'')+'</option>';
-  var h='<div class="scalebar"><b>目标队伍规模</b>：<select class="tgtsel" onchange="setPlanTarget('+coreId+',this.value)" title="可选 3/4/5/6，默认 6；调小 = 上限收紧">'+opts+'</select> '+
+    h+='<button class="btn-mini planv'+(v===tgt?' on':'')+'" onclick="setPlanTarget('+coreId+','+v+')">'+v+'</button>';
+  h+='</span> '+
     '<span style="color:var(--sub)">当前 '+n+' / 目标 '+tgt+' 只 · 多功能合并上限 ×'+(plan.multiMax||teamMultiMax())+'</span>';
   if(n<tgt){
     h+=' <button class="btn-mini" onclick="planFillMore('+coreId+')">➕ 继续补位</button>'+
