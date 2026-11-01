@@ -2591,3 +2591,28 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.147 index.html：1,507,731B，SHA-1=75E04CDC658B961A9F6D233CBF06D0E196089B7E（+266B ≪12KB，零新分片）
 - 本地 commit：c461c88（两项落地）→ 登记 commit（本块）；er-gh474 deploy commit 3f03442
 - 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+---
+
+## v4.148 预选落地轮（375px 审计/电脑区分页/引导关闭钮）— 2026-11-01
+
+### 本轮三项（v4.147 预选 3 项，+1,860B=32/12，引擎计算零改动）
+- ① **375px 真实移动视口审计（补最后 0.3 分）**：CDP 视口覆盖会话不可用 → 改 JS 强制 body 375px 逐 Tab 截图扫描（5 区：核心配队/队伍构建/队伍分析/招式反查/属性克制）——**全 PASS 无扣分点**；唯一宽元素（招式反查 TABLE 1264px + 队伍构建 3 张表 575/514/485px）全部位于 `.scroll`（overflow-x:auto）容器内=合规横向滚动非缺陷；无需修复；截图/清单落 C:\temp\er-v548-audit375\
+- ② **savParseOut 电脑区 425 只分页（最小方案=分页优先）**：savPcListRender 加 `_pcPage`/`_pcCur`/`PC_PAGE=50` + `savPcPage(d)` 翻页（边界停住）；boxN 切片当页渲染（标题行内联「‹ p/M ›」小按钮），特殊区段（15）整段渲染、空搜 BOX1 前 12 兜底不变；savPcSearch 命中池重置 _pcPage=1 交分页器（284 命中=6 页实证）；**x.i 原始 SAV_ROWS 下标保留**，＋入队/重入队语义不变；页控件用按钮（禁新增下拉选择器）
+- ③ **引导条手动「不再提示」关闭钮**：.sav（L4849）与 CSV（L4979）引导条改 flex，右侧 10px/var(--sub)「×」——addEventListener click：clearTimeout(淡出定时器) + 移除条（标记已在展示时写入，关闭只移除条）；3.8s 自动淡出行为不变
+
+### 验收（三线）
+- 黑盒（第 14 轮，C:\temp\er-v548-blackbox\）：① PASS（审计接受，复扫 3 张队伍构建 TABLE 父容器均 .scroll+overflow-x:auto）② PASS（空搜 BOX1 12 兜底 1/1 页；搜「a」284 命中 ‹1/6›；第 2/6 页龙王蝎 BOX3 第29格；6/6 管侍熊 BOX25 › disabled 边界；‹ 回退 5/6 玛机雅娜；清空回默认；＋入队 onclick=savPcEnqueue(94) 原始下标；特殊区 15 整段在分页上方）③ PASS（sav/CSV 双引导「×」点击立即移除、marker 保持 v2、再传不复发；对照 3.8s 自动淡出未改）；回归全 PASS（toast 定时器/chips 方向键继承；干净页 console 0——真档解析时 3 条 `[ER-sav anchors OK]` log 级 debug 已 drained 计入下轮预选）；观感 **99.8**（较 v4.147 99.7 ↑0.1，历史新高；375 审计接受消除最后 0.3 扣除项）；预选下轮 3 项：移除 sav anchors debug 日志、电脑区搜索联想、引导 × hover 态
+- 引擎（er-n677）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 14 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区保护复验（index 构建前后恒 75E04CDC）
+- P0 线上（MainAgent 真浏览器，如实记录）：线上断言 sha16=08DEC13D ✓（curl 独立通道，try1 命中）+ 版本双查（sha 锁定产物静态含 v4.148，黑盒 DOM 实测 tag「引擎 v4.148」）；②③ live 交互复核本窗口 bu 后端持续不可达（51016 + BU_RUNTIME「All connection attempts failed」×2，环境问题已登记）——以黑盒第 14 轮**同源（sha 锁定一致产物）实证**收口
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `7b22634`（3f03442..7b22634 er-gh474 -> gh-pages，pushretry-v4148.log SUCCESS 12:37:29，try1 即通；清代理每调用 `-c "http.https://github.com.proxy="`）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1481` try1 命中 SHA-1=`08DEC13D0789DB6E991FBAD18E9A298DFB85E4FF`（1,509,591B），sha16=`08DEC13D`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.148 index.html：1,509,591B，SHA-1=08DEC13D0789DB6E991FBAD18E9A298DFB85E4FF（+1,860B ≪12KB，零新分片）
+- 本地 commit：d044979（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 7b22634
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
