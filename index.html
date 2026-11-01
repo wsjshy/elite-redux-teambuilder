@@ -657,7 +657,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.150</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.152</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -13259,55 +13259,88 @@ function reRenderPlan(coreId){
      未落盘时本框架照常工作（仅三态规模/风格变体），不阻塞。
    【为什么不是「固定模板」】变体只改**构建参数**（目标规模 / 补位数 / 轴需求优先级），
    队伍成员仍由 needList → poolForNeed 全图鉴正向评分动态产生 —— 无固定槽位、无固定名单。 */
-var PLAN_VAR={};   /* coreId → 当前方案序号（默认 0） */
+/* v4.152 Phase1：方案区两级化（规模 3 选 1 + 流派 tab）——纯展示层状态机，不改评分/推导/推荐结果。
+   · 规模 ∈ {std 标准 / tight 紧凑 / full 满编}；流派 = 动态轴方案（axisVariantsOf，命中才显示）；
+   · 默认 scale=std/axis=通用 —— 与旧默认 vi=0（标准需求驱动）产出逐字节一致；
+   · 旧 PLAN_VAR 整数字符串自动迁移（0/1/2→规模，3+→轴）。 */
+var PLAN_VAR={};   /* coreId → "s{scale}a{axis}" */
 var PLAN_VARIANTS=[
   {id:'std',   name:'标准需求驱动', idea:'需求驱动 + 自动补满 6 只（队伍 = 六人满编，补位按正向分不模板化）', opts:{fill:9}},
   {id:'tight', name:'紧凑核心队',   idea:'只留核心 + 必要补位，少上人少负担',          opts:{target:4}},
   {id:'full',  name:'满编六只',     idea:'需求清零后按广义正向分补满 6 只，候选不枯竭', opts:{target:6,fill:9}}
 ];
-/* 方案表（阶段 2 追加轴方案：axisVariantsOf(s) → [{id,name,idea,opts,axis:{...}}]） */
-function planVariantList(s,plan){
-  var out=PLAN_VARIANTS.slice(0);
-  if(typeof axisVariantsOf==='function'){try{out=out.concat(axisVariantsOf(s,plan)||[])}catch(e){}}
-  return out;
+function planAxisList(s){try{return axisVariantsOf(s,null)||[]}catch(e){return[]}}
+function planState(coreId){
+  var raw=PLAN_VAR[''+coreId];
+  if(typeof raw==='string'&&raw.charAt(0)==='s'){
+    var m=raw.match(/s(-?\d+)a(-?\d+)/);if(m)return{scale:parseInt(m[1],10),axis:parseInt(m[2],10)};
+  }
+  var v=parseInt(raw,10);if(!isNaN(v)){
+    var nax=0;try{nax=planAxisList(spId2Obj(coreId)).length}catch(e){}
+    if(v<3)return{scale:v,axis:-1};return{scale:0,axis:Math.min(Math.max(0,v-3),Math.max(0,nax-1))};
+  }
+  return{scale:0,axis:-1};
 }
-function planVarOf(coreId){var v=parseInt(PLAN_VAR[''+coreId],10);return (v>0?v:0)}
-/* 「核心思路」一句话（玩家可读、无内部编号；阶段 2 有轴时前缀换成轴名 + 赢法） */
-function coreIdeaOf(s,plan,vi,list){
-  var V=(list||[])[vi]||{},pr=(plan&&plan.prof)||{};
+function planSaveState(coreId,st){PLAN_VAR[''+coreId]='s'+st.scale+'a'+st.axis}
+function planEffectiveVar(s,st){
+  if(st.axis>=0){var ax=planAxisList(s);if(ax[st.axis])return ax[st.axis];}
+  return PLAN_VARIANTS[Math.max(0,Math.min(2,st.scale))];
+}
+/* 「核心思路」一句话（玩家可读；v4.152：轴名仅此处出现一次，C4 收敛留 Phase2） */
+function coreIdeaOf(s,plan,V){
+  var pr=(plan&&plan.prof)||{};
   var scope=(plan&&plan.axis&&plan.axis.name)?plan.axis.name:((plan&&plan.sysKey)?plan.sysKey:'无天气/场地依赖');
   var ben=String((plan&&plan.overview&&plan.overview.benefit)||'').replace(/^窗口内受益者：/,'');
   if(ben.length>30)ben=ben.slice(0,30)+'…';
-  return (V.name?V.name+' · ':'')+scope+' · '+((pr.role||'')+(pr.side||'')+'向')+' —— '+String(V.idea||'需求驱动')+'；'+ben;
+  return ((V&&V.name)?V.name+' · ':'')+scope+' · '+((pr.role||'')+(pr.side||'')+'向')+' —— '+String((V&&V.idea)||'需求驱动')+'；'+ben;
 }
-function planSwitcherHtml(s,cur,list){
-  list=list||planVariantList(s,null);
-  var h='<div class="planbar" id="planBar_'+s.id+'"><b>方案</b> ';
-  list.forEach(function(V,i){
-    var on=(i===cur);
-    h+='<button class="btn-mini planv'+(on?' on':'')+'" data-vi="'+i+'" onclick="planSetShow('+s.id+','+i+')" title="'+escq('方案：'+V.name+'（'+V.idea+'）')+'">'+(on?'● ':'')+esc(V.name)+'</button> ';
+function planSwitcherHtml(s,st){
+  var axList=planAxisList(s);
+  var h='<div class="planbar" id="planBar_'+s.id+'"><div style="margin:2px 0"><b style="font-size:11px;color:var(--sub)">规模</b> ';
+  PLAN_VARIANTS.forEach(function(V,i){
+    var on=(st.axis<0&&st.scale===i);
+    h+='<button class="btn-mini planv'+(on?' on':'')+'" onclick="planSetScale('+s.id+','+i+')" title="'+escq(V.idea)+'">'+(on?'● ':'')+esc(V.name)+'</button> ';
+    if(i===2&&st.axis<0&&st.scale===0)h+='<span style="font-size:10px;color:var(--sub)" title="6 目标下 std 与 full 逐字节同队（一致性审计 #11）">（与标准同队）</span>';
   });
-  h+='<span style="font-size:11px;color:var(--sub)">共 '+list.length+' 套（各自独立构建；点标签切换）</span></div>';
-  return h;
+  h+='</div>';
+  if(axList.length){
+    h+='<div style="margin:2px 0"><b style="font-size:11px;color:var(--sub)">流派</b> ';
+    h+='<button class="btn-mini planv'+(st.axis<0?' on':'')+'" onclick="planSetAxis('+s.id+',-1)">通用</button> ';
+    axList.forEach(function(V,i){
+      var on=(st.axis===i);
+      h+='<button class="btn-mini planv'+(on?' on':'')+'" onclick="planSetAxis('+s.id+','+i+')">'+(on?'● ':'')+esc(V.name)+'</button> ';
+    });
+    h+='</div>';
+  }
+  return h+'</div>';
 }
-/* 切换方案（纯视图切换 + 懒渲染：只替换 #planSetBody_<id>，不动其它 Tab 与任何输入控件） */
+function _planRefresh(s,st){
+  var body=document.getElementById('planSetBody_'+s.id);
+  if(body){try{body.innerHTML=renderNeedPlan(s,st)}catch(e){}}
+  var bar=document.getElementById('planBar_'+s.id);
+  if(bar){try{bar.outerHTML=planSwitcherHtml(s,st)}catch(e){}}
+}
+function planSetScale(coreId,si){
+  var s=spId2Obj(coreId);if(!s)return;
+  var st=planState(coreId);st.scale=si;st.axis=-1;planSaveState(coreId,st);_planRefresh(s,st);
+  toast('规模：'+(PLAN_VARIANTS[si]||{}).name);
+}
+function planSetAxis(coreId,ai){
+  var s=spId2Obj(coreId);if(!s)return;
+  var st=planState(coreId);st.axis=ai;planSaveState(coreId,st);_planRefresh(s,st);
+  toast('流派：'+(ai<0?'通用':((planAxisList(s)[ai]||{}).name||'')));
+}
+/* 旧入口保留：外部/历史 onclick planSetShow(id,k) → 映射新态 */
 function planSetShow(coreId,k){
   var s=spId2Obj(coreId);if(!s)return;
-  k=parseInt(k,10)||0;
-  var list=planVariantList(s,null);if(k>=list.length)k=0;
-  PLAN_VAR[''+coreId]=k;
-  var body=document.getElementById('planSetBody_'+coreId);
-  if(body){try{body.innerHTML=renderNeedPlan(s,k)}catch(e){}}
-  var bar=document.getElementById('planBar_'+coreId);
-  if(bar){try{bar.innerHTML=planSwitcherHtml(s,k,list).replace(/^<div class="planbar"[^>]*>/,'').replace(/<\/div>$/,'')}catch(e2){}}
-  toast('方案 '+(k+1)+'/'+list.length+'：'+((list[k]||{}).name||''));
+  k=parseInt(k,10)||0;var nax=planAxisList(s).length;
+  var st=(k<3)?{scale:k,axis:-1}:{scale:0,axis:Math.min(Math.max(0,k-3),Math.max(0,nax-1))};
+  planSaveState(coreId,st);_planRefresh(s,st);
 }
-/* 多方案容器（详情页用）：方案标签条 + 当前方案卡（其余懒渲染） */
 function renderPlanSet(s){
-  var list=planVariantList(s,null),cur=planVarOf(s.id);
-  if(cur>=list.length)cur=0;
-  return '<div class="sec planSet" id="planSet_'+s.id+'">'+planSwitcherHtml(s,cur,list)+
-    '<div id="planSetBody_'+s.id+'">'+renderNeedPlan(s,cur)+'</div></div>';
+  var st=planState(s.id);
+  return '<div class="sec planSet" id="planSet_'+s.id+'">'+planSwitcherHtml(s,st)+
+    '<div id="planSetBody_'+s.id+'">'+renderNeedPlan(s,st)+'</div></div>';
 }
 var THREAT_MV={HZ:FUNC_MV.hazard,HZR:FUNC_MV.removal,BOOST:FUNC_MV.boost};
 function threatShare(t){
@@ -13383,25 +13416,34 @@ function planThreatWarnHtml(plan){
   h+=items.map(function(x){return '被 <b>'+esc(x.t)+'</b> 克制 <b>'+x.n+'</b> 只 → 建议：'+esc(x.adv)}).join('<br>');
   return h+'</div>';
 }
-function renderNeedPlan(s,vi){
-  /* v4.9：vi = 方案序号（不传 → 当前方案）；**方案①（vi=0）与 v4.8 行为逐字节一致**（含手动补位数） */
-  var _list=planVariantList(s,null),_vi=(vi==null?planVarOf(s.id):(parseInt(vi,10)||0));
-  if(_vi>=_list.length)_vi=0;
-  var _V=_list[_vi]||_list[0],_o={},_k;
+function renderNeedPlan(s,viOrSt){
+  /* v4.152：两态状态机（scale+axis）；兼容旧调用 renderNeedPlan(sp,0) 数字下标 */
+  var st;
+  if(viOrSt&&typeof viOrSt==='object'){st=viOrSt}
+  else if(typeof viOrSt==='number'){
+    var nax0=planAxisList(s).length;
+    st=(viOrSt<3)?{scale:viOrSt,axis:-1}:{scale:0,axis:Math.min(Math.max(0,viOrSt-3),Math.max(0,nax0-1))};
+    planSaveState(s.id,st);
+  } else {st=planState(s.id)}
+  var _V=planEffectiveVar(s,st),_o={},_k;
   for(_k in _V.opts)_o[_k]=_V.opts[_k];
-  if(_vi===0&&_o.fill==null)_o.fill=planFillOf(s.id);
+  if(st.scale===0&&st.axis<0&&_o.fill==null)_o.fill=planFillOf(s.id);
   var plan=null;
   try{plan=buildTeamByNeeds(s,_o)}catch(e){return '<div class="sec"><h3>队伍构建方案</h3><div class="tip">方案生成失败：'+esc(''+e)+'</div></div>'}
-  var h='<div class="sec" id="teamPlan_'+s.id+'"><div class="tip ideabar"><b>核心思路</b>：'+esc(coreIdeaOf(s,plan,_vi,_list))+'</div>';
-  /* v4.9 阶段 2：轴方案 → 轴名 / 一句话赢法 / 关键协同高亮 / 弱点预警（提示性、不硬门） */
+  var h='<div class="sec" id="teamPlan_'+s.id+'">';
+  /* 选宝头：核心思路 + 一句话画像 */
+  h+='<div class="tip ideabar"><b>核心思路</b>：'+esc(coreIdeaOf(s,plan,_V))+'</div>';
+  var pr=plan.prof;
+  var _sb=(pr.side==='特殊'?pr.atk.sp:pr.atk.ph)||pr.atk.sp||pr.atk.ph;
+  h+='<div class="tip"><b>画像</b>：'+esc(pr.role)+' · '+esc(pr.side)+'向 · 力度 '+pr.power+'（本系最高 '+esc(_sb?MV[_sb.id][1]+'('+_sb.pow+')':'—')+'）'+
+    ' · 速度 '+pr.du.spd+' · 耐久 '+pr.du.bulk+'（物理 '+pr.du.phys+' / 特殊 '+pr.du.spec+'） · 体系 '+esc(plan.sysKey||'无')+
+    (plan.refName?(' · 参考主题「'+esc(plan.refName)+'」'):'')+'</div>';
+  /* 流派区（首屏焦点）：轴方案 → 赢法/关键协同/弱点对策 1 行；依据/体系模板下移到依据区（默认折叠） */
   if(plan.axis){
-    h+='<div class="tip axbar"><b>协同轴</b>：'+esc(plan.axis.name)+' · '+esc(plan.axis.role)+
-      '　<b>一句话赢法</b>：'+esc(plan.axis.idea||'')+
+    h+='<div class="tip axbar"><b>流派</b>：'+esc(plan.axis.name)+' · '+esc(plan.axis.role)+
+      '　<b>赢法</b>：'+esc(plan.axis.idea||'')+
       '<br><b>关键协同</b>：'+axSynHtml(plan)+
-      '<br><b>弱点预警</b>：'+axWeakHtml(plan.axis)+
-      '<br><span style="font-size:11px;color:var(--sub)">依据：'+esc((plan.axis.basis||[]).join('；'))+'</span>'+
-      /* v4.12 ③ 体系模板（轴库「体系模板」六位）——字段缺失 → 空串（该轴不显示模板，行为不变） */
-      (function(){try{return axisTplHtml(plan.core||s,plan.axis.id)}catch(e){return ''}})()+'</div>';
+      '<br><b>弱点/对策</b>：'+axWeakHtml(plan.axis)+'</div>';
   }
   h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
   h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
@@ -13422,21 +13464,10 @@ function renderNeedPlan(s,vi){
       '核心自身非设置手，配招功能槽不放天气招（把手位留给队友，核心专注输出/联防）。</div>';
   }
   h+=planTargetHtml(s.id,plan);   /* v4.8 G2/G3：目标规模选择 + 继续补位（默认 6 只 = 与既有行为一致） */
-  h+='<details class="inline"><summary>📐 构建口径（需求驱动 · 动态推导）—— 展开看评分与终止规则</summary><div style="margin-top:4px">'+
-    '<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
-    '逐条需求在全图鉴做正向评分，选最优填充者；一只满足多条需求 = 多功能加分 <b>+(k−1)×'+NEED_CFG.MULTI_ROLE_BONUS+'</b>；'+
-    '达目标规模 '+teamTarget()+' 只：需求驱动逐条闭合，需求清零后按广义正向分自动补位至目标（默认满编 6 只；「紧凑核心队」方案可显式要 4 只）。'+
-    '目标规模与多功能合并上限（当前 ×'+teamMultiMax()+'）均为可配参数：目标调小 = 上限收紧，合并上限随之降低，队伍不会塌到目标之下。'+
-    '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。'+
-    '（停手规则补充：仅当出现 0 优先级需求时才按优先级截断，当前尚无此类需求。）</div></details>';
-  var pr=plan.prof;
-  var _sb=(pr.side==='特殊'?pr.atk.sp:pr.atk.ph)||pr.atk.sp||pr.atk.ph;
-  h+='<div class="tip"><b>核心画像</b>（四画像推导）：'+esc(pr.role)+' · '+esc(pr.side)+'向 · 力度 '+pr.power+'（本系最高 '+esc(_sb?MV[_sb.id][1]+'('+_sb.pow+')':'—')+'）'+
-    ' · 速度 '+pr.du.spd+' · 耐久 '+pr.du.bulk+'（物理 '+pr.du.phys+' / 特殊 '+pr.du.spec+'） · 体系 '+esc(plan.sysKey||'无')+
-    (plan.refName?(' · 参考主题「'+esc(plan.refName)+'」（仅先验，不作战术队形）'):'')+'</div>';
-  /* ① 需求清单 */
+  /* v4.152：构建口径/构建逻辑/依据/体系模板 全部下移到队伍之后的「依据区」默认折叠 */
+  /* ① 需求清单（v4.152：整段外包一层 closed details —— 渐进披露，不减信息） */
   var puid='nd'+(++PLAN_UID),ppool={};
-  h+='<div class="sec" style="margin:8px 0"><h3>构建逻辑 · 队伍需求（'+plan.needs.length+' 条，随核心动态生成）</h3>';
+  h+='<details class="inline" style="margin:8px 0"><summary>🧠 构建逻辑 · 队伍需求（'+plan.needs.length+' 条，随核心动态生成）—— 展开看引擎逐条推导</summary><div style="margin-top:6px">';
   /* v4.45 A-4（设计书 C §3.4）：需求清单按**六类**分组展示（need.def.kind 的六个取值）
      —— 只加分组标题、**不改排序**（需求顺序仍由 needList/轴前置决定）；槽位徽标已显示「满足哪条需求」。 */
   var NEED_GROUP_ZH={profile:'画像位（输出 / 联防）',field:'体系位（天气 / 场地）',speed:'控速位',
@@ -13510,7 +13541,7 @@ function renderNeedPlan(s,vi){
     h+='</details>';
     ppool[k]=(pk&&pk.list?pk.list:[]).map(function(x,ix){return {i:ix+1,id:x.s.id,zh:x.s.zh,en:x.s.en,sc:Math.round(x.score*10)/10}});
   });
-  h+='</div>';
+  h+='</div></details>';
   PLAN_POOLS[puid]=ppool;
   /* ② 队伍成员（完整方案：配招/特性/道具/性格/职责/联动）
      v4.8 G2：补位成员（fill:true）= 用户手动追加的「非需求驱动」成员，独立标注（浅蓝行 + 徽标 + 补位依据） */
@@ -13572,6 +13603,20 @@ function renderNeedPlan(s,vi){
       h+='</details>';
     }
   }catch(eV){}
+  /* v4.152 依据区（默认折叠，渐进披露；只减呈现不减信息）：轴依据/体系模板 + 构建口径 */
+  h+='<details class="inline" style="margin-top:8px"><summary>📖 依据与口径（展开看：轴依据 / 体系模板 / 评分规则）—— 不影响推荐，仅供查证</summary><div style="margin-top:6px">';
+  if(plan.axis){
+    h+='<div class="tip" style="font-size:11px;color:var(--sub)"><b>依据</b>：'+esc((plan.axis.basis||[]).join('；'))+'</div>';
+    try{h+=axisTplHtml(plan.core||s,plan.axis.id)}catch(eTpl){}
+  }
+  h+='<details class="inline"><summary>📐 构建口径（需求驱动 · 动态推导）—— 展开看评分与终止规则</summary><div style="margin-top:4px">'+
+    '<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
+    '逐条需求在全图鉴做正向评分，选最优填充者；一只满足多条需求 = 多功能加分 <b>+(k−1)×'+NEED_CFG.MULTI_ROLE_BONUS+'</b>；'+
+    '达目标规模 '+teamTarget()+' 只：需求驱动逐条闭合，需求清零后按广义正向分自动补位至目标（默认满编 6 只；「紧凑核心队」方案可显式要 4 只）。'+
+    '目标规模与多功能合并上限（当前 ×'+teamMultiMax()+'）均为可配参数：目标调小 = 上限收紧，合并上限随之降低，队伍不会塌到目标之下。'+
+    '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。'+
+    '（停手规则补充：仅当出现 0 优先级需求时才按优先级截断，当前尚无此类需求。）</div></details>';
+  h+='</div></details>';
   h+='</div>';   /* v4.8：方案块收口 —— #teamPlan_<id> 覆盖整卡（含奇石权衡折叠块），目标规模切换时就地重渲染 */
   return h;
 }
@@ -14320,7 +14365,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.150';
+var ER_ENGINE_VER='v4.152';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
