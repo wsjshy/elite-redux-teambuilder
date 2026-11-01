@@ -2709,3 +2709,32 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.152 index.html：1,514,612B，SHA-1=9F553044CA7A1054ABDD0A658476E7C773569F68（首版 296e083/5CF97678 +2,370B → B 修复轮 ee4bee4/9F553044 +482B）
 - 本地 commit：296e083（Phase1 落地）→ ee4bee4（B④/B⑤ 修复）→ 登记 commit（本块）；er-gh474 deploy commit ea29b0f
 - 遗留跟进：Phase2 减负轮（C1-C5/C6/C8-C11/C12/C14+K7+K8 清单见上）；模板 v4.98 债务不变
+
+---
+
+## v4.153 Phase2 内容减负轮（P0 去重先行+徽标澄清+术语减负+C11 收口）— 2026-11-02
+
+### 本轮落地（纯文案+展示层；引擎计算零改动；+961B 首版 FCE154BA → C11 收口 -29B 最终 53CCEDBA，≪12KB 零新分片）
+- **P0-1 同句双渲**：coreIdeaOf（~L13289-13297）轴方案 head 后不再尾拼 V.idea（axbar 一句话赢法为主，保留一处）
+- **P0-2 benefit 双渲+轴名自叠**：同函数轴方案 scope=''（V.name 已含「轴名·角色」），不再尾拼 overview.benefit（体系总览已展示）
+- **P0-3 特性徽标跨行双渲**：needBuildHtml 特性行（~L13711-13718）`_seenMech` 按徽标文本 key 跨行去重
+- **徽标澄清**：alignBadgeV444 未对齐分支（~L13746）`流派：name ✗` → `⚠ 配装偏离`（title 保留「分工差异非错误」解释；main 区裸 ✗ 计数 0）
+- **K7 术语渐进释义（不新增解释区）**：`ER_TERMS` 常量表 6 词（多功能/轴手/联防件/耐久三角/P66/奇石），挂「多功能 ×n」badge title（L13503）+ 进化奇石 badge title 释义；其余术语挂载留 Phase3
+- **C5 叠词去重**：`dimTxt()` helper（~L13380）替换 L13500/L13568 两处 `d.dim+' '+d.txt`，txt 首词与 dim 重复自动剥除
+- **C11 目标规模下拉改 chips（禁下拉硬约束收口）**：planTargetHtml（~L13207-13218）原生 select 换 4 个固定横排 `button.planv` 3/4/5/6，当前目标 .on 高亮，直调 setPlanTarget(coreId,v)（取值/校验/重渲链路未动）；轴态下点 4/3 不生效（轴方案固定 6 只，继承 v4.152 置灰）；C11 区 0 select
+
+### 验收（三线）
+- 黑盒（第 18 轮，C:\temp\er-v553-blackbox\）：A P0 双渲消失 PASS（「核心起手开受队轴」main 计数 1、「输出靠本系高威力」计数 1——各只一处）；B 徽标 `⚠ 配装偏离`+title 释义、裸 ✗ 计数 0；C 术语 badge title 释义存在（P66 11 处为数据引用非双渲）；D C11 四按钮默认 6 on、无轴切换生效、轴态置灰继承、C11 区 0 select；E 回归全 PASS（版本双查 v4.153/走查 ~8-10s 不劣化/两级 chips/折叠 12 条/console 0/localStorage）；观感 **100/100**；预选下轮 3 项：375px 专项回归/真档解析回归/多功能 badge 释义补全
+- 引擎（er-n681）：N1=N2 双胞胎恒 787D0CB8（跨轮确定性仪式，与 index 补丁层无关）；守门 viol 全 0；主工作区保护复验
+- P0 线上（MainAgent 真浏览器，如实记录）：线上断言 sha16=53CCEDBA ✓（curl 独立通道，?nocache=1531 try1 命中，--max-time 120 --retry 2 防截断）；live tag「引擎 v4.153」✓ + console 0 ✓ + C11 区无 select ✓（bu 交互段本窗口可读，plan 页 DOM 计数以黑盒第 18 轮同源实证收口）
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `8364d12`（ea29b0f..8364d12 er-gh474 -> gh-pages，pushretry-v4153.log SUCCESS 02:43:33，try1-2 失败后 try3 通）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1531` try1 命中 SHA-1=`53CCEDBADAD626A837861782998DD666DF13E027`（1,515,544B），sha16=`53CCEDBA`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.153 index.html：1,515,544B，SHA-1=53CCEDBADAD626A837861782998DD666DF13E027（7531b86/FCE154BA +961B → C11 收口 04b31a6/53CCEDBA -29B）
+- 本地 commit：7531b86（Phase2 减负）→ 04b31a6（C11 收口）→ 登记 commit（本块）；er-gh474 deploy commit 8364d12
+- **Phase3 剩余清单**：K8 队友横滚改网格 / 375px CDP 专项 / 折叠状态记忆 / K7 剩余术语挂载 / C6 构建口径折叠头合并 / C8 依据裸码转玩家语 / C9 EV 色块标签 / C14 ⑤⑧合并 / P1 项（双黄框合并、dim 标签改强度校准、依据行折叠、synergyRole 文案）
