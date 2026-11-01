@@ -382,7 +382,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .evv{font-size:12px; color:var(--sub); white-space:nowrap}
 .evwhy{font-size:12px; color:var(--sub); margin-top:4px}
 .mates{margin:4px 0}
-.mateline{display:flex; gap:6px; overflow-x:auto; padding:2px 0}
+.mateline{display:flex; gap:6px; flex-wrap:wrap; padding:2px 0}
 .mate{flex:0 0 auto; border:1px solid var(--line); border-radius:8px; padding:6px 9px; background:var(--card);
   font-size:12px; max-width:230px}
 .mategrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:6px}
@@ -657,7 +657,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.153</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.154</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -13321,7 +13321,7 @@ function planSwitcherHtml(s,st){
 }
 function _planRefresh(s,st){
   var body=document.getElementById('planSetBody_'+s.id);
-  if(body){try{body.innerHTML=renderNeedPlan(s,st)}catch(e){}}
+  if(body){try{body.innerHTML=renderNeedPlan(s,st);if(typeof _restoreFolds==='function')_restoreFolds()}catch(e){}}
   var bar=document.getElementById('planBar_'+s.id);
   if(bar){try{bar.outerHTML=planSwitcherHtml(s,st)}catch(e){}}
 }
@@ -14387,7 +14387,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.153';
+var ER_ENGINE_VER='v4.154';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
@@ -15946,6 +15946,15 @@ function renderRecentChips(){
     return '<span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="openSpById(\''+s.id+'\')">'+esc(s.zh)+'</span>';
   }).join('');
 }
+/* v4.154 Phase3：折叠状态跨 Tab 记忆（localStorage，按 summary 文本 key） */
+document.addEventListener('toggle',function(e){
+  var d=e.target;if(!(d instanceof HTMLDetailsElement))return;
+  var k=(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40);
+  if(!k)return;
+  try{var m=JSON.parse(localStorage.getItem('er_planFold')||'{}');m[k]=d.open;localStorage.setItem('er_planFold',JSON.stringify(m))}catch(eF){}
+},true);
+function _restoreFolds(){try{var m=JSON.parse(localStorage.getItem('er_planFold')||'{}');
+  document.querySelectorAll('details').forEach(function(d){var k=(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40);if(k&&m[k]!==undefined)d.open=m[k]})}catch(eR){}}
 </script>
 </body>
 </html>
