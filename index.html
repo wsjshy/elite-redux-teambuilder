@@ -12630,7 +12630,7 @@ function needScore(s,need,cx){
       if(rsv&&isFinite(rsv.pts)&&Math.abs(rsv.pts)>0.001){
         genPts+=rsv.pts;total=corePts+(1-LAM)*genPts;
         _gList.push({i:dims.length,pts:rsv.pts});   /* v4.49 M-3：RS 计入 gen 桶单维上限 */
-        dims.push({id:'RS',dim:'规则偏移(实测系数)',w:1,pts:rsv.pts,txt:rsv.why});
+        dims.push({id:'RS',dim:'强度校准',w:1,pts:rsv.pts,txt:rsv.why});
       }
     }catch(eRS){}
   }
@@ -13353,8 +13353,37 @@ var ER_TERMS={
   '联防件':'帮轴手挡刀/轮转上场的盾牌位（不主动输出）',
   '耐久三角':'HP + 物防 + 特防 三项之和，数值越高越耐打',
   'P66':'宝可梦对战通用规则：每队 6 只、道具不重复、等级 50',
-  '奇石':'ER 特有道具「气势披带」类：HP 满时吃下一击必留 1HP'
+  '奇石':'ER 特有道具「气势披带」类：HP 满时吃下一击必留 1HP',
+  '天性':'ER 改版每只宝可梦额外解锁的隐藏特性池（3 选 1 被动）',
+  '四特性体系':'ER 改版一只宝可梦可同时带 4 个特性（普通 1 + 天性 1 + 另外 2 个槽）',
+  '超速线':'同速线里为压过对手而把努力值投资到速度的目标阈值',
+  'OHKO':'一击必杀招（角钻/剪刀断头台等，命中即秒，命中率低）'
 };
+/* v4.154 C8：依据裸码 → 玩家语映射（只改展示文本，不改计算） */
+var GLOSSARY_ZH={
+  'GLOSSARY.recover':'回复招（回半血）','GLOSSARY.status_toxic':'剧毒（递增耗血）',
+  'GLOSSARY.status_burn':'灼伤（攻减半）','GLOSSARY.status_frostbite':'冻伤（特攻减半）',
+  'GLOSSARY.status_para':'麻痹（速减半）','GLOSSARY.hazard_clear':'除钉招',
+  'GLOSSARY.weather_rain':'雨天','GLOSSARY.weather_sun':'晴天','GLOSSARY.weather_sand':'沙暴',
+  'GLOSSARY.weather_hail':'冰雹','GLOSSARY.terrain_boost':'场地增伤×1.3',
+  'GLOSSARY.terrain_dur':'场地 8 回合','GLOSSARY.terrain_extender':'场地延展器 12 回合',
+  'GLOSSARY.terrain_electric':'电气场地','GLOSSARY.terrain_grassy':'青草场地',
+  'GLOSSARY.terrain_misty':'薄雾场地','GLOSSARY.terrain_psychic':'精神场地',
+  'GLOSSARY.terrain_toxic':'剧毒场地','GLOSSARY.tailwind':'顺风（全队速×2）',
+  'GLOSSARY.trickroom':'戏法空间（慢者先手）','GLOSSARY.hazard_spikes':'撒菱',
+  'GLOSSARY.hazard_stealthrock':'隐形岩','GLOSSARY.hazard_toxicspikes':'毒菱',
+  'GLOSSARY.hazard_stickyweb':'黏黏网（速降）','GLOSSARY.boost_dance':'强化舞',
+  'GLOSSARY.intimidate_guard':'防威吓特性','FUNC_MV.rec':'回复招','FUNC_MV.wear':'耗血招（剧毒/寄生）',
+  'FUNC_MV.hazard':'撒钉招','FUNC_MV.break':'破受/破强化招','FUNC_MV.pivot':'折返招（急速折返/伏特替换）',
+  'FUNC_MV.weather':'天气招','FUNC_MV.protect':'守住/替身','FUNC_MV.removal':'除钉招',
+  'FUNC_MV.boost':'强化招','FUNC_MV.speed':'控速招'
+};
+function glossaryZh(s){
+  s=String(s||'');
+  for(var k in GLOSSARY_ZH)s=s.split(k).join(GLOSSARY_ZH[k]);
+  s=s.replace(/FUNC_MV\.\w+/g,'（数据层招式类）').replace(/build_tool_html\.py L\d+(-\d+)?/g,'源码');
+  return s;
+}
 function dimTxt(d){
   var dim=String((d&&d.dim)||''),txt=String((d&&d.txt)||'');
   if(dim&&txt.indexOf(dim)===0)txt=txt.slice(dim.length).replace(/^[\s:：(（]+/,'');
@@ -13624,16 +13653,16 @@ function renderNeedPlan(s,viOrSt){
   /* v4.152 依据区（默认折叠，渐进披露；只减呈现不减信息）：轴依据/体系模板 + 构建口径 */
   h+='<details class="inline" style="margin-top:8px"><summary>📖 依据与口径（展开看：轴依据 / 体系模板 / 评分规则）—— 不影响推荐，仅供查证</summary><div style="margin-top:6px">';
   if(plan.axis){
-    h+='<div class="tip" style="font-size:11px;color:var(--sub)"><b>依据</b>：'+esc((plan.axis.basis||[]).join('；'))+'</div>';
+    h+='<div class="tip" style="font-size:11px;color:var(--sub)"><b>依据</b>：'+esc(glossaryZh((plan.axis.basis||[]).join('；')))+'</div>';
     try{h+=axisTplHtml(plan.core||s,plan.axis.id)}catch(eTpl){}
   }
-  h+='<details class="inline"><summary>📐 构建口径（需求驱动 · 动态推导）—— 展开看评分与终止规则</summary><div style="margin-top:4px">'+
-    '<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
+  h+='<div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--line)"><b>📐 评分口径</b>'+
+    '：<b>无固定骨架 / 无固定模板</b> —— 由核心画像动态生成需求清单（条数与类型随核心变化），'+
     '逐条需求在全图鉴做正向评分，选最优填充者；一只满足多条需求 = 多功能加分 <b>+(k−1)×'+NEED_CFG.MULTI_ROLE_BONUS+'</b>；'+
     '达目标规模 '+teamTarget()+' 只：需求驱动逐条闭合，需求清零后按广义正向分自动补位至目标（默认满编 6 只；「紧凑核心队」方案可显式要 4 只）。'+
     '目标规模与多功能合并上限（当前 ×'+teamMultiMax()+'）均为可配参数：目标调小 = 上限收紧，合并上限随之降低，队伍不会塌到目标之下。'+
     '<b>零硬门</b>：候选池全量可见（含中间位次与低分），门只判「能不能干这个活」，不达标只是该需求上拿不到分、排在后面。'+
-    '（停手规则补充：仅当出现 0 优先级需求时才按优先级截断，当前尚无此类需求。）</div></details>';
+    '（停手规则补充：仅当出现 0 优先级需求时才按优先级截断，当前尚无此类需求。）</div>';
   h+='</div></details>';
   h+='</div>';   /* v4.8：方案块收口 —— #teamPlan_<id> 覆盖整卡（含奇石权衡折叠块），目标规模切换时就地重渲染 */
   return h;
@@ -14191,7 +14220,7 @@ function evBarHtml(bd){
   var segs='';
   for(k=0;k<6;k++){
     var w=Math.round((+a[k])*1000/tot)/10;
-    var lbl=(+a[k]>0)?'<span style="font-size:9px;color:#fff;text-shadow:0 0 2px #000">'+a[k]+'</span>':'';
+    var lbl=(+a[k]>0)?'<span style="font-size:9px;color:#fff;text-shadow:0 0 2px #000">'+evName(k)+' '+a[k]+'</span>':'';
     segs+='<span class="evseg ev'+(rank[k]||0)+'" style="width:'+w+'%;display:inline-flex;align-items:center;justify-content:center" title="'+escq(evName(k)+' '+a[k])+'">'+lbl+'</span>';
   }
   var h='<div class="fld"><div class="fhd"><span class="fno">6</span>努力值分配</div>';
