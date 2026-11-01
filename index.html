@@ -657,7 +657,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.152</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.153</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -13286,13 +13286,14 @@ function planEffectiveVar(s,st){
   if(st.axis>=0){var ax=planAxisList(s);if(ax[st.axis])return ax[st.axis];}
   return PLAN_VARIANTS[Math.max(0,Math.min(2,st.scale))];
 }
-/* 「核心思路」一句话（玩家可读；v4.152：轴名仅此处出现一次，C4 收敛留 Phase2） */
+/* 「核心思路」一句话（玩家可读；v4.153 P0：轴方案不重复轴名/赢法/受益句——axbar 与体系总览已展示） */
 function coreIdeaOf(s,plan,V){
   var pr=(plan&&plan.prof)||{};
-  var scope=(plan&&plan.axis&&plan.axis.name)?plan.axis.name:((plan&&plan.sysKey)?plan.sysKey:'无天气/场地依赖');
-  var ben=String((plan&&plan.overview&&plan.overview.benefit)||'').replace(/^窗口内受益者：/,'');
-  if(ben.length>30)ben=ben.slice(0,30)+'…';
-  return ((V&&V.name)?V.name+' · ':'')+scope+' · '+((pr.role||'')+(pr.side||'')+'向')+' —— '+String((V&&V.idea)||'需求驱动')+'；'+ben;
+  var hasAxis=!!(plan&&plan.axis&&plan.axis.name);
+  var scope=hasAxis?'':((plan&&plan.sysKey)?plan.sysKey:'无天气/场地依赖');
+  var head=(V&&V.name?V.name+' · ':'')+(scope?(' · '+scope):'')+((pr.role||'')+(pr.side||'')+'向');
+  if(hasAxis)return head;
+  return head+' —— '+String((V&&V.idea)||'需求驱动');
 }
 function planSwitcherHtml(s,st){
   var axList=planAxisList(s);
@@ -13344,6 +13345,19 @@ function renderPlanSet(s){
   var st=planState(s.id);
   return '<div class="sec planSet" id="planSet_'+s.id+'">'+planSwitcherHtml(s,st)+
     '<div id="planSetBody_'+s.id+'">'+renderNeedPlan(s,st)+'</div></div>';
+}
+var ER_TERMS={
+  '多功能':'一只宝可梦同时兼多条需求时的加分（兼 k 条 = 额外 +(k-1)×6 分）',
+  '轴手':'在天气/场地/回复体系里第一个开窗口的核心（通常是这只本身）',
+  '联防件':'帮轴手挡刀/轮转上场的盾牌位（不主动输出）',
+  '耐久三角':'HP + 物防 + 特防 三项之和，数值越高越耐打',
+  'P66':'宝可梦对战通用规则：每队 6 只、道具不重复、等级 50',
+  '奇石':'ER 特有道具「气势披带」类：HP 满时吃下一击必留 1HP'
+};
+function dimTxt(d){
+  var dim=String((d&&d.dim)||''),txt=String((d&&d.txt)||'');
+  if(dim&&txt.indexOf(dim)===0)txt=txt.slice(dim.length).replace(/^[\s:：(（]+/,'');
+  return dim+(txt?(' '+txt):'');
 }
 var THREAT_MV={HZ:FUNC_MV.hazard,HZR:FUNC_MV.removal,BOOST:FUNC_MV.boost};
 function threatShare(t){
@@ -13493,10 +13507,10 @@ function renderNeedPlan(s,viOrSt){
     if(top){
       h+='<div class="needrow">'+sprImg(top.s.id,'spinl')+'<b>'+esc(top.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+top.s.id+'</span>'+
         ' <span class="badge" style="font-size:13px;font-weight:700;color:var(--accent)">'+esc(String(Math.round(top.score*10)/10))+' 分</span>'+
-        (top.multi>1?(' <span class="badge">多功能 ×'+top.multi+'（+'+((top.multi-1)*NEED_CFG.MULTI_ROLE_BONUS)+'）</span>'):'')+
+        (top.multi>1?(' <span class="badge" title="'+escq(ER_TERMS['多功能'])+'">多功能 ×'+top.multi+'（+'+((top.multi-1)*NEED_CFG.MULTI_ROLE_BONUS)+'）</span>'):'')+
         enqueueBtnHtml(top.s,' <button class="btn-mini" onclick="event.stopPropagation();enqFlip(this,spId2Obj('+top.s.id+'))" title="加入队伍构建">➕ 入队</button>')+
         ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+top.s.id+')" title="设为核心">🎯 核心</button>'+
-        '<div style="font-size:11px;color:var(--sub)">推荐理由：'+esc(top.gate||'')+'；'+(top.dims||[]).slice(0,4).map(function(d){return esc(d.dim+' '+d.txt)}).join(' ｜ ')+
+        '<div style="font-size:11px;color:var(--sub)">推荐理由：'+esc(top.gate||'')+'；'+(top.dims||[]).slice(0,4).map(function(d){return esc(dimTxt(d))}).join(' ｜ ')+
         '<br>合计 '+esc(String(Math.round(top.score*10)/10))+' 分（原始 '+esc(String(Math.round(top.base*10)/10))+' + 多功能 +'+((top.multi-1)*NEED_CFG.MULTI_ROLE_BONUS)+'）</div>'+
         (top.s.id!==undefined?needBuildHtml(top.s,roleTagOfNeed(n),itemTagOfNeed(n),{sys:plan.sysKey,need:n.kind}):'')+
         '</div>';
@@ -13564,7 +13578,7 @@ function renderNeedPlan(s,viOrSt){
       ' <button class="btn-mini" onclick="event.stopPropagation();selectCore('+m.s.id+')">🎯 设为核心</button></div>';
     if(L.length)h+='<div style="font-size:11px;margin:2px 0">↔ '+L.map(function(x){return esc(x.txt)}).join('；')+'</div>';
     if(m.fill)h+='<div style="font-size:11px;color:var(--sub);margin:2px 0">补位依据（广义正向分，非需求匹配）：'+esc(m.gate||'')+
-      ((m.dims||[]).length?('；'+m.dims.slice(0,4).map(function(d){return esc(d.dim+' '+d.txt)}).join(' ｜ ')):'')+'</div>';
+      ((m.dims||[]).length?('；'+m.dims.slice(0,4).map(function(d){return esc(dimTxt(d))}).join(' ｜ ')):'')+'</div>';
     /* 补位成员按自身画像出装（roleTag/itemTag 由 profileOf 推导，避免与需求驱动成员的标签混同） */
     var rt=m.core?roleTagOfCore(plan,m.s):(m.fill?roleTagOfProf(profileOf(m.s)):roleTagOfNeed(m.need));
     var it=(m.core?itemTagOfCore(plan,m.s):(m.fill?coreItemTagOf(profileOf(m.s),m.s,plan.sysKey):itemTagOfNeed(m.need)));
@@ -13709,9 +13723,13 @@ function needBuildHtml(sp,roleTag,itemTag,ctx){
       var nm=MV[id]?MV[id][1]:String(id);
       return '<span class="abi" onclick="event.stopPropagation();gotoMv('+jsl(nm)+')">'+esc(nm)+'</span>';}).join(' ')):'')+'</div>';
   var _n0w='';try{_n0w=String(((b.nat||[])[0]||[])[1]||'')}catch(eNW){_n0w=''}
-  h+='<div style="font-size:11px;margin:2px 0"><b>特性：</b>'+(b.abi||[]).slice(0,2).map(function(a){
+  /* v4.153 P0-3：特性行 mechBadge 跨行去重（同特性同徽标只挂一次） */
+  var _seenMech={},_abiHtml=(b.abi||[]).slice(0,2).map(function(a){
       var _cn=(a.id!=null&&a.id!==''&&typeof ABI!=='undefined'&&ABI[a.id])?(ABI[a.id][2]||ABI[a.id][1]||('#'+a.id)):abiNameZh(a.n);
-      return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(_cn)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(_cn)+'</span>'+mechBadgeForAbi(_cn);}).join(' ')+
+      var _mb=mechBadgeForAbi(_cn),_mbKey=_mb.replace(/<[^>]*>/g,'');
+      if(_mbKey&&_seenMech[_mbKey])_mb='';else if(_mbKey)_seenMech[_mbKey]=1;
+      return '<span class="abi" onclick="event.stopPropagation();gotoAbi('+jsl(_cn)+')" title="'+escq((a.why||[]).join('；'))+'">'+esc(_cn)+'</span>'+_mb;}).join(' ');
+  h+='<div style="font-size:11px;margin:2px 0"><b>特性：</b>'+_abiHtml+
     '　<b>道具：</b>'+(b.it||[]).slice(0,3).map(function(x,i){
       return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:10px;color:var(--sub)">备选</span>'+lockSwapTip449(b,x[0])))+mechBadgeForItem(x[0])}).join(' ')+
     '　<b>性格：</b>'+esc((b.nat||[]).map(function(n){return n[0]}).join(' / '))+
@@ -13743,7 +13761,7 @@ function alignBadgeV444(sp,b){
   for(i=0;i<ids.length;i++)if(m.ids.indexOf(ids[i])>-1)ov++;
   if(sameItem||ov>=3)
     return ' <span class="badge" style="background:#e8f5e9" title="本槽与同种物流派区主推「'+escq(m.name)+'」对齐（道具'+(sameItem?'一致 ✓':'不同 ✗')+'，招组重合 '+ov+'/4）">流派：'+esc(m.name)+' ✓</span>';
-  return ' <span class="badge" style="background:#fff8e1" title="本槽按队伍需求定位出装，与流派区主推「'+escq(m.name)+'」不同（道具'+(sameItem?'一致 ✓':'不同 ✗')+'、招组重合 '+ov+'/4）——这是分工差异，非错误">流派：'+esc(m.name)+' ✗（按需求微调）</span>';
+  return ' <span class="badge" style="background:#fff8e1" title="本槽按队伍需求定位出装，与流派区主推「'+escq(m.name)+'」不同（道具'+(sameItem?'一致 ✓':'不同 ✗')+'、招组重合 '+ov+'/4）——这是分工差异，非错误">⚠ 配装偏离</span>';
 }
 /* ==============================================================================
    v4.11 详情页三层信息架构 · 展示层（L1 基础信息 / L2 流派玩法 / L3 引擎细节）
@@ -14368,7 +14386,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.152';
+var ER_ENGINE_VER='v4.153';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
