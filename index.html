@@ -13296,12 +13296,15 @@ function coreIdeaOf(s,plan,V){
 }
 function planSwitcherHtml(s,st){
   var axList=planAxisList(s);
+  var axisOn=(st.axis>=0);
   var h='<div class="planbar" id="planBar_'+s.id+'"><div style="margin:2px 0"><b style="font-size:11px;color:var(--sub)">规模</b> ';
   PLAN_VARIANTS.forEach(function(V,i){
-    var on=(st.axis<0&&st.scale===i);
-    h+='<button class="btn-mini planv'+(on?' on':'')+'" onclick="planSetScale('+s.id+','+i+')" title="'+escq(V.idea)+'">'+(on?'● ':'')+esc(V.name)+'</button> ';
-    if(i===2&&st.axis<0&&st.scale===0)h+='<span style="font-size:10px;color:var(--sub)" title="6 目标下 std 与 full 逐字节同队（一致性审计 #11）">（与标准同队）</span>';
+    var on=(!axisOn&&st.scale===i);
+    var mem=(axisOn&&st.scale===i);   /* v4.152fix：轴方案下规模行保留上次选择，置灰+旁注 */
+    h+='<button class="btn-mini planv'+(on?' on':'')+(mem?'" style="opacity:.45"':'"')+' onclick="planSetScale('+s.id+','+i+')" title="'+escq(V.idea+(axisOn?'（轴方案固定目标 6 只；点此切回该规模并退出轴流派）':''))+'">'+(on?'● ':(mem?'◇ ':''))+esc(V.name)+'</button> ';
+    if(i===2&&!axisOn&&st.scale===0)h+='<span style="font-size:10px;color:var(--sub)" title="6 目标下 std 与 full 逐字节同队（一致性审计 #11）">（与标准同队）</span>';
   });
+  if(axisOn)h+='<span style="font-size:10px;color:var(--sub)" title="轴方案固定目标 6 只（opts.target=6）；上次规模已记忆，切回「通用」即恢复">（轴方案固定 6 只）</span>';
   h+='</div>';
   if(axList.length){
     h+='<div style="margin:2px 0"><b style="font-size:11px;color:var(--sub)">流派</b> ';
