@@ -2616,3 +2616,28 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.148 index.html：1,509,591B，SHA-1=08DEC13D0789DB6E991FBAD18E9A298DFB85E4FF（+1,860B ≪12KB，零新分片）
 - 本地 commit：d044979（三项落地）→ 登记 commit（本块）；er-gh474 deploy commit 7b22634
 - 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+---
+
+## v4.149 预选落地轮（console 干净/搜索即时过滤/hover 态）— 2026-11-01
+
+### 本轮三项（v4.148 预选 3 项，+304B=7/6，引擎计算零改动）
+- ① **sav anchors debug 日志门控（console 全干净）**：L4809 两处 `console.log('[ER-sav anchors FAIL/OK]', …)` 包进 `if(typeof ER_DEBUG!=='undefined'&&ER_DEBUG)`——生产默认静默，调试设 ER_DEBUG 恢复输出；anchorsOk/anchorsFail 数据流保留供逻辑；其余 console.log（4078/4117/15807 错误捕获）不动
+- ② **电脑区搜索即时过滤 = no-op**：探针结论=现状已满足——savPcQ 已是 `oninput="savPcSearch()"` + 防抖（_pcSearchT）+ v4.148 命中池重置 _pcPage=1 交分页器；文本输入框合规（无下拉选择器）；零代码改动
+- ③ **引导 × 钮 hover/active**：两处 × 加 `className='sgx'`；CSS 加 `.sgx:hover{color:var(--accent);opacity:1}` + `.sgx:active{transform:scale(.9);color:var(--accent)}`——最小 CSS 与全站 hover 变 accent 体系一致；点击行为（clearTimeout+移除）与自动淡出不变
+
+### 验收（三线）
+- 黑盒（第 15 轮，C:\temp\er-v549-blackbox\）：① PASS（源码门控核对；干净页 console drained 0 条；**真档解析成功（431/6/425）后 console 仍 0 条**——不再出现 [ER-sav anchors OK]；解析功能未受门控影响 savParseOut 14,450 字符）② PASS（输入「喷」400ms 即时渲染超级喷火驼 BOX21 第5格；「a」即时 284 命中 ‹1/6› 分页保留；清空即时回 BOX1 12 兜底；无下拉选择器）③ PASS（× className='sgx'；stylesheet .sgx:hover/.sgx:active 均在；点击 × 立即移除+marker 保持 v2）；回归全 PASS（分页/toast 重置/chips 方向键/375px 继承；localStorage 四键清理）；观感 **100/100**（较 v4.148 99.8 ↑0.2，**15 轮黑盒收官满分**）；预选下轮 3 项：电脑区分页「跳至第 N 页」输入、电脑区搜索即时提示 chips（非下拉联想）、ER_DEBUG URL 参数开关（?debug=1）
+- 引擎（er-n678）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 15 连**）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区保护复验（index 构建前后恒 08DEC13D）
+- P0 线上（MainAgent 真浏览器，如实记录）：线上断言 sha16=B2991A1D ✓（curl 独立通道，try1 命中）+ 版本双查（sha 锁定产物静态含 v4.149，黑盒 DOM 实测 tag「引擎 v4.149」）；live 交互复核本窗口 bu 后端仍不可达（51016 instance not found，环境问题已登记持续）——以黑盒第 15 轮**同源（sha 锁定一致产物）实证**收口
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `385fc1f`（7b22634..385fc1f er-gh474 -> gh-pages，pushretry-v4149.log SUCCESS 20:41:55，try1-2 connect timeout 后 try3 通；清代理每调用 `-c "http.https://github.com.proxy="`）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1491` try1 命中 SHA-1=`B2991A1DC62D278A0F92233B51D1C026FBE42463`（1,509,895B），sha16=`B2991A1D`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.149 index.html：1,509,895B，SHA-1=B2991A1DC62D278A0F92233B51D1C026FBE42463（+304B ≪12KB，零新分片）
+- 本地 commit：8d207f0（两项落地+no-op 验证）→ 登记 commit（本块）；er-gh474 deploy commit 385fc1f
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
