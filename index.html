@@ -14321,7 +14321,7 @@ function mateTags(r){
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
 var ER_ENGINE_VER='v4.150';
-var ER_DEBUG=false;try{ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){}   /* v4.150：?debug=1 开调试日志 */
+try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
