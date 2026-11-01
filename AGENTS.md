@@ -2641,3 +2641,28 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.149 index.html：1,509,895B，SHA-1=B2991A1DC62D278A0F92233B51D1C026FBE42463（+304B ≪12KB，零新分片）
 - 本地 commit：8d207f0（两项落地+no-op 验证）→ 登记 commit（本块）；er-gh474 deploy commit 385fc1f
 - 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
+
+---
+
+## v4.150 预选落地轮（跳页输入/属性 chips/debug URL 开关）— 2026-11-01
+
+### 本轮三项（v4.149 预选 3 项，+1,684B=首版 AF917155 → **③ 修复轮 +181B 最终 D8AEFCB5**，引擎计算零改动）
+- ① **电脑区分页「跳至第 N 页」输入**：nav `‹ p/M ›` 的 p/M span 换 30px 宽 number 输入框（Enter/blur 触发 `savPcGo(v)`，边界 clamp 1..M 重渲染）；数字框非下拉合规；‹ › 按钮保留
+- ② **电脑区搜索属性快捷过滤 chips（固定横排非浮层）**：搜索框下加 `#savPcTypeRow`（.chipgrp nowrap 横滚）「全部」+18 属性；`_pcType` + `savPcTypeSet(t)` 切高亮/重置页/触发搜索；savPcSearch 池先按 speciesById t1/t2 类型过滤再走文本 q；空搜+无过滤才 BOX1 前 12 兜底；x.i 保留
+- ③ **ER_DEBUG URL 参数开关（含修复轮）**：`try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}`（ER_ENGINE_VER 旁，挂 window 真全局）；?debug=1 开 anchors 日志、与 ?nocache= 共存、无参维持静默；**修复轮根因**：首版 `var ER_DEBUG` 在脚本块作用域、门控跨块读不到 → 黑盒第 16 轮 FAIL（16 轮黑盒首次 FAIL 项）→ 改显式 window 真全局后复验双态铁证通过
+
+### 验收（三线）
+- 黑盒（第 16 轮 + ③ 修复复验，C:\temp\er-v550-blackbox\）：① PASS（number 输入存在 30px/min1/max；Enter 5→第 5 页；99→clamp 6/6；0→clamp 1/6；abc→不跳不报错；blur 3→第 3 页）② PASS（横排 19 chips；「水」→.on 高亮 50 只过滤；「全部」回默认；火+「喷」→1 只超级喷火驼；清文本仍火属性；x.i 入队语义保留）③ 首版 **FAIL**（源码无 ER_DEBUG 定义、?debug=1 无效）→ **修复复验 PASS**（无参静默 / ?debug=1 主世界捕获 5 条 anchors 日志：护城龙/远古巨蜓/花舞鸟/超级化石翼龙/土王Mega；document.title 注入探针 ER_DEBUG=boolean=true；无参再加载静默闭环）；回归全 PASS；观感 **100/100**（修复后回升满分，16 轮黑盒唯一 FAIL 在修复轮闭环）；预选下轮 3 项：属性 chips 多选（Ctrl/Cmd）、分页 number input 上下箭头、属性 chips 加属性图标
+- 引擎（er-n679）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 16 连**，与 index 补丁层无关的模板确定性仪式）；守门 `[OK] v4.50 …0 违规` + `[BUILD OK] exit 0`；`[SKIP] sync 已脱钩` 在位；主工作区保护复验（index 构建前后恒 B2991A1D）
+- P0 线上（MainAgent 真浏览器，如实记录）：线上断言 sha16=D8AEFCB5 ✓（curl 独立通道，try1 命中，--max-time 120 --retry 2 防截断）+ 版本双查（sha 锁定产物静态含 v4.150，黑盒 DOM 实测 tag「引擎 v4.150」）；live 交互复核本窗口 bu 后端仍不可达（BU_RUNTIME，环境问题已登记持续）——以黑盒第 16 轮+修复复验**同源（sha 锁定一致产物）实证**收口
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `7fa3eb2`（385fc1f..7fa3eb2 er-gh474 -> gh-pages，pushretry-v4150.log SUCCESS 00:20:56，try1-2 connect timeout 后 try3 通；清代理每调用 `-c "http.https://github.com.proxy="`）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1501` try1 命中 SHA-1=`D8AEFCB5D5A4179DA5273E8DE031D39A0D24EC2F`（1,511,760B），sha16=`D8AEFCB5`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链
+- v4.150 index.html：1,511,760B，SHA-1=D8AEFCB5D5A4179DA5273E8DE031D39A0D24EC2F（首版 f31d6be5/AF917155 +1,684B → 修复轮 4cd0b69d/D8AEFCB5 +181B；≪12KB 零新分片）
+- 本地 commit：f31d6be5（三项落地）→ 4cd0b69d（③ 修复）→ 登记 commit（本块）；er-gh474 deploy commit 7fa3eb2
+- 遗留跟进：下轮预选 3 项；模板 v4.98 债务不变；G2/G3 P2 队列不变
