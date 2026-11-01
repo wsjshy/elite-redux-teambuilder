@@ -605,6 +605,8 @@ details.inline,.details.inline{cursor:pointer}
 .chipgrp .chipopt.on{border-color:var(--accent); background:#eef2ff; color:var(--accent); font-weight:600}
 /* v4.147：chips 统一按压反馈（toast chip 与全部 chips，纯 CSS 不改行为） */
 .chipgrp .chipopt:active,.chipopt:active{transform:translateY(1px);background:#e8edff;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+/* v4.149：引导条关闭钮 hover/active 反馈 */
+.sgx:hover{color:var(--accent);opacity:1}.sgx:active{transform:scale(.9);color:var(--accent)}
 
 /* v4.99 观感：卡片圆角+轻阴影 */
 .slot,.badge,.tab,.card,[class*=box]{}
@@ -655,7 +657,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.148</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.149</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4806,8 +4808,7 @@ function parseSavFile(input){
       var res=parseSavBytes(arr);
       lastSavCsv=rowsToCsv(res.rows);
       /* v4.114 A：ANCHORS 自检保留为内部逻辑（仅 console，不下发 UI） */
-      if(res.summary.anchorsFail&&res.summary.anchorsFail.length)console.log('[ER-sav anchors FAIL]',res.summary.anchorsFail);
-      if(res.summary.anchorsOk&&res.summary.anchorsOk.length)console.log('[ER-sav anchors OK]',res.summary.anchorsOk);
+      if(typeof ER_DEBUG!=='undefined'&&ER_DEBUG){if(res.summary.anchorsFail&&res.summary.anchorsFail.length)console.log('[ER-sav anchors FAIL]',res.summary.anchorsFail);if(res.summary.anchorsOk&&res.summary.anchorsOk.length)console.log('[ER-sav anchors OK]',res.summary.anchorsOk);}   /* v4.149：debug 日志门控，默认静默（数据仍供逻辑用） */
       /* v4.92 D-1/D-3：队伍逐只紧凑表（行点击就地展开全字段；物种名联动图鉴 openSpById） */
       var _pr=res.rows.filter(function(r){return r.来源==='队伍'});
       var _tbl='<div style="margin-top:6px"><div style="font-size:13px;font-weight:600">队伍逐只明细（'+_pr.length+' 只 · 点行展开全字段，点名跳图鉴）</div>'+
@@ -4849,7 +4850,7 @@ function parseSavFile(input){
         var sg=document.createElement('div');
         sg.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease;display:flex;align-items:center;gap:6px';
         var sgT=document.createElement('span');sgT.style.flex='1;min-width:0';sgT.textContent='首次解析成功：下方「我的宝可梦」池点任意精灵即可作为核心一键配队';
-        var sgX=document.createElement('span');sgX.textContent='×';sgX.style.cssText='cursor:pointer;font-size:10px;color:var(--sub);flex:none';
+        var sgX=document.createElement('span');sgX.textContent='×';sgX.className='sgx';sgX.style.cssText='cursor:pointer;font-size:10px;color:var(--sub);flex:none';
         sg.appendChild(sgT);sg.appendChild(sgX);
         $('savParseOut').insertBefore(sg,$('savParseOut').firstChild);
         var sgTmr=setTimeout(function(){try{if(sg.parentNode)sg.parentNode.removeChild(sg)}catch(e){}},3800);
@@ -4979,7 +4980,7 @@ function toggleCsvPanel(){
     var g=document.createElement('div');
     g.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease;display:flex;align-items:center;gap:6px';
     var gT=document.createElement('span');gT.style.flex='1;min-width:0';gT.textContent='首次使用：粘贴 CSV → 点「导入」（前 6 只入队）';
-    var gX=document.createElement('span');gX.textContent='×';gX.style.cssText='cursor:pointer;font-size:10px;color:var(--sub);flex:none';
+    var gX=document.createElement('span');gX.textContent='×';gX.className='sgx';gX.style.cssText='cursor:pointer;font-size:10px;color:var(--sub);flex:none';
     g.appendChild(gT);g.appendChild(gX);
     p.insertBefore(g,p.firstChild);
     var gTmr=setTimeout(function(){try{if(g.parentNode)g.parentNode.removeChild(g)}catch(e){}},3800);
@@ -14307,7 +14308,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.148';
+var ER_ENGINE_VER='v4.149';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
