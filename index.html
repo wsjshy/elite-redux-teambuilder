@@ -657,7 +657,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.149</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.150</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4619,8 +4619,9 @@ function savPcRowHtml(r,rowIdx){
     sprEl('span',r.图鉴编号,'spsp')+
     '<span style="flex:1;min-width:0"><span style="color:var(--accent);cursor:pointer" onclick="openSpById(\''+r.图鉴编号+'\')">'+esc(r.宝可梦)+'</span> '+sub+'</span>'+btn+'</div>';
 }
-var _pcPage=1,_pcCur=[],PC_PAGE=50;   /* v4.148：电脑区分页状态（切片仅显示层，x.i 原始下标保留） */
+var _pcPage=1,_pcCur=[],PC_PAGE=50,_pcType='';   /* v4.148 分页状态；v4.150 类型过滤 */
 function savPcPage(d){_pcPage+=d;savPcListRender(_pcCur)}
+function savPcGo(v){var n=parseInt(v,10);if(isNaN(n))return;var M=Math.max(1,Math.ceil(_pcCur.filter(function(x){return /^BOX/.test(x.r.来源)}).length/PC_PAGE));n=Math.max(1,Math.min(n,M));_pcPage=n;savPcListRender(_pcCur)}
 function savPcListRender(rows){
   _pcCur=rows||[];
   var boxN=_pcCur.filter(function(x){return /^BOX/.test(x.r.来源)});
@@ -4633,7 +4634,7 @@ function savPcListRender(rows){
     var pg=boxN.slice((p-1)*PC_PAGE,p*PC_PAGE);
     var nav='<span style="display:inline-flex;gap:4px;align-items:center;margin-left:6px;font-size:10px">'+
       '<button class="btn-mini" style="font-size:10px" '+(p<=1?'disabled':'')+' onclick="savPcPage(-1)">‹</button>'+
-      '<span style="color:var(--sub)">'+p+'/'+M+'</span>'+
+      '<input type="number" min="1" max="'+M+'" value="'+p+'" style="width:30px;font-size:10px;text-align:center;padding:1px 2px;border:1px solid var(--line);border-radius:4px" onkeydown="if(event.key===\'Enter\')savPcGo(this.value)" onblur="savPcGo(this.value)"> / '+M+' 页'+
       '<button class="btn-mini" style="font-size:10px" '+(p>=M?'disabled':'')+' onclick="savPcPage(1)">›</button></span>';
     h+='<div class="dim" style="font-size:11px;padding:2px 4px">电脑区（'+boxN.length+'，点＋入队）'+nav+'</div>'+pg.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
   }
@@ -4642,6 +4643,11 @@ function savPcListRender(rows){
   var el=$('savPcList');if(el)el.innerHTML=h;
 }
 var _pcSearchT=null;
+function savPcTypeOf(r){var s=speciesById(r.图鉴编号);return s?[s.t1,s.t2]:[]}   /* v4.150：行属性反查图鉴 */
+function savPcTypeSet(t){_pcType=t||'';_pcPage=1;   /* v4.150：属性快捷过滤 */
+  var row=$('savPcTypeRow');if(row){[].forEach.call(row.children,function(c){c.classList.toggle('on',c.getAttribute('data-t')===_pcType)})}
+  savPcSearch();
+}
 function savPcSearch(){
   var q=($('savPcQ')?$('savPcQ').value:'').trim();
   if(_pcSearchT)clearTimeout(_pcSearchT);
@@ -4649,8 +4655,9 @@ function savPcSearch(){
     _pcPage=1;   /* v4.148：搜索重置到第 1 页 */
     var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[];
     var pool=rows.map(function(r,i){return {r:r,i:i}}).filter(function(x){return x.r.来源&&(/^BOX/.test(x.r.来源)||x.r.来源.indexOf('特殊区')===0)});
-    if(!q){savPcListRender(pool.filter(function(x){return x.r.来源==='BOX1'}).slice(0,12));return} /* 空搜：BOX1 前 12 兜底 */
-    var m=pool.filter(function(x){return (x.r.宝可梦||'').indexOf(q)>-1||(x.r.英文名||'').toLowerCase().indexOf(q.toLowerCase())>-1});
+    if(_pcType){pool=pool.filter(function(x){var ts=savPcTypeOf(x.r);return ts.indexOf(_pcType)>-1})}   /* v4.150：类型过滤叠加 */
+    if(!q&&!_pcType){savPcListRender(pool.filter(function(x){return x.r.来源==='BOX1'}).slice(0,12));return} /* 空搜+无类型：BOX1 前 12 兜底 */
+    var m=pool.filter(function(x){return !q||(x.r.宝可梦||'').indexOf(q)>-1||(x.r.英文名||'').toLowerCase().indexOf(q.toLowerCase())>-1});
     savPcListRender(m);   /* v4.148：命中池交分页器（>50 自动分页） */
   },150);
 }
@@ -4833,9 +4840,14 @@ function parseSavFile(input){
       });
       _tbl+='</div></div>';
       /* v4.93 D-6：电脑区清单（搜索驱动 C + 空搜 BOX1 前12兜底 A；BOX 行可＋入队，特殊区仅展示） */
+      var _types=['一般','格斗','火','水','草','电','虫','飞行','毒','地面','岩石','超能力','冰','龙','恶','幽灵','钢','妖精'];
+      var _typeRow='<div class="chipgrp" id="savPcTypeRow" style="margin:2px 0;flex-wrap:nowrap;overflow-x:auto">'+
+        '<span class="chipopt on" data-t="" style="padding:2px 8px;font-size:11px" onclick="savPcTypeSet(\'\')">全部</span>'+
+        _types.map(function(t){return '<span class="chipopt" data-t="'+t+'" style="padding:2px 8px;font-size:11px" onclick="savPcTypeSet(\''+t+'\')">'+t+'</span>'}).join('')+'</div>';
       var _pcHtml='<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:6px">'+
         '<div style="font-size:13px;font-weight:600">📦 电脑区清单（'+res.summary.pc+' 只 · 搜物种名过滤 · 空搜显示 BOX1 前 12）</div>'+
         '<input id="savPcQ" type="text" placeholder="搜索物种名（如：喷火龙）" style="width:100%;box-sizing:border-box;padding:4px 6px;font-size:12px;margin:4px 0;border:1px solid var(--line);border-radius:6px" oninput="savPcSearch()">'+
+        _typeRow+
         '<div id="savPcList" style="max-height:300px;overflow-y:auto"></div></div>';
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
         '<div style="font-size:13px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+
@@ -14308,7 +14320,8 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.149';
+var ER_ENGINE_VER='v4.150';
+var ER_DEBUG=false;try{ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){}   /* v4.150：?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
