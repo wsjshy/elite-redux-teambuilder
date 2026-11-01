@@ -582,6 +582,15 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 /* V-P2-5：队槽精灵名与六维图左标签不硬截断，允许换行；超窄(≤480)才 ellipsis */
 .slothead .spnm,.slothead .mcnm,.famlab,.radarlab{white-space:normal; overflow:visible; text-overflow:clip; min-width:0}
 @media(max-width:480px){.slothead .spnm,.slothead .mcnm{max-width:84px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}}
+/* v4.154 ③：375px 安全块——两级 chips/目标规模 chips 自动换行、依据区 padding 压缩 */
+@media(max-width:480px){
+  .planbar>div{flex-wrap:wrap; row-gap:2px}
+  .planbar .btn-mini{padding:3px 8px; font-size:11px}
+  .scalebar{flex-wrap:wrap; row-gap:2px}
+  .scalebar .btn-mini{padding:3px 8px; font-size:11px}
+  details.inline>div{padding:2px 0}
+  main{padding:8px}
+}
 /* V-①：原生 select 去原生外观、chip 化视觉（下拉箭头保留但弱化；运行时 v483SelectToChips 转 chip 组） */
 select{appearance:none; -webkit-appearance:none; border:1px solid var(--line); border-radius:999px; padding:5px 26px 5px 12px;
   background:var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23666' stroke-width='1.5'/></svg>") no-repeat right 10px center;
@@ -679,7 +688,7 @@ details.inline,.details.inline{cursor:pointer}
   <div id="anSnapBar"></div>
   <div id="anOut"></div>
   <div style="margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:6px">
-    <div style="font-weight:600;font-size:13px;margin-bottom:6px">🎯 伤害判定 / OHKO 反解</div>
+    <div style="font-weight:600;font-size:13px;margin-bottom:6px" title="OHKO = 一击必杀（One Hit Knock Out）：一发招直接把对手打到 0 血">🎯 伤害判定 / OHKO 反解</div>
     <div style="font-size:11px;margin-bottom:4px">攻方（我方）：<input id="dmgAtkQ" placeholder="搜索攻方…" style="width:120px" oninput="dmgAtkQ(this.value)" onkeydown="dmgEnterPick(event,'','atk')"> <button class="btn-mini" onclick="loadAtkFromTeam()">从队伍选</button></div>
     <div id="dmgAtkList" style="margin-bottom:4px"></div>
     <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)" onkeydown="dmgEnterPick(event,'','def')"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
