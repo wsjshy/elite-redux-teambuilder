@@ -655,7 +655,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.147</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.148</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4617,11 +4617,24 @@ function savPcRowHtml(r,rowIdx){
     sprEl('span',r.图鉴编号,'spsp')+
     '<span style="flex:1;min-width:0"><span style="color:var(--accent);cursor:pointer" onclick="openSpById(\''+r.图鉴编号+'\')">'+esc(r.宝可梦)+'</span> '+sub+'</span>'+btn+'</div>';
 }
+var _pcPage=1,_pcCur=[],PC_PAGE=50;   /* v4.148：电脑区分页状态（切片仅显示层，x.i 原始下标保留） */
+function savPcPage(d){_pcPage+=d;savPcListRender(_pcCur)}
 function savPcListRender(rows){
-  var boxN=rows.filter(function(x){return /^BOX/.test(x.r.来源)});
+  _pcCur=rows||[];
+  var boxN=_pcCur.filter(function(x){return /^BOX/.test(x.r.来源)});
+  var spcN=_pcCur.filter(function(x){return x.r.来源.indexOf('特殊区')===0});
   var h='';
-  var spcN=rows.filter(function(x){return x.r.来源.indexOf('特殊区')===0});
-  if(boxN.length)h+='<div class="dim" style="font-size:11px;padding:2px 4px">电脑区（'+boxN.length+'，点＋入队）</div>'+boxN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
+  var M=Math.max(1,Math.ceil(boxN.length/PC_PAGE));
+  if(_pcPage<1)_pcPage=1;if(_pcPage>M)_pcPage=M;
+  var p=_pcPage;
+  if(boxN.length){
+    var pg=boxN.slice((p-1)*PC_PAGE,p*PC_PAGE);
+    var nav='<span style="display:inline-flex;gap:4px;align-items:center;margin-left:6px;font-size:10px">'+
+      '<button class="btn-mini" style="font-size:10px" '+(p<=1?'disabled':'')+' onclick="savPcPage(-1)">‹</button>'+
+      '<span style="color:var(--sub)">'+p+'/'+M+'</span>'+
+      '<button class="btn-mini" style="font-size:10px" '+(p>=M?'disabled':'')+' onclick="savPcPage(1)">›</button></span>';
+    h+='<div class="dim" style="font-size:11px;padding:2px 4px">电脑区（'+boxN.length+'，点＋入队）'+nav+'</div>'+pg.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
+  }
   if(spcN.length)h+='<div class="dim" style="font-size:11px;padding:4px 4px 2px">特殊区·设施预设（'+spcN.length+'，＋入队调优；一键入队见上方橙色按钮）</div>'+spcN.map(function(x){return savPcRowHtml(x.r,x.i)}).join('');
   if(!h)h='<div class="dim" style="padding:6px">无匹配</div>';
   var el=$('savPcList');if(el)el.innerHTML=h;
@@ -4631,11 +4644,12 @@ function savPcSearch(){
   var q=($('savPcQ')?$('savPcQ').value:'').trim();
   if(_pcSearchT)clearTimeout(_pcSearchT);
   _pcSearchT=setTimeout(function(){
+    _pcPage=1;   /* v4.148：搜索重置到第 1 页 */
     var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[];
     var pool=rows.map(function(r,i){return {r:r,i:i}}).filter(function(x){return x.r.来源&&(/^BOX/.test(x.r.来源)||x.r.来源.indexOf('特殊区')===0)});
     if(!q){savPcListRender(pool.filter(function(x){return x.r.来源==='BOX1'}).slice(0,12));return} /* 空搜：BOX1 前 12 兜底 */
     var m=pool.filter(function(x){return (x.r.宝可梦||'').indexOf(q)>-1||(x.r.英文名||'').toLowerCase().indexOf(q.toLowerCase())>-1});
-    savPcListRender(m.slice(0,60));
+    savPcListRender(m);   /* v4.148：命中池交分页器（>50 自动分页） */
   },150);
 }
 var _pcSlotQ=null;
@@ -4833,10 +4847,13 @@ function parseSavFile(input){
       if(localStorage.getItem('er_savGuide')!=='v2'){
         localStorage.setItem('er_savGuide','v2');
         var sg=document.createElement('div');
-        sg.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease';
-        sg.textContent='首次解析成功：下方「我的宝可梦」池点任意精灵即可作为核心一键配队';
+        sg.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease;display:flex;align-items:center;gap:6px';
+        var sgT=document.createElement('span');sgT.style.flex='1;min-width:0';sgT.textContent='首次解析成功：下方「我的宝可梦」池点任意精灵即可作为核心一键配队';
+        var sgX=document.createElement('span');sgX.textContent='×';sgX.style.cssText='cursor:pointer;font-size:10px;color:var(--sub);flex:none';
+        sg.appendChild(sgT);sg.appendChild(sgX);
         $('savParseOut').insertBefore(sg,$('savParseOut').firstChild);
-        setTimeout(function(){try{if(sg.parentNode)sg.parentNode.removeChild(sg)}catch(e){}},3800);
+        var sgTmr=setTimeout(function(){try{if(sg.parentNode)sg.parentNode.removeChild(sg)}catch(e){}},3800);
+        sgX.addEventListener('click',function(){clearTimeout(sgTmr);try{if(sg.parentNode)sg.parentNode.removeChild(sg)}catch(e){}});   /* v4.148：手动关闭钮 */
       }
       confirmImportIfTeam(function(){autoImportParty(res);});   /* v4.142：非空队导入前确认 */
       SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
@@ -4960,10 +4977,13 @@ function toggleCsvPanel(){
   if(p.style.display==='block'&&localStorage.getItem('er_csvGuide')!=='v2'){
     localStorage.setItem('er_csvGuide','v2');
     var g=document.createElement('div');
-    g.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease';
-    g.textContent='首次使用：粘贴 CSV → 点「导入」（前 6 只入队）';
+    g.style.cssText='margin:4px 0;padding:6px 8px;font-size:11px;color:var(--accent);background:#eef6ff;border-radius:6px;animation:phasefade .5s ease;display:flex;align-items:center;gap:6px';
+    var gT=document.createElement('span');gT.style.flex='1;min-width:0';gT.textContent='首次使用：粘贴 CSV → 点「导入」（前 6 只入队）';
+    var gX=document.createElement('span');gX.textContent='×';gX.style.cssText='cursor:pointer;font-size:10px;color:var(--sub);flex:none';
+    g.appendChild(gT);g.appendChild(gX);
     p.insertBefore(g,p.firstChild);
-    setTimeout(function(){try{if(g.parentNode)g.parentNode.removeChild(g)}catch(e){}},3800);
+    var gTmr=setTimeout(function(){try{if(g.parentNode)g.parentNode.removeChild(g)}catch(e){}},3800);
+    gX.addEventListener('click',function(){clearTimeout(gTmr);try{if(g.parentNode)g.parentNode.removeChild(g)}catch(e){}});   /* v4.148：手动关闭钮 */
   }
 }
 /* v4.33 N7：简单名单导入——每行第 0 列可为 宝可梦中文名/英文名/编号（数字或 #N）；返回成功入队数 */
@@ -14287,7 +14307,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.147';
+var ER_ENGINE_VER='v4.148';
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
   var p=String(priRole||'');
