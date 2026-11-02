@@ -666,7 +666,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.155</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.156</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -1998,10 +1998,12 @@ function switchTab(name){
   try{var ad=document.getElementById('anDetail');if(ad)ad.classList.remove('open')}catch(e){}
   try{var pm=document.getElementById('ppModal');if(pm)pm.classList.remove('open')}catch(e){}
   try{var mvd=document.getElementById('mvDrawer');if(mvd)mvd.classList.remove('open')}catch(e){}
+  /* v4.156 Part A：记录来源 tab 滚动位置，返回时恢复 */
+  try{if(_currentTab){var _m0=document.querySelector('main');var _st=(_m0?_m0.scrollTop:window.scrollY)||0;try{localStorage.setItem('er_scroll_'+_currentTab,String(_st))}catch(e){}}}catch(e){}
   _currentTab=name;
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name)});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
-  try{var _m=document.querySelector('main');if(_m)_m.scrollTop=0;else window.scrollTo(0,0)}catch(e){}
+  try{var _m=document.querySelector('main');if(_m){var _rs=0;try{_rs=parseInt(localStorage.getItem('er_scroll_'+name))||0}catch(e){}_m.scrollTop=_rs;}else window.scrollTo(0,0);}catch(e){}
   /* v4.99 Tab 渲染链守卫：数据未就绪→显示 loading；就绪后自动渲染该 Tab */
   if(!window.__erReady){
     /* v4.129 fix：不要覆盖整个 tab innerHTML（会破坏工具栏/按钮）——仅在 grid 区显示 loading */
@@ -14425,7 +14427,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.155';
+var ER_ENGINE_VER='v4.156';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
@@ -15993,6 +15995,14 @@ document.addEventListener('toggle',function(e){
 },true);
 function _restoreFolds(){try{var m=JSON.parse(localStorage.getItem('er_planFold')||'{}');
   document.querySelectorAll('details').forEach(function(d){var k=(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40);if(k&&m[k]!==undefined)d.open=m[k]})}catch(eR){}}
+/* v4.156 Part B：二级页（poke/move/type/abi/tpl/speed）空白区点击返回 core */
+document.addEventListener('click',function(ev){
+  if(ev.target!==ev.currentTarget)return;
+  if(!['poke','move','type','abi','tpl','speed'].includes(_currentTab||''))return;
+  var t=ev.target;
+  if(t.closest('.card,.tip,button,a,input,select,textarea,details,summary,.chip,.mateline,.bktab'))return;
+  switchTab('core');
+});
 </script>
 </body>
 </html>
