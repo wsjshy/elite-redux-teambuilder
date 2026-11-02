@@ -666,7 +666,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.154</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.155</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3069,7 +3069,7 @@ function roleCard5Html(s,bd,R){
     if(bd.warn)limBits.push(String(bd.warn));
     if(!limBits.length)limBits.push('弱点已被天性/特性覆盖，无显著短板');
     h+='<b>④ 注意与局限：</b>'+limBits.join('；')+'<br>';
-    h+='<b>⑤ 推荐队友：</b>'+(wks.length?('需队友补 '+wks.join('、')+' 的抗性或打击面'):'本只抗性网完整，队友优先补队伍体系短板')+'。';
+    h+='<b>⑤ 推荐队友：</b>'+(wks.length?('需队友补 '+wks.join('、')+' 的抗性或打击面'):'本只抗性网完整，队友优先补队伍体系短板')+'。<a href="javascript:void(0)" onclick="document.getElementById(\'planSetBody_'+s.id+'\')&&document.getElementById(\'planSetBody_'+s.id+'\').scrollIntoView({behavior:\'smooth\'})" style="color:var(--accent);font-size:11px">查看完整队伍方案 ↓</a>';
     h+='</div></div>';
     return h;
   }catch(e){return ''}
@@ -13509,13 +13509,13 @@ function renderNeedPlan(s,viOrSt){
   h+=planThreatWarnHtml(plan);   /* v4.9 阶段 1：方案级「被 X 体系克制 n 只 → 建议 Y」（提示性、零硬门） */
   /* v4.43 P0-C（设计书 A §3.4b 尾）：空间体系但队内/备选池无空间手 → 一行披露（不改队伍构成） */
   if(plan.spaceNoSetter===1){
-    h+='<div class="tip" style="background:#fff8e1;border-color:var(--warn)"><b>空间手提示</b>：本方案的「空间」打法需要有成员会「戏法空间」——当前队伍与备选池均未筛出会该招的成员，建议手动补一名空间手（低优先提示，不阻断推荐）。</div>';
+    h+='<div class="tip" style="font-size:11px;background:#f5f5f5;border-color:var(--line);color:var(--sub)"><b>空间手提示</b>：本方案的「空间」打法需要有成员会「戏法空间」——当前队伍与备选池均未筛出会该招的成员，建议手动补一名空间手（低优先提示，不阻断推荐）。</div>';
   }
   /* B⑥-4（v4.x 要求，v4.3 延续）：体系核心自身不是设置手时，天气/场地由队友提供 */
   if(plan.sysKey&&!isSetterAny(plan.core)){
     var wxn=plan.needs.filter(function(n){return n.kind==='wxsrc'})[0];
     var wt=wxn&&plan.pools[wxn.id]&&plan.pools[wxn.id].list[0];
-    h+='<div class="tip" style="background:#fff8e1;border-color:var(--warn)"><b>天气/场地由队友提供</b>：推荐 '+
+    h+='<div class="tip" style="font-size:11px;background:#f5f5f5;border-color:var(--line);color:var(--sub)"><b>天气/场地由队友提供</b>：推荐 '+
       esc(wt?wt.s.zh:'—')+(wt?('（'+(wt.gate||'')+'）'):'')+' 作为 '+esc(plan.sysKey)+' 体系手；'+
       '核心自身非设置手，配招功能槽不放天气招（把手位留给队友，核心专注输出/联防）。</div>';
   }
@@ -14425,7 +14425,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.154';
+var ER_ENGINE_VER='v4.155';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
