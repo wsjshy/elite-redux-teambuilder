@@ -2802,3 +2802,36 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.155 index.html：1,519,359B，SHA-1=A528A68EB8A1FAF68A85E95CE023AD8B3E6111E9（59ba08a +317B）
 - 本地 commit：59ba08a → 登记 commit（本块）；er-gh474 deploy commit 3122082
 - **重构三轮+补完轮总账**：v4.152 架构 → v4.153 减负 → v4.154 一致性 → v4.155 补完清零；走查 136s→8.6s→4.5s→（三步口径 5.7s）；观感全程 100/100；引擎 N1=N2 恒 787D0CB8 跨轮 20 连；重构遗留项归零，模板 v4.98 债务不变
+
+---
+
+## v4.156 评估轮（配队类功能联动/重叠判断）+ 二级页面体验优化（并行实施）— 2026-11-02
+
+### A. 评估轮结论（纯评估零代码，用户指令「通过实际体验来判断」；报告 C:\temp\er-v551-consist\evaluation-v4156.md）
+- **盘点**：6 个配队相关功能（核心配队 tab-core/队伍构建 tab-team/队伍分析 tab-analyze/宝可梦详情 tab-poke/存档队伍分析 savFile/六队分析器 tab-analyze L2478）；队伍构建↔队伍分析↔存档分析**同源**（3/5 读 2 的队伍槽）；核心配队与两者**不同源**（引擎推荐 vs 手动/存档，方向相反）
+- **黑盒体验**（第 21 轮，坐骑山羊+咆哮虎交叉）：玩家**能区分**两功能——核心配队=AI 单只→队伍推荐（97KB 产出），队伍分析=玩家 6 只→深度分析（入口 1KB 空槽位）；观感 99/100（扣 1：缺锚点互通）
+- **判断表**：核心配队 vs 队伍分析 = **应独立**（方向相反产出不重叠，合并破坏心智）；核心配队 vs 队伍构建 = **应联动同步**（共享数据源，加「带此队去分析」锚点）；队伍分析 vs 队伍构建 = **应联动同步**（配置来源三路 chip 已同源）
+- **一致性审计**：v4.151 已知 9 条重复**零复发**；残余 3 处均为静态/动态天然差（⑤方向句 vs ⑧名单已锚点缓解/axWeak 紫 vs threatWarn 黄已分级/priRole vs 轴名内嵌词命名风险留档）
+- **对齐问题清单**（待拍板）：Q1 联动方案「推荐队一键带往分析+空槽位快捷带入」双向锚点；Q2 联动深度（仅名单 or 连流派/依据摘要）；Q3 核心配队 97KB 375px 卡顿是否本轮处理
+- **预选下轮**：①首屏 LCP 再验证 ②新玩家零先验引导 ③真档手机端加载优化
+
+### B. 体验优化落地（用户「二级页面体验优化」明确指令；纯导航/交互层，引擎计算零改动；e7745bf +777B 最终 1378EB9A）
+- **Part A 返回状态保持** ✅：switchTab（L1993-2004）切换前记录 `er_scroll_{tab}`（localStorage），返回恢复 main.scrollTop；10 个 tab 全覆盖；与 er_planFold 折叠记忆（v4.154）兼容叠加——**返回不丢现场**
+- **Part B 空白区点击返回** ✅：二级页（poke/move/type/abi/tpl/speed）document delegated click（L15998-16006）：`ev.target===ev.currentTarget` + 排除 `.card/.tip/button/a/input/select/textarea/details/summary/.chip/.mateline/.bktab`——空白（main 本体）点击自动返回，内容/按钮/文本**不误触**；375px 同效
+- 版本双改 v4.156（L660/L14395）
+
+### C. 验收（三线）
+- 黑盒（第 22 轮，C:\temp\er-v554-blackbox\verify-v4156.md）：A 返回状态保持全 PASS（er_scroll_core=500 恢复/er_planFold 展开恢复/analyze scroll/三 tab 不丢）；B 空白点击全 PASS（短页空白返回/卡片按钮不误触/**来源 tab 保真**——analyze 进详情空白点后仍留 analyze 未跳 core/占满不返回）；C 回归全 PASS（两级/折叠/锚点/console 0/LS 清理）；D 观感 **100/100**
+- 引擎（er-n684）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 21 连**，exit 0×2，守门全绿）
+- P0 线上：线上断言 sha16=1378EB9A ✓（curl 独立通道，?nocache=1561 try1 命中，CDN 60s 后生效）
+
+### D. 上库凭证（强制验收）
+- **gh-pages**：deploy commit `4abc5c8`（3122082..4abc5c8 er-gh474 -> gh-pages，pushretry-v4156.log SUCCESS 12:15:54 **try1 直通**）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1561` try1 命中 SHA-1=`1378EB9AC64C0128F1BFED0E02B7AED8F5226BB9`（1,520,136B），sha16=`1378EB9A`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### E. 版本链
+- v4.156 index.html：1,520,136B，SHA-1=1378EB9AC64C0128F1BFED0E02B7AED8F5226BB9（e7745bf +777B）
+- 本地 commit：e7745bf → 登记 commit（本块）；er-gh474 deploy commit 4abc5c8
+- 总账：重构三轮+补完（v4.152-155）→ v4.156 评估+体验优化；走查 4.5s 口径/观感 100；引擎 N1=N2 恒 787D0CB8 跨轮 21 连；待用户拍板 Q1-Q3（配队类联动方案）后进 v4.157 实施
