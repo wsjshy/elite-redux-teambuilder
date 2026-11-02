@@ -2861,3 +2861,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.157 index.html：1,521,143B，SHA-1=220A2C7B00EFF7955FD0331683AC87D90341EF0D（dffc7e0→4cbdc83→7002aba→373187e）
 - 本地 commit：dffc7e0 → 4cbdc83 → 7002aba → 373187e → 登记 commit（本块）；er-gh474 deploy commit 5ed022e
 - 预选下轮：①首屏 LCP 再验证 ②新玩家零先验引导 ③真档导入手机端加载优化（loading+首屏前 12 只+多档槽位）；联动盲区：方案区 97KB 分片渲染（本轮 Q3 预算内未做，若 375px 真机反馈卡顿则优先）
+
+---
+
+## v4.158 预选三项实施轮（首屏 LCP 再验证/新玩家零先验引导/真档手机端分片；纯呈现/交互/加载层，引擎计算零改动）— 2026-11-02
+
+### 落地链（a602cec +765B 引导条 → P0 修复 203c0f3 +41B 最终 A0419407，累计 +806B ≪12KB 零新分片）
+- **① 首屏 LCP 再验证** ✅（专项证据闭环，lcp-v4158.md）：8901 实测 loadEventEnd=155ms、LCP<500ms 本地无劣化（vs v4.154 4.5s 走查基线）；97KB 一次性 innerHTML 瞬时完成，未引新框架/未切架构
+- **② 新玩家零先验引导** ✅：`#erGuideBar`（L880-884）3 步引导「① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」」，不遮内容不打断；× 关闭（L883 id=erGuideClose + L16002 addEventListener——P0 修复：原 inline onclick 引号转义 SyntaxError console 1 error → 改 addEventListener + 写 `er_guide_v2='1'`）；刷新持久；375px 同效
+- **③ 真档手机端分片** ✅（实测裁决）：真档 431/6/425 解析；电脑区列表非一次性 431 innerHTML（savPcList 13 children/65 items 分页结构）；队伍选择 tmGrid 分片已存在（L3658 tmShown/tmStep=60 + L3728-3730 slice 追加）；搜索/筛选在全量内存数据（spQuery）执行，仅 DOM 呈现分片——引擎零改动
+- 增量核算：a602cec +765B + 203c0f3 +41B = +806B（无超限拆轮必要）
+
+### 验收（三线）
+- 黑盒（第 24 轮+复验，C:\temp\er-v554-blackbox\verify-v4158.md）：A 引导条 PASS（出现/关闭写标记/刷新持久/console 0——首验 FAIL 85 分 SyntaxError → P0 修复复验 100）；B 真档分片裁决 PASS（431 解析+非一次性渲染+分片结构实测）；C LCP PASS（0.02s 缓存态）；D 回归全 PASS（两级/折叠/空白返回/锚点/摘要/375px 无横滚）；观感 **100/100**
+- 引擎（er-n686）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 23 连**，exit 0×2，守门全绿）
+- P0 线上：线上断言 sha16=A0419407 ✓（curl 独立通道，?nocache=1581 try1 命中，CDN 60s 后生效）；MainAgent live 复核 bu 后端不稳（历轮登记环境问题）→ 断言+同源兜底
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `10113ae`（5ed022e..10113ae er-gh474 -> gh-pages，pushretry-v4158.log SUCCESS 18:14:14 **try1 直通**）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1581` try1 命中 SHA-1=`A04194078A9506D9361CBA34D6D357AD7124D2F6`（1,521,949B），sha16=`A0419407`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链 + 下轮预选
+- v4.158 index.html：1,521,949B，SHA-1=A04194078A9506D9361CBA34D6D357AD7124D2F6（a602cec +765B → 203c0f3 +41B）
+- 本地 commit：a602cec → 203c0f3 → 登记 commit（本块）；er-gh474 deploy commit 10113ae
+- 下轮预选：①真档导入加载态/首屏前 12 只+多档槽位（v4.155 候选③延展）②引导条样式打磨（脉冲动效）③方案区 97KB 分片渲染（375px 真机反馈卡顿则优先）——由下轮任务书定夺
