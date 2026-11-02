@@ -2835,3 +2835,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.156 index.html：1,520,136B，SHA-1=1378EB9AC64C0128F1BFED0E02B7AED8F5226BB9（e7745bf +777B）
 - 本地 commit：e7745bf → 登记 commit（本块）；er-gh474 deploy commit 4abc5c8
 - 总账：重构三轮+补完（v4.152-155）→ v4.156 评估+体验优化；走查 4.5s 口径/观感 100；引擎 N1=N2 恒 787D0CB8 跨轮 21 连；待用户拍板 Q1-Q3（配队类联动方案）后进 v4.157 实施
+
+---
+
+## v4.157 功能联动实施轮（用户拍板 Q1✅双向锚点/Q2 名单+流派摘要/Q3✅375px；纯 UI 状态传递+同源渲染，引擎计算零改动）— 2026-11-02
+
+### 落地链（dffc7e0 +730B → P0 修复 4cbdc83 +122B → 摘要修复 7002aba +153B → 兜底 373187e +2B 最终 220A2C7B，累计 +1,007B ≪12KB 零新分片）
+- **Q1 双向锚点** ✅：方案区 h3「📊 带此队去分析」→ `window._erCurrentPlan=plan` 预绑定（P0 修复：onclick 原引用局部变量作用域失效 toast「plan is not defined」→ 渲染前绑定+onclick 读全局）+ `addToTeam` 写入队伍槽 6 只 + `switchTab('analyze')`；返回 core 滚动/折叠保持
+- **Q2 名单+流派摘要** ✅：#anPlanSummary 摘要条（L686）+ 点击后同步直写「最近推荐流派：{axis.name}」（P0 修复链：switchTab 填充被重渲染覆盖→点击内直写；plan.axis=null 空串 falsy→兜底 `(plan.axis&&plan.axis.name)?plan.axis.name:'通用需求驱动'` 无条件直写）；**不带依据详情**（375px 负担控制）；刷新后清空（会话内存，可接受）
+- **Q3 375px 卡顿** ✅（探针关闭）：renderNeedPlan 一次性 innerHTML（L13335）97KB 文本为固有成本，v4.154 @media 安全块维持、未改渲染路径（预算内不分片）；黑盒实测无横向滚动、交互顺滑
+- **信息同步** ✅：队伍名单同源（addToTeam 写队伍槽，analyze 读同槽）；流派名会话传递，两功能渲染一致；v4.156 审计残余 3 处缓解项保持
+
+### 验收（三线）
+- 黑盒（第 23 轮+3 次修复复验，C:\temp\er-v554-blackbox\verify-v4157.md）：A 锚点往返 PASS（无 toast/6 只写入：坐骑山羊/帕路奇亚-起源/曜炎电伞蜥/无极草儿/波尔凯尼恩/无极汰那-无极巨化/切 analyze/返回滚动保持）；B 摘要 PASS（坐骑山羊+固拉多均「最近推荐流派：通用需求驱动」axis=null 统一兜底）；C 375px 无横向滚动 PASS；D 回归 console 0/LS 清理；观感 **100/100**（历轮 FAIL：首验 90 锚点 P0→复验 95 摘要空→复验 92 axis null→终验 100 闭环）；走查全流程含联动往返 8.78s
+- 引擎（er-n685）：N1=N2 双胞胎恒 787D0CB8（**跨轮确定性 22 连**，exit 0×2，守门全绿）
+- P0 线上：线上断言 sha16=220A2C7B ✓（curl 独立通道，?nocache=1571 try1 命中，CDN 60s 后生效）；MainAgent live 复核 bu 后端不稳定（历轮登记环境问题）→ 断言+同源兜底
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `5ed022e`（4abc5c8..5ed022e er-gh474 -> gh-pages，pushretry-v4157.log SUCCESS 15:35:23 **try1 直通**）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1571` try1 命中 SHA-1=`220A2C7B00EFF7955FD0331683AC87D90341EF0D`（1,521,143B），sha16=`220A2C7B`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链 + 预选下轮
+- v4.157 index.html：1,521,143B，SHA-1=220A2C7B00EFF7955FD0331683AC87D90341EF0D（dffc7e0→4cbdc83→7002aba→373187e）
+- 本地 commit：dffc7e0 → 4cbdc83 → 7002aba → 373187e → 登记 commit（本块）；er-gh474 deploy commit 5ed022e
+- 预选下轮：①首屏 LCP 再验证 ②新玩家零先验引导 ③真档导入手机端加载优化（loading+首屏前 12 只+多档槽位）；联动盲区：方案区 97KB 分片渲染（本轮 Q3 预算内未做，若 375px 真机反馈卡顿则优先）
