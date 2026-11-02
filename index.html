@@ -666,7 +666,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.159</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.160</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -4733,7 +4733,7 @@ function renderSavSlots(){
     var d=new Date(s.t);var lbl=(s.t&&!isNaN(d.getTime()))?('档'+(i+1)+' '+d.getHours()+':'+('0'+d.getMinutes()).slice(-2)):('档'+(i+1));   /* v4.140：非法/缺失 t（旧版残留/外部写入）兜底只显「档N」，合法时间戳分钟补零 */
     var nm=localStorage.getItem('er_savName_'+i)||'';
     var sel=(i===_loadedSlot);
-    h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;margin-right:3px;'+(sel?'background:var(--acc-tint2);font-weight:600;border:1px solid var(--acc-edge)':'background:var(--acc-tint);border:1px solid transparent')+'" onclick="loadSavSlot('+i+')" ondblclick="renameSavSlot('+i+')" title="双击改名">'+(nm||lbl)+'</span>'
+    h+='<span style="cursor:pointer;padding:1px 6px;border-radius:8px;margin-right:3px;transition:opacity .2s ease,transform .2s ease;'+(sel?'background:var(--acc-tint2);font-weight:600;border:1px solid var(--acc-edge)':'background:var(--acc-tint);border:1px solid transparent')+'" onclick="loadSavSlot('+i+')" ondblclick="renameSavSlot('+i+')" title="双击改名">'+(nm||lbl)+'</span>'
   });
   /* v4.119：双档对比入口（≥2 档才显示；纯读取，不改既有加载） */
   if(svs.length>=2){h+='<button class="btn-mini" onclick="savSlotsDiffToggle()" style="margin-left:4px">对比近两档</button><div id="savSlotsDiffBox"></div>'}
@@ -14436,7 +14436,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.159';
+var ER_ENGINE_VER='v4.160';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){

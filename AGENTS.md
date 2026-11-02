@@ -2913,3 +2913,30 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.159 index.html：1,522,191B，SHA-1=272C3DA727CD65C5E8B9CBBFBFD78567B7141DDA（cea81ff +242B）
 - 本地 commit：cea81ff → 登记 commit（本块）；er-gh474 deploy commit a662af8
 - 下轮预选：① 方案区 97KB 分片渲染（375px 真机实测有卡顿再落地；已两轮证据关闭）② 真档多档槽位切换动效/加载态（首屏前 12 只）延展 ③ 全站深色模式或主题切换（新方向，待任务书定夺）
+
+---
+
+## v4.160 预选实施轮 III（多档槽位切换动效/全站深色模式探针评估/方案区分片保持关闭；纯呈现/交互层，引擎计算零改动）— 2026-11-03
+
+### 落地/裁决（commit a8bc032 +47B 最终 7DD4F30B，累计 +47B ≪12KB 零新分片）
+- **① 多档槽位切换动效** ✅：L4735 `transition:opacity .2s ease,transform .2s ease`（历史档 chips 切换淡入过渡，与 erPulse 风格一致，不遮内容不打断；375px 同效）
+- **② 全站深色模式** ✅（探针评估→试点决策规则触发，只出评估报告 darkmode-v4160.md）：硬编码色 200+ 处、JS 内联状态色占 60%+、现有 CSS 变量 ~10 个、变量化增量估算 8-15KB 临界、回归面高风险 → **增量临界+高风险，按规则不对齐不实施**（对齐后另行实施）
+- **③ 方案区 97KB 分片渲染** ✅（保持关闭不重复建设）：两轮连续证据（v4.158 LCP 155ms + v4.159 走查 8.88s 无卡顿），用户无 375px 真机卡顿反馈
+- 增量核算：a8bc032 +47B（纯 CSS 动效，无新分片）
+
+### 验收（三线）
+- 黑盒（第 2 阶段全量，verify-v4160.md）：A 槽位动效 PASS（chips+computed transition .2s+inline-block 不遮）；B 深色评估复核（本轮不要求落地）；C 分片关闭保持；D 回归全 PASS（两级/折叠/空白返回/锚点/摘要/引导/console 0/LS 清理/375px）；观感 **100/100**
+- 引擎（er-n688）：本轮仅 CSS 动效 +47B、JS 引擎零触碰——N1=N2 确定性不受影响（历轮 24 连基线；er-n688 终值因通道中断未读取，以零 JS 改动+守门全绿收口）
+- P0 线上：线上断言 sha16=7DD4F30B ✓（MainAgent curl 独立通道 ?nocache=1601 try1 命中）
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `25daeda`（10113ae..25daeda er-gh474 -> gh-pages；推送后台任务 exit 0——通道中断未读 SUCCESS 行，**MainAgent 续跑确认远端=25daeda434b08193c8f18ed2e7edeecc6f9c3217**）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1601` try1 命中 SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`（1,522,238B），sha16=`7DD4F30B`（SHA-1 口径）
+- 主工作区：核心部署文件 6/6 mw==gh 全 True（.nojekyll/data_adv_v498.js/data_lite_v498.js/data_species_v498.js/data.js/index.html）+ AGENTS_match=True
+
+### 环境阻塞实录（不掩盖）+ 版本链 + 下轮预选
+- **v4.160 收尾曾遇本地工具后端持续超时约 50 分钟**（PowerShell/Read 双通道 tool timeout，历轮已登记的同类环境问题；非应用缺陷非命令错误）——组织者如实汇报未完成项；通道恢复后 MainAgent 续跑闭环（线上断言/远端 SHA 确认/主工作区同步/AGENTS 登记）
+- v4.160 index.html：1,522,238B，SHA-1=7DD4F30B2C7A2605CEE163F32A269742A1494D1C（a8bc032 +47B）
+- 本地 commit：a8bc032 → 登记 commit（本块）；er-gh474 deploy commit 25daeda
+- 下轮预选：① 全站深色模式实施（评估报告已出——增量临界 8-15KB+回归面大，**需用户拍板后实施**）② 真档多档槽位加载态延展（v4.159 裁决后剩余）③ 其他新方向——由下轮任务书定夺
