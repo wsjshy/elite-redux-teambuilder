@@ -13507,7 +13507,7 @@ function renderNeedPlan(s,viOrSt){
       '<br><b>弱点/对策</b>：'+axWeakHtml(plan.axis)+'</div>';
   }
   try{window._erCurrentPlan=plan}catch(eP){}
-  h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示） <button class="btn-mini" style="margin-left:8px;background:var(--accent);color:#fff" onclick="(function(){try{var plan=window._erCurrentPlan;if(!plan)throw new Error(\'plan 未就绪\');window._erLastPlanTeam=plan.team.map(function(m){return m.s});window._erLastPlanAxis=(plan.axis&&plan.axis.name)||\'\';plan.team.forEach(function(m){addToTeam(m.s,null,true)});switchTab(\'analyze\');}catch(e){toast(\'带入失败:\'+e.message)}})()">📊 带此队去分析</button></h3>';
+  h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示） <button class="btn-mini" style="margin-left:8px;background:var(--accent);color:#fff" onclick="(function(){try{var plan=window._erCurrentPlan;if(!plan)throw new Error(\'plan 未就绪\');window._erLastPlanTeam=plan.team.map(function(m){return m.s});window._erLastPlanAxis=(plan.axis&&plan.axis.name)||\'\';plan.team.forEach(function(m){addToTeam(m.s,null,true)});switchTab(\'analyze\');var _as=document.getElementById(\'anPlanSummary\');if(_as)_as.textContent=window._erLastPlanAxis?(\'最近推荐流派：\'+window._erLastPlanAxis):\'\';}catch(e){toast(\'带入失败:\'+e.message)}})()">📊 带此队去分析</button></h3>';
   h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
     '· <b>怎么启动：</b>'+esc(plan.overview.start)+'<br>'+
     '· <b>怎么受益：</b>'+esc(plan.overview.benefit)+'<br>'+
