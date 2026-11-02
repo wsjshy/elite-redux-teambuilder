@@ -2887,3 +2887,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.158 index.html：1,521,949B，SHA-1=A04194078A9506D9361CBA34D6D357AD7124D2F6（a602cec +765B → 203c0f3 +41B）
 - 本地 commit：a602cec → 203c0f3 → 登记 commit（本块）；er-gh474 deploy commit 10113ae
 - 下轮预选：①真档导入加载态/首屏前 12 只+多档槽位（v4.155 候选③延展）②引导条样式打磨（脉冲动效）③方案区 97KB 分片渲染（375px 真机反馈卡顿则优先）——由下轮任务书定夺
+
+---
+
+## v4.159 预选三项实施轮 II（真档导入加载态+多档槽位 / 引导条脉冲动效 / 方案区分片裁决；纯呈现/交互层，引擎计算零改动）— 2026-11-02
+
+### 落地/裁决（commit cea81ff +242B 最终 272C3DA7，累计 +242B ≪12KB 零新分片）
+- **① 真档导入加载态+多档槽位** ✅（实测裁决关闭不重复建设）：renderSavSlots L4726 已支持多档 FIFO（历史档 chips 列表）；导入完成 toast 计数已有（「已导入队伍 6 只（含 超级土王）」）；黑盒实测导入全程 2068ms 含脚本 2s sleep、实际解析 <500ms → spinner 项以「解析瞬时完成」证据关闭；首屏 12 只呈现（电脑区分页）已存在
+- **② 引导条脉冲动效** ✅：L881-883 `@keyframes erPulse` 2s 呼吸 + `prefers-reduced-motion` 暂停（a11y）；不遮内容不打断；× 关闭 er_guide_v2 逻辑不回归（黑盒实测 animationName=erPulse duration=2s、reduced-motion 源码在位、关闭写标记 PASS）
+- **③ 方案区 97KB 分片渲染** ✅（实测裁决关闭不重复建设）：v4.158 LCP 155ms 证据 + 黑盒本轮走查 8.88s、97KB 一次性渲染无卡顿、375px 滚动流畅 → 分片无必要
+- 增量核算：cea81ff +242B（仅 CSS 动效，无新分片）
+
+### 验收（三线）
+- 黑盒（C:\temp\er-v554-blackbox\verify-v4159.md）：A 脉冲动效 PASS（erPulse 2s/reduced-motion/关闭写标记/375px 不遮）；B ① 裁决复核 PASS（toast 计数+导入计时实测 <500ms）；C ③ 裁决复核 PASS（走查 8.88s 无卡顿）；D 回归全 PASS（两级/折叠/空白返回/锚点/摘要/引导保持/console 0/LS 清理）；观感 **100/100**
+- 引擎（er-n687）：N1=N2 双胞胎恒 787D0CB8（跨轮确定性 24 连预期，exit 0×2，守门全绿）
+- P0 线上：线上断言 sha16=272C3DA7 ✓（curl 独立通道，?nocache=1591 try1 命中）；MainAgent live 复核 bu 后端不稳（历轮登记环境问题）→ 断言+同源兜底
+
+### 上库凭证（强制验收）
+- **gh-pages**：deploy commit `a662af8`（10113ae..a662af8 er-gh474 -> gh-pages，pushretry-v4159.log SUCCESS 22:36:27——本轮遇 GFW 抖动窗 7 连 23s 超时，有界重试第 8 次直通）
+- **master**：登记 commit（本块）已推
+- **线上断言**：`?nocache=1591` try1 命中 SHA-1=`272C3DA727CD65C5E8B9CBBFBFD78567B7141DDA`（1,522,191B），sha16=`272C3DA7`（SHA-1 口径）
+- 主工作区 15/15 同步 + AGENTS_match=True
+
+### 版本链 + 下轮预选
+- v4.159 index.html：1,522,191B，SHA-1=272C3DA727CD65C5E8B9CBBFBFD78567B7141DDA（cea81ff +242B）
+- 本地 commit：cea81ff → 登记 commit（本块）；er-gh474 deploy commit a662af8
+- 下轮预选：① 方案区 97KB 分片渲染（375px 真机实测有卡顿再落地；已两轮证据关闭）② 真档多档槽位切换动效/加载态（首屏前 12 只）延展 ③ 全站深色模式或主题切换（新方向，待任务书定夺）
