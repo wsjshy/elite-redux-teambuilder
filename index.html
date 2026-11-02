@@ -666,7 +666,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.157</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.158</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -878,6 +878,10 @@ details.inline,.details.inline{cursor:pointer}
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
+  <div id="erGuideBar" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:#0d47a1">
+    👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
+    <button onclick="(function(){var b=document.getElementById(\'erGuideBar\');if(b)b.style.display=\'none\';try{localStorage.setItem(\'er_guide_v2\',\'1\')}catch(e){}})()" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
+  </div>
   <div id="corePickWrap" class="phasefade">
   <div class="bar">
     <input type="text" id="coreSearch" placeholder="搜索中文 / 英文 / 编号">
@@ -14431,7 +14435,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.157';
+var ER_ENGINE_VER='v4.158';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
@@ -15999,6 +16003,8 @@ document.addEventListener('toggle',function(e){
 },true);
 function _restoreFolds(){try{var m=JSON.parse(localStorage.getItem('er_planFold')||'{}');
   document.querySelectorAll('details').forEach(function(d){var k=(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40);if(k&&m[k]!==undefined)d.open=m[k]})}catch(eR){}}
+/* v4.158 ②：新玩家首次打开显示引导条 */
+try{if(!localStorage.getItem('er_guide_v2')){var _gb=document.getElementById('erGuideBar');if(_gb)_gb.style.display='block';}}catch(eG){}
 /* v4.156 Part B：二级页（poke/move/type/abi/tpl/speed）空白区点击返回 core */
 document.addEventListener('click',function(ev){
   if(ev.target!==ev.currentTarget)return;
