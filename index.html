@@ -666,7 +666,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.156</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.157</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -683,6 +683,7 @@ details.inline,.details.inline{cursor:pointer}
 <!-- ===== 队伍分析（v4.39 UI 增强 · 第八 tab：六槽位 + 图鉴级选择器 + 带图结果 + 详情） ===== -->
 <section id="tab-analyze" class="tab">
   <div class="tip" id="anRuleTip">💡 队伍分析：点下方槽位从图鉴级选择器挑 6 只（与「队伍构建」共享同一队伍）；结果只展示引擎推荐，点任意精灵看推荐详情</div>
+  <div id="anPlanSummary" style="font-size:12px;color:var(--sub);margin:4px 0"></div>
   <div class="anslots" id="anSlots"></div>
   <div id="anCfgBar" style="margin:6px 0"></div>
   <div id="anSnapBar"></div>
@@ -2004,6 +2005,8 @@ function switchTab(name){
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name)});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
   try{var _m=document.querySelector('main');if(_m){var _rs=0;try{_rs=parseInt(localStorage.getItem('er_scroll_'+name))||0}catch(e){}_m.scrollTop=_rs;}else window.scrollTo(0,0);}catch(e){}
+  /* v4.157 Q2：队伍分析页顶部流派摘要条 */
+  try{if(name==='analyze'){var _as=document.getElementById('anPlanSummary');if(_as){_as.textContent=(window._erLastPlanAxis?('最近推荐流派：'+window._erLastPlanAxis):'');}}}catch(e){}
   /* v4.99 Tab 渲染链守卫：数据未就绪→显示 loading；就绪后自动渲染该 Tab */
   if(!window.__erReady){
     /* v4.129 fix：不要覆盖整个 tab innerHTML（会破坏工具栏/按钮）——仅在 grid 区显示 loading */
@@ -13503,7 +13506,7 @@ function renderNeedPlan(s,viOrSt){
       '<br><b>关键协同</b>：'+axSynHtml(plan)+
       '<br><b>弱点/对策</b>：'+axWeakHtml(plan.axis)+'</div>';
   }
-  h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示）</h3>';
+  h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示） <button class="btn-mini" style="margin-left:8px;background:var(--accent);color:#fff" onclick="(function(){try{window._erLastPlanTeam=plan.team.map(function(m){return m.s});window._erLastPlanAxis=(plan.axis&&plan.axis.name)||\'\';plan.team.forEach(function(m){addToTeam(m.s,null,true)});switchTab(\'analyze\');}catch(e){toast(\'带入失败:\'+e.message)}})()">📊 带此队去分析</button></h3>';
   h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
     '· <b>怎么启动：</b>'+esc(plan.overview.start)+'<br>'+
     '· <b>怎么受益：</b>'+esc(plan.overview.benefit)+'<br>'+
@@ -14427,7 +14430,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.156';
+var ER_ENGINE_VER='v4.157';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
