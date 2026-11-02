@@ -666,7 +666,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.158</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.159</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -878,7 +878,8 @@ details.inline,.details.inline{cursor:pointer}
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
-  <div id="erGuideBar" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:#0d47a1">
+  <div id="erGuideBar" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:#0d47a1;animation:erPulse 2s ease-in-out infinite">
+    <style>@keyframes erPulse{0%,100%{box-shadow:0 0 0 0 rgba(144,202,249,.4)}50%{box-shadow:0 0 0 6px rgba(144,202,249,0)}}@media(prefers-reduced-motion:reduce){#erGuideBar{animation:none}}</style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
   </div>
@@ -14435,7 +14436,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.158';
+var ER_ENGINE_VER='v4.159';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
