@@ -880,7 +880,7 @@ details.inline,.details.inline{cursor:pointer}
 <section id="tab-core" class="tab active">
   <div id="erGuideBar" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:#0d47a1">
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
-    <button onclick="(function(){var b=document.getElementById(\'erGuideBar\');if(b)b.style.display=\'none\';try{localStorage.setItem(\'er_guide_v2\',\'1\')}catch(e){}})()" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
+    <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
   </div>
   <div id="corePickWrap" class="phasefade">
   <div class="bar">
@@ -16004,7 +16004,7 @@ document.addEventListener('toggle',function(e){
 function _restoreFolds(){try{var m=JSON.parse(localStorage.getItem('er_planFold')||'{}');
   document.querySelectorAll('details').forEach(function(d){var k=(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40);if(k&&m[k]!==undefined)d.open=m[k]})}catch(eR){}}
 /* v4.158 ②：新玩家首次打开显示引导条 */
-try{if(!localStorage.getItem('er_guide_v2')){var _gb=document.getElementById('erGuideBar');if(_gb)_gb.style.display='block';}}catch(eG){}
+try{if(!localStorage.getItem('er_guide_v2')){var _gb=document.getElementById('erGuideBar');if(_gb)_gb.style.display='block';var _gc=document.getElementById('erGuideClose');if(_gc)_gc.addEventListener('click',function(){if(_gb)_gb.style.display='none';try{localStorage.setItem('er_guide_v2','1')}catch(e){}});}}catch(eG){}
 /* v4.156 Part B：二级页（poke/move/type/abi/tpl/speed）空白区点击返回 core */
 document.addEventListener('click',function(ev){
   if(ev.target!==ev.currentTarget)return;
