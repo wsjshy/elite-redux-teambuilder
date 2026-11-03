@@ -666,7 +666,7 @@ details.inline,.details.inline{cursor:pointer}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.160</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.162</span>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -1776,6 +1776,37 @@ function mxRowsOf(at){
   });
   return {rows:rows,counts:counts,pre:!!pre};
 }
+/* v4.162 进攻多选聚合：逐宝可梦取所选攻击属性的最大实际倍率（与 setCoverProfile 多招取 max → 盲点语义同构）。
+   口径逐字复用 mxRowsOf 单属性分支（matchupSp 预计算优先 / defCellTrio 回退 / pick 生效口径）。 */
+function mxRowsOfMulti(ats){
+  var pres=ats.map(mxSpPre),rows=[],counts={},g={C:0,N:0,R:0,I:0},i;
+  ERDATA.species.forEach(function(s){
+    if(!isValidSp(s))return;
+    var best=-1,bestAt='',bestTr=null,bestSrc='live';
+    for(i=0;i<ats.length;i++){
+      var at=ats[i];
+      var tr=defCellTrio(s,at);
+      var act=tr.pick?tr.opt:tr.inn;
+      var src='live';
+      var pre=pres[i];
+      if(pre){
+        var pv=pre(s);
+        if(typeof pv==='number'&&isFinite(pv)){
+          var ratio=(tr.inn&&isFinite(tr.inn))?(tr.opt/tr.inn):1;
+          act=(tr.pick&&isFinite(ratio))?Math.round(pv*ratio*100)/100:pv;
+          src='pre';
+        }
+      }
+      if(act>best){best=act;bestAt=at;bestTr=tr;bestSrc=src}
+    }
+    var b=mxBucket(best);
+    counts[b]=(counts[b]||0)+1;
+    if(best===0)g.I++;else if(best===1)g.N++;else if(best>1)g.C++;else g.R++;
+    rows.push({s:s,act:best,bestAt:bestAt,base:bestTr.base,inn:bestTr.inn,cap:!!bestTr.pick,b:b,src:bestSrc});
+  });
+  rows.sort(function(a,b){return b.act-a.act});
+  return {rows:rows,counts:counts,g:g,pres:pres};
+}
 function mxCard(s,right,tip){
   return '<div class="mxc'+(right===0?' imm':'')+'" onclick="openSpById(\''+s.id+'\')" title="'+escq(tip||('查看 '+s.zh+' 详情（含完整承受表）'))+'">'+
     sprRaw(s.id)+'<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(right===undefined?'':''+right)+'</div></div>';
@@ -1912,6 +1943,27 @@ function mxPanelDef(types,all){
   if(list.length>cap)h+='<button class="btn-mini mxmore" onclick="mxMore()">展开全部<br>'+list.length+' 只</button>';
   return h+'</div>';
 }
+/* v4.162 进攻多选·分桶就地面板：按物种级「最佳倍率」分桶列全图鉴（cap 9999 一次全列；复用 mxCard） */
+function mxPanelAtkMulti(ats,grp,showNeutral){
+  var R=mxRowsOfMulti(ats),h='';
+  var GNAME={C:'克制（最佳 >1×）',N:'×1 中性',R:'抵抗（最佳 <1×）',I:'免疫·该组合打不动（最佳 0×）'};
+  var list=R.rows.filter(function(r){
+    if(grp==='C')return r.act>1;
+    if(grp==='N')return r.act===1;
+    if(grp==='I')return r.act===0;
+    return r.act>0&&r.act<1;
+  });
+  h+='<div class="mxhd2">🔱 进攻组合：'+ats.map(tlabel).join(' + ')+' → <b>'+esc(GNAME[grp])+'</b> '+list.length+' 只'+
+     '<span class="mini">（逐宝可梦取所选属性最大实际倍率 = 属性 × 天性 × ABI_TAGS；卡片角标 = 该最佳倍率）</span></div>';
+  if(grp==='N')h+='<div class="mini" style="color:var(--sub)">中性桶默认展开（已由分桶点击触发，含 ×1 行为保持）</div>';
+  if(!list.length){h+='<div class="mini" style="color:var(--sub)">该桶为空</div>';return h}
+  h+='<div class="mxgrid">';
+  list.forEach(function(r){
+    h+=mxCard(r.s,r.act+'×','最佳属性 '+r.bestAt+'：实际 '+r.act+'×'+(r.cap?'（含勾选特性）':'')+(r.src==='pre'?'（matchupSp）':''));
+  });
+  h+='</div>';
+  return h;
+}
 var _mx={at:null,view:'atk',neutral:false,all:false,node:null};
 function mxInline(at,el,view){
   var host=(el&&el.closest)?el.closest('.kgroup'):null;
@@ -1927,9 +1979,24 @@ function mxInline(at,el,view){
   host.parentNode.insertBefore(box,host.nextSibling);
   _mx.node=box;
 }
+/* v4.162 多选分桶就地展开：key = '火+水'（与防守组合串同构），grp = C/N/R/I；复用 _mx 状态（不新增全局） */
+function mxInlineMulti(key,grp,el){
+  var ats=key.split('+');
+  var host=(el&&el.closest)?el.closest('.kgroup'):null;
+  if(!host)host=$('atkResult');
+  if(_mx.node&&_mx.node.parentNode)_mx.node.parentNode.removeChild(_mx.node);
+  var same=(_mx.node&&_mx.at===key&&_mx.view==='atkmulti'&&_mx.grp===grp&&_mx.host===host);
+  _mx={at:key,view:'atkmulti',neutral:false,all:false,node:null,host:host,grp:grp,ats:ats};
+  if(same)return;                                   /* 再次点同一桶 → 收起 */
+  var box=document.createElement('div');box.className='mxinline';
+  box.innerHTML=mxPanelAtkMulti(ats,grp,false)+
+    '<div style="margin-top:8px"><button class="btn-mini" onclick="closeMx()">收起 ×</button></div>';
+  host.parentNode.insertBefore(box,host.nextSibling);
+  _mx.node=box;
+}
 function mxRe(){
   if(!_mx.node)return;
-  _mx.node.innerHTML=(_mx.view==='def'?mxPanelDef(_mx.at,_mx.all):mxPanelAtk(_mx.at,_mx.neutral,_mx.all))+
+  _mx.node.innerHTML=(_mx.view==='def'?mxPanelDef(_mx.at,_mx.all):(_mx.view==='atkmulti'?mxPanelAtkMulti(_mx.ats,_mx.grp,_mx.neutral):mxPanelAtk(_mx.at,_mx.neutral,_mx.all)))+
     '<div style="margin-top:8px"><button class="btn-mini" onclick="closeMx()">收起 ×</button></div>';
 }
 function mxMore(){_mx.all=true;mxRe()}
@@ -3595,8 +3662,8 @@ function openMv(m){
 (function(){
   ERDATA.types.forEach(function(t){
     $('atkChips').appendChild(tchip(t,false,function(){
-      document.querySelectorAll('#atkChips button').forEach(function(x){x.classList.remove('on')});
-      this.classList.add('on');renderAtk(t);
+      /* v4.162：进攻视角改多选 toggle（复用防守 defChips 交互：点选高亮、可多选、可全取消） */
+      this.classList.toggle('on');renderAtk();
     }));
   });
   ERDATA.types.forEach(function(t){
@@ -3609,7 +3676,21 @@ function openMv(m){
   if(_ar&&!_ar.innerHTML.trim())_ar.innerHTML='<div class="emptyhint">👆 <b>点上方任意属性</b> → 查看该属性招式打谁克制（2× / 0.5× / 0× 分组）</div>';
   if(_dr&&!_dr.innerHTML.trim())_dr.innerHTML='<div class="emptyhint">👆 <b>点上方属性</b>（可多选双属性）→ 查看你的宝可梦属性怕谁、抗谁、免疫谁</div>';
 })();
-function renderAtk(t){
+/* v4.162 进攻多选分发：sel 现作用域直读 DOM chips（不引入新全局状态）；特殊属性显式排除（同 atkCover） */
+var ATK_SPECIAL={'星晶':1,'无':1,'神秘':1};
+function renderAtk(){
+  var sel=[];
+  document.querySelectorAll('#atkChips button').forEach(function(b){if(b.classList.contains('on'))sel.push(b.textContent)});
+  sel=sel.filter(function(t){return !ATK_SPECIAL[t]});
+  if(!sel.length){ /* 全取消 → 回 v4.83 空态引导（逐字同 L3609 初始空态） */
+    $('atkResult').innerHTML='<div class="emptyhint">👆 <b>点上方任意属性</b> → 查看该属性招式打谁克制（2× / 0.5× / 0× 分组；<b>可多选</b>按最佳倍率聚合看组合打击面）</div>';
+    return;
+  }
+  if(sel.length===1){renderAtkSingle(sel[0]);return}   /* 单选 = v4.160 逐位一致（零回归硬要求） */
+  renderAtkMulti(sel);
+}
+/* v4.160 原样保留（单选分支逐字不动，保证零回归） */
+function renderAtkSingle(t){
   var i=tIdx(t),k=[],h=[],z=[];
   ERDATA.types.forEach(function(d,j){
     var v=ERDATA.matchup[j][i];
@@ -3626,6 +3707,46 @@ function renderAtk(t){
   html+='<div class="k05"><b>0.5× 抵抗：</b> '+(h.map(cell).join(' ')||'无')+'</div>';
   html+='<div class="k0"><b>0× 无效：</b> '+(z.map(cell).join(' ')||'无')+'</div></div>';
   html+='<div class="mini" style="color:var(--sub);margin-top:4px">点属性 chip → <b>就地展开</b>（网格卡片 + 精灵图）：进攻属性=按实际承受倍率分组；防守属性=列出拥有该属性的宝可梦。再点同一格收起。</div>';
+  $('atkResult').innerHTML=html;
+}
+/* v4.162 进攻多选结果区（两级组织）：
+   ① 顶部分桶概览行 = 物种级聚合（mxRowsOfMulti：逐宝可梦取所选攻击属性最大实际倍率）→ 克制/中性/抵抗/免疫(打不动)
+   ② 类型级行 = setCoverProfile 同构（逐防守属性取 max）→ 组合 ≥2× 克制 / ×1 中性 / ×0.5 被抵抗 / ×0 免疫
+   分桶与属性均可点 → 就地展开（复用 _mx 链） */
+function renderAtkMulti(sel){
+  /* 类型级聚合（同 setCoverProfile 口径：matchup 归一 0/0.5/1/2 取 max；特殊属性已由调用方排除） */
+  var prof={},k2=[],n1=[],r5=[],i0=[];
+  ERDATA.types.forEach(function(d){
+    if(ATK_SPECIAL[d])return;
+    var mx=0;
+    sel.forEach(function(at){
+      var v=ERDATA.matchup[tIdx(d)][tIdx(at)];
+      var val=(v===0?0:((v===0.5||v===3)?0.5:(v===2?2:1)));
+      if(val>mx)mx=val;
+    });
+    if(mx===2)k2.push(d);else if(mx===0.5)r5.push(d);else if(mx===0)i0.push(d);else n1.push(d);
+  });
+  /* 物种级聚合（分桶概览） */
+  var R=mxRowsOfMulti(sel);
+  var cC=R.g.C,cN=R.g.N,cR=R.g.R,cI=R.g.I;
+  var key=sel.slice().sort().join('+');
+  function bucketChip(grp,label,n){
+    return '<span class="tagline" style="cursor:pointer'+(n?'':';opacity:.45')+'" onclick="mxInlineMulti(\''+escq(key)+'\',\''+grp+'\',this)" title="点它 → 就地展开该桶全部宝可梦（精灵图卡片，一次全列）">'+label+' '+n+'</span>';
+  }
+  function cell(d){return '<span style="cursor:pointer" onclick="mxInline(\''+d+'\',this,\'atk\')" title="进攻视角：'+d+' 属性招式打谁有效（全图鉴按实际承受倍率分组）">'+tlabel(d)+'</span>'}
+  var html='';
+  html+='<div class="kgroup"><div class="k2" style="margin-bottom:4px"><b>进攻属性组合：</b> '+sel.map(tlabel).join(' + ')+
+    ' <span class="mini" style="color:var(--sub)">（聚合口径 = 逐宝可梦取所选属性的<b>最大实际倍率</b>；盲点 = 该组合全部打 ≤0.5× 的宝可梦）</span></div>';
+  html+='<div class="mxbuckets"><span style="font-size:12px;font-weight:600">分桶概览：</span>'+
+    bucketChip('C','🔱 克制（>1×）',cC)+
+    bucketChip('N','×1 中性',cN)+
+    bucketChip('R','抵抗（<1×）',cR)+
+    bucketChip('I','✖ 免疫·该组合打不动',cI)+'</div>';
+  if(k2.length)html+='<div class="k2"><b>组合 ≥2× 克制的防守属性：</b> '+k2.map(cell).join(' ')+'</div>';
+  if(n1.length)html+='<div class="k1" style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px"><b>组合 ×1 中性的防守属性：</b> '+n1.map(cell).join(' ')+'</div>';
+  if(r5.length)html+='<div class="k05"><b>组合 ×0.5 被抵抗的防守属性：</b> '+r5.map(cell).join(' ')+'</div>';
+  if(i0.length)html+='<div class="k0"><b>组合 ×0 免疫（该组合打不动）的防守属性：</b> '+(i0.map(cell).join(' ')||'无')+'</div></div>';
+  html+='<div class="mini" style="color:var(--sub);margin-top:4px">点上方分桶 → <b>就地展开</b>该桶全部宝可梦（最佳倍率排序含义见卡片）；点防守属性 → 单属性进攻视角分组。再点同一格收起。</div>';
   $('atkResult').innerHTML=html;
 }
 function renderDef(){
@@ -14436,7 +14557,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.160';
+var ER_ENGINE_VER='v4.162';
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
