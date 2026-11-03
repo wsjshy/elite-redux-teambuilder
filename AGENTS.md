@@ -2952,13 +2952,14 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 增量核算：0B（纯文档轮，无新分片）
 
 ### 验收（三线）
-- 黑盒（375px 全页走查）：**组织者通道阻塞未完成——诚实缺口**（线上 v4.160 已稳定 2 天未变，风险低；下轮补跑）
-- 引擎（er-n689）：零 JS 改动、引擎确定性不受影响（历轮 24 连基线 787D0CB8；本轮未跑，下轮补）
+- 黑盒（375px 全页走查）：组织者通道阻塞未完成，MainAgent 续跑已重启 8901 静态服务（HTTP 200 实测）并唤醒组织者重新派发子代理（原 s_000pNfgQj47 失效 entity not found）——**终值以组织者续跑结果为准**（线上 v4.160 已稳定未变，风险低）
+- 引擎（er-n689）：**MainAgent 续跑闭环**——双构建 N1=N2 逐位一致 = `BCFAEDEDDA922C7191890AAC65C2B80D3DD94BEA`（1,448,248B），**且与 v4.160 轮产物指纹跨轮一致**（引擎计算零改动确认；baseline.txt 已写 C:\temp\er-n689\baseline.txt）。口径说明：历轮 24 连基线 787D0CB8 与当前产物链不符（组织者 v4.160 已登记待查），本轮以跨轮一致 BCFAEDED 为强证据；build1/build2 日志完整（[PREWARM] 1906/312 → v4.68p0 强化表注入重写 1448248 bytes → [SKIP] sync 脱钩 → 守门自检标题=历轮常态）
+- **事故根因修正**：续跑中配招助手_ER.html 一度指纹漂移（BCFAEDED → B023CD1B 中间态 1,444,686B），根因=先前构建进程被过早终止、强化表注入重写（+562B）未完成；**完整构建后产物恢复 BCFAEDED，非旧模板重建、非数据损坏**（data.js B41E2730 / index.html 7DD4F30B 全程未变）。另登记：node prewarm 耗时波动大（build1 ≈3-5min、build2 ≈7-10min），python CPU≈0 属等待 node 子进程正常态，非死锁
 - P0 线上：MainAgent 通道恢复后三方断言——主工作区 = gh-pages worktree = 线上 = v4.160（SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`，线上 LEN=1,522,238，curl ?nocache=恢复后 try1 命中）✓
 
 ### 上库凭证（强制验收）
 - **gh-pages**：不动（纯文档轮，维持 v4.160 deploy commit `25daeda`）
-- **master**：登记 commit（本块）已推（隔离 worktree er-reg161，git -c "http.https://github.com.proxy=" push HEAD:master）
+- **master**：登记 commit（本块）由 MainAgent 续跑推送（隔离 worktree er-reg161，git -c "http.https://github.com.proxy=" push HEAD:master；远端实测 9cdf51ac → 推送后更新）
 - **线上断言**：`?nocache=` 恢复后 try1 命中 SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`（1,522,238B），sha16=`7DD4F30B`（SHA-1 口径）
 - 主工作区：核心部署文件 mw==gh 全 True（v4.160 基础上未改码）+ AGENTS_match=True
 
