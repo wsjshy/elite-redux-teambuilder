@@ -3031,3 +3031,22 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - gh-pages：deploy commit 42b31cb（远端一致）+ 线上断言 sha16=9B369F50
 - master：登记 commit（C 步执行后填）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片（375px 真机卡顿证据再落地）② 属性克制多选细化 ③ 深色收尾审计（全量色对复核+无障碍口径）
+---
+
+## v4.165 属性克制页进攻多选细化（分桶计数角标 + 多选状态记忆）— 2026-11-04
+
+### 落地（commit bb4798cc，最终 sha16=C6147ED9CD009244090EF60A445A5908DDA6292C，1,534,091B，+1,120B）
+- 分桶计数角标：顶部四桶（克制/中性/抵抗/免疫）计数包 `<b class="bkcnt">n</b>`（深色 .bkcnt 用 --text/--hover-tint 双模式自适应）；数字与展开列表同源（均来自 mxRowsOfMulti 的 rows/g，构造一致）；375px 不溢出不换行
+- 多选状态记忆：er_atkSel（localStorage JSON 数组，与 er_theme 同模式）；chip toggle 后 erSaveAtkSel() 再 renderAtk()；IIFE 末尾 erRestoreAtkSel() 刷新自动恢复 chips+分桶；空数组回 v4.83 空态引导；Tab 切换不回归
+- 零回归：单选逐位一致/免疫 0×「该组合打不动」/特殊属性排除/同点再收/mx 链 cap 9999 全不变；浅色+深色双模式正常
+- 版本双改 L701/L14598；实测 8901 计数角标可读，console 0 无横滚
+
+### 验收
+- 引擎 er-n693：N1=N2 恒 BCFAEDEDDA922C7191890AAC65C2B80D3DD94BEA（1,448,248B，exit 0×2 viol 全 0 [BUILD OK]）
+- 黑盒 verify/summary-v4165.md
+- P0 线上：?nocache=1651 sha16=C6147ED9 MATCH
+
+### 上库凭证
+- gh-pages：deploy commit d57ea0a4466dc45a38ccf41720236aff72ab4c14（远端一致）
+- master：登记 commit（C 步执行后填）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片（375px 真机卡顿证据再落地）② 深色收尾审计（全量色对复核+无障碍口径）③ 队伍构建/分析联动深化（配队预设同步）
