@@ -2959,11 +2959,11 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 
 ### 上库凭证（强制验收）
 - **gh-pages**：不动（纯文档轮，维持 v4.160 deploy commit `25daeda`）
-- **master**：登记 commit（本块）由 MainAgent 续跑推送（隔离 worktree er-reg161，git -c "http.https://github.com.proxy=" push HEAD:master；远端实测 9cdf51ac → 推送后更新）
+- **master**：登记 commit（本块）已由 MainAgent 续跑推送闭环——远端实测 9cdf51ac → f186583（引擎终值/事故根因/线上断言）→ 68f3a54（黑盒走查终值），ls-remote 复核 = `68f3a54817f6e0e800cefae0a119dd49627e7399` ✓（隔离 worktree er-reg161 已清理；push 每次 -c 清代理，遇 GFW 抖动有界重试直通）
 - **线上断言**：`?nocache=` 恢复后 try1 命中 SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`（1,522,238B），sha16=`7DD4F30B`（SHA-1 口径）
 - 主工作区：核心部署文件 mw==gh 全 True（v4.160 基础上未改码）+ AGENTS_match=True
 
 ### 环境阻塞实录（不掩盖）+ 版本链 + 下轮预选
 - **v4.161 收尾遭遇本地工具后端持续超时约 3 小时**（组织者通道 PowerShell/Read/Write/Glob 全 tool timeout，历轮已登记同类环境问题；非应用缺陷非命令错误）——组织者如实汇报未完成项并交接；**组织者通道未随 MainAgent 通道同步恢复**，MainAgent 接手完成登记/推送/交付；组织者 idle-resumable standby（通道恢复可续接 v4.162 起轮次）
 - v4.161 index.html：保持 v4.160 = 1,522,238B，SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`（未改码）
-- 下轮预选：① **属性克制页进攻视角多选**（用户 2026-11-03 新指令：模拟多属性配招看打击覆盖面，方案设计中对齐中）② 全站深色模式实施（方案已定稿 darkmode-align-v4161.md，**待用户拍板后实施**）③ 黑盒 375px 走查 + 引擎 er-n689 补跑（本轮诚实缺口）
+- 下轮预选：① **属性克制页进攻视角多选**（用户 2026-11-03 新指令：模拟多属性配招看打击覆盖面，方案设计中对齐中）② 全站深色模式实施（方案已定稿 darkmode-align-v4161.md，**待用户拍板后实施**）③ 黑盒真实 375px 视口补测（本轮 bu CDP 设备模拟不可用、实际 ~1035px 未覆盖，建议 DevTools 设备栏补测；引擎 er-n689 已闭环）
