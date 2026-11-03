@@ -243,6 +243,7 @@ details.big[open]>summary::before{content:"▾ "}
 .mxrow:hover{background:var(--hover-tint)}
 .mxhd{padding:4px 8px; background:#f3f4f6; font-size:12px; font-weight:600; position:sticky; top:0}
 .tagline{display:inline-block; font-size:11px; border:1px solid var(--line); border-radius:10px; padding:1px 7px; color:var(--sub); margin:0 4px 4px 0}
+.bkcnt{display:inline-block; min-width:16px; padding:0 4px; margin-left:3px; font-size:10px; font-weight:700; text-align:center; color:var(--text); background:var(--hover-tint); border-radius:8px}
 .abicol{display:flex; gap:10px; flex-wrap:wrap}
 .abicol>div{flex:1; min-width:190px; border:1px solid var(--line); border-radius:8px; padding:8px}
 .ruleline{font-size:11px; color:var(--sub); line-height:1.8; margin-top:6px; border-top:1px dashed var(--line); padding-top:4px}
@@ -697,7 +698,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.164</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.165</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -3692,10 +3693,13 @@ function openMv(m){
 
 /* ============ 属性克制 ============ */
 (function(){
+  /* v4.165 多选状态记忆 er_atkSel（与 er_theme 同模式；清空/全取消 → 空数组，回空态引导） */
+  window.erSaveAtkSel=function(){try{var s=[];document.querySelectorAll('#atkChips button.on').forEach(function(b){s.push(b.textContent)});localStorage.setItem('er_atkSel',JSON.stringify(s))}catch(e){}};
+  window.erRestoreAtkSel=function(){try{var s=JSON.parse(localStorage.getItem('er_atkSel')||'[]');if(!s||!s.length)return;document.querySelectorAll('#atkChips button').forEach(function(b){if(s.indexOf(b.textContent)>=0)b.classList.add('on')});renderAtk()}catch(e){}};
   ERDATA.types.forEach(function(t){
     $('atkChips').appendChild(tchip(t,false,function(){
       /* v4.162：进攻视角改多选 toggle（复用防守 defChips 交互：点选高亮、可多选、可全取消） */
-      this.classList.toggle('on');renderAtk();
+      this.classList.toggle('on');erSaveAtkSel();renderAtk();
     }));
   });
   ERDATA.types.forEach(function(t){
@@ -3707,6 +3711,10 @@ function openMv(m){
   var _ar=$('atkResult'),_dr=$('defResult');
   if(_ar&&!_ar.innerHTML.trim())_ar.innerHTML='<div class="emptyhint">👆 <b>点上方任意属性</b> → 查看该属性招式打谁克制（2× / 0.5× / 0× 分组）</div>';
   if(_dr&&!_dr.innerHTML.trim())_dr.innerHTML='<div class="emptyhint">👆 <b>点上方属性</b>（可多选双属性）→ 查看你的宝可梦属性怕谁、抗谁、免疫谁</div>';
+  /* v4.165 fix：等 er-ready 事件再恢复（species/adv 分片异步 800ms 后才加载；
+     此前在 IIFE 内立即调用时 ATK_SPECIAL 未赋值、window.load 时 species 分片仍未到，
+     renderAtk 抛错被 try/catch 吞掉 → chips 恢复但结果区不渲染） */
+  document.addEventListener('er-ready',erRestoreAtkSel);
 })();
 /* v4.162 进攻多选分发：sel 现作用域直读 DOM chips（不引入新全局状态）；特殊属性显式排除（同 atkCover） */
 var ATK_SPECIAL={'星晶':1,'无':1,'神秘':1};
@@ -3763,7 +3771,8 @@ function renderAtkMulti(sel){
   var cC=R.g.C,cN=R.g.N,cR=R.g.R,cI=R.g.I;
   var key=sel.slice().sort().join('+');
   function bucketChip(grp,label,n){
-    return '<span class="tagline" style="cursor:pointer'+(n?'':';opacity:.45')+'" onclick="mxInlineMulti(\''+escq(key)+'\',\''+grp+'\',this)" title="点它 → 就地展开该桶全部宝可梦（精灵图卡片，一次全列）">'+label+' '+n+'</span>';
+    /* v4.165：计数角标 .bkcnt（数字与展开列表同源：均来自 mxRowsOfMulti 的 rows/g，构造上一致） */
+    return '<span class="tagline" style="cursor:pointer'+(n?'':';opacity:.45')+'" onclick="mxInlineMulti(\''+escq(key)+'\',\''+grp+'\',this)" title="点它 → 就地展开该桶全部宝可梦（精灵图卡片，一次全列；计数 '+n+' 与展开数一致）">'+label+' <b class="bkcnt">'+n+'</b></span>';
   }
   function cell(d){return '<span style="cursor:pointer" onclick="mxInline(\''+d+'\',this,\'atk\')" title="进攻视角：'+d+' 属性招式打谁有效（全图鉴按实际承受倍率分组）">'+tlabel(d)+'</span>'}
   var html='';
@@ -14589,7 +14598,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.164';
+var ER_ENGINE_VER='v4.165';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
