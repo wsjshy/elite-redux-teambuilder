@@ -15,6 +15,11 @@
   --ok-bg:#e8f5e9; --ok-border:#16a34a; --ok-fg:#14532d;
   --ax-bg:#f3e5f5; --ax-border:#ba68c8; --ax-fg:#6a1b9a;
   --muted-bg:#e0e0e0; --muted-border:#c8c8c8; --muted-fg:#555;
+  /* v4.164 Phase B P2 引导条/灰框/hover/分区/热力中性变量（浅色=原硬编码值逐位保留） */
+  --guide-bg:#e3f2fd; --guide-border:#64b5f6; --guide-edge:#90caf9; --guide-fg:#0d47a1;
+  --gray-bg:#f5f5f5; --hover-tint:#eef2ff;
+  --section-bg:#f0f9ff; --section-border:#7dd3fc;
+  --heat-neutral:#f0f0f0;
   /* v4.84 P2-6 红色语义分层（红=警示 / 蓝=信息 / 绿=正面，冲突时引入区分样式）：
      --bad(深红)     = 负面/错误状态（如 .mtag.sta 状态标签）
      --warnred(深红) = 警示/失败消息（一律带 ⚠ / ✗ 图标，如速度线塌陷、建议补、诊断失败）
@@ -76,7 +81,7 @@ main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); o
 .barstat .tr{flex:1; background:#eef0f4; border-radius:4px; height:10px; overflow:hidden}
 .barstat .fl{height:100%; border-radius:4px}
 .abi{display:inline-block; border:1px solid var(--line); padding:3px 10px; border-radius:14px; margin:2px 4px 2px 0; cursor:pointer; font-size:12px; background:#f8f9fb}
-.abi:hover{background:#eef2ff}
+.abi:hover{background:var(--hover-tint)}
 .abid{font-size:12px; color:var(--sub); background:#f8f9fb; border-radius:8px; padding:8px; margin:6px 0; white-space:pre-wrap}
 table{width:100%; border-collapse:collapse; font-size:13px}
 th,td{border-bottom:1px solid var(--line); padding:5px 6px; text-align:left; white-space:nowrap}
@@ -108,8 +113,8 @@ tr.mv.open + .mvdesc{display:table-row}
 /* v4.9 阶段 1：多方案标签条 / 核心思路横幅 / 环境威胁榜（移动端优先：可换行、触控 ≥44px） */
 .planbar{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:4px 0 6px}
 .planbar .planv{min-height:44px; border-radius:10px}
-.planbar .planv.on{background:#e3f2fd; border-color:#64b5f6; font-weight:700}
-.ideabar{background:#e3f2fd; border-color:#64b5f6}
+.planbar .planv.on{background:var(--guide-bg); border-color:var(--guide-border); font-weight:700}
+.ideabar{background:var(--guide-bg); border-color:var(--guide-border)}
 .axbar{background:var(--ax-bg); border-color:var(--ax-border)}
 .thrcard{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:6px 8px; font-size:12px}
 .thrrow{display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px}
@@ -118,7 +123,7 @@ tr.mv.open + .mvdesc{display:table-row}
 .badge{display:inline-block; border-radius:10px; padding:1px 8px; font-size:12px; margin-right:4px}
 .badge-weak{background:#fce4ec; color:#b71c1c}
 .badge-res{background:var(--ok-bg); color:#1b5e20}
-.badge-imm{background:#e3f2fd; color:#0d47a1}
+.badge-imm{background:var(--guide-bg); color:var(--guide-fg)}
 .badge-4x{background:#f9c74f; color:#7a4f01}
 .badge-opt{background:var(--card); border:1px dashed #d97706; color:#b45309}
 .badge-add{background:#e0f2fe; color:#0369a1}
@@ -132,7 +137,7 @@ tr.mv.open + .mvdesc{display:table-row}
 .badge-warnimm{background:#fce4ec; border:1px solid #dc2626; color:#b71c1c; font-size:11px}
 /* v4.10 机制覆盖层 UI：机制徽标 / 机制解读区块 / 可配合组合（就地展开，无弹窗） */
 .badge-mech{background:#e0f2fe; border:1px solid #0284c7; color:#075985; font-size:11px}
-.mechsec{border:1px solid #7dd3fc; background:#f0f9ff; border-radius:8px; padding:8px 10px}
+.mechsec{border:1px solid var(--section-border); background:var(--section-bg); border-radius:8px; padding:8px 10px}
 .mechsec h3{color:#075985}
 details.mechdet{border:1px dashed #7dd3fc; border-radius:8px; padding:2px 8px; margin:6px 0; background:var(--card)}
 details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#075985; min-height:44px; display:flex; align-items:center; gap:6px}
@@ -235,7 +240,7 @@ details.big[open]>summary::before{content:"▾ "}
 .bigsub{display:block; font-size:12px; color:var(--sub); font-weight:400; margin-top:3px; line-height:1.75}
 .mxlist{max-height:340px; overflow:auto; border:1px solid var(--line); border-radius:8px; margin-top:6px}
 .mxrow{padding:4px 8px; border-bottom:1px solid var(--line); cursor:pointer; font-size:12px; display:flex; gap:8px; align-items:center}
-.mxrow:hover{background:#eef2ff}
+.mxrow:hover{background:var(--hover-tint)}
 .mxhd{padding:4px 8px; background:#f3f4f6; font-size:12px; font-weight:600; position:sticky; top:0}
 .tagline{display:inline-block; font-size:11px; border:1px solid var(--line); border-radius:10px; padding:1px 7px; color:var(--sub); margin:0 4px 4px 0}
 .abicol{display:flex; gap:10px; flex-wrap:wrap}
@@ -270,7 +275,7 @@ details.big[open]>summary::before{content:"▾ "}
 .mxsechd{font-size:12px; font-weight:600; color:var(--sub); margin:4px 0}
 .mxgrid{display:flex; flex-wrap:wrap; gap:6px}
 .mxc{width:76px; border:1px solid var(--line); border-radius:8px; padding:4px 2px; text-align:center; cursor:pointer; background:var(--card)}
-.mxc:hover{background:#eef2ff; border-color:var(--accent)}
+.mxc:hover{background:var(--hover-tint); border-color:var(--accent)}
 .mxc.imm{background:var(--ok-bg)}
 .mxc img,.mcspr img{width:40px; height:40px; object-fit:contain; image-rendering:pixelated; display:block; margin:0 auto}
 .mcnm{font-size:11px; line-height:1.3; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -328,7 +333,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; align-items:center}
 .chip{display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:8px 14px; border:1px solid var(--line);
   border-radius:999px; background:var(--card); font-size:13px; cursor:pointer; font-family:inherit; color:inherit}
-.chip[aria-expanded="true"]{border-color:var(--accent); color:var(--accent); background:#eef2ff}
+.chip[aria-expanded="true"]{border-color:var(--accent); color:var(--accent); background:var(--hover-tint)}
 .chip-inn{border-color:#a5d6a7; background:var(--ok-bg); color:#2e7d32}
 .chip-inn[aria-expanded="true"]{border-color:#2e7d32; color:#2e7d32; background:#c8e6c9}
 .abi4rule{font-size:11px; color:#2e7d32; margin:2px 0 6px; padding:4px 8px; background:#f1f8f2; border-radius:6px; display:inline-block}
@@ -621,7 +626,7 @@ details.inline,.details.inline{cursor:pointer}
 .chipgrp .chipopt{display:inline-block; padding:4px 11px; border:1px solid var(--line); border-radius:999px;
   background:var(--card); font-size:12px; color:var(--text); cursor:pointer; min-height:30px; line-height:22px; font-family:inherit}
 .chipgrp .chipopt:hover{border-color:var(--accent)}
-.chipgrp .chipopt.on{border-color:var(--accent); background:#eef2ff; color:var(--accent); font-weight:600}
+.chipgrp .chipopt.on{border-color:var(--accent); background:var(--hover-tint); color:var(--accent); font-weight:600}
 /* v4.147：chips 统一按压反馈（toast chip 与全部 chips，纯 CSS 不改行为） */
 .chipgrp .chipopt:active,.chipopt:active{transform:translateY(1px);background:#e8edff;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 /* v4.149：引导条关闭钮 hover/active 反馈 */
@@ -680,6 +685,11 @@ html[data-theme="dark"]{
   --ok-bg:#1d3326; --ok-border:#4a8a5e; --ok-fg:#a9d4b6;
   --ax-bg:#2e2438; --ax-border:#9a6cb5; --ax-fg:#d6b8e6;
   --muted-bg:#2e333c; --muted-border:#444c58; --muted-fg:#aeb6c2;
+  /* v4.164 Phase B 深色值 */
+  --guide-bg:#16324f; --guide-border:#4a7fb5; --guide-edge:#3a6a9f; --guide-fg:#a8c8ec;
+  --gray-bg:#2e333c; --hover-tint:#262b34;
+  --section-bg:#182838; --section-border:#3a6a9f;
+  --heat-neutral:#2e333c;
 }
 html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 </style>
@@ -687,7 +697,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.163</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.164</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -717,11 +727,11 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
     <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)" onkeydown="dmgEnterPick(event,'','def')"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
     <div id="dmgDefList" style="margin-bottom:4px"></div>
     <div style="font-size:11px;margin-bottom:4px;color:var(--sub)">常用对手：
-      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('超级土王')">超级土王</span>
-      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('坚果哑铃')">坚果哑铃</span>
-      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('洛奇亚')">洛奇亚</span>
-      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('耿鬼')">耿鬼</span>
-      <span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('巨金怪')">巨金怪</span>
+      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('超级土王')">超级土王</span>
+      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('坚果哑铃')">坚果哑铃</span>
+      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('洛奇亚')">洛奇亚</span>
+      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('耿鬼')">耿鬼</span>
+      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('巨金怪')">巨金怪</span>
     </div>
     <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" style="width:120px" oninput="dmgMvQ(this.value)" onkeydown="dmgEnterPick(event,'','mv')"></div>
     <div id="dmgMvList" style="margin-bottom:4px"></div>
@@ -831,7 +841,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
     <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="v4.97：基于速度线/联防/体系缺口推荐补位">🧠 智能补位</button>
     <button class="btn-mini" onclick="window._sugPool=(window._sugPool==='pc'?'dex':'pc');toast('补位候选池：'+(window._sugPool==='pc'?'存档电脑区':'全图鉴'))" id="sugPoolBtn" style="font-size:11px">候选:存档区</button>
     <button class="btn-mini" onclick="toggleMultiPick()" id="multiPickBtn" style="font-size:11px" title="v4.129：勾选多只精灵后一键入队">☑ 多选入队</button>
-    <div id="multiPickBar" style="display:none;margin-top:6px;padding:6px;background:#e3f2fd;border-radius:8px;font-size:12px">已选 <b id="multiPickCount">0</b> 只 <button class="btn-mini" onclick="multiPickEnqueue()">确认入队</button> <button class="btn-mini" onclick="toggleMultiPick()">取消</button></div>
+    <div id="multiPickBar" style="display:none;margin-top:6px;padding:6px;background:var(--guide-bg);border-radius:8px;font-size:12px">已选 <b id="multiPickCount">0</b> 只 <button class="btn-mini" onclick="multiPickEnqueue()">确认入队</button> <button class="btn-mini" onclick="toggleMultiPick()">取消</button></div>
   </div>
   <div class="sec" style="margin:6px 0">
     <button class="btn-mini" onclick="toggleTmFilter()" id="tmFilterToggle" style="margin-bottom:4px">▾ 筛选区</button>
@@ -900,7 +910,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
-  <div id="erGuideBar" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:#0d47a1;animation:erPulse 2s ease-in-out infinite">
+  <div id="erGuideBar" style="display:none;background:var(--guide-bg);border:1px solid var(--guide-edge);border-radius:8px;padding:8px 12px;margin:4px 0;font-size:12px;color:#0d47a1;animation:erPulse 2s ease-in-out infinite">
     <style>@keyframes erPulse{0%,100%{box-shadow:0 0 0 0 rgba(144,202,249,.4)}50%{box-shadow:0 0 0 6px rgba(144,202,249,0)}}@media(prefers-reduced-motion:reduce){#erGuideBar{animation:none}}</style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
@@ -2837,7 +2847,7 @@ function pairDefCardHtml(R){
         if(va>=2&&vb<1)comp.push(tp);
         else if(va>=2&&vb>=2)shared.push(tp);
       });
-      var bg=comp.length>=3?'#c8e6c9':(shared.length>=2?'#ffcdd2':'#f0f0f0');
+      var bg=comp.length>=3?'#c8e6c9':(shared.length>=2?'#ffcdd2':'var(--heat-neutral)');
       cells+='<div title="'+esc(sps[i].zh+' ↔ '+sps[j].zh)+'" style="background:'+bg+';border-radius:4px;padding:4px 5px;font-size:10px">'+
         esc(sps[i].zh)+'↔'+esc(sps[j].zh)+'<br><span style="color:#2e7d32">互补'+comp.length+'</span>'+
         (comp.length?'('+esc(comp.slice(0,4).join('/'))+')':'')+' <span style="color:#c33">共弱'+shared.length+'</span>'+
@@ -3884,7 +3894,7 @@ function renderTm(reset){
       if(window._multiPickOn){
         if(_multiPickSet[s.id]){delete _multiPickSet[s.id];c.style.background=''}
         else{if(Object.keys(_multiPickSet).length>=6){toast('最多选 6 只');return}
-          _multiPickSet[s.id]=1;c.style.background='#e3f2fd'}
+          _multiPickSet[s.id]=1;c.style.background='var(--guide-bg)'}
         var mc=document.getElementById('multiPickCount');if(mc)mc.textContent=Object.keys(_multiPickSet).length;
         return;
       }
@@ -5990,7 +6000,7 @@ function teamDefHeatHtml(R){
         var v=defCellTrio(s,tp).inn;
         if(v===0)immune++;else if(v<1)resist++;else if(v>1)weak++;else neutral++;
       });
-      var bg=weak>=3?'#ffcdd2':(immune>=2?'#bbdefb':(resist>=3?'#c8e6c9':'#f0f0f0'));
+      var bg=weak>=3?'#ffcdd2':(immune>=2?'#bbdefb':(resist>=3?'#c8e6c9':'var(--heat-neutral)'));
       var txt=weak>=3?('W'+weak):(immune?('I'+immune):'')+(resist?('R'+resist):'');
       if(!txt)txt='·';
       cells+='<div title="'+esc(tp)+'：免疫'+immune+' 抗'+resist+' 弱'+weak+'/'+sps.length+'" style="background:'+bg+';border-radius:3px;padding:3px 4px;font-size:9px;text-align:center">'+tlabel(tp).replace(/<[^>]+>/g,'')+'<br><b>'+txt+'</b></div>';
@@ -6955,7 +6965,7 @@ function renderTplBody(i){
   }
   /* ER 调整说明（B8：数值文案统一改读 WCONF，删除写死的 20%/30%/8回合/无限天气旧文案） */
   html+='<div class="sec"><h3>ER 调整说明</h3>'+
-    '<div class="tip" style="background:#e3f2fd;border-color:var(--accent)"><b>机制数值（本页推荐所用）：</b><br>'+wxNums()+'<br>'+terrainNums()+'</div>';
+    '<div class="tip" style="background:var(--guide-bg);border-color:var(--accent)"><b>机制数值（本页推荐所用）：</b><br>'+wxNums()+'<br>'+terrainNums()+'</div>';
   t.tips.forEach(function(tp){html+='<div class="tip">'+wxTip(tp)+'</div>'});
   html+='</div>';
   html+='</div></details>';
@@ -12023,7 +12033,7 @@ function scanCombos(members,opts){
 /* 组合亮点渲染（纯展示：组合名+参与者+说明+来源；ER 特有标注橙色） */
 function comboHtml(combos){
   if(!combos||!combos.length)return '';
-  var h='<div class="sec" style="margin:8px 0;background:#f0f9ff;border-color:#7dd3fc"><h3>✨ 组合亮点（'+combos.length+'）</h3>';
+  var h='<div class="sec" style="margin:8px 0;background:var(--section-bg);border-color:var(--section-border)"><h3>✨ 组合亮点（'+combos.length+'）</h3>';
   combos.forEach(function(c){
     h+='<div style="font-size:12px;margin:4px 0;padding:5px 8px;background:var(--card);border-radius:6px;border-left:3px solid '+
       (c.cat==='ER特有'?'#f59e0b':'#38bdf8')+'">'+
@@ -13663,13 +13673,13 @@ function renderNeedPlan(s,viOrSt){
   h+=planThreatWarnHtml(plan);   /* v4.9 阶段 1：方案级「被 X 体系克制 n 只 → 建议 Y」（提示性、零硬门） */
   /* v4.43 P0-C（设计书 A §3.4b 尾）：空间体系但队内/备选池无空间手 → 一行披露（不改队伍构成） */
   if(plan.spaceNoSetter===1){
-    h+='<div class="tip" style="font-size:11px;background:#f5f5f5;border-color:var(--line);color:var(--sub)"><b>空间手提示</b>：本方案的「空间」打法需要有成员会「戏法空间」——当前队伍与备选池均未筛出会该招的成员，建议手动补一名空间手（低优先提示，不阻断推荐）。</div>';
+    h+='<div class="tip" style="font-size:11px;background:var(--gray-bg);border-color:var(--line);color:var(--sub)"><b>空间手提示</b>：本方案的「空间」打法需要有成员会「戏法空间」——当前队伍与备选池均未筛出会该招的成员，建议手动补一名空间手（低优先提示，不阻断推荐）。</div>';
   }
   /* B⑥-4（v4.x 要求，v4.3 延续）：体系核心自身不是设置手时，天气/场地由队友提供 */
   if(plan.sysKey&&!isSetterAny(plan.core)){
     var wxn=plan.needs.filter(function(n){return n.kind==='wxsrc'})[0];
     var wt=wxn&&plan.pools[wxn.id]&&plan.pools[wxn.id].list[0];
-    h+='<div class="tip" style="font-size:11px;background:#f5f5f5;border-color:var(--line);color:var(--sub)"><b>天气/场地由队友提供</b>：推荐 '+
+    h+='<div class="tip" style="font-size:11px;background:var(--gray-bg);border-color:var(--line);color:var(--sub)"><b>天气/场地由队友提供</b>：推荐 '+
       esc(wt?wt.s.zh:'—')+(wt?('（'+(wt.gate||'')+'）'):'')+' 作为 '+esc(plan.sysKey)+' 体系手；'+
       '核心自身非设置手，配招功能槽不放天气招（把手位留给队友，核心专注输出/联防）。</div>';
   }
@@ -13762,7 +13772,7 @@ function renderNeedPlan(s,viOrSt){
     var L=m.links||[];
     h+='<div class="slotbody'+(m.fill?' fillrow':'')+'"><div class="slothead">'+sprImg(m.s.id,'spinl')+'<b>'+esc(m.s.zh)+'</b> <span style="color:var(--sub);font-size:11px">#'+m.s.id+'</span>'+
       (m.core?' <span class="badge">核心</span>':'')+
-      (m.fill?' <span class="badge" style="background:#e3f2fd">补位（非需求驱动）</span>':(m.need?' <span class="badge">'+esc(m.need.label)+'</span>':''))+
+      (m.fill?' <span class="badge" style="background:var(--guide-bg)">补位（非需求驱动）</span>':(m.need?' <span class="badge">'+esc(m.need.label)+'</span>':''))+
       (m.score!=null?(' <span class="badge" style="font-size:13px;font-weight:700;color:var(--accent)">'+esc(String(Math.round(m.score*10)/10))+' 分</span>'):'')+
       (m.multi>1?(' <span class="badge">多功能 ×'+m.multi+'</span>'):'')+
       /* v4.49 M-2：多样性锚点落选记录（可翻转档内改选异族候选；纯展示，不参与评分/门控） */
@@ -14579,7 +14589,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.163';
+var ER_ENGINE_VER='v4.164';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
@@ -15202,7 +15212,7 @@ function renderCore(s){
     if(bd.roleTag==='天气'&&!bd.mv.selfSetter){
       var setter=null,pSys=coreSys(s).filter(isWxSys)[0];
       if(pSys){for(var q=0;q<tmsE.length;q++){if(isSetter(tmsE[q].s,pSys)){setter={x:pSys,s:tmsE[q].s,sc:tmsE[q].score};break}}}
-      eng+='<div class="tip" style="background:#e3f2fd;border-color:var(--accent)">🌤 天气/场地由队友提供：'+(setter?('推荐 '+esc(setter.s.zh)+'（'+esc(setter.x)+' 体系手，评分 +'+setter.sc+'）'):('暂无 '+esc(coreSys(s).filter(isWxSys).join('/'))+' 体系手可推荐'))+'。核心自身非设置手，故配招功能槽不放天气招（B⑥-4）。</div>';
+      eng+='<div class="tip" style="background:var(--guide-bg);border-color:var(--accent)">🌤 天气/场地由队友提供：'+(setter?('推荐 '+esc(setter.s.zh)+'（'+esc(setter.x)+' 体系手，评分 +'+setter.sc+'）'):('暂无 '+esc(coreSys(s).filter(isWxSys).join('/'))+' 体系手可推荐'))+'。核心自身非设置手，故配招功能槽不放天气招（B⑥-4）。</div>';
     }
     /* 本流派队友完整表（含评分/理由，溯源保留） */
     if(tmsE.length){
@@ -16139,7 +16149,7 @@ function renderRecentChips(){
   if(!rb.length){box.innerHTML='';return}
   box.innerHTML='最近：'+rb.slice(0,6).map(function(id){
     var s=speciesById(id);if(!s)return '';
-    return '<span style="cursor:pointer;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin:0 2px" onclick="openSpById(\''+s.id+'\')">'+esc(s.zh)+'</span>';
+    return '<span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="openSpById(\''+s.id+'\')">'+esc(s.zh)+'</span>';
   }).join('');
 }
 /* v4.154 Phase3：折叠状态跨 Tab 记忆（localStorage，按 summary 文本 key） */
