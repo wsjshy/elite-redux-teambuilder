@@ -3011,3 +3011,23 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - gh-pages：deploy commit cab9b3d（远端一致）+ 线上断言 sha16=59F3D838
 - master：登记 commit（C 步执行后填）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 深色 Phase B（P2 引导/灰框+图表，拍板后）② 方案区分片（375px 真机卡顿证据再落地）③ 属性克制多选细化
+---
+
+## v4.164 深色模式 Phase B（P2 引导条/灰框 + 图表色）— 2026-11-04
+
+### 落地（commit 808a5c2，最终 sha16=9B369F50BFD9E8F832F1B1489500623CAE70FAC0，1,532,971B，+870B）
+- P2：引导条/分区/hover/灰框深色适配，新增 --guide-bg/--guide-border/--guide-edge/--guide-fg #e3f2fd/#64b5f6/#90caf9/#0d47a1、--gray-bg #f5f5f5、--hover-tint #eef2ff、--section-bg/--section-border #f0f9ff/#7dd3fc、--heat-neutral #f0f0f0（浅色=原硬编码逐位保留）
+- 图表色：联防热力中性 #f0f0f0→var(--heat-neutral)（JS 字符串数据未改，仅色源走变量）；联防聚合热力卡 L5993/联防卡 L2840 两处；分享卡 canvas 为导出图像保持浅色（分享用途）
+- 回滚口径不变：删 style#themeOverride 单点回浅色；er_theme toggle 刷新保持
+- 对比度实测（WCAG node 实算）：guide-fg/bg 7.57:1、灰框 sub 5.29:1、sub on guide 5.46:1 全 PASS（≥4.5:1）；section/heat/hover 为表面层次纹理（非文本，v4.163 结构性分隔口径登记）
+- 版本双改 L700/L14592；浅色默认与 v4.163 逐位一致零回归；深色下引导条/分区/灰框/热力中性可读
+
+### 验收
+- 引擎 er-n692：N1=N2 恒 BCFAEDEDDA922C7191890AAC65C2B80D3DD94BEA（1,448,248B，exit 0×2，viol 全 0 [BUILD OK]）
+- 黑盒 verify/summary-v4164.md
+- P0 线上：?nocache=1641 sha16=9B369F50 MATCH
+
+### 上库凭证
+- gh-pages：deploy commit 42b31cb（远端一致）+ 线上断言 sha16=9B369F50
+- master：登记 commit（C 步执行后填）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片（375px 真机卡顿证据再落地）② 属性克制多选细化 ③ 深色收尾审计（全量色对复核+无障碍口径）
