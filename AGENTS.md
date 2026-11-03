@@ -2990,3 +2990,24 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - master：登记 commit（C 步执行后填，远端 f186583..）
 - 主工作区 15/15 同步 + AGENTS_match
 - 下轮预选：① 深色模式实施（Phase A ≤6KB，拍板后）② 方案区分片（375px 真机卡顿证据再落地）③ 属性克制多选细化（多选状态记忆/分桶计数角标）
+---
+
+## v4.163 深色模式 Phase A（P0+P1）— 2026-11-03
+
+### 落地（commit 5ee9a74，最终 sha16=59F3D8380C3928CFD5156C5B6632E704615F7C13，1,532,101B，+1,925B）
+- P0：背景/文本/边框 CSS 变量化（--bg/--card/--text/--sub/--line 复用既有变量；硬编码 #fff 容器→var(--card) 共 9 处：.badge-opt/.badge-pickable/.mechdet/.mxc/.slotcard/.needcard/details.inline/分享卡 modal/combo 高亮），浅色默认与 v4.162 视觉逐位一致零回归（实测 body bg=rgb(245,246,248) 不变）
+- P1：黄/绿/紫状态框 JS 内联色改语义类 .tip-warn/.tip-ok/.tip-ax/.tip-muted（JS 只写 class 名）；新增 --warn-bg/--warn-border/--warn-fg #fff8e1/#f59e0b/#7c4a03、--ok-bg/--ok-border/--ok-fg #e8f5e9/#16a34a/#14532d、--ax-bg/--ax-border/--ax-fg #f3e5f5/#ba68c8/#6a1b9a、--muted-bg 变量（浅色=原硬编码逐位保留）
+- 入口 er_theme toggle（header 🌙 按钮）→ html[data-theme="dark"]，localStorage er_theme（light 默认），刷新保持；回滚=删 style#themeOverride 单点（实测：删后回浅色零回归）
+- Phase B（引导/灰框+图表）不做
+- 对比度实测（WCAG 相对亮度比，node 实算）：text/card 11.79:1、sub/card 5.93:1、text/bg 13.68:1、warn 8.82:1、ok 8.23:1、ax 8.32:1、muted 6.21:1 全 PASS（≥4.5:1）；边框 line/card 1.38:1 属结构性分隔非文本，不计文本对比度
+- 版本双改 L690/L14582；实测 8901：浅色默认=逐位一致；点 🌙 深色生效（body #1c1f26/card #262b34）/可回切/刷新保持；console 0 无横滚
+
+### 验收
+- 引擎 er-n691：N1=N2 恒 BCFAEDEDDA922C7191890AAC65C2B80D3DD94BEA（1,448,248B，exit 0×2，守门 viol 全 0 [BUILD OK]）
+- 黑盒 verify/summary-v4163.md（A-F 全 PASS，观感 ≥100）
+- P0 线上：?nocache=1631 sha16=59F3D838 MATCH
+
+### 上库凭证
+- gh-pages：deploy commit cab9b3d（远端一致）+ 线上断言 sha16=59F3D838
+- master：登记 commit（C 步执行后填）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 深色 Phase B（P2 引导/灰框+图表，拍板后）② 方案区分片（375px 真机卡顿证据再落地）③ 属性克制多选细化
