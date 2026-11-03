@@ -2940,3 +2940,29 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - v4.160 index.html：1,522,238B，SHA-1=7DD4F30B2C7A2605CEE163F32A269742A1494D1C（a8bc032 +47B）
 - 本地 commit：a8bc032 → 登记 commit（本块）；er-gh474 deploy commit 25daeda
 - 下轮预选：① 全站深色模式实施（评估报告已出——增量临界 8-15KB+回归面大，**需用户拍板后实施**）② 真档多档槽位加载态延展（v4.159 裁决后剩余）③ 其他新方向——由下轮任务书定夺
+
+---
+
+## v4.161 深色模式对齐方案轮（纯文档轮：深色方案定稿 + 两项裁决；未改码，线上保持 v4.160）— 2026-11-03
+
+### 落地/裁决（未改码，index 保持 v4.160 = 7DD4F30B…）
+- **① 深色模式对齐实施方案** ✅（只出文本不落地，`C:\temp\er-v561-darkmode\darkmode-align-v4161.md`）：CSS 变量抽取清单（P0 页面/卡片背景 #fff/#fafafa~30 处→--bg/--bg-card、主文本 #1a1a1a/#333~25 处→--fg/--fg-sub、边框 #e0e0e0/#ccc~20 处→--line；P1 黄框对位预警 #fff8e1/#f59e0b→--warn-bg/--warn-border、绿框体系总览→--ok-bg、紫框 axbar→--ax-bg；P2 引导条→--guide-bg、灰框空间手/天气→--muted-bg）+ JS 内联色分类策略（静态色→CSS 变量；状态色 tip 框新增语义类 .tip-warn/.tip-ok/.tip-ax/.tip-muted；图表色 Phase B 单独探针）+ 分阶段预算（Phase A=P0+P1 ≤6KB；Phase B=P2+图表+剩余 ≤6KB）+ 375px 回归清单（对比度 ≥4.5:1/图表描边可见/危险红禁高亮保持/状态框降饱和）+ 回滚方案（`<style id="themeOverride">` 单点删除即回退 + er_theme light/dark toggle `<html data-theme="dark">`）
+- **② 真档多档槽位加载态** ✅ 裁决关闭：renderSavSlots L4726 已支持多档 FIFO + v4.160 切换动效在位，无剩余缺口（未重复建设）
+- **③ 方案区 97KB 分片渲染** ✅ 裁决保持关闭：renderNeedPlan L13475 一次性 innerHTML 约 97KB；分批方案=slice(0,3) 首渲染+哨兵 IntersectionObserver 追加；**375px 无卡顿证据（LCP 155ms）**，本轮不落地
+- 增量核算：0B（纯文档轮，无新分片）
+
+### 验收（三线）
+- 黑盒（375px 全页走查）：**组织者通道阻塞未完成——诚实缺口**（线上 v4.160 已稳定 2 天未变，风险低；下轮补跑）
+- 引擎（er-n689）：零 JS 改动、引擎确定性不受影响（历轮 24 连基线 787D0CB8；本轮未跑，下轮补）
+- P0 线上：MainAgent 通道恢复后三方断言——主工作区 = gh-pages worktree = 线上 = v4.160（SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`，线上 LEN=1,522,238，curl ?nocache=恢复后 try1 命中）✓
+
+### 上库凭证（强制验收）
+- **gh-pages**：不动（纯文档轮，维持 v4.160 deploy commit `25daeda`）
+- **master**：登记 commit（本块）已推（隔离 worktree er-reg161，git -c "http.https://github.com.proxy=" push HEAD:master）
+- **线上断言**：`?nocache=` 恢复后 try1 命中 SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`（1,522,238B），sha16=`7DD4F30B`（SHA-1 口径）
+- 主工作区：核心部署文件 mw==gh 全 True（v4.160 基础上未改码）+ AGENTS_match=True
+
+### 环境阻塞实录（不掩盖）+ 版本链 + 下轮预选
+- **v4.161 收尾遭遇本地工具后端持续超时约 3 小时**（组织者通道 PowerShell/Read/Write/Glob 全 tool timeout，历轮已登记同类环境问题；非应用缺陷非命令错误）——组织者如实汇报未完成项并交接；**组织者通道未随 MainAgent 通道同步恢复**，MainAgent 接手完成登记/推送/交付；组织者 idle-resumable standby（通道恢复可续接 v4.162 起轮次）
+- v4.161 index.html：保持 v4.160 = 1,522,238B，SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`（未改码）
+- 下轮预选：① **属性克制页进攻视角多选**（用户 2026-11-03 新指令：模拟多属性配招看打击覆盖面，方案设计中对齐中）② 全站深色模式实施（方案已定稿 darkmode-align-v4161.md，**待用户拍板后实施**）③ 黑盒 375px 走查 + 引擎 er-n689 补跑（本轮诚实缺口）
