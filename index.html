@@ -3711,7 +3711,10 @@ function openMv(m){
   var _ar=$('atkResult'),_dr=$('defResult');
   if(_ar&&!_ar.innerHTML.trim())_ar.innerHTML='<div class="emptyhint">👆 <b>点上方任意属性</b> → 查看该属性招式打谁克制（2× / 0.5× / 0× 分组）</div>';
   if(_dr&&!_dr.innerHTML.trim())_dr.innerHTML='<div class="emptyhint">👆 <b>点上方属性</b>（可多选双属性）→ 查看你的宝可梦属性怕谁、抗谁、免疫谁</div>';
-  erRestoreAtkSel();   /* v4.165：刷新/重进自动恢复已选 chips 与分桶结果；无记录则保持空态引导 */
+  /* v4.165 fix：等 er-ready 事件再恢复（species/adv 分片异步 800ms 后才加载；
+     此前在 IIFE 内立即调用时 ATK_SPECIAL 未赋值、window.load 时 species 分片仍未到，
+     renderAtk 抛错被 try/catch 吞掉 → chips 恢复但结果区不渲染） */
+  document.addEventListener('er-ready',erRestoreAtkSel);
 })();
 /* v4.162 进攻多选分发：sel 现作用域直读 DOM chips（不引入新全局状态）；特殊属性显式排除（同 atkCover） */
 var ATK_SPECIAL={'星晶':1,'无':1,'神秘':1};
