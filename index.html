@@ -10,6 +10,11 @@
 :root{
   --bg:#f5f6f8; --card:#fff; --line:#e0e3e8; --text:#23272f; --sub:#6b7280; --accent:#2563eb;
   --ok:#16a34a; --warn:#d97706; --bad:#dc2626; --warnred:#c62828;
+  /* v4.163 Phase A 语义状态变量（浅色=原硬编码值逐位保留） */
+  --warn-bg:#fff8e1; --warn-border:#f59e0b; --warn-fg:#7c4a03;
+  --ok-bg:#e8f5e9; --ok-border:#16a34a; --ok-fg:#14532d;
+  --ax-bg:#f3e5f5; --ax-border:#ba68c8; --ax-fg:#6a1b9a;
+  --muted-bg:#e0e0e0; --muted-border:#c8c8c8; --muted-fg:#555;
   /* v4.84 P2-6 红色语义分层（红=警示 / 蓝=信息 / 绿=正面，冲突时引入区分样式）：
      --bad(深红)     = 负面/错误状态（如 .mtag.sta 状态标签）
      --warnred(深红) = 警示/失败消息（一律带 ⚠ / ✗ 图标，如速度线塌陷、建议补、诊断失败）
@@ -82,7 +87,7 @@ tr.mv:hover{background:#f0f4ff}
 tr.mv.open + .mvdesc{display:table-row}
 .ktable{display:flex; gap:16px; flex-wrap:wrap}
 .kgroup{flex:1; min-width:200px}
-.kgroup .k2{background:#e8f5e9; border-radius:8px; padding:8px; margin-bottom:8px}
+.kgroup .k2{background:var(--ok-bg); border-radius:8px; padding:8px; margin-bottom:8px}
 .kgroup .k05{background:#fff3e0; border-radius:8px; padding:8px; margin-bottom:8px}
 .kgroup .k0{background:#fce4ec; border-radius:8px; padding:8px}
 /* 队伍构建 */
@@ -105,23 +110,23 @@ tr.mv.open + .mvdesc{display:table-row}
 .planbar .planv{min-height:44px; border-radius:10px}
 .planbar .planv.on{background:#e3f2fd; border-color:#64b5f6; font-weight:700}
 .ideabar{background:#e3f2fd; border-color:#64b5f6}
-.axbar{background:#f3e5f5; border-color:#ba68c8}
+.axbar{background:var(--ax-bg); border-color:var(--ax-border)}
 .thrcard{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:6px 8px; font-size:12px}
 .thrrow{display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px}
 .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
 .mini{font-size:12px}
 .badge{display:inline-block; border-radius:10px; padding:1px 8px; font-size:12px; margin-right:4px}
 .badge-weak{background:#fce4ec; color:#b71c1c}
-.badge-res{background:#e8f5e9; color:#1b5e20}
+.badge-res{background:var(--ok-bg); color:#1b5e20}
 .badge-imm{background:#e3f2fd; color:#0d47a1}
 .badge-4x{background:#f9c74f; color:#7a4f01}
-.badge-opt{background:#fff; border:1px dashed #d97706; color:#b45309}
+.badge-opt{background:var(--card); border:1px dashed #d97706; color:#b45309}
 .badge-add{background:#e0f2fe; color:#0369a1}
 .badge-nt{background:#f3f4f6; color:#6b7280}
 .badge-neu{background:#eef0f4; color:var(--sub)}
 .badge-pick{background:#c8e6c9; border:1px solid #2e7d32; color:#1b5e20; cursor:pointer}
-.badge-pickable{background:#fff; border:1px solid #2e7d32; color:#1b5e20; cursor:pointer; opacity:.75}
-.badge-super{background:#e8f5e9; color:#1b5e20}
+.badge-pickable{background:var(--card); border:1px solid #2e7d32; color:#1b5e20; cursor:pointer; opacity:.75}
+.badge-super{background:var(--ok-bg); color:#1b5e20}
 /* 规格 v1.0：待实测参数徽标 / 机制口径折叠块 / 选招依据 */
 .badge-pend{background:#fff7e6; border:1px dashed #d97706; color:#b45309; font-size:11px}
 .badge-warnimm{background:#fce4ec; border:1px solid #dc2626; color:#b71c1c; font-size:11px}
@@ -129,9 +134,9 @@ tr.mv.open + .mvdesc{display:table-row}
 .badge-mech{background:#e0f2fe; border:1px solid #0284c7; color:#075985; font-size:11px}
 .mechsec{border:1px solid #7dd3fc; background:#f0f9ff; border-radius:8px; padding:8px 10px}
 .mechsec h3{color:#075985}
-details.mechdet{border:1px dashed #7dd3fc; border-radius:8px; padding:2px 8px; margin:6px 0; background:#fff}
+details.mechdet{border:1px dashed #7dd3fc; border-radius:8px; padding:2px 8px; margin:6px 0; background:var(--card)}
 details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#075985; min-height:44px; display:flex; align-items:center; gap:6px}
-.okmini{background:#e8f5e9; color:#1b5e20; border-radius:8px; padding:1px 6px; font-size:11px}
+.okmini{background:var(--ok-bg); color:#1b5e20; border-radius:8px; padding:1px 6px; font-size:11px}
 .warnmini{background:#fff7e6; border:1px dashed #d97706; color:#b45309; border-radius:8px; padding:1px 6px; font-size:11px}
 .rulebox{border:1px solid var(--line); background:var(--card); border-radius:8px; padding:8px 10px; margin:8px 0; font-size:12px}
 .rulebox summary{cursor:pointer; font-weight:600; color:var(--accent)}
@@ -152,6 +157,11 @@ details.mechdet>summary{cursor:pointer; font-size:12px; font-weight:600; color:#
 .tplcard .theme{color:var(--sub); font-size:12px; margin:4px 0}
 .tplbody{padding:0 14px 14px}
 .tip{background:#fff8e6; border-left:3px solid var(--warn); padding:8px 10px; margin:6px 0; font-size:12px; color:#7a5b1a; border-radius:4px}
+/* v4.163 Phase A 状态框语义类（JS 只写 class 名；颜色走变量，深浅色双值） */
+.tip-warn{background:var(--warn-bg); border-color:var(--warn-border); color:var(--warn-fg)}
+.tip-ok{background:var(--ok-bg); border-color:var(--ok-border); color:var(--ok-fg)}
+.tip-ax{background:var(--ax-bg); border-color:var(--ax-border); color:var(--ax-fg)}
+.tip-muted{background:var(--muted-bg); border-color:var(--muted-border); color:var(--muted-fg)}
 textarea.savebox{width:100%; min-height:90px; font-family:Consolas,monospace; font-size:11px; border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical}
 /* ===== v4.6 收尾：页内轻提示（替代原生 alert，不阻塞 JS 线程）===== */
 #toastBox{position:fixed; left:50%; top:86px; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:6px; align-items:center; pointer-events:none}
@@ -259,9 +269,9 @@ details.big[open]>summary::before{content:"▾ "}
 .mxsec{margin:6px 0}
 .mxsechd{font-size:12px; font-weight:600; color:var(--sub); margin:4px 0}
 .mxgrid{display:flex; flex-wrap:wrap; gap:6px}
-.mxc{width:76px; border:1px solid var(--line); border-radius:8px; padding:4px 2px; text-align:center; cursor:pointer; background:#fff}
+.mxc{width:76px; border:1px solid var(--line); border-radius:8px; padding:4px 2px; text-align:center; cursor:pointer; background:var(--card)}
 .mxc:hover{background:#eef2ff; border-color:var(--accent)}
-.mxc.imm{background:#e8f5e9}
+.mxc.imm{background:var(--ok-bg)}
 .mxc img,.mcspr img{width:40px; height:40px; object-fit:contain; image-rendering:pixelated; display:block; margin:0 auto}
 .mcnm{font-size:11px; line-height:1.3; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .mcx{font-size:11px; font-weight:700; color:var(--accent)}
@@ -277,11 +287,11 @@ details.big[open]>summary::before{content:"▾ "}
 .tplthumb img{width:30px; height:30px; object-fit:contain; image-rendering:pixelated; margin-right:3px; vertical-align:middle}
 /* v4.2 完整队伍方案卡（槽位骨架；就地展开 <details>，不用抽屉/浮层） */
 .tgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:8px}
-.slotcard{border:1px solid var(--line); border-radius:10px; background:#fff; padding:6px 8px}
+.slotcard{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:6px 8px}
 .slotcard>summary{cursor:pointer; font-size:13px; font-weight:600}
 .slotcard>summary .badge{font-weight:700}
 .slotbody{margin-top:4px; padding-top:4px; border-top:1px dashed var(--line)}
-.needcard{border:1px solid var(--line); border-radius:10px; background:#fff; padding:6px 8px; margin-bottom:5px}
+.needcard{border:1px solid var(--line); border-radius:10px; background:var(--card); padding:6px 8px; margin-bottom:5px}
 .needcard>summary{cursor:pointer; font-size:13px; font-weight:600}
 .needrow{display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-top:4px}
 .needrow .spinl{width:34px; height:34px}
@@ -301,7 +311,7 @@ details.big[open]>summary::before{content:"▾ "}
 .modal .mhd{display:flex; align-items:center; gap:8px; margin-bottom:6px}
 .modal .mhd b{flex:1; font-size:14px}
 .modal .close{border:none; background:var(--line); width:26px; height:26px; border-radius:50%; cursor:pointer}
-details.inline{border:1px dashed var(--line); border-radius:8px; padding:2px 8px; margin:6px 0; background:#fff}
+details.inline{border:1px dashed var(--line); border-radius:8px; padding:2px 8px; margin:6px 0; background:var(--card)}
 details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 /* v4.6.3 两段式互斥视图（挑选 ⇄ 详情）：纯视图切换，引擎零改动 */
 .corebackbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:4px 0 8px}
@@ -319,7 +329,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .chip{display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:8px 14px; border:1px solid var(--line);
   border-radius:999px; background:var(--card); font-size:13px; cursor:pointer; font-family:inherit; color:inherit}
 .chip[aria-expanded="true"]{border-color:var(--accent); color:var(--accent); background:#eef2ff}
-.chip-inn{border-color:#a5d6a7; background:#e8f5e9; color:#2e7d32}
+.chip-inn{border-color:#a5d6a7; background:var(--ok-bg); color:#2e7d32}
 .chip-inn[aria-expanded="true"]{border-color:#2e7d32; color:#2e7d32; background:#c8e6c9}
 .abi4rule{font-size:11px; color:#2e7d32; margin:2px 0 6px; padding:4px 8px; background:#f1f8f2; border-radius:6px; display:inline-block}
 .statbars{margin:6px 0}
@@ -337,7 +347,7 @@ details.inline>summary{cursor:pointer; font-size:12px; color:var(--sub)}
 .evochip{display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border:1px solid var(--line); border-radius:8px;
   background:var(--card); cursor:pointer; font-size:12px; min-height:38px}
 .evochip:hover{border-color:var(--accent)}
-.evochip.chipmega{border-color:#b39ddb; background:#f3e5f5}
+.evochip.chipmega{border-color:#b39ddb; background:var(--ax-bg)}
 .evochip.chipcur{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:#e8f0fe}
 .evochip .evonm{line-height:1.2}
 .evochip .evovia{font-style:normal; font-size:10px; color:var(--sub); display:block}
@@ -662,11 +672,23 @@ details.inline,.details.inline{cursor:pointer}
 .mini-def{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
 .mini-def span{padding:2px 6px;border-radius:6px;font-size:10px;background:#fce4ec;color:#c62828}
 </style>
+<style id="themeOverride">
+/* v4.163 Phase A 深色模式：仅覆盖变量，删除本 style 单点即回退浅色（零回归） */
+html[data-theme="dark"]{
+  --bg:#1c1f26; --card:#262b34; --line:#3a414d; --text:#e8eaed; --sub:#a0a8b4;
+  --warn-bg:#3a2f16; --warn-border:#b58a2a; --warn-fg:#f0d089;
+  --ok-bg:#1d3326; --ok-border:#4a8a5e; --ok-fg:#a9d4b6;
+  --ax-bg:#2e2438; --ax-border:#9a6cb5; --ax-fg:#d6b8e6;
+  --muted-bg:#2e333c; --muted-border:#444c58; --muted-fg:#aeb6c2;
+}
+html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
+</style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.162</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.163</span>
+  <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3622,7 +3644,7 @@ function openMv(m){
   var html='<h2>'+esc(m[1])+' <span style="font-size:13px;color:var(--sub)">'+esc(m[2])+' #'+m[0]+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(m[3])+' '+splitLabel(m[4])+
     ' 威力 <b>'+(m[5]||'-')+'</b> 命中 <b>'+(m[6]||'-')+'</b> PP <b>'+m[7]+'</b> 先制 <b>'+(m[8]||'0')+'</b></div>';
-  if(ERDATA.movesNotes&&ERDATA.movesNotes[m[0]])html+='<div class="tip" style="background:#fff8e1;border-color:#f59e0b;color:#7c4a03">💡 '+esc(ERDATA.movesNotes[m[0]])+'</div>';
+  if(ERDATA.movesNotes&&ERDATA.movesNotes[m[0]])html+='<div class="tip tip-warn" style="font-size:12px">💡 '+esc(ERDATA.movesNotes[m[0]])+'</div>';
   /* v4.x A②：招式介绍中文优先（ERDATA.mvDescZh → 英文 desc m[9] → ER lDesc m[10]），机制词条标蓝可点 */
   html+='<div class="abid">'+glossify(mvDescOf(m))+'</div>';
   if(!V4FIELDS.mvDescZh)html+='<div class="mini" style="color:var(--sub)">招式中文说明暂缺，已回退游戏英文原文。</div>';
@@ -3998,7 +4020,7 @@ function teamQA(){
   var hasSpeedCtrl=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){var mid=anMvId(m);return SPEED_CTRL.indexOf(mid)>-1})});
   if(!hasSpeedCtrl)warns.push({icon:'⚠',label:'全队无控速手段',detail:'建议带顺风/电磁波/戏法空间/岩石封锁等速度控制招式'});
   if(!warns.length)return '';
-  var h='<div style="margin:6px 0;padding:6px;border:1px solid #ffcc80;border-radius:8px;background:#fff8e1">';
+  var h='<div style="margin:6px 0;padding:6px;border:1px solid #ffcc80;border-radius:8px;background:var(--warn-bg)">';
   h+='<div style="font-size:11px;font-weight:600;margin-bottom:4px">队检告警</div><div>';
   warns.forEach(function(w,i){
     h+='<span class="qa-chip" data-idx="'+i+'" onclick="qaToggle(this)">'+w.icon+' '+w.label+'</span>';
@@ -4169,7 +4191,7 @@ function randomTeamGenImpl(sets){
 function shareCardOpen(){
   if(!team.length){toast('队伍为空，先添加宝可梦');return}
   var h='<div id="shareCardOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">'+
-    '<div style="background:#fff;border-radius:10px;padding:12px;max-width:min(94vw,640px);width:100%;box-sizing:border-box">'+
+    '<div style="background:var(--card);border-radius:10px;padding:12px;max-width:min(94vw,640px);width:100%;box-sizing:border-box">'+
     '<div style="font-weight:600;margin-bottom:8px;font-size:14px">📤 队伍分享卡</div>'+
     '<canvas id="shareCv" style="width:100%;height:auto;max-width:100%;border-radius:8px;background:#f7f9fc;display:block"></canvas>'+
     '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'+
@@ -4538,7 +4560,7 @@ function renderAnalyze(){
   if(warns.length)html+='<div class="tip">⚠️ 共同弱点（≥2 只弱，含天性修正口径）：'+warns.map(tlabel).join(' ')+' —— 容易被同一属性招式团灭，建议补免疫/抗性位。</div>';
   var noWeak=[];
   ERDATA.types.forEach(function(at){if(dp.agg[at].w===0)noWeak.push(at)});
-  if(noWeak.length)html+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok);color:#14532d">🛡️ 全队无弱点属性：'+noWeak.map(tlabel).join(' ')+' —— 这几种攻击对全队都打不出克制（可放心吃）。</div>';
+  if(noWeak.length)html+='<div class="tip tip-ok">🛡️ 全队无弱点属性：'+noWeak.map(tlabel).join(' ')+' —— 这几种攻击对全队都打不出克制（可放心吃）。</div>';
   /* 进攻覆盖 */
   var ac=atkCovers();
   html+='<div class="sec"><h3>进攻覆盖：6 只招式池能打出的属性覆盖（S=克制，○=中性，△=仅抵抗，×=无法命中）</h3><div class="scroll">';
@@ -4566,7 +4588,7 @@ function renderAnalyze(){
   ERDATA.types.forEach(function(d){
     if(ac.agg[d].has&&IMMUNE_RISK[d])immWarn.push(tlabel(d)+'（'+IMMUNE_RISK[d].slice(0,3).join('/')+'等）');
   });
-  if(immWarn.length)html+='<div class="tip" style="background:#fff8e1;border-color:#f59e0b;color:#7c4a03">⚡ 特性免疫警示（配招时留意）：'+immWarn.map(function(x){return x}).join('　')+' —— 若对手带对应免疫特性，这些属性招会完全无效；多备打击面或特性穿透（如破格/兆级电压）。</div>';
+  if(immWarn.length)html+='<div class="tip tip-warn">⚡ 特性免疫警示（配招时留意）：'+immWarn.map(function(x){return x}).join('　')+' —— 若对手带对应免疫特性，这些属性招会完全无效；多备打击面或特性穿透（如破格/兆级电压）。</div>';
   /* 队伍体检（存档当前配置级：定位/配招缺口/天气配套/补位建议） */
   html+='<div class="sec"><h3>🩺 队伍体检（当前 '+team.length+' 只 · 定位/配招/天气/补位）</h3>';
   var mvIdByName={};
@@ -4603,9 +4625,9 @@ function renderAnalyze(){
   var setter=team.filter(function(s){return s.abis.concat(s.inns).some(function(n){return abiSetOf(n)})});
   var booster=team.filter(function(s){var sw=['悠游自如','叶绿素','拨沙','拨雪','雨盘','太阳之力','沙之力','冰冻之躯'];return s.abis.concat(s.inns).some(function(n){return sw.some(function(w){return abiSame(n,w)})})});
   if(setter.length||booster.length){
-    if(setter.length&&!booster.length)html+='<div class="tip" style="background:#fff8e1">🌤 天气提示：有设置手（'+setter.map(function(s){return esc(s.zh)}).join('/')+'）但队内无天气受益者，天气收益浪费——建议补'+setter.map(function(s){var sy=coreSys(s)[0];return sy==='雨'?'悠游自如/雨盘打手':(sy==='晴'?'叶绿素/太阳之力打手':(sy==='沙'?'拨沙/沙之力打手':(sy==='雪'?'拨雪/冰冻之躯打手':'该天气受益者')))})[0]+'。</div>';
-    else if(!setter.length&&booster.length)html+='<div class="tip" style="background:#fff8e1">🌤 天气提示：队内有天气受益者（'+booster.map(function(s){return esc(s.zh)}).join('/')+'）但缺设置手——收益特性空转，建议补对应天气设置手。</div>';
-    else html+='<div class="tip" style="background:#e8f5e9">🌤 天气体系配套 ✓（设置手 '+setter.map(function(s){return esc(s.zh)}).join('/')+' + 受益者 '+booster.map(function(s){return esc(s.zh)}).join('/')+'）</div>';
+    if(setter.length&&!booster.length)html+='<div class="tip tip-warn">🌤 天气提示：有设置手（'+setter.map(function(s){return esc(s.zh)}).join('/')+'）但队内无天气受益者，天气收益浪费——建议补'+setter.map(function(s){var sy=coreSys(s)[0];return sy==='雨'?'悠游自如/雨盘打手':(sy==='晴'?'叶绿素/太阳之力打手':(sy==='沙'?'拨沙/沙之力打手':(sy==='雪'?'拨雪/冰冻之躯打手':'该天气受益者')))})[0]+'。</div>';
+    else if(!setter.length&&booster.length)html+='<div class="tip tip-warn">🌤 天气提示：队内有天气受益者（'+booster.map(function(s){return esc(s.zh)}).join('/')+'）但缺设置手——收益特性空转，建议补对应天气设置手。</div>';
+    else html+='<div class="tip tip-ok">🌤 天气体系配套 ✓（设置手 '+setter.map(function(s){return esc(s.zh)}).join('/')+' + 受益者 '+booster.map(function(s){return esc(s.zh)}).join('/')+'）</div>';
   }
   /* 补位建议：共同弱点免疫者 + 覆盖缺口本系者 */
   var needTypes=[];
@@ -6836,7 +6858,7 @@ function tplAudit(t){
   (t.match&&t.match.types||[]).forEach(function(ty){if(foundTypes.indexOf(ty)<0)missing.push('属性 '+ty)});
   var html='';
   if(missing.length)html+='<div class="tip" style="background:#fce4ec;border-color:var(--bad)">⚠️ 缺核心组件：'+esc(missing.join('，'))+' —— 补位后队伍才成型（可点上方推荐宝可梦入队）</div>';
-  else html+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok);color:#14532d">✅ 核心组件已覆盖，当前队伍符合该模板骨架</div>';
+  else html+='<div class="tip tip-ok">✅ 核心组件已覆盖，当前队伍符合该模板骨架</div>';
   return html;
 }
 /* 模板卡展开主体（动态渲染，含推荐/体检/天敌/流程） */
@@ -12003,7 +12025,7 @@ function comboHtml(combos){
   if(!combos||!combos.length)return '';
   var h='<div class="sec" style="margin:8px 0;background:#f0f9ff;border-color:#7dd3fc"><h3>✨ 组合亮点（'+combos.length+'）</h3>';
   combos.forEach(function(c){
-    h+='<div style="font-size:12px;margin:4px 0;padding:5px 8px;background:#fff;border-radius:6px;border-left:3px solid '+
+    h+='<div style="font-size:12px;margin:4px 0;padding:5px 8px;background:var(--card);border-radius:6px;border-left:3px solid '+
       (c.cat==='ER特有'?'#f59e0b':'#38bdf8')+'">'+
       '<b>'+esc(c.name)+'</b> <span class="mtag '+(c.cat==='ER特有'?'sys':'def')+'">'+esc(c.cat)+'</span> · 参与：'+
       esc(c.parts.join(' + '))+'<br><span style="color:var(--sub);font-size:11px">'+esc(c.note)+
@@ -13355,7 +13377,7 @@ function planTargetHtml(coreId,plan){
     h+=' <button class="btn-mini" onclick="planFillMore('+coreId+')">➕ 继续补位</button>'+
       ' <span style="color:var(--sub)">补位 = 在需求驱动结果之外按广义正向分追加（候选池从不枯竭，逐只标注「补位（非需求驱动）」）</span>';
   }else{
-    h+=' <span class="badge" style="background:#e8f5e9">已达目标规模 '+tgt+' 只</span>'+
+    h+=' <span class="badge" style="background:var(--ok-bg)">已达目标规模 '+tgt+' 只</span>'+
       (n>=TEAM_CFG.TARGET_MAX?' <span style="color:var(--sub)">（已是上限 6 只；如需更少可把目标调小）</span>':'');
   }
   h+='</div>';
@@ -13599,7 +13621,7 @@ function planThreatWarnHtml(plan){
     if(!setter)items.push({t:plan.sysKey+' 体系',n:team.length,adv:'补一名 '+plan.sysKey+' 设置手（否则体系增伤拿不到）'});
   }
   if(!items.length)return '<div class="tip" style="font-size:11px">对位预警：本方案未命中可判定的对位缺口（钉子 / 强化 / 免疫墙 / 窗口 四类）。</div>';
-  var h='<div class="tip" style="font-size:11px;background:#fff8e1;border-color:var(--warn)"><b>对位预警</b>（提示性 · 不硬门）：';
+  var h='<div class="tip tip-warn" style="font-size:11px"><b>对位预警</b>（提示性 · 不硬门）：';
   h+=items.map(function(x){return '被 <b>'+esc(x.t)+'</b> 克制 <b>'+x.n+'</b> 只 → 建议：'+esc(x.adv)}).join('<br>');
   return h+'</div>';
 }
@@ -13634,7 +13656,7 @@ function renderNeedPlan(s,viOrSt){
   }
   try{window._erCurrentPlan=plan}catch(eP){}
   h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示） <button class="btn-mini" style="margin-left:8px;background:var(--accent);color:#fff" onclick="(function(){try{var plan=window._erCurrentPlan;if(!plan)throw new Error(\'plan 未就绪\');window._erLastPlanTeam=plan.team.map(function(m){return m.s});window._erLastPlanAxis=(plan.axis&&plan.axis.name)?plan.axis.name:\'通用需求驱动\';plan.team.forEach(function(m){addToTeam(m.s,null,true)});switchTab(\'analyze\');var _as=document.getElementById(\'anPlanSummary\');if(_as)_as.textContent=\'最近推荐流派：\'+window._erLastPlanAxis;}catch(e){toast(\'带入失败:\'+e.message)}})()">📊 带此队去分析</button></h3>';
-  h+='<div class="tip" style="background:#e8f5e9;border-color:var(--ok)"><b>体系总览</b><br>'+
+  h+='<div class="tip tip-ok"><b>体系总览</b><br>'+
     '· <b>怎么启动：</b>'+esc(plan.overview.start)+'<br>'+
     '· <b>怎么受益：</b>'+esc(plan.overview.benefit)+'<br>'+
     '· <b>怎么轮转：</b>'+esc(plan.overview.rotate)+'</div>';
@@ -13669,7 +13691,7 @@ function renderNeedPlan(s,viOrSt){
     if(st==='satisfied'){badge='<span class="badge">已满足</span>'+(n.byCore?'<span class="badge">核心自身</span>':'')+(n.byMulti?'<span class="badge">多功能</span>':'')}
     else if(st==='unmatched'){badge='<span class="badge" style="background:#ffe0b2">无候选</span>'}
     else if(st==='blocked'){badge='<span class="badge" style="background:#ffe0b2">同族已在队</span>'}
-    else{badge='<span class="badge" style="background:#e0e0e0">未满足（低优先，未凑人）</span>'}
+    else{badge='<span class="badge" style="background:var(--muted-bg)">未满足（低优先，未凑人）</span>'}
     h+='<details class="needcard"'+(k<2?' open':'')+'><summary><b>'+('\u2460\u2461\u2462\u2463\u2464\u2465\u2466\u2467'[k]||(k+1)+'.')+' '+esc(n.label)+'</b> '+
       '<span class="badge">优先级 '+n.priority+'</span>'+badge+
       (n.satisfiedBy.length?(' · <b>'+esc(n.satisfiedBy.join('+'))+'</b>'):'')+'</summary>';
@@ -13931,8 +13953,8 @@ function alignBadgeV444(sp,b){
   var sameItem=!!(it&&m.item&&it===m.item),ov=0,i;
   for(i=0;i<ids.length;i++)if(m.ids.indexOf(ids[i])>-1)ov++;
   if(sameItem||ov>=3)
-    return ' <span class="badge" style="background:#e8f5e9" title="本槽与同种物流派区主推「'+escq(m.name)+'」对齐（道具'+(sameItem?'一致 ✓':'不同 ✗')+'，招组重合 '+ov+'/4）">流派：'+esc(m.name)+' ✓</span>';
-  return ' <span class="badge" style="background:#fff8e1" title="本槽按队伍需求定位出装，与流派区主推「'+escq(m.name)+'」不同（道具'+(sameItem?'一致 ✓':'不同 ✗')+'、招组重合 '+ov+'/4）——这是分工差异，非错误">⚠ 配装偏离</span>';
+    return ' <span class="badge" style="background:var(--ok-bg)" title="本槽与同种物流派区主推「'+escq(m.name)+'」对齐（道具'+(sameItem?'一致 ✓':'不同 ✗')+'，招组重合 '+ov+'/4）">流派：'+esc(m.name)+' ✓</span>';
+  return ' <span class="badge" style="background:var(--warn-bg)" title="本槽按队伍需求定位出装，与流派区主推「'+escq(m.name)+'」不同（道具'+(sameItem?'一致 ✓':'不同 ✗')+'、招组重合 '+ov+'/4）——这是分工差异，非错误">⚠ 配装偏离</span>';
 }
 /* ==============================================================================
    v4.11 详情页三层信息架构 · 展示层（L1 基础信息 / L2 流派玩法 / L3 引擎细节）
@@ -14557,7 +14579,11 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.162';
+var ER_ENGINE_VER='v4.163';
+/* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
+function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
+function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
+erApplyTheme((function(){try{return localStorage.getItem('er_theme')||'light'}catch(e){return 'light'}})());
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
 /* priRole → 装配 roleTag（单精灵层同一词汇表；非输出位一律落耐久/受语义） */
 function mateAssembleTag(priRole){
