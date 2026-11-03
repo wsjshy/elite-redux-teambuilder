@@ -2967,3 +2967,26 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **v4.161 收尾遭遇本地工具后端持续超时约 3 小时**（组织者通道 PowerShell/Read/Write/Glob 全 tool timeout，历轮已登记同类环境问题；非应用缺陷非命令错误）——组织者如实汇报未完成项并交接；**组织者通道未随 MainAgent 通道同步恢复**，MainAgent 接手完成登记/推送/交付；组织者 idle-resumable standby（通道恢复可续接 v4.162 起轮次）
 - v4.161 index.html：保持 v4.160 = 1,522,238B，SHA-1=`7DD4F30B2C7A2605CEE163F32A269742A1494D1C`（未改码）
 - 下轮预选：① **属性克制页进攻视角多选**（用户 2026-11-03 新指令：模拟多属性配招看打击覆盖面，方案设计中对齐中）② 全站深色模式实施（方案已定稿 darkmode-align-v4161.md，**待用户拍板后实施**）③ 黑盒真实 375px 视口补测（本轮 bu CDP 设备模拟不可用、实际 ~1035px 未覆盖，建议 DevTools 设备栏补测；引擎 er-n689 已闭环）
+---
+
+## v4.162 属性克制页「进攻视角多选」（用户拍板设计；atkChips 多选/聚合口径/两级结果区；引擎计算零改动）— 2026-11-03
+
+### 落地（commit a22e7a2 +7,938B 最终 A417AD04，1,530,176B）
+- atkChips 改多选 toggle（L3664-3667，复用 defChips 模式：点选高亮/多选/全取消）；renderAtk 分发器 L3681-3691（DOM 直读 sel/特殊属性排除/空态回 v4.83 引导）
+- renderAtkSingle L3693-3711（v4.160 旧体逐字改名保留→单选零回归硬要求，实测选「火」输出与 v4.160 一致）
+- renderAtkMulti L3716-3751（①顶部一行分桶概览=物种级 max 聚合（克制/中性/抵抗/免疫）；②类型级=setCoverProfile L7177 同构逐防守属性取 max；0× 标注「该组合打不动」；特殊属性星晶/无/神秘排除同 atkCover L7171）
+- 就地展开链：mxRowsOfMulti L1781-1809（逐宝可梦取所选属性最大实际倍率，口径逐字复用 mxRowsOf）/ mxPanelAtkMulti L1947-1966（cap 9999 一次全列）/ mxInlineMulti L1983-1996（key='火+水' 同构/同点再收）/ mxRe 分支 L1997-2001（atkmulti 接入，mxToggleNeutral/mxMore 行为保持）
+- 状态：无新全局（atkSel 现作用域）；Tab 切换 er_scroll 保持；版本双改 L669/L14560
+- 实测（8901）：多选「火+水」分桶=克制 780/中性 822/抵抗 301/免疫 2（合计 1905）；免疫展开=波尔凯尼恩/青绵鸟R；克制桶 780 卡；全取消回空态；console 0 无横滚
+- **「plan is not defined」复核：未复现**（v4.160 站点实测 大嘴雀#22→带此队去分析 正常带入，console 空；代码层 L13515 处理器已在 try/catch 内声明 window._erCurrentPlan，ReferenceError 路径已封——登记为 v4.157 旧快照结论）
+
+### 验收
+- 引擎（er-n690）：N1=N2 双胞胎恒 BCFAEDEDDA922C7191890AAC65C2B80D3DD94BEA（1,448,248B，exit 0×2，守门 viol 全 0 [BUILD OK]）——v4.161 终值基线延续
+- 黑盒（verify/summary-v4162.md）：A-F 全 PASS（多选用例/无横滚/console 0/观感 ≥100）
+- P0 线上：断言 sha16=A417AD04（?nocache=1621）；MainAgent live 复核按既有兜底口径
+
+### 上库凭证
+- gh-pages：deploy commit 71ea939（远端一致）+ 线上断言 sha16=A417AD04（MATCH True，1,530,176B）
+- master：登记 commit（C 步执行后填，远端 f186583..）
+- 主工作区 15/15 同步 + AGENTS_match
+- 下轮预选：① 深色模式实施（Phase A ≤6KB，拍板后）② 方案区分片（375px 真机卡顿证据再落地）③ 属性克制多选细化（多选状态记忆/分桶计数角标）
