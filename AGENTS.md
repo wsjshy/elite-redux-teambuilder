@@ -3055,3 +3055,21 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 修复：恢复挂 document `er-ready` 事件（species/adv 分片全部加载完成时派发），chips 选中后 renderAtk() 以就绪数据直渲结果区。
 - 复验（8901）：选火+水→刷新→chips 选中且分桶直显（克制 780/中性 822/抵抗 301/免疫 2，与展开数一致）PASS；清 er_atkSel→刷新→v4.83 空态 PASS；console 0；深色角标 rgb(232,234,237) on rgb(38,43,52) 可读。
 - 修复后新 sha16=983D8058EAC2A940B84132B8CF17EC43A9FE2692（1,534,314B，+223B vs 首版）；dev fix commit 1760b76；deploy fix commit f131ce2c727c38d5347d32a3a1a30bec1a253c70；er-n693 复验 N1=N2 恒 BCFAEDED
+---
+
+## v4.166 深色模式收尾审计（全量色对复核+无障碍口径）— 2026-11-04
+
+### 审计结论（纯审计轮，无码改动）
+- 色对复核：文本色对 12/12 全 PASS（≥4.5:1，最低 sub/gray-bg 5.29:1）；非文本 UI 5/9 PASS，4 项结构/装饰性弱对比登记豁免
+- 豁免清单：--line 卡片/表格边框（1.60/1.38，浅色基线同口径结构分隔）、guide-edge（2.33 装饰边）、section-border（2.67 盒 bg 已区分）
+- 分级问题：P0=0 / P1=0 / P2=3（muted-border/section-border/guide-edge 装饰盒边，bg 已区分，TODO 下轮统一提亮）/ P3=2（accent/card 链接 2.75 带下划线；chips/按钮 focus-visible 环缺失，浅色同口径）
+- 无障碍口径：select:focus 有 accent 环；chips .on 由变量驱动 hover 正常；语义类 .tip-* 全变量化；🌙/分桶 title 语义可读；黑盒深色 console 0 / 横滚 0 / 角标可读
+- 代码改动：**无**，983D8058 维持（v4.165 修复闭环版）
+### 验收
+- 引擎 er-n694：N1=N2 恒 BCFAEDED（0 改动基线，exit 0×2 viol 0）
+- 黑盒 verify：深色 console 0、无横滚、主题切换正常
+- P0 线上：?nocache=1661 sha16=983D8058 MATCH（纯审计维持）
+### 上库凭证
+- gh-pages：维持 f131ce2c（无 deploy）；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 队伍构建/分析联动深化 ③ 配队预设同步
+- 审计文档：C:\temp\er-v561-darkmode\darkmode-audit-v4166.md
