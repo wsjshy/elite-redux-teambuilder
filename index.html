@@ -14,11 +14,11 @@
   --warn-bg:#fff8e1; --warn-border:#f59e0b; --warn-fg:#7c4a03;
   --ok-bg:#e8f5e9; --ok-border:#16a34a; --ok-fg:#14532d;
   --ax-bg:#f3e5f5; --ax-border:#ba68c8; --ax-fg:#6a1b9a;
-  --muted-bg:#e0e0e0; --muted-border:#c8c8c8; --muted-fg:#555;
+  --muted-bg:#e0e0e0; --muted-border:#a8adb8; --muted-fg:#555;
   /* v4.164 Phase B P2 引导条/灰框/hover/分区/热力中性变量（浅色=原硬编码值逐位保留） */
-  --guide-bg:#e3f2fd; --guide-border:#64b5f6; --guide-edge:#90caf9; --guide-fg:#0d47a1;
+  --guide-bg:#e3f2fd; --guide-border:#64b5f6; --guide-edge:#64b5f6; --guide-fg:#0d47a1;
   --gray-bg:#f5f5f5; --hover-tint:#eef2ff;
-  --section-bg:#f0f9ff; --section-border:#7dd3fc;
+  --section-bg:#f0f9ff; --section-border:#38bdf8;
   --heat-neutral:#f0f0f0;
   /* v4.84 P2-6 红色语义分层（红=警示 / 蓝=信息 / 绿=正面，冲突时引入区分样式）：
      --bad(深红)     = 负面/错误状态（如 .mtag.sta 状态标签）
@@ -613,6 +613,8 @@ select{appearance:none; -webkit-appearance:none; border:1px solid var(--line); b
   font-family:inherit; font-size:13px; color:var(--text); cursor:pointer; min-height:34px}
 select:hover{border-color:var(--accent)}
 select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 2px rgba(79,70,229,.15)}
+/* v4.167 P3：键盘焦点环（变量驱动，深浅色双模式；--accent 在 bg 上 ≥3:1） */
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 /* V-⑦：可点元素统一 pointer（机制解读 box / 卡片 / 词条 / chip） */
 .hlbox,.eng,.engbd,.acc,.accbd,.card,.mate,.slotcard,.needcard,.chip,.bktab,.evochip,.poolrow,.gl,.cand,.own{cursor:pointer}
 details.inline,.details.inline{cursor:pointer}
@@ -685,11 +687,11 @@ html[data-theme="dark"]{
   --warn-bg:#3a2f16; --warn-border:#b58a2a; --warn-fg:#f0d089;
   --ok-bg:#1d3326; --ok-border:#4a8a5e; --ok-fg:#a9d4b6;
   --ax-bg:#2e2438; --ax-border:#9a6cb5; --ax-fg:#d6b8e6;
-  --muted-bg:#2e333c; --muted-border:#444c58; --muted-fg:#aeb6c2;
+  --muted-bg:#2e333c; --muted-border:#78808f; --muted-fg:#aeb6c2;
   /* v4.164 Phase B 深色值 */
-  --guide-bg:#16324f; --guide-border:#4a7fb5; --guide-edge:#3a6a9f; --guide-fg:#a8c8ec;
+  --guide-bg:#16324f; --guide-border:#4a7fb5; --guide-edge:#5a8fc4; --guide-fg:#a8c8ec;
   --gray-bg:#2e333c; --hover-tint:#262b34;
-  --section-bg:#182838; --section-border:#3a6a9f;
+  --section-bg:#182838; --section-border:#5a8fc4;
   --heat-neutral:#2e333c;
 }
 html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
@@ -698,7 +700,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.165</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.167</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -14598,7 +14600,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.165';
+var ER_ENGINE_VER='v4.167';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
