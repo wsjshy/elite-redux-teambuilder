@@ -3073,3 +3073,21 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - gh-pages：维持 f131ce2c（无 deploy）；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 队伍构建/分析联动深化 ③ 配队预设同步
 - 审计文档：C:\temp\er-v561-darkmode\darkmode-audit-v4166.md
+---
+
+## v4.167 装饰盒边统一提亮（v4.166 审计 P2/P3 落地）— 2026-11-04
+
+### 落地（dev e599beb / deploy 61404f9，最终 sha16=7BBB78C3851F90967B1DF25F61A3F7B1FA0F1C0F，1,534,486 B，+172 B）
+- P2×3 深色提亮（非文本 ≥3:1）：--muted-border #444c58→#78808f（1.46→3.19）｜--section-border #3a6a9f→#5a8fc4（2.67→4.40）｜--guide-edge #3a6a9f→#5a8fc4（2.33→3.84）
+- 浅色同口径同步提亮（仅目标项变化）：--muted-border #c8c8c8→#a8adb8｜--section-border #7dd3fc→#38bdf8｜--guide-edge #90caf9→#64b5f6
+- P3 accent/card 链接：**保持 #2563eb 不变**（下划线已为主要非颜色提示；全局提亮会改变按钮品牌蓝观感，登记理由不做）
+- P3 focus-visible：新增 `:focus-visible{outline:2px solid var(--accent); outline-offset:2px}`（L616 紧邻 select:focus；深色 accent/bg 3.19、浅色 4.78 双模式可见）
+- 零回归：浅色仅上述 3 目标色变化；深色 Phase A/B 行为（🌙/刷新/er_atkSel/分桶角标）全不回归；引擎零改动
+- 版本双改 L701 tag v4.167 + L14599 ER_ENGINE_VER；audit TODO 对应项已关闭（darkmode-audit-v4166.md 终值表）
+### 验收
+- 引擎 er-n695：N1=N2 恒 BCFAEDEDDA922C7191890AAC65C2B80D3DD94BEA（1,448,248 B，exit 0×2 viol 全 0）
+- 黑盒 verify/summary-v4167.md（深色 console 0 / 横滚 0 / focus-visible 规则存在 / 装饰边可辨性提升）
+- P0 线上：?nocache=1671 sha16=7BBB78C3 MATCH
+### 上库凭证
+- gh-pages deploy commit 61404f98aa7eb746d8f5171f478048229e1c5774（远端同）；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 队伍构建/分析联动深化（配队预设同步）③ 性能长尾（LCP/交互耗时复查）
