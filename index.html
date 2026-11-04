@@ -700,7 +700,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.167</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.169</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -719,6 +719,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <section id="tab-analyze" class="tab">
   <div class="tip" id="anRuleTip">💡 队伍分析：点下方槽位从图鉴级选择器挑 6 只（与「队伍构建」共享同一队伍）；结果只展示引擎推荐，点任意精灵看推荐详情</div>
   <div id="anPlanSummary" style="font-size:12px;color:var(--sub);margin:4px 0"></div>
+  <div id="anCoreSummary" style="font-size:12px;color:var(--accent);margin:2px 0;font-weight:600"></div>
   <div class="anslots" id="anSlots"></div>
   <div id="anCfgBar" style="margin:6px 0"></div>
   <div id="anSnapBar"></div>
@@ -2113,7 +2114,7 @@ function switchTab(name){
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
   try{var _m=document.querySelector('main');if(_m){var _rs=0;try{_rs=parseInt(localStorage.getItem('er_scroll_'+name))||0}catch(e){}_m.scrollTop=_rs;}else window.scrollTo(0,0);}catch(e){}
   /* v4.157 Q2：队伍分析页顶部流派摘要条 */
-  try{if(name==='analyze'){var _as=document.getElementById('anPlanSummary');if(_as){_as.textContent=(window._erLastPlanAxis?('最近推荐流派：'+window._erLastPlanAxis):'');}}}catch(e){}
+  try{if(name==='analyze'){var _as=document.getElementById('anPlanSummary');var _la=erLastPlanAxis();if(_as)_as.textContent=_la?('最近推荐流派：'+_la+'（刷新保留）'):'';erRenderCoreSummary();}}catch(e){}
   /* v4.99 Tab 渲染链守卫：数据未就绪→显示 loading；就绪后自动渲染该 Tab */
   if(!window.__erReady){
     /* v4.129 fix：不要覆盖整个 tab innerHTML（会破坏工具栏/按钮）——仅在 grid 区显示 loading */
@@ -2982,6 +2983,7 @@ function renderAnSlots(){
     return;
   }
   var manual=(anCfgSrc==='manual');
+  var _ci=manual?-1:erCoreIdx();
   var h='';
   for(var i=0;i<6;i++){
     var s=null;
@@ -2989,15 +2991,18 @@ function renderAnSlots(){
     else{s=((typeof team!=='undefined')&&team)?team[i]:null}
     if(s){
       var role=anRoleCache[String(s.id)]||anSlotRoleOf(s);
+      var star=(i===_ci)?'<button type="button" class="x" title="⭐ 核心（点击取消/切换核心）" onclick="event.stopPropagation();erSetCore('+i+')" style="left:2px;right:auto;color:var(--accent);font-weight:700">★</button>':'<button type="button" title="设为核心" onclick="event.stopPropagation();erSetCore('+i+')" style="position:absolute;top:2px;left:2px;background:transparent;border:none;cursor:pointer;font-size:13px;color:var(--sub);opacity:.6" aria-label="设为核心">☆</button>';
       h+='<div class="slot anslot" role="button" tabindex="0" onclick="anSlotPick('+i+')" title="点击替换（打开图鉴级选择器）">'+
         sprImg(s.id,'spslot')+'<span class="nm">'+esc(s.zh)+'</span>'+
         (role?'<span class="roltag">'+esc(role)+'</span>':'')+
+        star+
         '<button class="x" type="button" onclick="event.stopPropagation();anSlotRemove('+i+')" title="移除（后续槽位前移补位）" aria-label="移除">×</button></div>';
     }else{
       h+='<div class="slot empty anslot" role="button" tabindex="0" onclick="anSlotPick('+i+')" title="点击从图鉴级选择器挑一只">点击选择</div>';
     }
   }
   box.innerHTML=h;
+  erRenderCoreSummary();
 }
 function anSlotPick(i){anPickSlot=i;openAnPicker()}
 function anSlotRemove(i){
@@ -3924,6 +3929,12 @@ function saveTeam(){
     localStorage.setItem('er_teamInfo',JSON.stringify(teamInfo));
   }catch(e){}
 }
+/* v4.169：⭐ 核心槽位 er_coreIdx（默认 0；越界钳制）+ er_lastPlanAxis 流派上下文持久化 */
+function erCoreIdx(){try{var n=parseInt(localStorage.getItem('er_coreIdx'))||0;var len=((typeof team!=='undefined')&&team)?team.length:0;if(len<=0)return 0;if(n<0||n>=len)n=0;return n}catch(e){return 0}}
+function erSetCore(i){try{var len=((typeof team!=='undefined')&&team)?team.length:0;if(i<0||i>=len)return;localStorage.setItem('er_coreIdx',String(i));toast('已设为核心：'+(team[i]&&team[i].zh?team[i].zh:''));renderAnTab()}catch(e){}}
+function erLastPlanAxis(){try{return localStorage.getItem('er_lastPlanAxis')||''}catch(e){return ''}}
+function erSetLastPlanAxis(a){try{if(a)localStorage.setItem('er_lastPlanAxis',a)}catch(e){}}
+function erRenderCoreSummary(){try{var el=$('anCoreSummary');if(!el)return;if(anCfgSrc==='sav'||anCfgSrc==='manual'){el.textContent='';return}var ci=erCoreIdx();var s=((typeof team!=='undefined')&&team)?team[ci]:null;if(!s){el.textContent='';return}el.textContent='⭐ 当前核心：'+s.zh+'（点槽位右上角 ⭐ 可切换核心）';}catch(e){}}
 function loadTeam(){
   try{
     var ids=JSON.parse(localStorage.getItem('er_team')||'[]');
@@ -13676,7 +13687,7 @@ function renderNeedPlan(s,viOrSt){
       '<br><b>弱点/对策</b>：'+axWeakHtml(plan.axis)+'</div>';
   }
   try{window._erCurrentPlan=plan}catch(eP){}
-  h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示） <button class="btn-mini" style="margin-left:8px;background:var(--accent);color:#fff" onclick="(function(){try{var plan=window._erCurrentPlan;if(!plan)throw new Error(\'plan 未就绪\');window._erLastPlanTeam=plan.team.map(function(m){return m.s});window._erLastPlanAxis=(plan.axis&&plan.axis.name)?plan.axis.name:\'通用需求驱动\';plan.team.forEach(function(m){addToTeam(m.s,null,true)});switchTab(\'analyze\');var _as=document.getElementById(\'anPlanSummary\');if(_as)_as.textContent=\'最近推荐流派：\'+window._erLastPlanAxis;}catch(e){toast(\'带入失败:\'+e.message)}})()">📊 带此队去分析</button></h3>';
+  h+='<h3>🧩 需求驱动队友（动态推导 · 队伍方案 · 默认展示） <button class="btn-mini" style="margin-left:8px;background:var(--accent);color:#fff" onclick="(function(){try{var plan=window._erCurrentPlan;if(!plan)throw new Error(\'plan 未就绪\');window._erLastPlanTeam=plan.team.map(function(m){return m.s});window._erLastPlanAxis=(plan.axis&&plan.axis.name)?plan.axis.name:\'通用需求驱动\';erSetLastPlanAxis(window._erLastPlanAxis);plan.team.forEach(function(m){addToTeam(m.s,null,true)});switchTab(\'analyze\');var _as=document.getElementById(\'anPlanSummary\');if(_as)_as.textContent=\'最近推荐流派：\'+window._erLastPlanAxis;}catch(e){toast(\'带入失败:\'+e.message)}})()">📊 带此队去分析</button></h3>';
   h+='<div class="tip tip-ok"><b>体系总览</b><br>'+
     '· <b>怎么启动：</b>'+esc(plan.overview.start)+'<br>'+
     '· <b>怎么受益：</b>'+esc(plan.overview.benefit)+'<br>'+
@@ -14600,7 +14611,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.167';
+var ER_ENGINE_VER='v4.169';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
