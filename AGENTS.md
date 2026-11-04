@@ -3091,3 +3091,24 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 上库凭证
 - gh-pages deploy commit 61404f98aa7eb746d8f5171f478048229e1c5774（远端同）；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 队伍构建/分析联动深化（配队预设同步）③ 性能长尾（LCP/交互耗时复查）
+---
+
+## v4.168 方案轮：配队预设同步对齐（零码改动）— 2026-11-04
+- 探查结论：队伍构建↔队伍分析已经全局 team[] 即时联动；真实缺口=可见性（_erCurrentPlan/_erLastPlanAxis 内存态刷新即丢、team[0] 隐式核心无显式标记、dmgDef 常用对手硬编码单独立项）
+- 方案：C:\temp\er-v539-fix\teamlink-proposal-v4168.md；2 对齐点（联动源口径/触发方式）+预算 ~40-60 行 1.5-2.5KB+风险 5 条
+- 用户拍板：① ⭐ 显式核心槽位 er_coreIdx 默认 0 ② 即时零按钮（er_lastPlanAxis 持久化+分析顶部 ⭐ 核心摘要行）
+
+## v4.169 配队预设同步落地 — 2026-11-05
+### 落地（dev 53d5f85 / deploy c8349f6，最终 sha16=D94D5FEB5F62A379E21494391F6134149576B8F8，1,536,356 B，+1,870 B）
+- ⭐ 核心槽位：er_coreIdx localStorage 默认 0（erCoreIdx() 越界钳制）；分析六槽位右上角 ★/☆ 角标（绝对定位，375px 不遮挡）；点 ☆ 设核心/点 ★ 切换；erSetCore(i) toast 反馈
+- 分析上下文持久化：er_lastPlanAxis localStorage 替代 window._erLastPlanAxis 内存态；「带此队去分析」按钮与 switchTab 摘要行同步读写；残留加小注「（刷新保留）」
+- 分析顶部 ⭐ 核心摘要行：#anCoreSummary（L722）显示「⭐ 当前核心：X（点槽位右上角 ⭐ 可切换核心）」；sav/manual 模式不显示（erRenderCoreSummary 分支）
+- 零回归：team[] 即时联动/saveTeam/er_team/独立状态（er_atkSel/er_theme/er_guide/常用对手）/深浅双模式全不回归；engine twin 恒 BCFAEDED
+- 版本双改 L701 tag v4.169 + L14599 ER_ENGINE_VER；8901 黑盒 console 0/横滚 0/anCoreSummary 元素就位
+### 验收
+- 引擎 er-n696：N1=N2 恒 BCFAEDED（exit 0×2 viol 全 0）
+- 黑盒 verify/summary-v4169.md
+- P0 线上：?nocache=1691 sha16=D94D5FEB MATCH
+### 上库凭证
+- gh-pages deploy commit c8349f60bb665b31d071fe1be0dc9812495f38b7（远端同）；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② dmgDef 常用对手按队伍属性面推导 ③ 性能长尾（LCP/交互耗时复查）
