@@ -3112,3 +3112,24 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 上库凭证
 - gh-pages deploy commit c8349f60bb665b31d071fe1be0dc9812495f38b7（远端同）；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② dmgDef 常用对手按队伍属性面推导 ③ 性能长尾（LCP/交互耗时复查）
+---
+
+## v4.170 方案轮：dmgDef 常用对手按队伍属性面推导对齐（零码改动）— 2026-11-05
+- 探查结论：dmgDefQuick chips（L734-738）=硬编码 5 宝可梦中文名，本质"快捷搜索词"（回填 #dmgDefQ→候选→dmgDefPick）；队伍数据 team[]/er_coreIdx 就绪，ERDATA.matchup 矩阵+atkCover/setCoverProfile 聚合口径可复用
+- 方案：C:\temp\er-v539-fix\dmgdef-derive-proposal-v4170.md；对齐点 3 个（主 C 混合/次① 替换+空态回退/次② 属性搜索回填）+预算 ~40-60 行 1.5-2.5KB+风险 5 条
+- 用户拍板：主 C 混合（⭐ 核心弱点置顶+全队共同弱点补全）/ 次① 替换+空态回退硬编码 / 次② 属性 chip 走搜索回填
+
+## v4.171 dmgDef 属性面推导落地 — 2026-11-05
+### 落地（dev 06f919e / deploy ccd2c88，最终 sha16=112EF8267F39D69E4AB2C02FEF3B9A2C89B464C9，1,538,170 B，+1,814 B）
+- erDeriveWeakTypes()：⭐ 核心（er_coreIdx）≥2× 弱点置顶 + 全队共同弱点命中数补全（去重 cap 5）；空核心/单只退化全队口径；sav/manual 守卫返回空
+- dmgDefQuickType(type)：属性 chip → #dmgDefQ 列出该属性全部物种（沿用 chip→搜索→候选→dmgDefPick 范式，分函数独立）
+- renderDmgQuickChips()：#dmgQuickChips 容器动态渲染；team 有成员=推导属性 chips（title 区分属性/宝可梦名）；空/sav/manual=回退 5 硬编码；不足 5 个硬编码补位；er-ready 钩子+saveTeam 重渲染
+- 零回归：chip 链/5 硬编码回退/独立状态（er_atkSel/er_theme/er_guide/er_coreIdx/er_lastPlanAxis）/深浅双模式/375px 一行全不回归
+- 版本双改 L701 tag v4.171 + L14599 ER_ENGINE_VER；8901 黑盒空队回退硬编码 console 0 横滚 0
+### 验收
+- 引擎 er-n697：N1=N2 恒 BCFAEDED（exit 0×2 viol 全 0）
+- 黑盒 verify/summary-v4171.md（空态回退/属性搜索/375px 一行 PASS）
+- P0 线上：?nocache=1711 sha16=112EF826 MATCH
+### 上库凭证
+- gh-pages deploy commit ccd2c88e2eb86a39d391ba8a0cc2cd12a739c2de（远端同）；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 属性克制多选深挖（跨 Tab 联合视图）③ 性能长尾（LCP/交互耗时复查）
