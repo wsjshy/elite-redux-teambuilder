@@ -700,7 +700,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.171</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.173</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -3776,6 +3776,8 @@ function renderAtkMulti(sel){
     return '<span class="tagline" style="cursor:pointer'+(n?'':';opacity:.45')+'" onclick="mxInlineMulti(\''+escq(key)+'\',\''+grp+'\',this)" title="点它 → 就地展开该桶全部宝可梦（精灵图卡片，一次全列；计数 '+n+' 与展开数一致）">'+label+' <b class="bkcnt">'+n+'</b></span>';
   }
   function cell(d){return '<span style="cursor:pointer" onclick="mxInline(\''+d+'\',this,\'atk\')" title="进攻视角：'+d+' 属性招式打谁有效（全图鉴按实际承受倍率分组）">'+tlabel(d)+'</span>'}
+  /* v4.173：k2 行专属「→」跳转入口（独立 span，与就地展开主行为分离；切 analyze 伤害 Tab + dmgDefQuickType 列该属性物种） */
+  function cellK2(d){return cell(d)+'<span style="cursor:pointer;color:var(--sub);margin:0 0 0 4px;font-size:10px" title="跳伤害页 → 列出「'+d+'」属性对手物种" onclick="event.stopPropagation();switchTab(\'analyze\');try{dmgDefQuickType(\''+d+'\')}catch(e){}">→</span>'}
   var html='';
   html+='<div class="kgroup"><div class="k2" style="margin-bottom:4px"><b>进攻属性组合：</b> '+sel.map(tlabel).join(' + ')+
     ' <span class="mini" style="color:var(--sub)">（聚合口径 = 逐宝可梦取所选属性的<b>最大实际倍率</b>；盲点 = 该组合全部打 ≤0.5× 的宝可梦）</span></div>';
@@ -3784,7 +3786,7 @@ function renderAtkMulti(sel){
     bucketChip('N','×1 中性',cN)+
     bucketChip('R','抵抗（<1×）',cR)+
     bucketChip('I','✖ 免疫·该组合打不动',cI)+'</div>';
-  if(k2.length)html+='<div class="k2"><b>组合 ≥2× 克制的防守属性：</b> '+k2.map(cell).join(' ')+'</div>';
+  if(k2.length)html+='<div class="k2"><b>组合 ≥2× 克制的防守属性：</b> '+k2.map(cellK2).join(' ')+'</div>';
   if(n1.length)html+='<div class="k1" style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px"><b>组合 ×1 中性的防守属性：</b> '+n1.map(cell).join(' ')+'</div>';
   if(r5.length)html+='<div class="k05"><b>组合 ×0.5 被抵抗的防守属性：</b> '+r5.map(cell).join(' ')+'</div>';
   if(i0.length)html+='<div class="k0"><b>组合 ×0 免疫（该组合打不动）的防守属性：</b> '+(i0.map(cell).join(' ')||'无')+'</div></div>';
@@ -14652,7 +14654,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.171';
+var ER_ENGINE_VER='v4.173';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
