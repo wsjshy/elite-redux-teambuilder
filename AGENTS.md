@@ -3133,3 +3133,24 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 上库凭证
 - gh-pages deploy commit ccd2c88e2eb86a39d391ba8a0cc2cd12a739c2de（远端同）；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 属性克制多选深挖（跨 Tab 联合视图）③ 性能长尾（LCP/交互耗时复查）
+---
+
+## v4.172 方案轮：属性克制多选深挖跨 Tab 联合视图对齐（零码改动）— 2026-11-06
+- 探查结论：多选链已成熟（renderAtk/renderAtkSingle/renderAtkMulti/mxRowsOfMulti/mxInlineMulti/er_atkSel）；队伍侧仅 STAB 属性面不存配招（F3 数据层限制本轮不解决）；断裂点 F1 克制→伤害无法一键下钻、F2 队伍 STAB 无法一键汇总 atkSel
+- 方案：C:\temp\er-v539-fix\atk-deep-proposal-v4172.md；主对齐点三选一（A 队伍→克制/B 克制→伤害/C 双向）推荐 B；预算 ~15-25 行 0.8-1.5KB+风险 5 条
+- 用户拍板：主方向 B 克制→伤害 + 「→」小图标入口（k2 行专属）
+
+## v4.173 跨 Tab 联合视图方向 B 落地 — 2026-11-06
+### 落地（dev 28184cf / deploy bc0c8c2，最终 sha16=A34888847EDCA6405FC94667BECCC2C3B6C06D40，1,538,625 B，+455 B）
+- k2 行「→」跳转入口：atkResult 2× 克制行每属性 chip 旁独立小 span → switchTab('analyze')+dmgDefQuickType(type) 列该属性物种；k1/k0 行不加入口
+- 入口与 chip 就地展开主行为分离（独立 span onclick+stopPropagation，375px padding 分离防误触）
+- 守卫：Tab id=analyze（黑盒实测）；#dmgDefQ DOM 就绪+try/catch 静默；不写 er_atkSel 无残留
+- 零回归：多选/分桶/er_atkSel/dmgDef 推导 chips/独立状态/深浅双模式全不回归
+- 版本双改 L701 tag v4.173 + L14599 ER_ENGINE_VER；8901 实测火+水 → k2 7 个 → 入口，点火→跳队伍分析 dmgDefQ=火 列 12 火属性物种，console 0 横滚 0
+### 验收
+- 引擎 er-n698：N1=N2 恒 BCFAEDED（exit 0×2 viol 全 0）
+- 黑盒 verify/summary-v4173.md（→ 跳转/主行为分离/无残留 PASS）
+- P0 线上：?nocache=1731 sha16=A3488884 MATCH
+### 上库凭证
+- gh-pages deploy commit bc0c8c2b7e4934a94ad120e46200b74b558e71e3（远端同）；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 方向 A（队伍 STAB 一键填入 atkSel，需先解决 F3 配招数据）③ 性能长尾（LCP/交互耗时复查）
