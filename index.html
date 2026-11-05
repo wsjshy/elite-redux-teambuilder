@@ -700,7 +700,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.169</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.171</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -730,13 +730,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
     <div id="dmgAtkList" style="margin-bottom:4px"></div>
     <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)" onkeydown="dmgEnterPick(event,'','def')"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
     <div id="dmgDefList" style="margin-bottom:4px"></div>
-    <div style="font-size:11px;margin-bottom:4px;color:var(--sub)">常用对手：
-      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('超级土王')">超级土王</span>
-      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('坚果哑铃')">坚果哑铃</span>
-      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('洛奇亚')">洛奇亚</span>
-      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('耿鬼')">耿鬼</span>
-      <span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick('巨金怪')">巨金怪</span>
-    </div>
+    <div style="font-size:11px;margin-bottom:4px;color:var(--sub)">常用对手：<span id="dmgQuickChips"></span></div>
     <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" style="width:120px" oninput="dmgMvQ(this.value)" onkeydown="dmgEnterPick(event,'','mv')"></div>
     <div id="dmgMvList" style="margin-bottom:4px"></div>
     <div id="dmgOut"></div>
@@ -3928,6 +3922,7 @@ function saveTeam(){
     localStorage.setItem('er_team',JSON.stringify(team.map(function(s){return s.id})));
     localStorage.setItem('er_teamInfo',JSON.stringify(teamInfo));
   }catch(e){}
+  try{renderDmgQuickChips()}catch(e){}
 }
 /* v4.169：⭐ 核心槽位 er_coreIdx（默认 0；越界钳制）+ er_lastPlanAxis 流派上下文持久化 */
 function erCoreIdx(){try{var n=parseInt(localStorage.getItem('er_coreIdx'))||0;var len=((typeof team!=='undefined')&&team)?team.length:0;if(len<=0)return 0;if(n<0||n>=len)n=0;return n}catch(e){return 0}}
@@ -5916,6 +5911,52 @@ function loadAtkFromTeam(){
   }).join('');
 }
 function dmgDefQuick(name){var el=document.getElementById('dmgDefQ');if(el){el.value=name;dmgDefQ(name)}}
+/* v4.171：常用对手 chips 按队伍属性面推导（v4.170 拍板：C 混合 = ⭐ 核心弱点置顶 + 全队共同弱点补全） */
+function erDeriveWeakTypes(){
+  try{
+    if(anCfgSrc==='sav'||anCfgSrc==='manual')return [];
+    if(!team||!team.length)return [];
+    var types=ERDATA.types||[],hit={},coreWeak={},out=[];
+    team.forEach(function(s,i){
+      if(!s)return;
+      var dts=[s.t1];if(s.t2&&s.t2!==s.t1)dts.push(s.t2);
+      dts.forEach(function(dt){
+        var di=tIdx(dt);if(di<0)return;
+        types.forEach(function(at){
+          var ai=tIdx(at);if(ai<0)return;
+          var v=ERDATA.matchup[di][ai];
+          if(v>=2){hit[at]=(hit[at]||0)+1;if(i===erCoreIdx())coreWeak[at]=1;}
+        });
+      });
+    });
+    Object.keys(coreWeak).forEach(function(t){if(out.indexOf(t)<0)out.push(t)});
+    Object.keys(hit).sort(function(a,b){return hit[b]-hit[a]}).forEach(function(t){if(out.indexOf(t)<0)out.push(t)});
+    return out.slice(0,5);
+  }catch(e){return []}
+}
+function dmgDefQuickType(type){
+  var el=document.getElementById('dmgDefQ');if(!el)return;
+  el.value=type;
+  var hits=[];ERDATA.species.forEach(function(x){if(hits.length<12&&(x.t1===type||x.t2===type))hits.push(x)});
+  var list=$('dmgDefList');if(list)list.innerHTML=hits.map(function(x){return '<span class="chipopt" role="button" tabindex="0" onclick="dmgDefPick(\''+x.id+'\')">'+esc(x.zh)+'</span>'}).join('');
+}
+function renderDmgQuickChips(){
+  try{
+    var box=$('dmgQuickChips');if(!box)return;
+    var derived=erDeriveWeakTypes();
+    var hard=[['超级土王',false],['坚果哑铃',false],['洛奇亚',false],['耿鬼',false],['巨金怪',false]];
+    var html='';
+    if(derived.length){
+      html+=derived.map(function(t){return '<span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" title="属性 '+t+' 对手（点选查看）" onclick="dmgDefQuickType(\''+t+'\')">'+esc(t)+'×弱</span>'}).join('');
+      var need=5-derived.length;
+      for(var i=0;i<need;i++)html+='<span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick(\''+hard[i][0]+'\')">'+hard[i][0]+'</span>';
+    }else{
+      html=hard.map(function(h){return '<span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick(\''+h[0]+'\')">'+h[0]+'</span>'}).join('');
+    }
+    box.innerHTML=html;
+  }catch(e){}
+}
+document.addEventListener('er-ready',renderDmgQuickChips);
 function dmgDefQ(v,s){
   s=s||'';   /* v4.139：suffix='' = 分析页面板；'2' = 图鉴详情弹窗（id 冲突修复） */
   var q=String(v||'').trim().toLowerCase();if(!q){var el=$('dmgDefList'+s);if(el)el.innerHTML='';return}
@@ -14611,7 +14652,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.169';
+var ER_ENGINE_VER='v4.171';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
