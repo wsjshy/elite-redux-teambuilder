@@ -700,8 +700,8 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.176</span>
-  <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.177</span>
+  <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）" aria-pressed="false">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -726,12 +726,12 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
   <div id="anOut"></div>
   <div style="margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:6px">
     <div style="font-weight:600;font-size:13px;margin-bottom:6px" title="OHKO = 一击必杀（One Hit Knock Out）：一发招直接把对手打到 0 血">🎯 伤害判定 / OHKO 反解</div>
-    <div style="font-size:11px;margin-bottom:4px">攻方（我方）：<input id="dmgAtkQ" placeholder="搜索攻方…" style="width:120px" oninput="dmgAtkQ(this.value)" onkeydown="dmgEnterPick(event,'','atk')"> <button class="btn-mini" onclick="loadAtkFromTeam()">从队伍选</button></div>
+    <div style="font-size:11px;margin-bottom:4px">攻方（我方）：<input id="dmgAtkQ" placeholder="搜索攻方…" aria-label="搜索攻方宝可梦" style="width:120px" oninput="dmgAtkQ(this.value)" onkeydown="dmgEnterPick(event,'','atk')"> <button class="btn-mini" onclick="loadAtkFromTeam()">从队伍选</button></div>
     <div id="dmgAtkList" style="margin-bottom:4px"></div>
-    <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" style="width:120px" oninput="dmgDefQ(this.value)" onkeydown="dmgEnterPick(event,'','def')"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
+    <div style="font-size:11px;margin-bottom:4px">防守方：<input id="dmgDefQ" placeholder="搜索对手…" aria-label="搜索对手宝可梦" style="width:120px" oninput="dmgDefQ(this.value)" onkeydown="dmgEnterPick(event,'','def')"> <button class="btn-mini" onclick="loadDefFromSource('npc')">载入NPC队</button> <button class="btn-mini" onclick="loadDefFromSource('sav')">载入存档队</button></div>
     <div id="dmgDefList" style="margin-bottom:4px"></div>
     <div style="font-size:11px;margin-bottom:4px;color:var(--sub)">常用对手：<span id="dmgQuickChips"></span></div>
-    <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" style="width:120px" oninput="dmgMvQ(this.value)" onkeydown="dmgEnterPick(event,'','mv')"></div>
+    <div style="font-size:11px;margin-bottom:4px">我方招式：<input id="dmgMvQ" placeholder="搜索招式…" aria-label="搜索招式" style="width:120px" oninput="dmgMvQ(this.value)" onkeydown="dmgEnterPick(event,'','mv')"></div>
     <div id="dmgMvList" style="margin-bottom:4px"></div>
     <div id="dmgOut"></div>
   </div>
@@ -2104,7 +2104,7 @@ function switchTab(name){
   /* v4.156 Part A：记录来源 tab 滚动位置，返回时恢复 */
   try{if(_currentTab){var _m0=document.querySelector('main');var _st=(_m0?_m0.scrollTop:window.scrollY)||0;try{localStorage.setItem('er_scroll_'+_currentTab,String(_st))}catch(e){}}}catch(e){}
   _currentTab=name;
-  document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name)});
+  document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name);if(b.dataset.tab===name)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
   try{var _m=document.querySelector('main');if(_m){var _rs=0;try{_rs=parseInt(localStorage.getItem('er_scroll_'+name))||0}catch(e){}_m.scrollTop=_rs;}else window.scrollTo(0,0);}catch(e){}
   /* v4.157 Q2：队伍分析页顶部流派摘要条 */
@@ -3721,7 +3721,7 @@ function openMv(m){
 var ATK_SPECIAL={'星晶':1,'无':1,'神秘':1};
 function renderAtk(){
   var sel=[];
-  document.querySelectorAll('#atkChips button').forEach(function(b){if(b.classList.contains('on'))sel.push(b.textContent)});
+  document.querySelectorAll('#atkChips button').forEach(function(b){var on=b.classList.contains('on');if(on)sel.push(b.textContent);b.setAttribute('aria-pressed',on?'true':'false')});
   sel=sel.filter(function(t){return !ATK_SPECIAL[t]});
   if(!sel.length){ /* 全取消 → 回 v4.83 空态引导（逐字同 L3609 初始空态） */
     $('atkResult').innerHTML='<div class="emptyhint">👆 <b>点上方任意属性</b> → 查看该属性招式打谁克制（2× / 0.5× / 0× 分组；<b>可多选</b>按最佳倍率聚合看组合打击面）</div>';
@@ -14657,9 +14657,9 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.176';
+var ER_ENGINE_VER='v4.177';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
-function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
+function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b){b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');b.setAttribute('aria-pressed',t==='dark'?'true':'false');}}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
 erApplyTheme((function(){try{return localStorage.getItem('er_theme')||'light'}catch(e){return 'light'}})());
 try{window.ER_DEBUG=location.search.indexOf('debug=1')>=0}catch(e){window.ER_DEBUG=false}   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */   /* v4.150修复：显式挂 window 真全局（跨脚本块闭包可见），?debug=1 开调试日志 */
