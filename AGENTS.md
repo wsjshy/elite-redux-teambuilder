@@ -3236,3 +3236,30 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - 纯工具轮无 deploy；线上复验 ?nocache=1781 = 9801DD81 MATCH
 - master 登记 commit（下）：tools/a11y-check.js 新增 + AGENTS.md 本条
 - 下轮预选：① 方案区分片（待真机卡顿证据）② 方向 A（队伍 STAB 填入 atkSel）③ 每轮上线前必跑 a11y-check
+---
+
+## v4.179 a11y-check 扩展深色对比度断言 + 真实退化修复 — 2026-11-06
+### 落地（dev a6df159 / deploy 17f5e69，最终 sha16=7F30DD57F2A908CE7EC87941F8FA4895FC8D416C，1,539,379 B，+142 B）
+- 脚本扩展：新增断言组 h（对比度浅+深双模式，WCAG 公式内建），14→15 项
+- 真实退化修复（P1 深色对比度）：
+  - .btn/.btn-mini 加 color:var(--text)（按钮 UA 默认黑色，深色模式下黑字深底 1.48:1）
+  - dmgDef chip chipStyle 加 color:var(--guide-fg)（深色 1.6:1 → 7.57:1）
+  - html[data-theme=dark] .emptyhint 加 background:var(--muted-bg)（原硬编码 #fafbff 浅色底，深色 2.32:1 → 5.29:1）
+- 豁免 SKIP：--line 结构性分隔线（v4.167 已登记）、accent 链接色（文字+下划线为主提示）
+- 版本双改 L701 tag v4.179 + L14599 ER_ENGINE_VER
+### 对比度值表（修复后）
+| 元素 | 浅 | 深 | 阈值 |
+|---|---|---|---|
+| .tip 引导条 | 5.94 | 5.94 | 4.5 |
+| .emptyhint 空态 | 4.68 | 5.29 | 4.5 |
+| nav 激活按钮 | 5.17 | 5.17 | 4.5 |
+| 深色按钮文字 | 14.97 | 11.79 | 4.5 |
+| atkChip 选中 | 5.17 | 5.17 | 4.5 |
+| dmgDef chip | 7.56 | 7.57 | 4.5 |
+### 验收
+- 引擎 er-n704：N1=N2 恒 BCFAEDED（exit 0×2 viol 全 0）
+- a11y-check：15/15 PASS exit 0
+- P0 线上：?nocache=1791 sha16=7F30DD57 MATCH
+### 上库凭证
+- gh-pages deploy commit 17f5e69e19ea068785febbfc24bc548e1ed3ae1d；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 方向 A（队伍 STAB 填入 atkSel）

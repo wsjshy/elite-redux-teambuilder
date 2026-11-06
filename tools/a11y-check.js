@@ -208,6 +208,67 @@ async function main() {
     `);
     add('f2', 'dmgDef 推导 chips 为 button 且 tabIndex>=0', dmgChip.tag === 'BUTTON' && dmgChip.tabIndex >= 0 ? 'PASS' : 'FAIL', dmgChip);
 
+    // === h) 对比度断言组（浅+深双模式，WCAG 2.1） ===
+    // 判定规则：正文/UI 文字 ≥4.5:1；大字号（≥24px 或 ≥18.66px 且 bold）≥3:1；非文本功能边界 ≥3:1
+    // 豁免：--line 结构性分隔线（v4.167 已登记豁免，浅 1.60/深 1.38）；accent 链接（文字+下划线为主提示）
+    const CONTRAST_SNIPPET = `
+      (function(){
+        function lin(c){ c/=255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); }
+        function lum(r,g,b){ return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b); }
+        function parseRGB(s){ var m=s.match(/rgba?\\((\\d+)[,\\s]+(\\d+)[,\\s]+(\\d+)/); return m?[+m[1],+m[2],+m[3]]:null; }
+        function bgUnder(el){ var n=el; while(n){ var c=getComputedStyle(n).backgroundColor; var p=parseRGB(c); if(p){ var a=parseFloat(c.split(',')[3]||'1'); if(a>0.5) return p; } n=n.parentElement; } return [255,255,255]; }
+        function ratio(fg,bg){ var l1=lum(fg[0],fg[1],fg[2]), l2=lum(bg[0],bg[1],bg[2]); var hi=Math.max(l1,l2), lo=Math.min(l1,l2); return ((hi+0.05)/(lo+0.05)).toFixed(2); }
+        function sample(sel, label, size, bold){
+          var el=document.querySelector(sel); if(!el) return {sel:label, ok:'MISSING'};
+          var cs=getComputedStyle(el);
+          var fg=parseRGB(cs.color); if(!fg) return {sel:label, ok:'NOPARSE'};
+          var bg=bgUnder(el);
+          var r=parseFloat(ratio(fg,bg));
+          var big=(parseFloat(size)>=24)||(parseFloat(size)>=18.66&&bold);
+          var thr=big?3.0:4.5;
+          return {sel:label, fg:cs.color, bg:'rgb('+bg.join(',')+')', ratio:r, thr:thr, ok:r>=thr?'PASS':'FAIL'};
+        }
+        var out=[];
+        out.push(sample('.tip','.tip 引导条','12px',false));
+        out.push(sample('.emptyhint','.emptyhint 空态','13px',false));
+        out.push(sample('nav button.active','nav 激活按钮','12px',false));
+        out.push(sample('#erThemeBtn','深色按钮文字','12px',false));
+        out.push(sample('#atkChips button.on','atkChip 选中','12px',false));
+        out.push(sample('#dmgQuickChips button','dmgDef chip','11px',false));
+        return out;
+      })()
+    `;
+    // light mode samples
+    await evalJS(ws, `document.querySelectorAll('nav button').forEach(function(b){if(b.dataset.tab==='type')b.click();});`);
+    await new Promise(r => setTimeout(r, 300));
+    await evalJS(ws, `var bs=document.querySelectorAll('#atkChips button');for(var i=0;i<bs.length;i++){if(bs[i].textContent.trim()==='火'){bs[i].click();break;}}`);
+    await new Promise(r => setTimeout(r, 300));
+    const lightContrast = await evalJS(ws, CONTRAST_SNIPPET);
+    // dark mode samples
+    await evalJS(ws, `document.getElementById('erThemeBtn').click();`);
+    await new Promise(r => setTimeout(r, 400));
+    const darkContrast = await evalJS(ws, CONTRAST_SNIPPET);
+    // 切回 light
+    await evalJS(ws, `document.getElementById('erThemeBtn').click();`);
+    await new Promise(r => setTimeout(r, 200));
+
+    let hFail = 0, hSkip = 0;
+    const hDetail = [];
+    for (const s of lightContrast) {
+      hDetail.push('light ' + s.sel + '=' + s.ratio + '/' + s.thr + ' ' + s.ok);
+      if (s.ok === 'FAIL') hFail++;
+    }
+    for (const s of darkContrast) {
+      hDetail.push('dark  ' + s.sel + '=' + s.ratio + '/' + s.thr + ' ' + s.ok);
+      if (s.ok === 'FAIL') hFail++;
+    }
+    // SKIP 豁免项（结构性 --line 分隔线，v4.167 已登记）
+    hDetail.push('SKIP --line 结构性分隔线（v4.167 豁免：浅 1.60/深 1.38，装饰性非功能边界）');
+    hDetail.push('SKIP accent 链接色（文字+下划线为主提示，豁免）');
+    console.log('--- h contrast detail ---');
+    for (const line of hDetail) console.log('  ' + line);
+    add('h', '对比度浅+深双模式（正文≥4.5:1，大字号≥3:1）', hFail === 0 ? 'PASS' : 'FAIL', 'fail=' + hFail + ' see console detail');
+
     // === g) 横滚 0 ===
     const hscroll = await evalJS(ws, `JSON.stringify({sw:document.documentElement.scrollWidth, cw:document.documentElement.clientWidth})`);
     add('g', '横滚 scrollWidth<=clientWidth', hscroll.sw <= hscroll.cw ? 'PASS' : 'FAIL', hscroll);
