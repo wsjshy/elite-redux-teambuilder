@@ -3183,3 +3183,25 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 上库凭证
 - gh-pages deploy commit 5eae1af8f4c9301992474c8ad44129b58981c525（远端同）；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match（含 v4.174 审计块）；下轮预选：① 方案区分片（375px 真机卡顿证据再落地）② 方向 A（队伍 STAB 一键填入 atkSel，需先解决 F3 配招数据）③ 无障碍口径复验（aria/键盘全量）
+---
+
+## v4.176 无障碍口径全量复验（a11y 审计+P1 修复）— 2026-11-06
+### 审计结论
+- 报告：C:\temp\er-v539-fix\a11y-audit-v4176.md
+- P0：0 项
+- P1：1 项已修——k2「→」入口与 dmgDef 推导 chips 原为 `<span onclick>` 不可键盘聚焦（tabindex=-1），键盘用户无法触发；本轮改为 `<button type="button">`（tabindex=0，Enter/Space 原生触发）
+- P2：登记 TODO——nav button 无 aria-current、atkChips button 无 aria-pressed（选中态未程序化暴露）；下轮批修
+- P3：登记 TODO——搜索框仅 placeholder 无 aria-label；深色切换按钮无 aria-pressed
+- 对比度：v4.167 已将 muted/section/guide-edge 深色提到 ≥3:1，正文 sub 5.29:1，本轮新元素沿用 var(--sub)/var(--guide-bg)/var(--line) 自动达标
+- focus-visible：v4.167 L617 全局 `:focus-visible{outline:2px solid var(--accent)}` 覆盖所有 button，深浅双模式可见
+### 落地（dev a4ad109 / deploy cd097f0，最终 sha16=301B03AA6F7BF641208506BA1609E1E7EBAC0E98，1,538,900 B，-7 B）
+- k2「→」cellK2：span→button type=button + border 1px solid var(--line)（L3780）
+- renderDmgQuickChips：derived 与 hardcoded chips span→button type=button + padding 2px 8px（L5946）
+- 零回归：多选/分桶/er_atkSel/dmgDef 推导/独立状态/深浅双模式全不回归；8901 黑盒 button tabindex=0/console 0/横滚 0
+- 版本双改 L701 tag v4.176 + L14599 ER_ENGINE_VER
+### 验收
+- 引擎 er-n701：N1=N2 恒 BCFAEDED（exit 0×2 viol 全 0）
+- P0 线上：?nocache=1761 sha16=301B03AA MATCH
+### 上库凭证
+- gh-pages deploy commit cd097f04fd3008927d8eac2b8b17cdaf64802616（远端同）；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match；下轮预选：① P2 aria-current/aria-pressed 批修 ② 方案区分片（375px 真机证据）③ 方向 A（队伍 STAB 一键填入 atkSel）
