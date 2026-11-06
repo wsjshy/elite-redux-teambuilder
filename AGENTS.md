@@ -3221,3 +3221,18 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - gh-pages deploy commit a7f78c0e8ed221f94d5b8f9beee6a1f4d2f3bb10（远端同）；master 登记 commit（下）
 - a11y-audit-v4176.md TODO 四项已关闭；主工作区 6/6+AGENTS_match
 - 下轮预选：① 方案区分片（待真机卡顿证据）② 方向 A（队伍 STAB 填入 atkSel，需先解 F3 配招数据）③ 无障碍回归固化（键盘路径脚本化）
+---
+
+## v4.178 无障碍回归固化（a11y 检查脚本化 + 首次全量跑通）— 2026-11-06
+### 落地（纯工具轮，index.html 零改动；线上维持 v4.177 9801DD81）
+- 新增 `tools/a11y-check.js`：零依赖 Node 22 CDP 驱动 headless Chrome，自动启动 → 断言 → 退出码
+- 运行命令：`node tools/a11y-check.js [URL]`（默认 http://localhost:8901/）
+- 退出码：0=全 PASS / 非 0=FAIL / 2=CDP 不可用（手工控制台注入）
+- 断言清单 a-g（14 项）：a nav aria-current 唯一+迁移；b atkChips aria-pressed 三态（全取消/单选/多选）；c 三搜索框 aria-label 非空且互异；d 深色按钮 aria-pressed 三态+reload localStorage 恢复（D 项缺口关闭）；e :focus-visible 全局 CSS 规则存在；f k2「→」与 dmgDef chips 为 button tabindex>=0；g 横滚 0
+### 首次跑通（v4.177 线上/本地 v4.177）
+- 14/14 PASS，exit 0；日志 C:\temp\er-v539-fix\a11y-run-v4178.txt
+- D 项缺口关闭证据：reload 后 er_theme=dark → aria-pressed="true" theme="dark" stored="dark"
+### 上库凭证
+- 纯工具轮无 deploy；线上复验 ?nocache=1781 = 9801DD81 MATCH
+- master 登记 commit（下）：tools/a11y-check.js 新增 + AGENTS.md 本条
+- 下轮预选：① 方案区分片（待真机卡顿证据）② 方向 A（队伍 STAB 填入 atkSel）③ 每轮上线前必跑 a11y-check
