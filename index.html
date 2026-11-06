@@ -103,9 +103,9 @@ tr.mv.open + .mvdesc{display:table-row}
 .slot .x{background:none; border:none; color:var(--bad); cursor:pointer; font-size:16px; padding:0 4px}
 .slot.empty{border-style:dashed; color:var(--sub); justify-content:center}
 .slotinfo{font-size:11px; color:var(--sub)}
-.btn{border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px}
+.btn{border:1px solid var(--line); background:var(--card); color:var(--text); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px}
 .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
-.btn-mini{border:1px solid var(--line); background:var(--card); padding:2px 10px; border-radius:10px; cursor:pointer; font-size:12px; vertical-align:middle}
+.btn-mini{border:1px solid var(--line); background:var(--card); color:var(--text); padding:2px 10px; border-radius:10px; cursor:pointer; font-size:12px; vertical-align:middle}
 /* v4.8 G2：目标队伍规模选择器（触控目标 ≥44px，PC/平板/手机一致） */
 .tgtsel{border:1px solid var(--line); background:var(--card); padding:7px 8px; border-radius:8px; font-size:13px; min-height:44px; cursor:pointer; vertical-align:middle}
 .scalebar{background:#f1f8ff; border-left:3px solid #64b5f6; border-radius:4px; padding:8px 10px; margin:6px 0; font-size:12px}
@@ -695,12 +695,13 @@ html[data-theme="dark"]{
   --heat-neutral:#2e333c;
 }
 html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
+html[data-theme="dark"] .emptyhint{background:var(--muted-bg); color:var(--sub)}
 </style>
 </head>
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.177</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.179</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）" aria-pressed="false">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -5949,7 +5950,7 @@ function renderDmgQuickChips(){
     var box=$('dmgQuickChips');if(!box)return;
     var derived=erDeriveWeakTypes();
     var hard=['超级土王','坚果哑铃','洛奇亚','耿鬼','巨金怪'];
-    var chipStyle='type="button" style="cursor:pointer;background:var(--guide-bg);border:none;padding:2px 8px;border-radius:8px;margin:0 2px;font-size:11px;user-select:none"';
+    var chipStyle='type="button" style="cursor:pointer;background:var(--guide-bg);color:var(--guide-fg);border:none;padding:2px 8px;border-radius:8px;margin:0 2px;font-size:11px;user-select:none"';
     var html='';
     if(derived.length){
       html+=derived.map(function(t){return '<button '+chipStyle+' title="属性 '+t+' 弱点（队伍 ≥2 只被 '+t+' 打 2×；点选列出该属性对手物种）" onclick="dmgDefQuickType(\''+t+'\')">'+esc(t)+'·弱</button>'}).join('');
@@ -14657,7 +14658,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.177';
+var ER_ENGINE_VER='v4.179';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b){b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');b.setAttribute('aria-pressed',t==='dark'?'true':'false');}}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
