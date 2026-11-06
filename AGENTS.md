@@ -3154,3 +3154,32 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 上库凭证
 - gh-pages deploy commit bc0c8c2b7e4934a94ad120e46200b74b558e71e3（远端同）；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 方向 A（队伍 STAB 一键填入 atkSel，需先解决 F3 配招数据）③ 性能长尾（LCP/交互耗时复查）
+---
+
+## v4.174 性能长尾复查（度量审计轮，零码改动）— 2026-11-06
+- 报告：C:\temp\er-v539-fix\perf-audit-v4174.md
+- 冷启动（local ?nocache ×3）：DCL 中位数 89ms / load 103ms；data_species/adv ttf ~916ms
+- 交互：Tab 切换中位数 0.5-2.1ms（speed 首建表 90ms）；atkChips 多选 toggle 9.7ms；k2 「→」跳转 1.6ms；renderDmgQuickChips 0.1ms
+- 内存：Heap used 12MB / total 21MB；console 0 error（1 条 deprecation warning）
+- 趋势：v4.173 1,538,625B vs v4.161 1,530,176B（+8,449B），无可感知退化，远低于 P1 阈值（LCP>1s/Tab>300ms/方案区>1.5s）
+- 决策：纯审计轮不修码，线上维持 v4.173（A3488884）；引擎 er-n699 双构建留 twin=BCFAEDED 证据
+- 缺口登记：375px 真机视口 CDP 无法 emulate，本轮 ~1035px 桌面口径，**不得宣称已覆盖 375px**；分片加载（species/adv ttf 916ms）待真机卡顿证据再落地
+---
+
+## v4.175 深色/多选新功能收尾打磨（细节体验批修）— 2026-11-06
+### 落地（dev 0d85618 / deploy 5eae1af，最终 sha16=0985C997F9DE2054DE5EF4333A096BEBDC8D3857，1,538,907 B，+282 B）
+- 细节扫描：⭐ 角标/dmgDef 推导 chips/k2「→」入口/focus-visible/.tip-* 四态/空态文案 六类盘点
+- 修复 3 项（+282 B，远低于 2.5KB 上限）：
+  1. k2「→」触控热区 10px→padding 4px 8px + border-radius 8px + font-size 11px + user-select:none；title 补「点此直达，不影响点属性名就地展开」（L3780 cellK2）
+  2. ⭐ ☆ 未选中角标 opacity .6→.8（深色模式可见性提升，L2988）
+  3. dmgDef 推导 chip 文案「×弱」→「·弱」，title 补「队伍 ≥2 只被 X 打 2×」语义，加 user-select:none（renderDmgQuickChips）
+- 未修登记：focus-visible 环 v4.167 L617 已全局生效不动；.tip-* 四态 v4.163-4.167 已统一不动；空态文案各 Tab 一致不动
+- 零回归：多选/分桶/er_atkSel/dmgDef 推导 chips/独立状态/深浅双模式全不回归；8901 黑盒 arrow chip 渲染/回退硬编码/console 0/横滚 0
+- 版本双改 L701 tag v4.175 + L14599 ER_ENGINE_VER
+### 验收
+- 引擎 er-n700：N1=N2 恒 BCFAEDED（exit 0×2 viol 全 0）
+- 黑盒 verify/summary-v4175.md（k2 → chip 化/☆ 可见性/·弱 文案 PASS）
+- P0 线上：?nocache=1751 sha16=0985C997 MATCH
+### 上库凭证
+- gh-pages deploy commit 5eae1af8f4c9301992474c8ad44129b58981c525（远端同）；master 登记 commit（下）
+- 主工作区 6/6+AGENTS_match（含 v4.174 审计块）；下轮预选：① 方案区分片（375px 真机卡顿证据再落地）② 方向 A（队伍 STAB 一键填入 atkSel，需先解决 F3 配招数据）③ 无障碍口径复验（aria/键盘全量）
