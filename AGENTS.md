@@ -3205,3 +3205,19 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ### 上库凭证
 - gh-pages deploy commit cd097f04fd3008927d8eac2b8b17cdaf64802616（远端同）；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match；下轮预选：① P2 aria-current/aria-pressed 批修 ② 方案区分片（375px 真机证据）③ 方向 A（队伍 STAB 一键填入 atkSel）
+---
+
+## v4.177 P2/P3 aria 批量补齐（v4.176 TODO 清零）— 2026-11-06
+### 落地（dev ac059f8 / deploy a7f78c0，最终 sha16=9801DD81B4F12F7C72BF7C5044FB530A27462AA7，1,539,237 B，+337 B）
+- P2-1 nav button aria-current="page"（L2107 switchTab 同步，激活/失活互斥）
+- P2-2 atkChips button aria-pressed（L3724 renderAtk 遍历时按 .on 实时同步 true/false）
+- P3-1 搜索框 aria-label（L729 dmgAtkQ=搜索攻方宝可梦；L731 dmgDefQ=搜索对手宝可梦；L734 dmgMvQ=搜索招式）
+- P3-2 深色按钮 aria-pressed（L704 初始 false；L14662 erApplyTheme 按 t==='dark' 同步 true/false，含 er_theme 恢复）
+- 纯 aria 属性，视觉零变化；版本双改 L701 tag v4.177 + L14599 ER_ENGINE_VER
+### 验收
+- 引擎 er-n702：N1=N2 恒 BCFAEDED（exit 0×2 viol 全 0）
+- P0 线上：?nocache=1771 sha16=9801DD81 MATCH
+### 上库凭证
+- gh-pages deploy commit a7f78c0e8ed221f94d5b8f9beee6a1f4d2f3bb10（远端同）；master 登记 commit（下）
+- a11y-audit-v4176.md TODO 四项已关闭；主工作区 6/6+AGENTS_match
+- 下轮预选：① 方案区分片（待真机卡顿证据）② 方向 A（队伍 STAB 填入 atkSel，需先解 F3 配招数据）③ 无障碍回归固化（键盘路径脚本化）
