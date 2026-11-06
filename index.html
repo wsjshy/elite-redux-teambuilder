@@ -700,7 +700,7 @@ html[data-theme="dark"] .t{text-shadow:0 1px 2px rgba(0,0,0,.4)}
 <body>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.175</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.176</span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -3776,9 +3776,10 @@ function renderAtkMulti(sel){
     return '<span class="tagline" style="cursor:pointer'+(n?'':';opacity:.45')+'" onclick="mxInlineMulti(\''+escq(key)+'\',\''+grp+'\',this)" title="点它 → 就地展开该桶全部宝可梦（精灵图卡片，一次全列；计数 '+n+' 与展开数一致）">'+label+' <b class="bkcnt">'+n+'</b></span>';
   }
   function cell(d){return '<span style="cursor:pointer" onclick="mxInline(\''+d+'\',this,\'atk\')" title="进攻视角：'+d+' 属性招式打谁有效（全图鉴按实际承受倍率分组）">'+tlabel(d)+'</span>'}
-  /* v4.173：k2 行专属「→」跳转入口（独立 span，与就地展开主行为分离；切 analyze 伤害 Tab + dmgDefQuickType 列该属性物种）
-     v4.175：触控热区 ≥24px（padding 4px 8px + 圆角 chip 化），hover 提亮 var(--accent) */
-  function cellK2(d){return cell(d)+'<span style="cursor:pointer;color:var(--sub);margin:0 0 0 6px;padding:4px 8px;border-radius:8px;font-size:11px;user-select:none" title="跳伤害页 → 列出「'+d+'」属性对手物种（点此直达，不影响点属性名就地展开）" onclick="event.stopPropagation();switchTab(\'analyze\');try{dmgDefQuickType(\''+d+'\')}catch(e){}">→</span>'}
+  /* v4.173：k2 行专属「→」跳转入口（独立元素，与就地展开主行为分离；切 analyze 伤害 Tab + dmgDefQuickType 列该属性物种）
+     v4.175：触控热区 ≥24px（padding 4px 8px + 圆角 chip 化）
+     v4.176：span→button type=button（键盘可达，Enter/Space 触发） */
+  function cellK2(d){return cell(d)+'<button type="button" style="cursor:pointer;color:var(--sub);margin:0 0 0 6px;padding:4px 8px;border-radius:8px;font-size:11px;user-select:none;background:transparent;border:1px solid var(--line)" title="跳伤害页 → 列出「'+d+'」属性对手物种（点此直达，不影响点属性名就地展开）" onclick="event.stopPropagation();switchTab(\'analyze\');try{dmgDefQuickType(\''+d+'\')}catch(e){}">→</button>'}
   var html='';
   html+='<div class="kgroup"><div class="k2" style="margin-bottom:4px"><b>进攻属性组合：</b> '+sel.map(tlabel).join(' + ')+
     ' <span class="mini" style="color:var(--sub)">（聚合口径 = 逐宝可梦取所选属性的<b>最大实际倍率</b>；盲点 = 该组合全部打 ≤0.5× 的宝可梦）</span></div>';
@@ -5947,14 +5948,15 @@ function renderDmgQuickChips(){
   try{
     var box=$('dmgQuickChips');if(!box)return;
     var derived=erDeriveWeakTypes();
-    var hard=[['超级土王',false],['坚果哑铃',false],['洛奇亚',false],['耿鬼',false],['巨金怪',false]];
+    var hard=['超级土王','坚果哑铃','洛奇亚','耿鬼','巨金怪'];
+    var chipStyle='type="button" style="cursor:pointer;background:var(--guide-bg);border:none;padding:2px 8px;border-radius:8px;margin:0 2px;font-size:11px;user-select:none"';
     var html='';
     if(derived.length){
-      html+=derived.map(function(t){return '<span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px;user-select:none" title="属性 '+t+' 弱点（队伍 ≥2 只被 '+t+' 打 2×；点选列出该属性对手物种）" onclick="dmgDefQuickType(\''+t+'\')">'+esc(t)+'·弱</span>'}).join('');
+      html+=derived.map(function(t){return '<button '+chipStyle+' title="属性 '+t+' 弱点（队伍 ≥2 只被 '+t+' 打 2×；点选列出该属性对手物种）" onclick="dmgDefQuickType(\''+t+'\')">'+esc(t)+'·弱</button>'}).join('');
       var need=5-derived.length;
-      for(var i=0;i<need;i++)html+='<span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick(\''+hard[i][0]+'\')">'+hard[i][0]+'</span>';
+      for(var i=0;i<need;i++)html+='<button '+chipStyle+' onclick="dmgDefQuick(\''+hard[i]+'\')">'+hard[i]+'</button>';
     }else{
-      html=hard.map(function(h){return '<span style="cursor:pointer;background:var(--guide-bg);padding:1px 6px;border-radius:8px;margin:0 2px" onclick="dmgDefQuick(\''+h[0]+'\')">'+h[0]+'</span>'}).join('');
+      html=hard.map(function(n){return '<button '+chipStyle+' onclick="dmgDefQuick(\''+n+'\')">'+n+'</button>'}).join('');
     }
     box.innerHTML=html;
   }catch(e){}
@@ -14655,7 +14657,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.175';
+var ER_ENGINE_VER='v4.176';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b)b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
