@@ -914,7 +914,8 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.96：随机生成 6 只队伍">🎲 随机队</button>
     <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:11px">传说档:关</button>
     <button class="btn-mini" onclick="window._randMode=(window._randMode==='template'?'pure':'template');toast(window._randMode==='template'?'随机队：官方模板模式':'随机队：纯随机模式')" id="randModeBtn" style="font-size:11px">模板:开</button>
-    <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="v4.97：基于速度线/联防/体系缺口推荐补位">🧠 智能补位</button>
+    <button class="btn" style="background:#455a64;color:#fff" onclick="edgeSuggest()" title="v4.185：多目标边际评估（无解系/共弱/4倍系/进攻盲区/速度线/属性重复）；满队时给出「换谁」建议，理由逐条可核对">📊 边际评估</button>
+      <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="v4.97：基于速度线/联防/体系缺口推荐补位">🧠 智能补位</button>
     <button class="btn-mini" onclick="window._sugPool=(window._sugPool==='pc'?'dex':'pc');toast('补位候选池：'+(window._sugPool==='pc'?'存档电脑区':'全图鉴'))" id="sugPoolBtn" style="font-size:11px">候选:存档区</button>
     <button class="btn-mini" onclick="toggleMultiPick()" id="multiPickBtn" style="font-size:11px" title="v4.129：勾选多只精灵后一键入队">☑ 多选入队</button>
     <div id="multiPickBar" style="display:none;margin-top:6px;padding:6px;background:var(--guide-bg);border-radius:8px;font-size:12px">已选 <b id="multiPickCount">0</b> 只 <button class="btn-mini" onclick="multiPickEnqueue()">确认入队</button> <button class="btn-mini" onclick="toggleMultiPick()">取消</button></div>
@@ -4158,6 +4159,166 @@ function teamDiag(){
   var w4Types=Object.keys(wkCount).filter(function(at){return wkCount[at]>=2});
   var noResistWeak=Object.keys(wkCount).filter(function(at){return wkCount[at]>=1&&resist[at]===0});
   return {mx:mx,q:q,spdGap:spdGap,w4Types:w4Types,noResistWeak:noResistWeak,spds:spds};
+}
+/* ==================== v4.185 队伍边际评估（确定性多目标，不产单一总分） ====================
+   为什么不上 NN：本工具是单机网页、无对局数据源，唯一可得的真值标签是人工评分函数本身。
+   用它训练等价于蒸馏自身规则，天花板就是原规则，不可能"更优"——这正是历史雏形"判断没有更优"的成因。
+   这里改为可核对的多目标推导：每项缺口单独计分、逐条给出得失理由，满队时给出「换谁」建议。 */
+var EDGE_W={gap:5,shared:3,blind:2,dup:1,speed:2};
+var _defVecCache={},_supSetCache={};
+/* 每只的防守向量（18 属性天性口径），带缓存——避免组合枚举时重复算 defCellTrio */
+function edgeDefVecOf(s){
+  var k=s&&s.id;if(!k)return null;
+  if(_defVecCache[k])return _defVecCache[k];
+  var v={};
+  ERDATA.types.forEach(function(at){var c=1;try{c=defCellTrio(s,at).inn}catch(e){}v[at]=c});
+  _defVecCache[k]=v;return v;
+}
+/* 每只招式池能打出克制的防守属性集合（排除变化招），带缓存 */
+function edgeSuperSetOf(s){
+  var k=s&&s.id;if(!k)return {};
+  if(_supSetCache[k])return _supSetCache[k];
+  var seen={};
+  try{(s.lv||[]).forEach(function(q){seen[q[1]]=true});(s.tut||[]).forEach(function(m){seen[m]=true})}catch(e){}
+  var out={};
+  for(var mid in seen){
+    var m=MV[mid];if(!m)continue;
+    if(m[2]==='STATUS')continue;
+    ERDATA.types.forEach(function(d){ if(ERDATA.matchup[tIdx(d)][tIdx(m[3])]===2) out[d]=true });
+  }
+  _supSetCache[k]=out;return out;
+}
+/* 队伍缺口向量：无解系 / 共弱 / 4倍系 / 进攻盲区 / 极速 / 属性重复 */
+function edgeVector(sp){
+  var types=ERDATA.types,agg={};
+  types.forEach(function(t){agg[t]={w:0,r:0,i:0,mx:0}});
+  sp.forEach(function(s){
+    var v=edgeDefVecOf(s);if(!v)return;
+    types.forEach(function(at){
+      var c=v[at];
+      if(c===0)agg[at].i++;else if(c<1)agg[at].r++;else if(c>1)agg[at].w++;
+      if(c>agg[at].mx)agg[at].mx=c;
+    });
+  });
+  var noAns=[],shared=[],quad=[];
+  types.forEach(function(at){
+    var a=agg[at];
+    if(a.w>=1&&(a.r+a.i)===0)noAns.push(at);
+    if(a.w>=2)shared.push(at);
+    if(a.mx>=4)quad.push(at);
+  });
+  var top=0;
+  sp.forEach(function(s){try{var v2=spdMaxOf(s);if(v2>top)top=v2}catch(e){}});
+  var dup={};
+  sp.forEach(function(s){[s.t1,s.t2].forEach(function(t){if(!t)return;dup[t]=(dup[t]||0)+1})});
+  var dupT=Object.keys(dup).filter(function(t){return dup[t]>1});
+  var sup={},blind=[];
+  sp.forEach(function(s){var o=edgeSuperSetOf(s);for(var d in o)sup[d]=true});
+  types.forEach(function(d){if(!sup[d])blind.push(d)});
+  return {agg:agg,noAns:noAns,shared:shared,quad:quad,top:top,dupT:dupT,blind:blind};
+}
+function edgeScore(v){
+  var q=speedPctiles(),s=0;
+  s-=(v.noAns.length+v.quad.length)*EDGE_W.gap;
+  s-=v.shared.length*EDGE_W.shared;
+  s-=v.blind.length*EDGE_W.blind;
+  s-=v.dupT.length*EDGE_W.dup;
+  if(v.top>=q.P75)s+=EDGE_W.speed;else if(v.top<q.P50)s-=EDGE_W.speed;
+  return s;
+}
+/* 两次向量之差 → 可读的得失清单（这就是"为什么是它"） */
+function edgeDiff(from,to){
+  var gain=[],loss=[];
+  function cut(nameA,nameB){ /* 传 at 名称数组，做集合差 */
+    to[nameA].forEach(function(t){if(from[nameB].indexOf(t)<0)gain.push(nameB==='noAns'?('消除无解系 '+t):(nameB==='shared'?('减少共弱 '+t):(nameB==='blind'?('补上进攻覆盖 '+t):('去掉 4 倍系 '+t))))});
+    from[nameA].forEach(function(t){if(to[nameB].indexOf(t)<0)loss.push(nameB==='noAns'?('新增无解系 '+t):(nameB==='shared'?('新增共弱 '+t):(nameB==='blind'?('失去覆盖 '+t):('新增 4 倍系 '+t))))});
+  }
+  cut('noAns','noAns');cut('shared','shared');cut('blind','blind');cut('quad','quad');
+  from.dupT.forEach(function(t){if(to.dupT.indexOf(t)<0)gain.push('去掉属性重复 '+t)});
+  to.dupT.forEach(function(t){if(from.dupT.indexOf(t)<0)loss.push('新增属性重复 '+t)});
+  if(to.top>from.top)gain.push('极速 '+from.top+' → '+to.top);
+  else if(to.top<from.top)loss.push('极速 '+from.top+' → '+to.top);
+  return {gain:gain,loss:loss};
+}
+function edgeTagList(arr){return arr.length?arr.map(function(t){return tlabel(t)}).join(' / '):'无'}
+function edgeSuggest(){
+  var box=$('ruleBoxTeam');if(!box)return;
+  if(!team.length){box.innerHTML='<div class="tip">队伍为空 —— 先在「全图鉴组队」加人，再回来评估</div>';return}
+  var q=speedPctiles();
+  var base=edgeVector(team),bs=edgeScore(base);
+  var pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+  var rows=[],full=team.length>=6;
+  if(!full){
+    var need=6-team.length;
+    pool.forEach(function(s){
+      var to=edgeVector(team.concat([s]));
+      var dlt=edgeScore(to)-bs;
+      if(dlt>0)rows.push({cand:s,to:to,drop:null,delta:dlt});
+    });
+    rows.sort(function(a,b){return b.delta-a.delta});
+    rows=rows.slice(0,5);
+  }else{
+    /* 满队：枚举「换掉谁」——先按候选单独最高收益剪枝，再对 Top 候选做 6×N */
+    var pre=[];
+    pool.forEach(function(s){
+      var best=-999,bi=-1;
+      team.forEach(function(old,ix){
+        var arr=team.slice();arr[ix]=s;
+        var dlt=edgeScore(edgeVector(arr))-bs;
+        if(dlt>best){best=dlt;bi=ix}
+      });
+      if(best>0)pre.push({cand:s,ix:bi,delta:best});
+    });
+    pre.sort(function(a,b){return b.delta-a.delta});
+    pre.slice(0,6).forEach(function(x){
+      var arr=team.slice();arr[x.ix]=x.cand;
+      var to=edgeVector(arr);
+      rows.push({cand:x.cand,to:to,drop:team[x.ix],delta:edgeScore(to)-bs});
+    });
+    rows.sort(function(a,b){return b.delta-a.delta});
+    rows=rows.slice(0,5);
+  }
+  var h='<div class="sec" style="margin:6px 0"><h3>📊 边际评估<span class="mini" style="color:var(--sub);font-weight:400"> · 每项缺口单独计分，理由是逐条推导出来的，不是黑箱打分</span></h3>';
+  h+='<div style="font-size:12px;line-height:1.9;padding:6px 8px;background:var(--guide-bg);border-radius:8px">';
+  h+='<b>当前缺口</b>（评分 '+bs+'，权重 无解系/4倍='+EDGE_W.gap+' · 共弱='+EDGE_W.shared+' · 进攻盲区='+EDGE_W.blind+' · 属性重复='+EDGE_W.dup+' · 速度线='+EDGE_W.speed+'）<br>';
+  h+='无解系（有弱点但全队无人抗/免）：<b>'+(base.noAns.length?edgeTagList(base.noAns):'无')+'</b>；共弱（≥2 只弱）：<b>'+(base.shared.length?edgeTagList(base.shared):'无')+'</b>；4 倍系：<b>'+(base.quad.length?edgeTagList(base.quad):'无')+'</b><br>';
+  h+='进攻盲区（全队打不出克制）：<b>'+(base.blind.length?edgeTagList(base.blind):'无')+'</b>；属性重复：<b>'+(base.dupT.length?edgeTagList(base.dupT):'无')+'</b>；极速 <b>'+base.top+'</b>（P50 '+q.P50+' / P75 '+q.P75+' / P90 '+q.P90+'）';
+  h+='</div>';
+  if(!rows.length){
+    h+='<div class="tip tip-ok">没有找到净改善 > 0 的候选 —— 当前配置在这套口径下已无更优单步可走。想更激进可以手动改权重。</div>';
+  }else{
+    rows.forEach(function(r){
+      var d=edgeDiff(base,r.to), fromTxt=r.drop?('换掉 '+esc(r.drop.zh)):('加入 '+esc(r.cand.zh));
+      h+='<div style="margin:6px 0;padding:6px 8px;border:1px solid var(--line);border-radius:8px">';
+      h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px"><b>'+fromTxt+'</b><span class="chipgrp" style="font-size:11px">净改善 <b style="color:#2e7d32">+'+r.delta+'</b></span>';
+      h+='<button class="btn-mini" style="margin-left:auto" onclick="edgeApply('+r.cand.id+','+(r.drop?r.drop.id:'0')+')">✅ 应用</button></div>';
+      if(d.gain.length)h+='<div style="font-size:11px;color:#2e7d32;padding:2px 0">得：'+esc(d.gain.join(' · '))+'</div>';
+      if(d.loss.length)h+='<div style="font-size:11px;color:#c62828;padding:2px 0">失：'+esc(d.loss.join(' · '))+'</div>';
+      if(!d.gain.length&&!d.loss.length)h+='<div style="font-size:11px;color:var(--sub);padding:2px 0">得分更高，但缺口构成无变化（多为速度线跨档）</div>';
+      h+='</div>';
+    });
+  }
+  h+='<div class="tip">口径说明：防守按天性特性（与「防守剖面」同源）；进攻覆盖按招式池可打出的克制关系；速度按极速 252+性格。评分是<b>相对</b>指标，只用于比较候选之间的单步收益，不能当绝对强弱。</div>';
+  h+='</div>';
+  box.innerHTML=h;
+}
+function edgeApply(candId,dropId){
+  var s=speciesById(candId);if(!s){toast('候选不在图鉴中');return}
+  if(team.length>=6&&!dropId){toast('队伍已满，请选一个替换对象');return}
+  if(dropId){
+    var ix=-1;
+    for(var i=0;i<team.length;i++){if(String(team[i].id)===String(dropId)){ix=i;break}}
+    if(ix<0){toast('要替换的成员不在了');return}
+    var oldId=team[ix].id;
+    try{delete teamInfo[oldId]}catch(e){}
+    team[ix]=s;
+  }else{
+    team.push(s);
+  }
+  try{delete teamInfo[s.id]}catch(e){}
+  renderTm(true);renderSlots();renderAnalyze();saveTeam();
+  toast('已应用：'+s.zh);
+  edgeSuggest();
 }
 function smartSuggest(){
   var d=teamDiag();
@@ -14679,7 +14840,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.184.3';
+var ER_ENGINE_VER='v4.185';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
