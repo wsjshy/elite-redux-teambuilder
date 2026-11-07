@@ -257,3 +257,14 @@ v4.55 / v4.82 两轮的历史状态快照另存于 [`docs/changelog/STATE_snapsh
 **两个自己写错的 bug（探针才抓得到）**：
 1. `indexOf(s) < 0` 写成 `<-1` —— 恒假，候选池空，界面只有缺口没有建议。
 2. `team[i].id` 是字符串而按钮传数字，`===` 比较失败 → 应用报「成员不在了」。改用 `String()` 归一。
+
+## v4.185 补记：核 blob 字节不能用 `git show > file`
+
+部署后核对「gh-pages 里的 index.html 与本地是否同一份」时，`& git show gh-pages:index.html > $tmp` 在 PowerShell 下会因输出编码重写字节：本次得到 **1,564,247 B**，比真实 blob 多 **161 B**，足以误判成「线上与本地不一致」。
+
+**正确口径（已实测）**：
+1. `git cat-file -s <rev>:<path>` 取真实字节数
+2. `git rev-parse <rev>:<path>` 取 blob 对象 hash，两侧相同即**逐字节相同**（本次 `master:index.html` 与 `gh-pages:index.html` 同为 `68dbfec9…`）
+3. 线上另用 `curl` + `Get-FileHash -Algorithm SHA1` 校验文件 sha1（本次 `DE738760…` / 1,564,086 B，与本地一致）
+
+注意区分两种 hash：`rev-parse <rev>:<path>` 给的是 **git blob 对象 hash**（sha1 of "blob\0<size>\0<content>"），不等于文件的 sha1。
