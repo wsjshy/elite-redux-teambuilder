@@ -158,15 +158,17 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-11-07，v4.182）
+## 6. 当前状态（2026-11-07，v4.183）
 
-- **版本**：`index.html` = v4.182（`ER_ENGINE_VER`，2026-11-07），已部署到 gh-pages 且与线上逐字节一致（基线见 §8）。
+- **版本**：`index.html` = v4.183（`ER_ENGINE_VER`，2026-11-07），已部署到 gh-pages 且与线上逐字节一致（基线见 §8）。
 - **分支收敛（2026-11-07）**：`master` 与 `audit-20261107` 自分叉点 `dbc3f54`（v4.159）合并为 `3d3cf0c`，**master 自此为唯一主战场**；`release/v4.181` 固定该版本供回溯。旧链 5 个提交（`a324503`…`c1746b6`）完整保留在 `master-legacy-20261107`，未删除任何内容。
 - **数据**：`data_*_v498.js` 三个分片是页面唯一数据源（lite 380 KB → species 1.36 MB → adv 576 KB，合计 2.32 MB）。`data.js` 已于 2026-11-07 退役归档至 `archive/`。
 - **生成器**：`build_tool_html.py` 已退役（停在 v4.136，v4.137–v4.179 共 43 版无脚本源），误跑会因 `ER_BUILD_FORCE_SYNC` 守卫 SKIP 而非覆盖。
 - **护栏**：`node tools/smoke.js` 26 项静态断言（数据完整性 / split 枚举 / 部署白名单 / 生成器退役 / data.js 退役 / 关键修复存在性 / 代码健康基线）。
 - **2026-11-07 评估轮修复**：① `dmgCalc` 补 `hitsDef` 分支 + `splitLabel` 7 值 —— 精神冲击 / 精神击破 / 神秘之剑 / 魔法叶 4 招原先按特防结算，现按物防（31-37 → 48-57 等）；② 存档 0 记录改报错终止；③ 部署白名单 3→5 项（原白名单缺 3 个线上现役分片，下次部署会让线上 404）；④ 曾删 29 个零引用函数，复核后按「清理冗余不删功能」口径**全部恢复**（它们在 v4.179 里本就没被调用，但含 v4.101 队检告警 / 战斗概率 / Smogon 先验等历史功能组）；⑤ 首屏遮罩 / 触屏 44px 热区 / `window.__ER_ERRORS` 错误观测。
 - **v4.182 特性反查持有者全 0（P0，用户实测「关掉再打开就正常」）**：`data_lite_v498.js` 不含 species（实测 `lite_species=none`），species 在 load 后 800ms 才由 `__erStartLate()` 异步到达；而 `renderAbi()` 在页面初始化 IIFE（L5316）立即执行，此刻 `ERDATA.species` 为空 → `abiOwners()` 走 L5336 提前 `return {}` ⇒ 每卡「天性 0 / 可选 0」。`er-ready` 的 7 个监听点（MV 表 / switchTab / renderSp / erRestoreAtkSel / sets 预取 / renderDmgQuickChips / _initCoreList）**没有一个是反查页** ⇒ 数据到了也不刷新，只能靠手动拨开关触发 `abiFilterToggle()`。修复：`__erReady` 为真则立即渲染，否则挂 `er-ready` 再渲染。probe18 实测 T+400ms 无卡 → T+1200ms 自动出 60 卡、首卡「可选 2 / 天性 3」。**教训：任何「懒构建索引 + 页面初始化即渲染」的列表，都必须确认数据分片到达后有重渲入口。**
+- **v4.183 战术模板队伍卡被压扁（UI 可用性，用户截图「完全看不到」）**：卡片类是 `mxc tap44`，而 `.mxc{width:76px}` 写在 L278、`.tap44{display:inline-flex; align-items:center}` 写在 L438 —— **后定义同特异性规则覆盖 display**，卡片变成横向 flex（无 flex-direction 即 row），精灵图/名字/分数/命中/入队 4 个块被塞进 76px 一行，flex-shrink 把每项压到单字宽，视觉上只剩竖排碎字。修复：新增高特异性 `.mxc.tap44`（0,2,0）显式 `flex-direction:column` 并放宽到 `min-width:118px`。实测 probe20 修复前 `dir:row/76x98` → 修复后 `dir:column/118x110`，probe21 视觉截图 1440 六卡一行、375 折两行且名字零截断。**教训：①给组件加「通用热区/触控类」（tap44 这类）时，它自带的 display 会覆盖组件自身的 display，必须用更高特异性把布局属性钉回去；②页面视觉畸形先量 computedStyle（display/flex-direction），不要先怀疑数据。**
+- **v4.183 页头版本号脱节**：页头副标题「引擎 v4.179」是**手写死文本**（原 L777），真相源 `ER_ENGINE_VER` 早已 v4.182 —— 用户看到的版本长期落后，无法判断自己是否用上最新版。现改为 `<b id="erVerNo">` 由 `ER_ENGINE_VER` 回填。**教训：任何对用户可见的版本文本都不得硬编码，必须从唯一真相源渲染；升版只改 `ER_ENGINE_VER` 一处。**
 - **已知风险**：CDN 兜底依赖 jsDelivr，大陆实测三个分片全部 25 s 超时 —— 可靠性靠部署前断言，不要指望线上拉 CDN 救命。
 ## 7. 项目准则
 

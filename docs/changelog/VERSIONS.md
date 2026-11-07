@@ -2160,3 +2160,17 @@ renderAbi() 初始化改为：__erReady 为真则立即渲染，否则挂 er-rea
 optAbiFinal=true / optAbiMega=true（与核心配队 optFinalOnly/optMegaOnly 同值，v4.41 设计如此）：默认即收窄到「最终形态 + 非可 Mega 形态」。此默认不是本次故障原因——故障时 _hidN=0 恰恰证明过滤根本没生效（持有者列表本身是空的）。修复后徽标数字随过滤变化，_hidN 正常非 0。
 ### 提交
 - master bb315b9（fix）+ 版本登记提交（本次）
+## v4.183（2026-11-07）UI 修复：战术模板「固定推荐队伍」卡片被压扁 + 页头版本号脱节
+### 现象
+用户截图：战术模板页每个模板的「固定推荐队伍（Top 6 · 点卡片入队）」区域，6 张队伍卡被压成约 20px 宽的竖条，精灵图重叠、名字/分数/命中全部逐字换行，右侧留大片空白，完全读不出内容。
+### 根因（实测）
+卡片类是 `mxc tap44`。`.mxc{width:76px}` 在 L278，`.tap44{display:inline-flex; align-items:center}` 在 L438 —— **后定义的同特异性规则覆盖了 display**，卡片变成横向 flex（无 flex-direction 即 row）。探针实测修复前：`display:flex / flexDirection:row / alignItems:center / 76x98`，四个子元素（精灵图 40px、名字、分数、命中、入队）全被塞进 76px 一行，flex-shrink 把每一项压到单字宽。
+### 修复
+新增高特异性规则 `.mxc.tap44`（0,2,0 > .tap44 的 0,1,0）：`display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:auto; min-width:118px; max-width:150px`；同时放开 `.mcnm` 的 nowrap/ellipsis，长名允许换行不截断。
+### 附带修复：页头版本号硬编码
+页头副标题的「引擎 v4.179」是**手写死的文本**（L777），而真相源 `ER_ENGINE_VER` 已是 v4.182 —— 用户看到的版本号长期落后实际版本，无法确认是否用上最新版。现改为 `<b id="erVerNo">` 由 `ER_ENGINE_VER` 回填，以后升版只改一处。
+### 验证
+- probe20（headless CDP，1440 宽）：修复前 `dir:row / 76x98 / scrollW 74` → 修复后 `dir:column / 118x110 / 无溢出`，6 卡一致，页面 `scrollWidth==clientWidth`（零横向溢出）
+- probe21 视觉截图：1440 宽 6 卡一行可读；375 宽自动折成 2 行 3 列，名字零截断（`nameClipped:false` 6/6）
+- smoke 26/26 passed
+- 影响面核查：全站仅一处 `mxc tap44`（模板卡），另一处 `btn-mini tap44` 不受新规则影响
