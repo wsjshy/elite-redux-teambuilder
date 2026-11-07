@@ -1,0 +1,22 @@
+{
+  "name": "elite-redux-teambuilder",
+  "version": "4.179.0",
+  "private": true,
+  "description": "Pokémon Elite Redux 存档解析 + 配招助手（单文件 HTML + 外置数据分片）",
+  "scripts": {
+    "smoke": "node tools/smoke.js",
+    "smoke:json": "node tools/smoke.js --json",
+    "a11y": "node tools/a11y-check.js http://127.0.0.1:8901/",
+    "check:rebuild": "python tools/check_rebuild_faithful.py",
+    "serve": "python -m http.server 8901 --bind 127.0.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "notes": {
+    "why": "本项目长期无测试入口，只有散落在临时目录的 CDP 探针（路径/端口写死，换机不可复跑）。",
+    "smoke": "静态断言：数据完整性 / split 枚举 / 污染 / 部署白名单 / 关键修复存在性 / 代码健康基线。",
+    "a11y": "需先 npm run serve 起本地站点；覆盖对比度 15 项。",
+    "deploy": "部署走 tools/deploy_er.ps1（PowerShell），不在此脚本链内。"
+  }
+}

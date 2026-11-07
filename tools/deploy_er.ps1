@@ -9,7 +9,11 @@ $ErrorActionPreference = "Stop"
 $Git = "D:\Git\bin\git.exe"
 $Repo = "D:\game\elite-redux"
 $Temp = "C:\temp\er-deploy"
-$DeployFiles = @("index.html", "data.js", "README.md")
+# v4.180 评估修复：v498 懒加载分片是线上现役文件（图鉴/分析/速度线运行时按需加载），
+# 原白名单只有 3 项，而下方步骤4 会清空 gh-pages 工作区 → 下次部署会删除这 3 个分片，线上 404。
+# 数据源合一（2026-11-07）：data.js（2.4 MB 全量单文件）已归档至 archive/，不再部署。
+# 实测 data.js 与三分片 26/27 键完全等价（0 差异），唯一多出的 ERDATA.sprites 是空对象且页面零引用。
+$DeployFiles = @("index.html", "README.md", "data_species_v498.js", "data_adv_v498.js", "data_lite_v498.js")
 $Version = $args[0]; if (-not $Version) { $Version = "v4.2" }
 $Message = $args[1]; if (-not $Message) { $Message = "Deploy: $Version" }
 
@@ -60,6 +64,12 @@ if (Test-Path (Join-Path $Repo "ER-source")) {
 # .nojekyll：GitHub Pages 不做 Jekyll 处理
 New-Item -ItemType File -Path (Join-Path $Temp ".nojekyll") -Force | Out-Null
 Write-Host "[2/6] deploy artifacts staged to $Temp"
+# v4.180 评估修复：清空 gh-pages 前先断言暂存目录齐全。步骤4 是破坏性清空，
+# 缺任一现役文件都会造成「部署成功但线上 404」，必须在写盘前拦住。
+foreach ($f in $DeployFiles) {
+    if (-not (Test-Path (Join-Path $Temp $f))) { throw "暂存目录缺产物: $f —— 已中止，未清空 gh-pages" }
+}
+Write-Host "[2b/6] staged artifacts verified: $($DeployFiles.Count) files"
 
 # 步骤3：切 gh-pages（首次=orphan 创建；坑3：每步检查，失败即停）
 $rc = Invoke-Git checkout gh-pages
