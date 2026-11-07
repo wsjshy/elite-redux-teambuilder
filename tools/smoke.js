@@ -206,6 +206,26 @@ check('零引用函数（只允许历史保留白名单，禁止新增）', () =
   return dead.length + ' 个历史保留';
 });
 
+const vm = require('vm');
+check('index.html 内联脚本语法可编译（防语法中断）', () => {
+  // v4.186 教训：主 script 里一处字符串续接多写一个引号，整段脚本就不执行
+  // （所有函数 undefined），但旧版 smoke 仍 31/31 全绿 —— 它只做文本断言。
+  // 这里用 vm.Script 只编译不执行，语法错会在这里直接抛。
+  const t = read('index.html');
+  const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+  let m, n = 0, bytes = 0;
+  while ((m = re.exec(t))) {
+    const body = m[1];
+    if (!body.trim()) continue;
+    n++;
+    bytes += body.length;
+    try { new vm.Script(body, { filename: 'inline#' + n }); }
+    catch (e) { throw new Error('第 ' + n + ' 段内联脚本语法错误：' + e.message); }
+  }
+  if (n === 0) throw new Error('未找到内联脚本');
+  return n + ' 段 / ' + (bytes / 1024).toFixed(0) + ' KB 可编译';
+});
+
 // ---------- 输出 ----------
   check('队伍边际评估可用（v4.185：函数 + 按钮 + 权重 + 缓存）', () => {
     const t = read('index.html');
