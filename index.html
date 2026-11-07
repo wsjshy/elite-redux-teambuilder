@@ -888,6 +888,10 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 <!-- ===== 属性克制 ===== -->
 <section id="tab-type" class="tab">
   <div class="sec"><h3>进攻视角：我选招式属性，打谁克制？</h3>
+    <div class="bar" style="margin-bottom:8px">
+      <button type="button" class="btn-mini" id="atkStabBtn" onclick="fillTeamStabSel()" title="按当前队伍每只的本系属性（含双属性，去重后最多 6 个）一键选中进攻面；再点一次还原原来的选择">📋 队伍 STAB → 进攻面</button>
+      <span class="mini" id="atkStabHint" style="color:var(--sub)"></span>
+    </div>
     <div class="chips" id="atkChips"></div>
     <div id="atkResult" class="ktable" style="margin-top:10px"></div>
   </div>
@@ -3790,7 +3794,36 @@ function openMv(m){
 })();
 /* v4.162 进攻多选分发：sel 现作用域直读 DOM chips（不引入新全局状态）；特殊属性显式排除（同 atkCover） */
 var ATK_SPECIAL={'星晶':1,'无':1,'神秘':1};
-function renderAtk(){
+/* v4.184：队伍 STAB → 进攻面一键写入（设计来源 stabsync-proposal-v4180，此前产物 0 命中未落地）
+   口径：遍历 team 每只的 t1/t2 并集去重（排除 ATK_SPECIAL 特殊属性）cap 6；覆盖式写入（非合并）；
+        不自动跟随（改队后本次选择保留，需再点一次重新生成）；再点同一按钮还原点击前的选择。 */
+(function(){
+  var prev=null;
+  window.fillTeamStabSel=function(){
+    var box=$('atkChips');if(!box)return 'no-chips';
+    var chips=[].slice.call(box.querySelectorAll('button'));if(!chips.length)return 'no-chips';
+    var btn=$('atkStabBtn'),hint=$('atkStabHint');
+    if(prev){
+      chips.forEach(function(b){b.classList.toggle('on',prev.indexOf(b.textContent)>-1)});
+      prev=null;if(btn)btn.classList.remove('on');if(hint)hint.textContent='';
+      erSaveAtkSel();renderAtk();return 'restored';
+    }
+    var set=[];
+    (typeof team!=='undefined'?team:[]).forEach(function(s){
+      if(!s)return;
+      [s.t1,s.t2].forEach(function(t){
+        if(t&&t!=='-'&&!ATK_SPECIAL[t]&&set.indexOf(t)<0)set.push(t);
+      });
+    });
+    if(!set.length){if(hint)hint.textContent='队伍还是空的 —— 先去「队伍构建」加人';return 'empty';}
+    set=set.slice(0,6);
+    prev=chips.filter(function(b){return b.classList.contains('on')}).map(function(b){return b.textContent});
+    chips.forEach(function(b){b.classList.toggle('on',set.indexOf(b.textContent)>-1)});
+    if(btn)btn.classList.add('on');
+    if(hint)hint.textContent='已选中 '+set.length+' 个本系属性：'+set.join(' · ')+'（再点一次还原）';
+    erSaveAtkSel();renderAtk();return set.join('+');
+  };
+})();function renderAtk(){
   var sel=[];
   document.querySelectorAll('#atkChips button').forEach(function(b){var on=b.classList.contains('on');if(on)sel.push(b.textContent);b.setAttribute('aria-pressed',on?'true':'false')});
   sel=sel.filter(function(t){return !ATK_SPECIAL[t]});
@@ -14621,7 +14654,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.183';
+var ER_ENGINE_VER='v4.184';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

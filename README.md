@@ -25,12 +25,12 @@
 | 方式 | 说明 |
 |---|---|
 | **在线访问** | https://wsjshy.github.io/elite-redux-teambuilder/ （手机可访问） |
-| **本地运行** | 下载本仓库 → 双击打开 `配招助手_ER.html`（与 `assets\sprites`、`assets\sheets` 同目录，相对路径引用） |
+| **本地运行** | 下载本仓库 → 双击打开 **`index.html`**（与 `assets\sprites`、`assets\sheets`、`data_*_v498.js` 同目录，相对路径引用）。`配招助手_ER.html` 只是兼容旧书签的跳转入口，会转到 `index.html` |
 | **命令行解析** | `python parse_er_save_v4.py <存档.sav> [out.csv] [out.json]`（Python 3，无第三方依赖） |
 
 ## 当前版本与真相源（2026-11-07 登记）
 
-- **运行时版本以 `index.html` 的 `ER_ENGINE_VER` 为准**：当前 **v4.183**（与线上 gh-pages 逐字节一致 SHA256[:16]=`E83861C332CA39BF`）。页头显示的「引擎 vX」由 `ER_ENGINE_VER` 回填，**不再是手写文本**（v4.183 前的硬编码曾长期停在 v4.179 与实际版本脱节）。
+- **运行时版本以 `index.html` 的 `ER_ENGINE_VER` 为准**：当前 **v4.184**（与线上 gh-pages 逐字节一致 SHA256[:16]=`2E7A0CEEEC792288`）。页头显示的「引擎 vX」由 `ER_ENGINE_VER` 回填，**不再是手写文本**（v4.183 前的硬编码曾长期停在 v4.179 与实际版本脱节）。
 - **生成器已脱钩**：`build_tool_html.py` 停在 v4.136，v4.137–v4.183 是直接编辑 `index.html` 演进，**重建无法复现当前产物**。改功能请直接改 `index.html`，并在 AGENTS 登记。
 - **数据两重源（2026-11-07 已合一）**：`招式表_招式数值.csv`（源头）→ `data_*_v498.js` 三个分片（**页面实际加载的就是分片**）。原 `data.js`（2.4 MB 全量单文件）已退役归档至 `archive/`——实测与三分片 26/27 键完全等价，唯一多出的 `ERDATA.sprites` 是空对象且页面零引用。
 - **数据同域优先、CDN 兜底**：`__ER_CDN`（jsDelivr）只在同域 404 时作回退前缀，**不是主源**。本地改动"不生效"通常是改错了文件（应改分片，而不是已退役的 `data.js`）。
@@ -49,16 +49,20 @@
 
 ```
 D:\game\elite-redux\
-├── 配招助手_ER.html          ← 前端主程序（纯 HTML+JS，数据外置 data.js，约 650KB；v4.12 机制感知升级）
-├── data.js                     ← ★v4.12 拆包数据（ERDATA 全量 + smogonPrior 120 只 + mechLib 52/156，2,347,755 B）
-├── 配招工具_data.js           ← 全量数据（物种/招式/特性/道具/可学池 + v4.12 机制库/先验，6.8MB）
+├── index.html                 ← ★前端主程序唯一产物（纯 HTML+JS，v4.183，1,549,510 B）
+├── 配招助手_ER.html           ← 兼容入口（~1.7KB，自动跳转 index.html；旧书签用）
+├── data_lite_v498.js          ← ★拆包数据 ① lite（ERDATA 主表）
+├── data_species_v498.js       ← ★拆包数据 ② 物种全量
+├── data_adv_v498.js           ← ★拆包数据 ③ 招式/特性/道具/机制库/先验
 ├── assets\sprites\            ← 精灵图源 1906 张 PNG（本地保留供重跑，.gitignore 排除不入库）
 ├── assets\sheets\             ← 合图 8 张 WebP + sheets_map.js（页面实际加载，1906 请求 → 8）
 ├── parse_er_save_v4.py        ← 存档解析器（独立可用，5 锚点自检）
-├── build_movesets.py 等        ← 数据生成链
+├── tools\smoke.js             ← 27 项冒烟门禁（exit code 即判据）
 ├── tools\deploy_er.ps1        ← 一键部署（master 开发 / gh-pages 部署）
 └── AGENTS.md                  ← 内部文档唯一入口（存档格式结论 / 开发流程 / 部署约定）
 ```
+
+> `data.js`（2.4 MB 单文件）已于 v4.98 拆包退役，页面与部署面均零引用；历史快照仅存 `archive\data.js.v4.179_full_snapshot`。
 
 ## 更新记录
 
