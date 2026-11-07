@@ -38,6 +38,11 @@ D:\game\elite-redux\
 ├── nn_data\mech_lib_v412.json              ← ★v4.12 机制知识库（52 机制 / 156 combo / 40 词汇，meta version3 / schema v412 / updated 2026-10-10；既有 28 条逐字保留 + 24 新机制 + 32 新 combo，全部带来源 URL）
 ├── nn_data\smogon_prior_2026-09.json       ← ★v4.12 Smogon 标准对战先验（120 物种 / 2335 行，gen3ou×1.0 + gen9nationaldex×0.5，srcMax=0.516601 与既有 usagePrior 锚点逐位一致；引擎 SMOGON_PRIOR_ENABLED 开关消费、置 false 逐字节回退 v4.11）
 ├── nn_data\axis_lib.json                   ← ★15 协同轴知识库（v4.9 七字段逐字不动 + v4.12 每轴新增「体系模板」键：六位完整体系设计 15 轴×6 位=90/90）
+├── docs\research\                    ← ★研究 / 清理 / 验证合辑（2026-11-07 起）
+│   ├── B类目录内容抢救合辑_20261107.md ← C:\temp 121 个 `er-*` 目录内容按机制整合（120.5 KB：九章正文 + 121 目录映射表 + 判废清单 + 删前口径）
+│   ├── temp顶层逐项判定_20261107.csv   ← C:\temp 顶层 1023 项逐行判定（名称/类型/大小/类别/判定/依据）
+│   ├── temp顶层清理执行_20261107.md    ← 清理执行记录（删 1022 项 / 释放 936.8 MB / 剩余 3 项 + nn_data 未入库发现）
+│   └── 回归与未决验证_20261107.md / teamqa接入_20261107.md ← 队检告警接入与回归验证记录（v4.182）
 ├── docs\                           ← ★战斗分析文档体系（2026-10-06 新增，配招引擎升级依据）
 │   ├── 战斗分析\01_属性克制体系.md   ← ★机制分析：21×21克制表全表/火打地面=1x裁定/12条规则
 │   ├── 战斗分析\02_特性体系.md      ← 4特性机制(abis+inns)/ABI_TAGS 98条/14条规则
@@ -158,7 +163,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 （特殊区A 第1-6条 / 特殊区B 第1-9条，箱号归属用户已认可重要性低；`box_override.json` 可人工指定箱号，可选）。
 依赖：gameDataV2.65beta.json（ER-source\ 下）；中文源=根目录招式表 CSV（物种/招式/**特性** `招式表_特性.csv`，xlsm 已丢失不再依赖），缺失时回退英文。
 
-## 6. 当前状态（2026-11-07，v4.183）
+## 6. 当前状态（2026-11-07，v4.185）
 
 - **版本**：`index.html` = v4.183（`ER_ENGINE_VER`，2026-11-07），已部署到 gh-pages 且与线上逐字节一致（基线见 §8）。
 - **分支收敛（2026-11-07）**：`master` 与 `audit-20261107` 自分叉点 `dbc3f54`（v4.159）合并为 `3d3cf0c`，**master 自此为唯一主战场**；`release/v4.181` 固定该版本供回溯。旧链 5 个提交（`a324503`…`c1746b6`）完整保留在 `master-legacy-20261107`，未删除任何内容。
@@ -172,6 +177,10 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **C:\temp 临时工作区抢救与清理（2026-11-07，B 类 121 个 `er-*` 目录 / 2.39 GB）**：先抢救后删除。**抢救成果** = `docs/research/B类目录内容抢救合辑_20261107.md`（120.5 KB）：按机制分九章（伤害引擎与对拍 / 配速与 EV / 六队分析器与队伍联动 / 特性语义与筛选开关 / 工具挖掘 v500~v518 / UI 与可访问性 / 存档与拆包 / 版本演进时间线 72 行 + 20 条未决 / 勘遗），另有 121 目录全量映射表、判废清单、删前执行口径。验收：来源 165 组「目录/文件」引用全可回溯、落地状态标 44【已实现】/9【未实现（仅设计）】/3【状态未知】、乱码与占位符 0。**实际删除 120 个、保守留 `er-deploy-dryrun`**（部署 `-DryRun` 依赖它），0 失败。三条长期结论已归档：①**生成器冻结在 v4.98 而产物已到 v4.183**——在生成器里查不到 ≠ 功能没实现，判定实现状态只能查 `index.html`；②**NN 组队 v2 仍是 `analyzerVNN(){return null}` 存根**（只有设计）；③`fillTeamStabSel`（队伍 STAB→进攻面按钮）已于 **v4.184 落地**；`renderSavSlots` 分页器经 v4.184 实测确认**不需要实现**（`renderSavSlots()` 早在产物 L4958–4972 实现并工作：档位 chips / 改名 / 两档对比 / 加载高亮，且 `er_savs_v1` FIFO 硬限 3 档 → 分页器无意义），原「未落地」结论已就地更正。
 - **本地入口双源漂移事故（2026-11-07，v4.183 补丁，产物 `index.html` 零改动）**：README 教用户「双击 `配招助手_ER.html` 本地运行」，而该文件是 **v4.98 旧产物副本**（1,448,248 B），其加载器依赖已在 v4.98 退役的 `data.js`——仓库根已无此文件、CDN 兜底指向的也是它，实测本地双击直接落到「数据加载失败」（console `Error: ERDATA missing`，`failText:true`，bodyLen=55）。根因：v4.98 拆包时 `index.html` 改指三分片，**第二副本没跟着改**；而 `tools/smoke.js` 的「data.js 已退役」断言只读 `index.html`，漏检第二副本。修法：`配招助手_ER.html` 收敛为 **1.7 KB 兼容入口**（`meta refresh` → `index.html`），彻底消除双源；README 的「本地运行」与「技术架构」同步改为 `index.html` + 三分片；smoke 新增第 27 项断言（入口页 ≤10 KB、必须跳转、不得引用 `data.js`）。教训：**同一产物只要存在第二份拷贝，就一定有漂移**——能用入口页就不复制产物；门禁断言必须覆盖所有对外入口，而不只是主产物。验证：file:// 双击入口页 → 自动跳 `index.html` → `ready:true / 1906 物种 / 1032 招式 / v4.183 / 9 Tab / 0 报错`；smoke **27/27**。
 - **v4.184 队伍 STAB → 进攻面（2026-11-07）**：补上合辑确认「只有设计、未落地」的 `fillTeamStabSel`（设计档案 `stabsync-proposal-v4180`，此前产物 **0 命中**）。属性克制 Tab「进攻视角」标题下新增「📋 队伍 STAB → 进攻面」按钮（`#atkStabBtn`，标准 `.btn-mini`）。口径：遍历 `team` 每只 `t1`/`t2` 并集去重（排除 `ATK_SPECIAL` 的 星晶/无/神秘）cap 6 → **覆盖式**写入 `#atkChips` 的 `on` → `erSaveAtkSel()` → `renderAtk()`；**不自动跟随**（改队后本次选择保留）；**再点一次**用内存快照 `prevSel` 还原并退出激活态；空队返回 `'empty'` 并提示去队伍构建加人，不误报。验证：probe23（headless CDP，file:// 双击）**13/13**；smoke **27/27**；1440 与 375 双宽度零横向溢出（`1427/1427`、`375/375`），375 宽按钮热区 150×44。产物 `index.html` 1,551,639 B / sha1 `F982C63A…` / `ER_ENGINE_VER='v4.184'`。
+- **v4.185 队伍边际评估（2026-11-07）**：用户问「NN 组队雏形要不要启用」。结论是不启用 —— `analyzerVNN` 只是 `return null` 存根、无调用方，产物里 `mlp`/`sigmoid`/`softmax`/`trainNN` **0 命中**，单机工具没有对局数据源，用人工评分函数当标签训练等于蒸馏自身。改为确定性六维边际评估（无解系 5 / 4 倍系 5 / 共弱 3 / 进攻盲区 2 / 速度线 2 / 属性重复 1），未满队算 1906 只净改善 Top5、满队算换人枚举，每条给「得 / 失」理由并可一键应用。实测 4 只队 177 ms、满 6 只 64 ms（线上）。自写 bug 两处已修：`indexOf(x)<-1` 恒假（候选池全空，同类 6 处）、`team[i].id` 是字符串而 `onclick` 传数字（`===` 必失败 → 改 `String()` 归一）。详见 `VERSIONS.md` v4.185 章。
+- **C:\temp 顶层逐项判定与清理（2026-11-07，1023 项 / 999.6 MB → 3 项 / 62.8 MB）**：前两轮只遍历 `er-*` **目录**，`er-*.html`/`er-online-*` 这类 **419 个文件（88.9 MB）从未进入清理范围**，实际清点 1023 项。判定口径三条（可复原 / 可重建 / 无独有内容），逐行落在 `docs/research/temp顶层逐项判定_20261107.csv`。执行：**attempted=1022 / failed=0 / 释放 936.8 MB**，只剩 `ghpages-leak-backup-20261107`（51.7 MB 回滚安全网）+ `er-deploy-dryrun`（部署 DryRun 依赖）+ `elite-redux-v411-prototype` 本体（0.4 MB）。两个「看起来很大」的目录真相：`elite-redux-v411-prototype` 500.7 MB 里 **99.9% 是 Chrome 渲染缓存**（`_shots` 5711 文件仅 12 张 png、`_v411test` 是 8 套 CDP profile），真材料只有 `v411_prototype.html` + `SELFCHECK.md` + `_harness`；`v449_det` 是 v4.49 构建确定性三次对拍，其 `nn_data` 与仓库 `nn_data/` **8 文件 hash 全同**，删之无损。
+- **发现：`nn_data/` 未入库（13.55 MB，风险未闭环）**：`.gitignore:26 nn_data/` 让它不在任何提交里，而 `restore_nn_axis.py` 文件头自己记着「nn_data/ 目录丢失（.gitignore 忽略，无法 git 恢复）」——**已经丢过一次**。内容为 Smogon 官方月度统计（`chaos/raw` Gen3 OU 213 species 1.89 MB + Gen9 National Dex 738 species 11.65 MB）+ 派生先验（`smogon_prior` / `_oracle_usagePrior`）+ 轴库 `axis_lib` + 机制库 `mech_lib_v412`。`axis_lib` 有脚本可重建，**`chaos/raw` 两份原始统计无法重建**（依赖 smogon.com 历史月份仍在线）。清理时那份同源副本已随 `v449_det` 删除，**现在全机只剩仓库根这一份**。建议压缩入库（预计 1–2 MB），待用户拍板。
+- **NN 结论修正（口径更准，不是推翻）**：v4.185 章写的是「无对局数据源」。核实后更精确：**有使用率先验**（Smogon chaos 的 usage/moves/items/abilities/teammates，且代码已在用 `smogonPriorOf` / `smogonMoveBonus` / `smogonMateIds`），**缺胜负标签**（chaos 里没有 winrate，注释提到的 `dataset_engine_v0_winrate.jsonl` 全盘搜不到、从未存在）。所以「对手会带什么」能做且已做，「这支队多强」做不了 —— 与 v4.185 的结论一致。
 - **已知风险**：CDN 兜底依赖 jsDelivr，大陆实测三个分片全部 25 s 超时 —— 可靠性靠部署前断言，不要指望线上拉 CDN 救命。
 ## 7. 项目准则
 
