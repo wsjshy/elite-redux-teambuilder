@@ -1,0 +1,41 @@
+{
+  "pass": 7,
+  "total": 7,
+  "results": [
+    {
+      "name": "页面加载完成 __erReady=true",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "构造双同物种队伍",
+      "ok": true,
+      "detail": "#1 妙蛙种子 ×2"
+    },
+    {
+      "name": "断言 #tmAnalyze 内出现 .qa-chip 且含「重复物种」",
+      "ok": true,
+      "detail": "chips=4 texts=[\"⚠ 重复物种 ×1\",\"⚠ 全队无除钉招式\",\"⚠ 全队无回复招式\",\"⚠ 全队无控速手段\"]"
+    },
+    {
+      "name": "断言点击 chip 后 .qa-detail.open 出现",
+      "ok": true,
+      "detail": "openCount=1 texts=[\"妙蛙种子\"]"
+    },
+    {
+      "name": "断言再次点击可收起（openCount 回到 0）",
+      "ok": true,
+      "detail": "openCount=0"
+    },
+    {
+      "name": "断言 375px 视口无横向溢出",
+      "ok": true,
+      "detail": "docScrollW=375 bodyScrollW=375 innerW=375"
+    },
+    {
+      "name": "断言切回空队伍后 chip 清零（不残留）",
+      "ok": true,
+      "detail": "residual chips=0"
+    }
+  ]
+}
