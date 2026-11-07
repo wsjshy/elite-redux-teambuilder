@@ -207,6 +207,17 @@ check('零引用函数（只允许历史保留白名单，禁止新增）', () =
 });
 
 // ---------- 输出 ----------
+  check('队伍边际评估可用（v4.185：函数 + 按钮 + 权重 + 缓存）', () => {
+    const t = read('index.html');
+    for (const fn of ['edgeSuggest', 'edgeApply', 'edgeVector', 'edgeScore', 'edgeDiff']) {
+      if (!new RegExp('function\\s+' + fn + '\\s*\\(').test(t)) throw new Error('缺少 ' + fn);
+    }
+    if (!/onclick="edgeSuggest\(\)"/.test(t)) throw new Error('缺少「边际评估」入口按钮');
+    if (!/var EDGE_W=/.test(t)) throw new Error('缺少可配置权重 EDGE_W');
+    if (!/_defVecCache/.test(t) || !/_supSetCache/.test(t)) throw new Error('缺少评估向量缓存');
+    return '5 函数 + 入口 + 权重 + 双缓存';
+  });
+
 const okN = results.filter(r => r.ok).length;
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ ok: okN, total: results.length, results }, null, 1));
