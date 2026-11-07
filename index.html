@@ -4715,6 +4715,13 @@ function renderAnalyze(){
   html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
   ERDATA.types.forEach(function(t){var n=atkCov[t]||0;var bg=n>0?'#c8e6c9':'#eceff1';var lbl=n>0?t+' ×'+n:t;html+='<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:'+bg+'">'+lbl+'</span>'});
   html+='</div></div>';
+  /* v4.182 队检聚合告警接入六队分析器（只增不删）：
+     触发链 = 所有队伍增删/替换/点选特性/补位入队路径均汇聚到 renderAnalyze()
+     （见 addToTeam/removeFromTeam/pickAbi/补位建议 inline onclick 等处均调用 renderAnalyze），
+     故在 box.innerHTML=html 前把 teamQA() 结果前置，告警随队伍数据自动刷新。
+     teamQA() 在无告警时返回 ''，不产生任何 DOM；外层 wrap 仅做 375px 收敛（box-sizing/换行）。 */
+  var _erQaHtml=teamQA();
+  if(_erQaHtml) html='<div class="er-qa-wrap" style="max-width:100%;box-sizing:border-box;overflow-wrap:anywhere">'+_erQaHtml+'</div>'+html;
   box.innerHTML=html;
 }
 
@@ -5308,7 +5315,12 @@ var optAbiFinal=true,optAbiMega=true;   /* 特性反查持有者 */
 var optMvFinal=true,optMvMega=true;     /* 招式反查「谁能学」 */
 (function(){
   $('abiSearch').oninput=function(){renderAbi()};
-  renderAbi();
+  /* 2026-11-07 修复（P0，用户实测「特性反查全是 0」）：species 分片是在 load 后 800ms 才异步到达的，
+     而这里是页面初始化即渲染 —— 首次一定拿到空 ERDATA.species，abiOwners() 提前返回 {} ⇒
+     每张卡都显示「天性 0 / 可选 0」，且 er-ready 事件的 7 个监听者里没有一个是反查页 ⇒ 数据到了也不刷新。
+     改为：已就绪则立即渲染，未就绪则等 er-ready 再渲染（开关/搜索仍可随时重渲）。 */
+  if(window.__erReady){renderAbi();}
+  else{document.addEventListener('er-ready',function(){try{renderAbi()}catch(e){}});}
 })();
 /* v4.x F⑪：特性持有者索引（懒构建，避免加载期依赖 NM2ID 定义顺序）
    ★ v4.40 修复（同名特性反查错位）：中文译名重合的 7 组 16 个 id（Stench(1)/Malodor(808) 均译
@@ -14603,7 +14615,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.181';
+var ER_ENGINE_VER='v4.182';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b){b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');b.setAttribute('aria-pressed',t==='dark'?'true':'false');}}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
