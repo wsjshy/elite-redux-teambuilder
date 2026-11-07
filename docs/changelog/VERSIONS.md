@@ -2143,3 +2143,20 @@
 ### 上库凭证
 - gh-pages deploy commit 17f5e69e19ea068785febbfc24bc548e1ed3ae1d；master 登记 commit（下）
 - 主工作区 6/6+AGENTS_match；下轮预选：① 方案区分片 ② 方向 A（队伍 STAB 填入 atkSel）
+## v4.182（2026-11-07）P0 修复：特性反查持有者全 0
+### 现象
+用户截图：反查 Tab 顶部「匹配 60 个特性 · 开关隐藏 0 个持有者条目」，从「恶臭 #1」到「复眼 #14」每张卡右侧均为「天性 0 / 可选 0」，展开后两列持有者同样全空。用户补充：拨动「仅最终形态 / Mega 形态优先」两开关后恢复正常。
+### 根因（三层核验）
+1. 数据层完好：1906 物种，abisNonEmpty=1905 / withAbiIds=1905 / withInnIds=1905；妙蛙种子 abiIds=["268","257","34"]。
+2. 算法层完好：headless 实测 abiOwners() 返回 998 个 id 桶，id=1（恶臭）ab=3 / inn=12。
+3. 时机层是病灶：data_lite_v498.js 里【没有 species】（实测 lite_species=none），species 在 load 之后 800ms 才由 __erStartLate() 异步拉取；而 renderAbi() 在页面初始化 IIFE（L5316）里立即执行，此刻 ERDATA.species 为空，abiOwners() 走 L5336 提前 return {} ⇒ 全部 0。
+4. 无人刷新：er-ready 事件共 7 个监听点（MV 表 / switchTab / renderSp / erRestoreAtkSel / sets 预取 / renderDmgQuickChips / _initCoreList），没有一个是反查页 ⇒ 数据到达后仍停在 0，直到用户手动拨开关触发 abiFilterToggle()。
+### 修复
+renderAbi() 初始化改为：__erReady 为真则立即渲染，否则挂 er-ready 再渲染（只增逻辑，不动过滤/搜索/展开态恢复）。
+### 验证
+- probe18：T+400ms cards=0（未就绪不渲染）→ T+1200ms cards=60、首卡「可选 2 / 天性 3」（自动刷新）→ 稳定；own=998 全程一致
+- smoke 26/26 passed
+### 开关默认值复核
+optAbiFinal=true / optAbiMega=true（与核心配队 optFinalOnly/optMegaOnly 同值，v4.41 设计如此）：默认即收窄到「最终形态 + 非可 Mega 形态」。此默认不是本次故障原因——故障时 _hidN=0 恰恰证明过滤根本没生效（持有者列表本身是空的）。修复后徽标数字随过滤变化，_hidN 正常非 0。
+### 提交
+- master bb315b9（fix）+ 版本登记提交（本次）
