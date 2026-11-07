@@ -109,6 +109,18 @@ check('生成器已退役且含拒绝覆盖守卫', () => {
   if (!/已退役/.test(t)) throw new Error('缺少退役声明，后来者会误以为可以重建');
   return 'retired';
 });
+check('配招助手_ER.html 只能是轻量兼容入口（≤10KB 且跳转 index.html）', () => {
+  // 2026-11-07 事故根因：v4.98 拆包后 data.js 退役，index.html 改好，但这份第二副本没跟着改
+  // → 用户按 README 双击本地运行，拿到 v4.98 旧版且 data.js 404，页面只剩「数据加载失败」。
+  // 断言口径：入口页必须薄，且必须跳转到唯一产物；一旦有人把它重新写成产物副本，这里拦下。
+  if (!fs.existsSync(R('配招助手_ER.html'))) throw new Error('入口页缺失');
+  const s = size('配招助手_ER.html');
+  if (s > 10 * 1024) throw new Error('体积 ' + s + ' B > 10KB —— 疑似又变成产物副本，会与 index.html 双源漂移');
+  const t = read('配招助手_ER.html');
+  if (!/http-equiv="refresh"[^>]*url=index\.html/.test(t)) throw new Error('未跳转 index.html');
+  if (/data\.js/.test(t)) throw new Error('仍在引用已退役的 data.js');
+  return String(s) + ' B → index.html';
+});
 check('data.js 已退役：本地无文件、页面零引用、兜底指向分片', () => {
   if (fs.existsSync(R('data.js'))) throw new Error('data.js 仍在仓库根目录，会重新进入部署面');
   const t = read('index.html');

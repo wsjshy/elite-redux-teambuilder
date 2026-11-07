@@ -2174,3 +2174,30 @@ optAbiFinal=true / optAbiMega=true（与核心配队 optFinalOnly/optMegaOnly �
 - probe21 视觉截图：1440 宽 6 卡一行可读；375 宽自动折成 2 行 3 列，名字零截断（`nameClipped:false` 6/6）
 - smoke 26/26 passed
 - 影响面核查：全站仅一处 `mxc tap44`（模板卡），另一处 `btn-mini tap44` 不受新规则影响
+
+
+## 10. v4.183 补丁：本地入口收敛（2026-11-07，产物 index.html 零改动）
+
+### 现象
+用户按 README 的「本地运行」指引双击 `配招助手_ER.html`，得到的不是工具，而是一句「数据加载失败」。
+
+### 根因（实测）
+该文件是 **v4.98 时期留下的产物副本**（1,448,248 B），其数据加载器要求同目录 `data.js`；而 `data.js`（2.4 MB）已在 v4.98 拆包时退役为 `data_lite_v498.js` / `data_species_v498.js` / `data_adv_v498.js` 三分片，仓库根已无此文件，其 CDN 兜底指向的同样是已退役的 `data.js`。
+
+- 实测（headless CDP，file:// 双击场景）：`ready:false / erdata:false / failText:true / bodyLen:55`，console `Error: ERDATA missing`
+- 对照 `index.html`：`ready:true / sp:1906 / mv:1032 / v4.183 / 9 Tab / 0 报错`
+
+v4.98 拆包时 `index.html` 改好了，**第二副本没跟着改**；而 `tools/smoke.js` 的「data.js 已退役」断言只读 `index.html`，因此长期漏检。
+
+### 修复
+- `配招助手_ER.html` 收敛为 **1,673 B 兼容入口**：`meta refresh` 跳转 `index.html` + 手动按钮 + 本地运行提示，**不再复制产物**，双源漂移从结构上消除
+- README「本地运行」改指 `index.html`（并说明兼容入口会跳转）；「技术架构」块同步为当前真实结构（三分片 + smoke + 部署脚本）
+- `tools/smoke.js` 新增断言：入口页 ≤10 KB、必须含 `url=index.html` 跳转、不得引用 `data.js`
+
+### 验证
+- file:// 双击入口页 → 自动落到 `index.html`：`ready:true / 1906 物种 / 1032 招式 / v4.183 / 9 Tab / 0 报错`
+- `node tools/smoke.js`：**27/27 passed**（原 26 + 新增入口断言 1）
+- 产物 `index.html` 一字未改（1,549,510 B / sha1 `9EF2B1648B7E6B6F8105671E49283CB0F988A225`），线上无需重新部署
+
+### 教训
+同一产物只要存在第二份拷贝，就一定有漂移。能用入口页就不复制产物；门禁断言必须覆盖所有对外入口，而不只是主产物。

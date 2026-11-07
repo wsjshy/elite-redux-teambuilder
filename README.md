@@ -25,7 +25,7 @@
 | 方式 | 说明 |
 |---|---|
 | **在线访问** | https://wsjshy.github.io/elite-redux-teambuilder/ （手机可访问） |
-| **本地运行** | 下载本仓库 → 双击打开 `配招助手_ER.html`（与 `assets\sprites`、`assets\sheets` 同目录，相对路径引用） |
+| **本地运行** | 下载本仓库 → 双击打开 **`index.html`**（与 `assets\sprites`、`assets\sheets`、`data_*_v498.js` 同目录，相对路径引用）。`配招助手_ER.html` 只是兼容旧书签的跳转入口，会转到 `index.html` |
 | **命令行解析** | `python parse_er_save_v4.py <存档.sav> [out.csv] [out.json]`（Python 3，无第三方依赖） |
 
 ## 当前版本与真相源（2026-11-07 登记）
@@ -49,16 +49,20 @@
 
 ```
 D:\game\elite-redux\
-├── 配招助手_ER.html          ← 前端主程序（纯 HTML+JS，数据外置 data.js，约 650KB；v4.12 机制感知升级）
-├── data.js                     ← ★v4.12 拆包数据（ERDATA 全量 + smogonPrior 120 只 + mechLib 52/156，2,347,755 B）
-├── 配招工具_data.js           ← 全量数据（物种/招式/特性/道具/可学池 + v4.12 机制库/先验，6.8MB）
+├── index.html                 ← ★前端主程序唯一产物（纯 HTML+JS，v4.183，1,549,510 B）
+├── 配招助手_ER.html           ← 兼容入口（~1.7KB，自动跳转 index.html；旧书签用）
+├── data_lite_v498.js          ← ★拆包数据 ① lite（ERDATA 主表）
+├── data_species_v498.js       ← ★拆包数据 ② 物种全量
+├── data_adv_v498.js           ← ★拆包数据 ③ 招式/特性/道具/机制库/先验
 ├── assets\sprites\            ← 精灵图源 1906 张 PNG（本地保留供重跑，.gitignore 排除不入库）
 ├── assets\sheets\             ← 合图 8 张 WebP + sheets_map.js（页面实际加载，1906 请求 → 8）
 ├── parse_er_save_v4.py        ← 存档解析器（独立可用，5 锚点自检）
-├── build_movesets.py 等        ← 数据生成链
+├── tools\smoke.js             ← 27 项冒烟门禁（exit code 即判据）
 ├── tools\deploy_er.ps1        ← 一键部署（master 开发 / gh-pages 部署）
 └── AGENTS.md                  ← 内部文档唯一入口（存档格式结论 / 开发流程 / 部署约定）
 ```
+
+> `data.js`（2.4 MB 单文件）已于 v4.98 拆包退役，页面与部署面均零引用；历史快照仅存 `archive\data.js.v4.179_full_snapshot`。
 
 ## 更新记录
 
