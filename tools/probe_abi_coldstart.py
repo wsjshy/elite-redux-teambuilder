@@ -46,6 +46,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from socketserver import TCPServer
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = REPO   # overridden by --root
 CHROME_CANDIDATES = [
     r"C:\Users\22210\AppData\Local\Google\Chrome\Application\chrome.exe",
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -130,14 +131,14 @@ INJECT_JS = r"""
     }, 600);
   }
 
-  // poll for settle: species > 1000 and cards rendered and at least 1 renderAbi call logged
+  // poll for settle: species > 1000 and cards rendered
   var tries=0;
   var iv = setInterval(function(){
     tries++;
     var spReady=false, cards=0;
     try{ spReady = (typeof ERDATA!=='undefined'&&ERDATA.species&&ERDATA.species.length>1000); }catch(e){}
     try{ cards = document.querySelectorAll('#abiResult .abicard').length; }catch(e){}
-    if((spReady && cards>0 && (window.__rc||0)>0) || tries>300){
+    if((spReady && cards>0) || tries>400){
       clearInterval(iv);
       t('SETTLE tries='+tries+' cards='+cards);
       // small extra wait to be sure any late renderAbi finished
@@ -164,7 +165,7 @@ def find_chrome():
 class ProbeHandler(BaseHTTPRequestHandler):
     mode = "local"          # or "live"
     live_url = ""           # e.g. https://wsjshy.github.io/elite-redux-teambuilder/
-    repo = REPO
+    repo = ROOT_DIR
     delay_species = 0.0     # seconds to delay data_species_v498.js (repro race)
     empty_species = False   # serve empty JS for data_species (onload fires, ERDATA.species unset)
 
@@ -438,6 +439,7 @@ def main():
     ap.add_argument("--budget", type=int, default=25000, help="virtual-time-budget ms")
     ap.add_argument("--delay-species", type=float, default=0.0, help="seconds to delay data_species (race repro)")
     ap.add_argument("--empty-species", action="store_true", help="serve empty data_species.js (onload fires, ERDATA.species unset)")
+    ap.add_argument("--root", default=None, help="serve files from this dir (default: repo root)")
     args = ap.parse_args()
 
     url = args.url.rstrip("/")
@@ -460,11 +462,15 @@ def main():
         # local mode: always start our own injection server rooted at REPO
         mode = "local"
         live_url = ""
+        global ROOT_DIR
+        if args.root:
+            ROOT_DIR = args.root
+            ProbeHandler.repo = args.root
         ProbeHandler.delay_species = args.delay_species
         ProbeHandler.empty_species = args.empty_species
         httpd = run_server(mode, live_url, args.port)
         serve_url = "http://127.0.0.1:%d/" % args.port
-        print("[probe] local mode: injection server at", serve_url, "root=", REPO, "delay_species=", args.delay_species, "empty_species=", args.empty_species)
+        print("[probe] local mode: injection server at", serve_url, "root=", ProbeHandler.repo, "delay_species=", args.delay_species, "empty_species=", args.empty_species)
 
     print("[probe] chrome running (virtual-time-budget=%d ms)..." % args.budget)
     dom_path = chrome_dump(chrome, serve_url, args.budget)
