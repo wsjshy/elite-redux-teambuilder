@@ -5315,7 +5315,12 @@ var optAbiFinal=true,optAbiMega=true;   /* 特性反查持有者 */
 var optMvFinal=true,optMvMega=true;     /* 招式反查「谁能学」 */
 (function(){
   $('abiSearch').oninput=function(){renderAbi()};
-  renderAbi();
+  /* 2026-11-07 修复（P0，用户实测「特性反查全是 0」）：species 分片是在 load 后 800ms 才异步到达的，
+     而这里是页面初始化即渲染 —— 首次一定拿到空 ERDATA.species，abiOwners() 提前返回 {} ⇒
+     每张卡都显示「天性 0 / 可选 0」，且 er-ready 事件的 7 个监听者里没有一个是反查页 ⇒ 数据到了也不刷新。
+     改为：已就绪则立即渲染，未就绪则等 er-ready 再渲染（开关/搜索仍可随时重渲）。 */
+  if(window.__erReady){renderAbi();}
+  else{document.addEventListener('er-ready',function(){try{renderAbi()}catch(e){}});}
 })();
 /* v4.x F⑪：特性持有者索引（懒构建，避免加载期依赖 NM2ID 定义顺序）
    ★ v4.40 修复（同名特性反查错位）：中文译名重合的 7 组 16 个 id（Stench(1)/Malodor(808) 均译
