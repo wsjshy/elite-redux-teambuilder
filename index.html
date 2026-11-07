@@ -935,6 +935,19 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
       <span class="mini" style="color:var(--sub)">（v4.33 也支持每行一个宝可梦名/编号的简单名单）</span></div>
   </div>
   <div id="savParseOut" style="margin:6px 0"></div>
+    <!-- v4.184.2 修复：v4.93 D-6「电脑区清单」的 DOM 容器在早期 UI 重构中丢失，
+         导致 savPcSearch / savPcListRender / savPcEnqueue 全链路取不到节点而静默空转
+         （用户解析 .sav 后看不到箱子，也无法从箱子挑精灵入队）。此处补齐容器。 -->
+    <div class="sec" id="savPcCard" style="margin:6px 0;display:none">
+      <h3>🖥 存档电脑区<span class="mini" style="color:var(--sub);font-weight:400"> · 从箱子挑精灵直接入队</span><button class="btn-mini" style="margin-left:8px" onclick="savPcCardToggle()" id="savPcCardBtn">收起</button></h3>
+      <div id="savPcBody">
+        <div class="bar" style="margin:4px 0">
+          <input type="text" id="savPcQ" placeholder="搜索箱子里的宝可梦（中文 / 英文）" oninput="savPcSearch()">
+        </div>
+        <div class="chips" id="savPcTypeRow"><button data-t="" class="on" onclick="savPcTypeSet('')">全部</button><button data-t="一般" onclick="savPcTypeSet('一般')">一般</button><button data-t="草" onclick="savPcTypeSet('草')">草</button><button data-t="火" onclick="savPcTypeSet('火')">火</button><button data-t="水" onclick="savPcTypeSet('水')">水</button><button data-t="电" onclick="savPcTypeSet('电')">电</button><button data-t="冰" onclick="savPcTypeSet('冰')">冰</button><button data-t="格斗" onclick="savPcTypeSet('格斗')">格斗</button><button data-t="毒" onclick="savPcTypeSet('毒')">毒</button><button data-t="地面" onclick="savPcTypeSet('地面')">地面</button><button data-t="飞行" onclick="savPcTypeSet('飞行')">飞行</button><button data-t="超能力" onclick="savPcTypeSet('超能力')">超能力</button><button data-t="虫" onclick="savPcTypeSet('虫')">虫</button><button data-t="岩石" onclick="savPcTypeSet('岩石')">岩石</button><button data-t="幽灵" onclick="savPcTypeSet('幽灵')">幽灵</button><button data-t="龙" onclick="savPcTypeSet('龙')">龙</button><button data-t="恶" onclick="savPcTypeSet('恶')">恶</button><button data-t="钢" onclick="savPcTypeSet('钢')">钢</button><button data-t="妖精" onclick="savPcTypeSet('妖精')">妖精</button></div>
+        <div id="savPcList" style="max-height:280px;overflow:auto"></div>
+      </div>
+    </div>
   <!-- v4.6-B：存档联动组队（我的宝可梦）—— 与下方全图鉴组队并列，不替换 -->
   <div class="sec" id="mySavCard" style="margin:6px 0">
     <h3>🎮 存档联动组队（我的宝可梦）<span class="mini" style="color:var(--sub);font-weight:400"> · 与下方「全图鉴组队」并列，互不替换</span></h3>
@@ -4898,6 +4911,18 @@ function savPcTypeSet(t){_pcType=t||'';_pcPage=1;   /* v4.150：属性快捷过�
   var row=$('savPcTypeRow');if(row){[].forEach.call(row.children,function(c){c.classList.toggle('on',c.getAttribute('data-t')===_pcType)})}
   savPcSearch();
 }
+/* v4.184.2：电脑区区块折叠（只折叠内容，入口始终可见，避免收起后再也打不开） */
+function savPcCardToggle(){
+  var b=$('savPcBody'),btn=$('savPcCardBtn');if(!b)return;
+  var open=b.style.display==='none';
+  b.style.display=open?'':'none';
+  if(btn)btn.textContent=open?'收起':'展开';
+}
+/* v4.184.2：解析成功/加载历史档后让电脑区入口现身 */
+function savPcCardShow(){
+  var c=$('savPcCard');if(!c)return;c.style.display='';
+  var b=$('savPcBody');if(b&&!b.innerHTML.replace(/\s/g,'').length){} /* 内容由 savPcSearch 填充 */
+}
 function savPcSearch(){
   var q=($('savPcQ')?$('savPcQ').value:'').trim();
   if(_pcSearchT)clearTimeout(_pcSearchT);
@@ -4906,7 +4931,7 @@ function savPcSearch(){
     var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[];
     var pool=rows.map(function(r,i){return {r:r,i:i}}).filter(function(x){return x.r.来源&&(/^BOX/.test(x.r.来源)||x.r.来源.indexOf('特殊区')===0)});
     if(_pcType){pool=pool.filter(function(x){var ts=savPcTypeOf(x.r);return ts.indexOf(_pcType)>-1})}   /* v4.150：类型过滤叠加 */
-    if(!q&&!_pcType){savPcListRender(pool.filter(function(x){return x.r.来源==='BOX1'}).slice(0,12));return} /* 空搜+无类型：BOX1 前 12 兜底 */
+    if(!q&&!_pcType){savPcListRender(pool);return}   /* v4.184.2：原「BOX1 前 12 兜底」会让「电脑区（N）」计数与实际条数不符，改为全量交分页器 */ /* 空搜+无类型：BOX1 前 12 兜底 */
     var m=pool.filter(function(x){return !q||(x.r.宝可梦||'').indexOf(q)>-1||(x.r.英文名||'').toLowerCase().indexOf(q.toLowerCase())>-1});
     savPcListRender(m);   /* v4.148：命中池交分页器（>50 自动分页） */
   },150);
@@ -5050,7 +5075,7 @@ function loadSavSlot(i){
   if(!svs[i])return;
   _loadedSlot=i;   /* v4.125 P2-3：记录选中档以高亮 chip */
   renderSavSlots();   /* 重绘 chip 选中态 */
-  SAV_ROWS=svs[i].rows||[];
+  SAV_ROWS=svs[i].rows||[];savPcCardShow();
   renderMyPool();savPcSearch();
   showPoolHint(SAV_ROWS.length,'档'+(i+1));   /* v4.140：池区一次性「已从档N载入 N 只」视线引导 */
   /* v4.124 P1-3：历史档仅存前6只队伍摘要，无特殊区计数——提示用户如需一键入队设施队请重新解析 .sav */
@@ -5130,7 +5155,7 @@ function parseSavFile(input){
         sgX.addEventListener('click',function(){clearTimeout(sgTmr);try{if(sg.parentNode)sg.parentNode.removeChild(sg)}catch(e){}});   /* v4.148：手动关闭钮 */
       }
       confirmImportIfTeam(function(){autoImportParty(res);});   /* v4.142：非空队导入前确认 */
-      SAV_ROWS=(res.rows||[]);renderMyPool(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
+      SAV_ROWS=(res.rows||[]);renderMyPool();savPcCardShow(); /* v4.6-B：同一份解析结果喂给「我的宝可梦」选择池 */
       showPoolHint(SAV_ROWS.length,'本次解析');   /* v4.140：.sav 解析后同源池区引导提示 */
       /* v4.110 P1：存档多档保存（localStorage er_savs_v1，FIFO 3 档） */
       try{var svs=JSON.parse(localStorage.getItem('er_savs_v1')||'[]');svs.push({t:Date.now(),rows:(SAV_ROWS||[]).slice(0,6)});if(svs.length>3)svs=svs.slice(-3);localStorage.setItem('er_savs_v1',JSON.stringify(svs));renderSavSlots()}catch(e){}
@@ -14654,7 +14679,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.184';
+var ER_ENGINE_VER='v4.184.2';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
