@@ -1,0 +1,274 @@
+{
+ "axes": 15,
+ "ids": [
+  "rain",
+  "sun",
+  "sand",
+  "snow",
+  "trickroom",
+  "e_terrain",
+  "misty",
+  "grassy",
+  "psychic",
+  "toxic",
+  "hazard",
+  "boost",
+  "stall",
+  "pivot",
+  "weaken"
+ ],
+ "axis_id_unique": true,
+ "axis_id_dups": [],
+ "setter_tag_conflicts": [],
+ "setter_tags_disjoint": true,
+ "beneficiary_tags_shared": {
+  "储水": [
+   "rain",
+   "sand"
+  ],
+  "蓄电": [
+   "rain",
+   "e_terrain"
+  ],
+  "电": [
+   "rain",
+   "e_terrain"
+  ],
+  "水": [
+   "rain",
+   "sand"
+  ],
+  "适应力": [
+   "sun",
+   "boost"
+  ],
+  "引火": [
+   "sun",
+   "snow"
+  ],
+  "火": [
+   "sun",
+   "snow"
+  ],
+  "可憎怪物": [
+   "sand",
+   "snow"
+  ],
+  "食草": [
+   "sand",
+   "grassy"
+  ],
+  "草": [
+   "sand",
+   "grassy"
+  ],
+  "飘浮": [
+   "e_terrain",
+   "pivot"
+  ],
+  "地面": [
+   "e_terrain",
+   "pivot"
+  ],
+  "寄生种子": [
+   "grassy",
+   "hazard"
+  ],
+  "剧毒": [
+   "toxic",
+   "hazard"
+  ],
+  "毒": [
+   "toxic",
+   "hazard",
+   "stall"
+  ],
+  "魔法防守": [
+   "hazard",
+   "stall",
+   "weaken"
+  ],
+  "清除浓雾": [
+   "hazard",
+   "stall"
+  ],
+  "高速旋转": [
+   "hazard",
+   "stall"
+  ],
+  "纯朴": [
+   "stall",
+   "weaken"
+  ]
+ },
+ "依据来源无法解析": [],
+ "依据可解析": true,
+ "名称无法解析": [],
+ "名称全可解析": true,
+ "免疫档派生": {
+  "rain": {
+   "派生 immune_types": [
+    "电",
+    "水"
+   ],
+   "特性 im 来源": {
+    "水": [
+     "储水(11)",
+     "引水(114)",
+     "干燥皮肤(87)",
+     "蒸发(444)"
+    ],
+    "电": [
+     "蓄电(10)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "sun": {
+   "派生 immune_types": [
+    "火"
+   ],
+   "特性 im 来源": {
+    "火": [
+     "引火(18)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "sand": {
+   "派生 immune_types": [
+    "草",
+    "水"
+   ],
+   "特性 im 来源": {
+    "水": [
+     "储水(11)"
+    ],
+    "草": [
+     "食草(157)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "snow": {
+   "派生 immune_types": [
+    "火"
+   ],
+   "特性 im 来源": {
+    "火": [
+     "引火(18)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "trickroom": {
+   "派生 immune_types": [],
+   "特性 im 来源": {},
+   "规则豁免来源": {}
+  },
+  "e_terrain": {
+   "派生 immune_types": [
+    "电",
+    "地面"
+   ],
+   "特性 im 来源": {
+    "电": [
+     "蓄电(10)",
+     "避雷针(31)",
+     "电气引擎(78)"
+    ],
+    "地面": [
+     "飘浮(26)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "misty": {
+   "派生 immune_types": [],
+   "特性 im 来源": {},
+   "规则豁免来源": {}
+  },
+  "grassy": {
+   "派生 immune_types": [
+    "草"
+   ],
+   "特性 im 来源": {
+    "草": [
+     "食草(157)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "psychic": {
+   "派生 immune_types": [
+    "虫",
+    "恶",
+    "幽灵"
+   ],
+   "特性 im 来源": {
+    "恶": [
+     "天才思想(422)"
+    ],
+    "幽灵": [
+     "天才思想(422)"
+    ],
+    "虫": [
+     "天才思想(422)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "toxic": {
+   "派生 immune_types": [
+    "毒"
+   ],
+   "特性 im 来源": {},
+   "规则豁免来源": {
+    "毒": "GLOSSARY.terrain_toxic（毒 / 钢属性豁免剧毒场地回合末伤害）"
+   }
+  },
+  "hazard": {
+   "派生 immune_types": [
+    "毒"
+   ],
+   "特性 im 来源": {},
+   "规则豁免来源": {
+    "毒": "GLOSSARY.hazard_toxicspikes（毒属性不可中毒菱）"
+   }
+  },
+  "boost": {
+   "派生 immune_types": [],
+   "特性 im 来源": {},
+   "规则豁免来源": {}
+  },
+  "stall": {
+   "派生 immune_types": [
+    "毒"
+   ],
+   "特性 im 来源": {},
+   "规则豁免来源": {
+    "毒": "GLOSSARY.status_toxic（毒属性不会陷入中毒 / 剧毒）"
+   }
+  },
+  "pivot": {
+   "派生 immune_types": [
+    "地面"
+   ],
+   "特性 im 来源": {
+    "地面": [
+     "飘浮(26)",
+     "隔空取物(511)",
+     "巨翼(688)"
+    ]
+   },
+   "规则豁免来源": {}
+  },
+  "weaken": {
+   "派生 immune_types": [],
+   "特性 im 来源": {},
+   "规则豁免来源": {}
+  }
+ },
+ "tacticRole_标注条数": 236,
+ "synergyRole_标注条数": 104
+}
