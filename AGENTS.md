@@ -32,9 +32,9 @@ D:\game\elite-redux\
 ├── box_override.json                ← 可选人工箱号修正（特殊区默认段内顺序标注，此文件可覆盖指定箱号）
 ├── 存档解析v4_20261006.csv/.json    ← v4.1 最新产物（431条，53列）
 ├── 存档解析_20261006.csv/.json      ← v3.1 旧产物（19列，历史对照）
-├── 配招助手_ER.html                 ← ★★v3 配队配招工具（7 Tab + 特性/天性整体聚合评估；双击即用，**v4.11 起数据外置同目录 data.js + 精灵图走 assets\sheets 合图相对路径（非 file: 下 gcore 择优加载失败回退）**）
-├── data.js                          ← ★v4.11 拆包产物（build_tool_html.py 输出，ERDATA 数据层 2,347,755 B（v4.12：+smogonPrior 120 只 + mechLib 52/156/40 + 体系模板），与 HTML 同目录部署，gzip 547,420 B）
-├── 配招工具_data.js                 ← 配招工具中间数据产物（build_tool_data.py 输出，master 构建链中间件；v4.11 起浏览器不加载、gh-pages 已移出；v4.12 新增 smogonPrior 120 只 / mechLib 52 机制 156 combo / 词汇 40 项）
+├── 配招助手_ER.html                 ← 配招配队工具**旧产物（v4.98，1,448,248 B，落后 81 个版本）**；主入口已改为 index.html（v4.179）。此副本与 index.html 的同步方向待定，不要拿它当基准
+├── ~~data.js~~                       ← **已退役**（v4.179 数据源合一）：与三分片逐键等价（26/27 键 diff=0，唯一多出的 `sprites` 是空对象且页面零引用）后删除，归档于 `archive/data.js.v4.179_full_snapshot`（2,456,845 B）。运行时分片改为 `data_lite_v498.js` / `data_species_v498.js` / `data_adv_v498.js`，**不得回归**
+├── 配招工具_data.js                 ← **构建链输入（6,884,918 B），浏览器不加载、不部署**；被 `tools\rebuild_source_inputs.py` / `check_rebuild_faithful.py` / `probe_v464.py` / `probe_v49.py` 引用，是三分片能重建的依据，**勿删**
 ├── nn_data\mech_lib_v412.json              ← ★v4.12 机制知识库（52 机制 / 156 combo / 40 词汇，meta version3 / schema v412 / updated 2026-10-10；既有 28 条逐字保留 + 24 新机制 + 32 新 combo，全部带来源 URL）
 ├── nn_data\smogon_prior_2026-09.json       ← ★v4.12 Smogon 标准对战先验（120 物种 / 2335 行，gen3ou×1.0 + gen9nationaldex×0.5，srcMax=0.516601 与既有 usagePrior 锚点逐位一致；引擎 SMOGON_PRIOR_ENABLED 开关消费、置 false 逐字节回退 v4.11）
 ├── nn_data\axis_lib.json                   ← ★15 协同轴知识库（v4.9 七字段逐字不动 + v4.12 每轴新增「体系模板」键：六位完整体系设计 15 轴×6 位=90/90）
@@ -190,9 +190,9 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 
 ## 8. GitHub 部署（2026-10-08 起）
 
-- **仓库**：`github.com/wsjshy/elite-redux-teambuilder`（公开）；远程名 `github`（代理：Git 全局 `http.https://github.com.proxy http://127.0.0.1:7890`）。
-- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html`+`data.js`+`README.md`+`assets/`（sheets 运行时合图 + sprites 图源）+`.nojekyll`+`ER-source` 三 json（gameData/additional/item_zh_cn，可重建克隆 nextdex/.git.bak 不入库），与 master 跟踪集对齐避免切换冲突）。**一键部署**：`tools\deploy_er.ps1 v4.35 <message>`（commit+push master → 暂存部署物 → 切 gh-pages 清空复制 → commit+push --force → 切回 master；会删 gitignored 本地输入，必要时先备份）。
-- **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`（v4.6 验证：index 2,332,615B/data.js 6,487,486B/精灵图/.nojekyll 全 200，index 与本地同 SHA）。
+- **仓库**：`github.com/wsjshy/elite-redux-teambuilder`（公开）；远程名 `github`。**当前本机无 git 代理**（2026-11-07 实测 `http.proxy` 为空，fetch/push 均直连成功）；若出现「push TLS 握手失败但 curl 直连正常」，那是残留死代理，先 `git config --get http.proxy` 查，再用 `git -c http.proxy= push` 绕过。
+- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html` + `README.md` + `data_lite_v498.js` + `data_species_v498.js` + `data_adv_v498.js` + `assets/`（sheets 运行时合图 + sprites 图源）+ `.nojekyll` + `ER-source` 三 json（gameData/additional/item_zh_cn，可重建克隆 nextdex/.git.bak 不入库）。**data.js 已于 v4.179 数据源合一退役，不得回归**；部署白名单共 5 项，与 `tools\deploy_er.ps1` 的 `$DeployFiles` 一致）。**一键部署**：`tools\deploy_er.ps1 v4.179 <message>`（commit+push master → 暂存部署物 → 切 gh-pages 清空复制 → commit+push --force → 切回 master）。**清空 gh-pages 前必须先建备份分支**：远端 `github/gh-pages` 有 139 个文件、本地 `gh-pages` 仅 19 个，清空会删掉约 120 个历史备份（`index.html.v*`/`README.md.fill*`/`index.v*.html`），留底命令 `git branch ghpages-backup-<日期> github/gh-pages`。
+- **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`。2026-11-07 线上基线：`index.html` 1,539,379 B / sha16 `CDBBBD382880EFCA`（v4.179）+ 三分片 379,679 / 1,362,446 / 575,962 B + `.nojekyll`，全部 200。本轮改动后本地为 1,537,423 B，**尚未部署**，与线上不再一致。
 - **更新流程**：改 build 脚本→重生成 HTML→`git commit`+`push github master`→孤儿分支重建 gh-pages（`checkout --orphan gh-pages`→清工作区**先移出 ER-source 与 4 项脱跟踪构建输入**（`招式表_可学总表.csv` / `ER2.65简汉化\ER2.65beta版图鉴v0.3.xlsm` / `ER2.65简汉化\分类.xlsx` / `ER2.5正式版图鉴v0.5.xlsm`——**曾于 v4.6.4 期被误删，重建见 §12**）→`checkout master -- 部署产物`→commit→`push github gh-pages --force`）→`checkout master`→移回 ER-source→`reset --hard master`。
 - **部署后必验（2026-10-10 教训，防"推了没生效"）**：① `git status`/`git ls-tree` 确认 **gh-pages 上无子模块 gitlink（160000）**——`ER-source/nextdex` 曾致 Pages 构建连续 4 次失败（`No url found for submodule path` exit 128），修复=`git rm --cached ER-source/nextdex`；② 部署文件提取一律 **Python 二进制 `git show master:<file>` 写盘**，禁止 PS `>` 重定向（UTF-16/BOM/编码破坏）；③ push 后查 Actions `pages build and deployment` run **conclusion=success**（API：`/actions/runs?per_page=5`），failure 时线上停留在最后成功版本；④ `curl` 线上 index.html 校验目标标记（如 `四特性体系`）与字节数 = 本地。
 - **部署硬前提**：HTML 与 `assets\sheets` 必须同目录（相对路径引用）；`.gitignore` 排除清单见文件本身（.gba/.sav/.ss*/ER2.65简汉化/ER-source 除两 json 外全部/nn_data/nn_models/顶层 `/_*` 探针/大 CSV/xlsx/**assets/sprites/**——旧精灵图源本地保留供 build_sprites_sheet.py 重跑，不入库）。
