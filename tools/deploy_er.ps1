@@ -1,21 +1,53 @@
 ﻿# deploy_er.ps1 — Elite Redux 配招助手一键部署（GitHub Pages）
 # 分支约定：master 开发 + gh-pages 部署（AGENTS.md 已登记）
-# 用法：& "D:\Git\bin\git.exe" 已就绪；本脚本自动：commit master → push → 建/更 gh-pages（部署三件套）→ 切回 master
-# 部署产物（gh-pages 分支根目录）：index.html（根访问入口，与 配招助手_ER.html 同内容）+ data.js（ERDATA，网页同域/CDN 加载源）
-#   + README.md + assets\sprites（相对路径同目录硬前提）+ assets\sheets（运行时合图）+ ER-source 参考 JSON（gameData/additional/item_zh_cn 供重跑参考）+ .nojekyll
-# 注意：配招工具_data.js 为 v4.11 前的旧名死产物，勿再部署；ER-source 的 nextdex/.git.bak 为可重建克隆，不入 gh-pages。
+#
+# 用法：
+#   .\tools\deploy_er.ps1                 # 默认增量部署：只覆盖同名文件，不删除线上任何内容
+#   .\tools\deploy_er.ps1 -DryRun         # 只做暂存与断言，打印将部署的清单，不改分支不推送
+#   .\tools\deploy_er.ps1 -Clean          # 显式全量重建：清空 gh-pages 后只保留 23 个部署文件（会删除历史快照）
+#   .\tools\deploy_er.ps1 v4.181 "说明"    # 指定版本号与提交信息
+#
+# 2026-11-07 安全改动（对应用户「清理冗余不要删库」的要求）：
+#   原脚本步骤4 无条件清空 gh-pages 工作区 —— 线上 139 个文件中约 117 个历史快照会被一次删除，
+#   且 push --force 不可回滚。现改为：默认增量（零删除），全删必须显式 -Clean，
+#   并在 -Clean 前强制打印将被删除的文件数。
 
 $ErrorActionPreference = "Stop"
 $Git = "D:\Git\bin\git.exe"
 $Repo = "D:\game\elite-redux"
 $Temp = "C:\temp\er-deploy"
+
+# 参数解析：-Clean / -DryRun 为开关，其余按位置取版本号与提交信息
+$CleanMode = $false
+$DryRun = $false
+$Rest = @()
+foreach ($a in $args) {
+    if ($a -eq "-Clean") { $CleanMode = $true }
+    elseif ($a -eq "-DryRun") { $DryRun = $true }
+    else { $Rest += $a }
+}
+$Version = $Rest[0]; if (-not $Version) { $Version = "v4.181" }
+$Message = $Rest[1]; if (-not $Message) { $Message = "Deploy: $Version" }
+
 # v4.180 评估修复：v498 懒加载分片是线上现役文件（图鉴/分析/速度线运行时按需加载），
 # 原白名单只有 3 项，而下方步骤4 会清空 gh-pages 工作区 → 下次部署会删除这 3 个分片，线上 404。
 # 数据源合一（2026-11-07）：data.js（2.4 MB 全量单文件）已归档至 archive/，不再部署。
 # 实测 data.js 与三分片 26/27 键完全等价（0 差异），唯一多出的 ERDATA.sprites 是空对象且页面零引用。
 $DeployFiles = @("index.html", "README.md", "data_species_v498.js", "data_adv_v498.js", "data_lite_v498.js")
-$Version = $args[0]; if (-not $Version) { $Version = "v4.2" }
-$Message = $args[1]; if (-not $Message) { $Message = "Deploy: $Version" }
+
+# 完整部署清单（2026-11-07 新增）：原二次断言只校验 5 项白名单，
+# 本地若误删 assets/sheets/s3.webp 或 ER-source 任一 JSON，脚本仍会「部署成功」而线上静默缺失。
+# 此处显式列出 23 个文件，缺一即中止。
+$ExpectedFiles = @(
+    "index.html", "README.md", "data_species_v498.js", "data_adv_v498.js", "data_lite_v498.js",
+    "assets/build_sprites.py", "assets/qrcode_v498.js", "assets/showdown_sets_v496.json",
+    "assets/sprites_map.csv", "assets/sprites_report.md",
+    "assets/sheets/s0.webp", "assets/sheets/s1.webp", "assets/sheets/s2.webp", "assets/sheets/s3.webp",
+    "assets/sheets/s4.webp", "assets/sheets/s5.webp", "assets/sheets/s6.webp", "assets/sheets/s7.webp",
+    "assets/sheets/sheets_map.js",
+    "ER-source/additionalV2.65beta.json", "ER-source/gameDataV2.65beta.json", "ER-source/item_zh_cn.json",
+    ".nojekyll"
+)
 
 # 坑4（v4.35 实测）：PS 5.1 下 EAP=Stop 会把 git 的正常 stderr 输出当终止错误（如 checkout 的
 # "Switched to branch..."），脚本在步骤3 中断。统一经 Invoke-Git 调用：EAP 临时降为 Continue，
@@ -43,7 +75,10 @@ if ($dirty.Trim().Length -gt 0) {
     }
     Invoke-Git add --all | Out-Null
     Invoke-Git commit -m "$Message" | Out-Null
-    Invoke-Git push github master | Out-Null
+    $rc = Invoke-Git push github master
+    # 2026-11-07：原代码 | Out-Null 吞掉 push 结果。master 若与远端分叉（non-fast-forward），
+    # 推送会被拒但脚本继续部署 gh-pages —— 本地与远端永久分叉且无人察觉。此处改为失败即停。
+    if ($rc -ne 0) { throw "master push 失败（可能 non-fast-forward）。已中止，未改动 gh-pages" }
     Write-Host "[1/6] master committed & pushed"
 } else {
     Write-Host "[1/6] clean, skip commit"
@@ -53,7 +88,10 @@ if ($dirty.Trim().Length -gt 0) {
 foreach ($f in $DeployFiles) {
     if (-not (Test-Path (Join-Path $Repo $f))) { throw "部署产物缺失: $f" }
 }
-if (-not (Test-Path (Join-Path $Repo "assets\sheets"))) { throw "部署产物缺失: assets\sheets" }
+# assets\sheets 不能只断言目录存在 —— 必须逐张确认 8 张合图与标尺文件
+foreach ($f in @("s0.webp", "s1.webp", "s2.webp", "s3.webp", "s4.webp", "s5.webp", "s6.webp", "s7.webp", "sheets_map.js")) {
+    if (-not (Test-Path (Join-Path $Repo "assets\sheets\$f"))) { throw "部署产物缺失: assets\sheets\$f" }
+}
 # assets\sprites（旧精灵图源，gitignored 本地文件，v4.6.2 合图后零引用、gh-pages 不需）不作为部署前置条件；运行时只消费 assets\sheets
 Remove-Item -Recurse -Force $Temp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $Temp -Force | Out-Null
@@ -69,12 +107,29 @@ if (Test-Path (Join-Path $Repo "ER-source")) {
 # .nojekyll：GitHub Pages 不做 Jekyll 处理
 New-Item -ItemType File -Path (Join-Path $Temp ".nojekyll") -Force | Out-Null
 Write-Host "[2/6] deploy artifacts staged to $Temp"
+
 # v4.180 评估修复：清空 gh-pages 前先断言暂存目录齐全。步骤4 是破坏性清空，
 # 缺任一现役文件都会造成「部署成功但线上 404」，必须在写盘前拦住。
-foreach ($f in $DeployFiles) {
-    if (-not (Test-Path (Join-Path $Temp $f))) { throw "暂存目录缺产物: $f —— 已中止，未清空 gh-pages" }
+# 2026-11-07：断言范围从 5 项白名单扩到完整 23 项（assets 14 + ER-source 3 + .nojekyll）。
+$missing = @()
+foreach ($f in $ExpectedFiles) {
+    if (-not (Test-Path (Join-Path $Temp $f))) { $missing += $f }
 }
-Write-Host "[2b/6] staged artifacts verified: $($DeployFiles.Count) files"
+if ($missing.Count -gt 0) {
+    throw "暂存目录缺 $($missing.Count) 个产物: $($missing -join ', ') —— 已中止，未改动 gh-pages"
+}
+Write-Host "[2b/6] staged artifacts verified: $($ExpectedFiles.Count) files"
+
+# DryRun：到此为止。打印将覆盖的文件与总量，不切分支、不推送。
+if ($DryRun) {
+    $total = (Get-ChildItem -Path $Temp -Recurse -File | Measure-Object -Sum Length).Sum
+    Write-Host "[DRYRUN] mode=$(if ($CleanMode) { 'CLEAN (会删除 gh-pages 上的历史文件)' } else { 'INCREMENTAL (不删除任何线上文件)' })"
+    Write-Host "[DRYRUN] will upload $($ExpectedFiles.Count) files, $([Math]::Round($total / 1MB, 2)) MB"
+    foreach ($f in $ExpectedFiles) { Write-Host "  + $f" }
+    Write-Host "[DRYRUN] no branch switch, no push. Done."
+    Remove-Item -Recurse -Force $Temp -ErrorAction SilentlyContinue
+    return
+}
 
 # 步骤3：切 gh-pages（首次=orphan 创建；坑3：每步检查，失败即停）
 $rc = Invoke-Git checkout gh-pages
@@ -85,10 +140,21 @@ if ($rc -ne 0) {
 }
 Write-Host "[3/6] on gh-pages"
 
-# 步骤4：清空旧产物（保留 .git），复制新产物
-Get-ChildItem -Path $Repo -Exclude ".git" -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-Copy-Item (Join-Path $Temp "*") (Join-Path $Repo ".") -Recurse -Force
-Write-Host "[4/6] old cleared, new copied"
+# 步骤4：放置新产物
+# 2026-11-07 默认行为改为「增量覆盖」：只把 23 个文件覆盖到 gh-pages，线上其余文件（历史快照、
+# 旧 data.js）一律保留。这直接消除了「跑一次部署就删掉线上 117 个文件」的风险。
+# 需要彻底重建时显式传 -Clean，且会先把将删除的文件数打印出来。
+if ($CleanMode) {
+    $toDelete = (Get-ChildItem -Path $Repo -Exclude ".git" -Force | Measure-Object).Count
+    Write-Host "[4/6] CLEAN mode: 将删除 gh-pages 根目录 $toDelete 个条目（仅保留随后写入的 23 个文件）"
+    Write-Host "[4/6] 提示：线上快照备份分支为 ghpages-backup-20261107，可随时 force-push 回滚"
+    Get-ChildItem -Path $Repo -Exclude ".git" -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+    Copy-Item (Join-Path $Temp "*") (Join-Path $Repo ".") -Recurse -Force
+    Write-Host "[4/6] clean done"
+} else {
+    Copy-Item (Join-Path $Temp "*") (Join-Path $Repo ".") -Recurse -Force
+    Write-Host "[4/6] incremental done — 未删除线上任何文件"
+}
 
 # 步骤5：提交并推送 gh-pages（--force 覆盖历史部署，孤儿分支/更新通用）
 Invoke-Git add --all | Out-Null
@@ -96,11 +162,11 @@ Invoke-Git commit -m "$Message" | Out-Null
 $rc = Invoke-Git push github gh-pages --force
 if ($rc -ne 0) {
     # 2026-11-07：原脚本失败后重试 http://127.0.0.1:7890，该代理在本机已不存在，只会让失败变成等待超时。
-    throw "gh-pages push failed。先 git config --get http.proxy 查残留死代理，再用 git -c http.proxy= 手动重试"
+    throw "gh-pages push failed。先 git config --get http.proxy 查残留死代理，再用 git -c http.proxy= 手动重试；回滚见 ghpages-backup-20261107"
 }
 Write-Host "[5/6] gh-pages pushed"
 
 # 步骤6：切回起始分支
 Invoke-Git checkout $StartBranch | Out-Null
 Remove-Item -Recurse -Force $Temp -ErrorAction SilentlyContinue
-Write-Host "[6/6] done, back on master. URL: https://wsjshy.github.io/elite-redux-teambuilder/"
+Write-Host "[6/6] done, back on $StartBranch. URL: https://wsjshy.github.io/elite-redux-teambuilder/"
