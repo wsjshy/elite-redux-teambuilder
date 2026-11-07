@@ -3541,18 +3541,35 @@ function openSp(s){
   try{html+=speedHintHtmlCached(s)}catch(eSp){}  /* v4.68 批4：配招卡一行配速提示（当前速度 vs 目标分位 ✅/⚠️ + 卡线省EV）；黑盒P1-2按id缓存 */
   try{html+=speedSliderHtml(s)}catch(eSl){}   /* v4.88：超速滑块（配速参考区叠加，原 ruleline 零改动） */
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
-  html+='<div class="sec"><h3>特性（'+s.abis.length+' 选 1，点击看描述）</h3>';
+  /* v4.186 UI：同名特性去重 —— 数据真值(s.abis)一个字不动，只在显示层出唯一徽标；
+     去重后只剩 1 个时不再写「N 选 1」（此前三项同名会渲染成三个一模一样的按钮） */
+  var _abU=[],_abS={};
   s.abis.forEach(function(n,ai){
-    var _pid=(s.abiIds||[])[ai];
-    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(n);
-    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(speciesAbiZh(s,'abis',ai))+'</span>';   /* v4.50 P0：显示名经平行 id 反查 ABI 规范中文 */
+    var _z=speciesAbiZh(s,'abis',ai);
+    if(_abS[_z])return; _abS[_z]=1; _abU.push({zh:_z,ai:ai});
+  });
+  html+='<div class="sec"><h3>'+(_abU.length<=1
+      ? ('特性（唯一：'+esc(_abU.length?_abU[0].zh:'—')+'，点击看描述）')
+      : ('特性（'+_abU.length+' 选 1，点击看描述）'))+'</h3>';
+  _abU.forEach(function(u){
+    var _pid=(s.abiIds||[])[u.ai];
+    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(s.abis[u.ai]);
+    html+='<span class="abi" onclick="abiDesc(this,'+id+')">'+esc(u.zh)+'</span>';
   });
   html+='<div class="abid" id="abiDesc" style="display:none"></div></div>';
-  html+='<div class="sec"><h3>天性（固定 3 个，点击看描述）</h3>';
+  /* v4.186 UI：天性同上去重（固定槽位可同名），标题按去重后数量写 */
+  var _inU=[],_inS={};
   s.inns.forEach(function(n,ii){
-    var _pid=(s.innIds||[])[ii];
-    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(n);
-    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(speciesAbiZh(s,'inns',ii))+'</span>';   /* v4.50 P0：同上 */
+    var _z=speciesAbiZh(s,'inns',ii);
+    if(_inS[_z])return; _inS[_z]=1; _inU.push({zh:_z,ii:ii});
+  });
+  html+='<div class="sec"><h3>'+(_inU.length<=1
+      ? ('天性（固定：'+esc(_inU.length?_inU[0].zh:'—')+'，点击看描述）')
+      : ('天性（固定 '+_inU.length+' 个，点击看描述）'))+'</h3>';
+  _inU.forEach(function(u){
+    var _pid=(s.innIds||[])[u.ii];
+    var id=(_pid!=null&&_pid!=='')?(''+_pid):abiIdByZhOrEn(s.inns[u.ii]);
+    html+='<span class="abi abi-inn" onclick="abiDesc(this,'+id+',\'spInnDesc\')">'+esc(u.zh)+'</span>';
   });
   html+='<div class="abid" id="spInnDesc" style="display:none"></div>'; /* A①：天性描述紧挂天性块内（勿落到特性块） */
   html+='<div class="mini" style="color:var(--sub);margin-top:4px">天性固定生效、不可更换；可选特性的免疫/减半与之叠加（B1）。</div>';
@@ -3617,6 +3634,59 @@ function openSp(s){
   spDrawer.classList.add('open');
   document.body.style.overflow='hidden';   /* v4.124 P1-4：锁背景滚动 */
 }
+/* v4.186：复合特性拆解 —— desc 形如 "A+B"（纯特性名拼接）时返回各子特性 {zh,id,desc}；
+   任一项索引不到就返回 null（宁可不展开，也不误判为复合特性） */
+/* v4.186：子特性名容错 —— 数据层个别名字与 ABI 规范名差一个字（如 440 写成「变换自如」、规范名「变幻自如」）。
+   规则收紧：仅「长度相同、逐字比较只差 1 字、且全库唯一」时采用，否则放弃（宁可漏拆也不误拆）。 */
+function abiFuzzyId(part){
+  if(!part||part.length<3)return null;
+  var best=null,cnt=0,plen=part.length;
+  for(var k in ABI){
+    var z=ABI[k][2];
+    if(!z||z.length!==plen)continue;
+    var d=0;
+    for(var i=0;i<plen;i++){ if(z.charAt(i)!==part.charAt(i)){ d++; if(d>1)break; } }
+    if(d<=1){ cnt++; if(cnt>1)return null; best=k; }
+  }
+  return cnt===1?best:null;
+}
+function abiCompositeBreak(desc){
+  if(!desc||desc.indexOf('+')<0||desc.indexOf('\n')>=0)return null;
+  var parts=desc.split('+').map(function(s){return s.trim()}).filter(function(s){return s});
+  if(parts.length<2)return null;
+  var out=[];
+  for(var i=0;i<parts.length;i++){
+    var hit=abiIdByZhOrEn(parts[i]);
+    if(hit==null)hit=abiFuzzyId(parts[i]);
+    if(hit==null)return null;
+    var a=ABI[''+hit];
+    out.push({zh:(a&&a[2])||parts[i],id:hit,desc:(a&&a[3])||''});
+  }
+  return out;
+}
+/* v4.186：源码级特性详解表 —— 只收「数据层描述不足以说明机制」的条目。
+   依据一律为 ER 官方源码 Eliteredux/eliteredux-source（include/constants/abilities.h 与 src/battle_util.c），
+   不写推测。rows 第 2 列走 glossify（纯文本，禁 HTML 标签，glossify 内部先 esc）。 */
+var ABI_DETAIL={
+'439':{
+  head:'并非「改变所有招式」——只对下面 7 个招式做专属强化，其余招式完全不变。数据层「彻底更改所有招式」是失实描述。',
+  rows:[
+    ['撞击 Tackle','基础威力 40→100；命中后给目标挂「再来一次」2 回合 +「定身法」2 回合，锁住目标的第一个招式'],
+    ['毒针 Poison Sting','基础威力 15→120；对钢属性目标改为效果绝佳 ×2（正常毒打钢是 0 无效）'],
+    ['电网 Electroweb','基础威力 55→155；命中后目标速度等级清零并附加「无法逃走/换人」；对地面属性目标改为效果绝佳 ×2（正常电打地面是 0 无效）'],
+    ['咬虫 Bug Bite','基础威力 60→140；命中后吃掉/销毁对手持有道具，并给自身回复'],
+    ['吐丝 String Shot','命中后对对方一侧一次布下隐形岩 + 毒菱 + 撒菱 + 黏黏网四种钉子（对方已有任一钉则不再触发）'],
+    ['变硬 Harden','使用后除防御外全部能力等级 +1（攻击/特攻/特防/速度/命中/闪避）'],
+    ['铁壁 Iron Defense','使用后获得一次护盾：对方威力≠0 的攻击招式被完全挡下，变化招式不挡']
+  ],
+  src:'ER 官方源码 src/battle_util.c（ABILITY_ANGELS_WRATH：L8978 招式专属效果、L12816 威力覆盖、L15252 属性相性）。注：数值取自源码 master 分支；官方 2.65 英文文本对此外仍是一句话，故机制结构以源码为准'
+},
+'369':{
+  head:'该特性未实装，无任何战斗效果（选它等于白占一个特性槽）。',
+  rows:[['源码原文','#define ABILITY_BAD_COMPANY 369 // Not implemented right now. Has no effect.']],
+  src:'ER 官方源码 include/constants/abilities.h'
+}
+};
 function abiDesc(el,id,box){
   /* v4.x A①：特性/天性共用——中文描述优先（abiDescZh → 数据层中文 → abiTags.nt），词条标蓝，可跳特性反查
      box：挂载容器 id —— 特性块用 'abiDesc'，天性块用 'spInnDesc'（描述须紧跟各自的 chip 行，互不串块） */
@@ -3634,6 +3704,26 @@ function abiDesc(el,id,box){
   var h='<div style="margin-bottom:3px"><b>'+esc(name)+'</b>'+esc(en)+' <span class="badge badge-neu">#'+id+'</span>'+
     '<button class="btn-mini" style="margin-left:6px" onclick="gotoAbi('+jsl(name)+')">特性反查 →</button></div>';
   h+='<div style="font-size:12px;line-height:1.9">'+glossify(zh||'（无中文描述）')+'</div>';
+  /* v4.186：①复合特性自动展开（desc 形如 "A+B" 且两项都能索引到 → 并列各自全文）
+     ②源码级手工详解 ABI_DETAIL（只收数据描述不足以说明机制的条目） */
+  try{
+    var _cx=abiCompositeBreak(zh);
+    if(_cx&&_cx.length){
+      h+='<div class="ruleline" style="line-height:1.75">⚙ <b>叠加特性</b>（本特性等价于以下能力同时生效）'+
+        _cx.map(function(x){return '<br>• <b>'+esc(x.zh)+'</b>'+(x.id!=null?' <span class="badge badge-neu">#'+x.id+'</span>':'')+'：'+glossify(x.desc||'（无描述）')}).join('')+'</div>';
+    }
+  }catch(eCx){}
+  try{
+    var _dt=ABI_DETAIL[''+id];
+    if(_dt){
+      var _rows=(_dt.rows||[]).map(function(r){return '<tr><td style="white-space:nowrap;padding:3px 8px 3px 0;vertical-align:top"><b>'+esc(r[0])+'</b></td><td style="padding:3px 0;vertical-align:top">'+glossify(r[1])+'</td></tr>'}).join('');
+      h+='<div class="ruleline" style="line-height:1.75;margin-top:4px">🔍 <b>机制详解（源码级）</b>'+
+        (_dt.head?('<div style="margin:3px 0 5px">'+glossify(_dt.head)+'</div>'):'')+
+        (_rows?('<table style="border-collapse:collapse;font-size:12px">'+_rows+'</table>'):'')+
+        (_dt.src?('<div class="mini" style="color:var(--sub);margin-top:5px">依据：'+esc(_dt.src)+'</div>'):'')+
+        '</div>';
+    }
+  }catch(eDt){}
   var tg=abiTagLines(id);
   if(tg.length)h+='<div class="ruleline">战斗意义：'+tg.map(function(x){return esc(x)}).join('；')+'</div>';
   d.innerHTML=h;
