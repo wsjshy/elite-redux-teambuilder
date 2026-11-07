@@ -192,6 +192,10 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **发现：`nn_data/` 未入库（13.55 MB，风险未闭环）**：`.gitignore:26 nn_data/` 让它不在任何提交里，而 `restore_nn_axis.py` 文件头自己记着「nn_data/ 目录丢失（.gitignore 忽略，无法 git 恢复）」——**已经丢过一次**。内容为 Smogon 官方月度统计（`chaos/raw` Gen3 OU 213 species 1.89 MB + Gen9 National Dex 738 species 11.65 MB）+ 派生先验（`smogon_prior` / `_oracle_usagePrior`）+ 轴库 `axis_lib` + 机制库 `mech_lib_v412`。`axis_lib` 有脚本可重建，**`chaos/raw` 两份原始统计无法重建**（依赖 smogon.com 历史月份仍在线）。清理时那份同源副本已随 `v449_det` 删除，**现在全机只剩仓库根这一份**。**已于同日打包入库**：`nn_data_v2026-09.tar.gz`（4,367,341 B / 4.17 MB，sha256 `49207CBC4DAC44289164D431FE3DB286AB9D987A65CC246337C44B3F8804777D`，压缩率 69%），解压往返实测 8/8 sha256 一致；`tools/smoke.js` 新增第 31 项硬门禁「备份包在位」（不存在或 <3 MB 即 FAIL，防截断防误删）。还原与更新方式见 `docs/research/nn_data备份说明_20261107.md`。
 - **NN 结论修正（口径更准，不是推翻）**：v4.185 章写的是「无对局数据源」。核实后更精确：**有使用率先验**（Smogon chaos 的 usage/moves/items/abilities/teammates，且代码已在用 `smogonPriorOf` / `smogonMoveBonus` / `smogonMateIds`），**缺胜负标签**（chaos 里没有 winrate，注释提到的 `dataset_engine_v0_winrate.jsonl` 全盘搜不到、从未存在）。所以「对手会带什么」能做且已做，「这支队多强」做不了 —— 与 v4.185 的结论一致。
 - **docs 评审（2026-11-08）**：用户提「文档肯定也有冗余，要具体深入内容判断」。实测 326 文件 / 36.54 MB，**完全重复仅 3 组 0.01 MB**，没有可安全删除的冗余；真正的问题是 83 份 md 没有地图。评审中差点误删 `_sec_*.md`（8 份）与 `_00_skeleton.md`，核实后发现它们是 `_00_资料汇编.md` 的**生成源**（`_build_secs.py` 生成分节 → `_assemble_00.py` 拼装模板），删了构建链就断。实际修的是产物缺「生成物」标记：改模板加警告 + 重跑（顺手踩了 `{{A}}` 被当占位符替换的坑，产物一度胀到 96,503 B，已修回 80,938 B）。另清掉 `.gitignore` 末行孤立「顺风」；核实 `ghpages-backup-20261107` **远端早已存在**（本地=远端=80e14f8），旧记录「仅本地未推」作废。
+- **存档资产（不入库，`.gitignore:3 *.sav`）**：共 2 份，各 131,088 B，**内容不同** ——
+  `D:\mGBA-0.10.2-win64\ROM\elite redux\elite redux 2.5 debug.sav`（sha256 `C99CDDED…`，2026-01-01）；
+  `D:\mGBA-0.10.2-win64\ROM\elite redux\ER2.65简汉化\ERv2.65-beta2-debug汉化版.sav`（`F4D29E4A…`，2026-10-06）。
+  本地第二份在 `archive/saves/`（同样被 `*.sav` 忽略）。**风险：存档只在本地同一块硬盘，无异地备份 —— 硬盘故障或误删即永久丢失，且 git 历史里从未有过存档，无法恢复。**
 - **已知风险**：CDN 兜底依赖 jsDelivr，大陆实测三个分片全部 25 s 超时 —— 可靠性靠部署前断言，不要指望线上拉 CDN 救命。
 ## 7. 项目准则
 
