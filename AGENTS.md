@@ -100,6 +100,15 @@ D:\game\elite-redux\
 ├── 存档解析v4_YYYYMMDD.csv/.json    ← ★解析器最新产物（431条，44列；特殊区按段内顺序标注）
 ```
 
+
+**docs/ 文档地图（2026-11-08 评审，326 文件 / 36.54 MB）**：四类身份，别混着读——
+① **活文档**（必读）：`战斗分析/01~07` 六篇 + `_编写规范` + `_99_交叉验证报告` + `_引擎升级规格_v1.0` + `_机制默认口径表` + `changelog/VERSIONS.md` + `research/`；
+② **生成物**（**勿手改**，改了下一次重跑就没了）：`战斗分析/_00_资料汇编.md`；
+③ **生成链**（**勿删**）：`研究资料/_00_skeleton.md`（模板，含 A/B/C/D/E/F 六占位符）+ 8 份 `_sec_*.md`（数据分节）+ `_assemble_00.py`（拼装）+ `_build_secs.py`（从 data.js/gameData 实读生成分节）+ `_erd_slim.json`；
+④ **过程档案**（追溯才查，非必读）：`_v49/_v4x/_v410/_v411/_v412` 交付报告 + `changelog/STATE_snapshot_v4.55_v4.82.md` + `_验证证据/`（32 MB 截图与脚本副本）。
+**实测：完全重复仅 3 组 / 0.01 MB，无可安全删除的冗余**；《_00_资料汇编》跑 `_assemble_00.py` 重生成与现有文件 sha256 一致（未手改）。详见 `docs/research/文档评审_20261108.md`。
+⚠️ **写进 `_00_skeleton.md` 的文本不得含 `{{X}}` 字面** —— 拼装脚本会把任何 `{{A}}`/`{{B1}}` 当占位符替换（本轮踩过：警告文案里写 `{{A}}`，产物从 80,517 B 胀到 96,503 B）。
+
 ## 3. 存档格式核心结论（v4.1 实证修订版，三档互证+10 截图+2 换招实验）
 
 - **物理段轮换**：0x20 物理段 × 0x1000B；每段页脚 `+0xFF4` 逻辑段ID、`+0xFF8` magic `25 20 01 08`。
@@ -182,6 +191,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 - **C:\temp 顶层逐项判定与清理（2026-11-07，1023 项 / 999.6 MB → 3 项 / 62.8 MB）**：前两轮只遍历 `er-*` **目录**，`er-*.html`/`er-online-*` 这类 **419 个文件（88.9 MB）从未进入清理范围**，实际清点 1023 项。判定口径三条（可复原 / 可重建 / 无独有内容），逐行落在 `docs/research/temp顶层逐项判定_20261107.csv`。执行：**attempted=1022 / failed=0 / 释放 936.8 MB**，只剩 `ghpages-leak-backup-20261107`（51.7 MB 回滚安全网）+ `er-deploy-dryrun`（部署 DryRun 依赖）+ `elite-redux-v411-prototype` 本体（0.4 MB）。两个「看起来很大」的目录真相：`elite-redux-v411-prototype` 500.7 MB 里 **99.9% 是 Chrome 渲染缓存**（`_shots` 5711 文件仅 12 张 png、`_v411test` 是 8 套 CDP profile），真材料只有 `v411_prototype.html` + `SELFCHECK.md` + `_harness`；`v449_det` 是 v4.49 构建确定性三次对拍，其 `nn_data` 与仓库 `nn_data/` **8 文件 hash 全同**，删之无损。
 - **发现：`nn_data/` 未入库（13.55 MB，风险未闭环）**：`.gitignore:26 nn_data/` 让它不在任何提交里，而 `restore_nn_axis.py` 文件头自己记着「nn_data/ 目录丢失（.gitignore 忽略，无法 git 恢复）」——**已经丢过一次**。内容为 Smogon 官方月度统计（`chaos/raw` Gen3 OU 213 species 1.89 MB + Gen9 National Dex 738 species 11.65 MB）+ 派生先验（`smogon_prior` / `_oracle_usagePrior`）+ 轴库 `axis_lib` + 机制库 `mech_lib_v412`。`axis_lib` 有脚本可重建，**`chaos/raw` 两份原始统计无法重建**（依赖 smogon.com 历史月份仍在线）。清理时那份同源副本已随 `v449_det` 删除，**现在全机只剩仓库根这一份**。**已于同日打包入库**：`nn_data_v2026-09.tar.gz`（4,367,341 B / 4.17 MB，sha256 `49207CBC4DAC44289164D431FE3DB286AB9D987A65CC246337C44B3F8804777D`，压缩率 69%），解压往返实测 8/8 sha256 一致；`tools/smoke.js` 新增第 31 项硬门禁「备份包在位」（不存在或 <3 MB 即 FAIL，防截断防误删）。还原与更新方式见 `docs/research/nn_data备份说明_20261107.md`。
 - **NN 结论修正（口径更准，不是推翻）**：v4.185 章写的是「无对局数据源」。核实后更精确：**有使用率先验**（Smogon chaos 的 usage/moves/items/abilities/teammates，且代码已在用 `smogonPriorOf` / `smogonMoveBonus` / `smogonMateIds`），**缺胜负标签**（chaos 里没有 winrate，注释提到的 `dataset_engine_v0_winrate.jsonl` 全盘搜不到、从未存在）。所以「对手会带什么」能做且已做，「这支队多强」做不了 —— 与 v4.185 的结论一致。
+- **docs 评审（2026-11-08）**：用户提「文档肯定也有冗余，要具体深入内容判断」。实测 326 文件 / 36.54 MB，**完全重复仅 3 组 0.01 MB**，没有可安全删除的冗余；真正的问题是 83 份 md 没有地图。评审中差点误删 `_sec_*.md`（8 份）与 `_00_skeleton.md`，核实后发现它们是 `_00_资料汇编.md` 的**生成源**（`_build_secs.py` 生成分节 → `_assemble_00.py` 拼装模板），删了构建链就断。实际修的是产物缺「生成物」标记：改模板加警告 + 重跑（顺手踩了 `{{A}}` 被当占位符替换的坑，产物一度胀到 96,503 B，已修回 80,938 B）。另清掉 `.gitignore` 末行孤立「顺风」；核实 `ghpages-backup-20261107` **远端早已存在**（本地=远端=80e14f8），旧记录「仅本地未推」作废。
 - **已知风险**：CDN 兜底依赖 jsDelivr，大陆实测三个分片全部 25 s 超时 —— 可靠性靠部署前断言，不要指望线上拉 CDN 救命。
 ## 7. 项目准则
 
