@@ -109,6 +109,18 @@ check('生成器已退役且含拒绝覆盖守卫', () => {
   if (!/已退役/.test(t)) throw new Error('缺少退役声明，后来者会误以为可以重建');
   return 'retired';
 });
+check('页头版本占位不回写过期版本号（须 v4.x 或与 ER_ENGINE_VER 一致）', () => {
+  // 2026-11-07 v4.184 发现：升版后静态占位仍是 v4.183，运行时虽被 IIFE 回填，
+  // 但回填前/脚本失败时用户看到的就是过期版本 —— 这与 v4.183 修的「手写死文本」是同一类残留。
+  const t = read('index.html');
+  const m = t.match(/id="erVerNo">([^<]*)</);
+  if (!m) throw new Error('缺少 erVerNo 占位');
+  const ph = m[1].trim();
+  const ver = (t.match(/ER_ENGINE_VER\s*=\s*'(v[\d.]+)'/) || [])[1];
+  if (ph === 'v4.x') return 'placeholder v4.x';
+  if (ph === ver) return 'same as ' + ver;
+  throw new Error('静态占位 ' + ph + ' ≠ ER_ENGINE_VER ' + ver + ' —— 会显示过期版本');
+});
 check('配招助手_ER.html 只能是轻量兼容入口（≤10KB 且跳转 index.html）', () => {
   // 2026-11-07 事故根因：v4.98 拆包后 data.js 退役，index.html 改好，但这份第二副本没跟着改
   // → 用户按 README 双击本地运行，拿到 v4.98 旧版且 data.js 404，页面只剩「数据加载失败」。
