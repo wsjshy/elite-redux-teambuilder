@@ -1040,10 +1040,10 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
   function __loadShard(name,url){
     var s=document.createElement('script');s.src=url;s.async=true;
     s.onload=function(){window.__ER_SHARDS[name]=true;document.dispatchEvent(new Event('er-shard-'+name));if(window.__erPending!==undefined&&window.__erShardDone)window.__erShardDone();};
-    s.onerror=function(){window.__ER_SHARDS.fail[name]=true;var b=document.createElement('div');b.style.cssText='position:fixed;bottom:8px;left:8px;right:8px;padding:10px;background:#fde;color:#900;border-radius:8px;z-index:9999;font-size:12px';b.innerHTML='数据分片 '+name+' 加载失败 <button onclick="location.reload()" style="margin-left:8px;padding:4px 12px">重试</button>';document.body.appendChild(b);};
+    s.onerror=function(){window.__ER_SHARDS.fail[name]=true;var b=document.createElement('div');b.style.cssText='position:fixed;bottom:8px;left:8px;right:8px;padding:10px;background:#fde;color:#900;border-radius:8px;z-index:9999;font-size:12px';b.innerHTML='数据分片 '+name+' 加载失败 <button onclick="location.reload()" style="margin-left:8px;padding:4px 12px">重试</button>';document.body.appendChild(b);window.__ER_PARTIAL=true;if(window.__erPending!==undefined&&window.__erShardDone)window.__erShardDone();};
     document.head.appendChild(s);
   }
-  window.__erPending=2;window.__erReady=false;
+  window.__erPending=2;window.__erReady=false;window.__ER_PARTIAL=false;
   window.__erShardDone=function(){window.__erPending--;if(window.__erPending<=0){window.__erReady=true;document.dispatchEvent(new Event('er-ready'))}}
   function __erStartLate(){setTimeout(function(){__loadShard('species','data_species_v498.js?v=v498');__loadShard('adv','data_adv_v498.js?v=v498');},800);}
   if(document.readyState==='complete'){__erStartLate();}else{window.addEventListener('load',__erStartLate);}
@@ -6192,7 +6192,7 @@ function speedSetN(n){window._spdN=n;speedRender(true)}
 function speedSetSort(v){window._spdSort=v;speedRender(true)}
 /* v4.94 A：chip 筛选切换（同 chip 再点=取消；整页重渲染同步 active 样式） */
 function speedToggleFilter(k,v){window._spdFilter=window._spdFilter||{};if(window._spdFilter[k]===v)delete window._spdFilter[k];else window._spdFilter[k]=v;speedRender(true)}
-function speedRender(){if(!window.__erReady||!ERDATA.species||!ERDATA.species.length){var _sb=document.getElementById('speedBox');if(_sb)_sb.innerHTML='<div class="tip">数据加载中…</div>';return}try{var q=speedPctiles();
+function speedRender(){if((!window.__erReady&&!window.__ER_PARTIAL)||!ERDATA.species||!ERDATA.species.length){var _sb=document.getElementById('speedBox');if(_sb)_sb.innerHTML='<div class="tip">数据加载中…</div>';return}try{var q=speedPctiles();
   var h='<div class="sec"><h3>全库速度分位锚点（极速档 252+速度性格，n='+q.n+'，脚本实测）</h3>';
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
   h+='<tr><td>极速值</td><td>'+q.P50+'</td><td>'+q.P75+'</td><td>'+q.P90+'</td><td>'+q.P95+'</td><td>'+q.P99+'</td></tr></table>';
@@ -14938,6 +14938,7 @@ function oneLiner(bd){
 }
 function renderCore(s){
   if(!window.__erReady){var _co=document.getElementById('coreOut');if(_co)_co.innerHTML='<div class="tip">数据加载中…</div>';return}
+  if(window.__ER_PARTIAL){var _co2=document.getElementById('coreOut');if(_co2)_co2.innerHTML='<div class="tip">部分数据缺失（'+(Object.keys(window.__ER_SHARDS.fail||{}).join('/')||'未知')+'），请点右下角「重试」</div>';return}
   if(!s){$('coreOut').innerHTML='<div class="tip">先在上方搜索并选定一只核心宝可梦</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   if(!isValidSp(s)){$('coreOut').innerHTML='<div class="tip">该编号为占位/无效物种（种族值六项为 0），已过滤、不参与配队推荐。</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   var _ftC={};
