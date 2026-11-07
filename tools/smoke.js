@@ -149,13 +149,22 @@ check('静默 catch 数量（基线 361，不应显著增长）', () => {
   if (n > 390) throw new Error('静默 catch 增至 ' + n + '（基线 361）');
   return n + ' 处';
 });
-check('零引用函数（基线 0，应从 28 清理完）', () => {
+check('零引用函数（只允许历史保留白名单，禁止新增）', () => {
   const t = read('index.html');
+  // 2026-11-07 口径修正：这些函数在 v4.179 中已零调用，但属于项目历史功能
+  // （队检告警 teamQA/qaToggle/miniDefBar、战斗概率 roll16/koProb 等）。
+  // 用户明确要求「清理冗余不等于删功能」，故从 v4.179 原样恢复并列入白名单。
+  // 断言目的改为：除白名单外不得再新增零引用函数。
+  const LEGACY_KEPT = new Set(('sysBenefitNames spFields anCoverN qaToggle teamQA miniDefBar roll16 koProb ' +
+    'loadFromHash speedRoleZh speedEnsureTable isMegaPreferred _spCacheK coreNature mechMcAbi ' +
+    'smogonPriorMeta smogonListOf smogonMoveBonus smogonMateIds mechMv itemIsWeather itemIsTerrain ' +
+    'evioWhy mvSrc needRegistryOk isAbilSetAny fillForNeed reverseSpeed toggleFav').split(/\s+/));
   const defs = [...t.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const uniq = [...new Set(defs)];
   const dead = uniq.filter(n => (t.match(new RegExp('\\b' + n.replace(/\$/g, '\\$') + '\\b', 'g')) || []).length <= 1);
-  if (dead.length > 0) throw new Error('仍有零引用函数: ' + dead.slice(0, 6).join(','));
-  return '0';
+  const unexpected = dead.filter(n => !LEGACY_KEPT.has(n));
+  if (unexpected.length > 0) throw new Error('新增零引用函数（不在保留白名单）: ' + unexpected.slice(0, 6).join(','));
+  return dead.length + ' 个历史保留';
 });
 
 // ---------- 输出 ----------

@@ -16165,6 +16165,176 @@ document.addEventListener('click',function(ev){
   if(t.closest('.card,.tip,button,a,input,select,textarea,details,summary,.chip,.mateline,.bktab'))return;
   switchTab('core');
 });
+
+/* ===== 2026-11-07 回滚：按「清理冗余不删功能」口径恢复以下函数 =====
+   这些在 v4.179 中已零调用（属于历史迭代遗留），本轮曾按「死代码」删除。
+   因用户明确要求不得删除已有功能，此处从 v4.179 原样恢复并保留。
+   如后续确认确实无用，可整块删除（不影响任何调用路径）。===== */
+function sysBenefitNames(sys){return Object.keys(SYS_MAP).filter(function(n){return SYS_MAP[n]===sys})}
+function spFields(s){return [s.id,s.zh,s.en,spBst(s)]}
+function anCoverN(rows){
+  var seen={},n0=0;
+  rows.forEach(function(r){r.moves.forEach(function(id){
+    if(anMvCat(id)==='变化')return;var t=anMvType(id);if(!t||t==='?'||t==='无')return;
+    if(!seen[t]){seen[t]=1;n0++}})});
+  return {n:n0,types:Object.keys(seen)};
+}
+function qaToggle(el){
+  var i=el.getAttribute('data-idx');
+  var d=document.getElementById('qa-d'+i);
+  if(d)d.classList.toggle('open');
+}
+function teamQA(){
+  if(!window.__erReady)return '';
+  var warns=[];
+  /* ① 重复物种 */
+  var spCount={};team.forEach(function(s){spCount[s.id]=(spCount[s.id]||0)+1});
+  var dupSp=Object.keys(spCount).filter(function(k){return spCount[k]>=2});
+  if(dupSp.length)warns.push({icon:'⚠',label:'重复物种 ×'+dupSp.length,detail:dupSp.map(function(id){var s=ERDATA.species.filter(function(x){return x.id==id})[0];return s?s.zh:id}).join('、')});
+  /* ② 重复道具 */
+  var itCount={};team.forEach(function(s){var it=teamInfo[s.id]&&teamInfo[s.id].item;if(it)itCount[it]=(itCount[it]||0)+1});
+  var dupIt=Object.keys(itCount).filter(function(k){return itCount[k]>=2});
+  if(dupIt.length)warns.push({icon:'⚠',label:'重复道具 ×'+dupIt.length,detail:dupIt.join('、')});
+  /* ③ 无除钉（v4.108 目录化：id 驱动+中文别名） */
+  var REMOVAL_IDS=[229,432,525];
+  var REMOVAL_ALIAS={'高速旋转':229,'清除浓雾':432,'龙尾':525};
+  var hasRemoval=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){var mid=anMvId(m);if(REMOVAL_IDS.indexOf(mid)>-1)return true;if(REMOVAL_ALIAS[m])return true;return false})});
+  if(!hasRemoval)warns.push({icon:'⚠',label:'全队无除钉招式',detail:'建议带高速旋转/清除浓雾等除钉招式应对场地钉子'});
+  /* ④ 无回复（v4.108 目录化：id 驱动+中文别名） */
+  var RECOVER_IDS=[105,156,215,234,235,236,303,355];
+  var RECOVER_ALIAS={'羽栖':355,'祈愿':215,'许愿':215,'睡觉':156,'生蛋':105,'自我再生':105,'月光':236,'晨光':234,'光合作用':235,'偷懒':303};
+  var hasRec=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){var mid=anMvId(m);if(RECOVER_IDS.indexOf(mid)>-1)return true;if(RECOVER_ALIAS[m])return true;return false})});
+  if(!hasRec)warns.push({icon:'⚠',label:'全队无回复招式',detail:'建议带羽栖/许愿/再生力特性等回复手段'});
+  /* ⑤ 无控速（v4.108）：FUNC_MV.speed 目录驱动 */
+  var SPEED_CTRL=(FUNC_MV&&FUNC_MV.speed)||[86,317,366,433]; /* 电磁波/岩石封锁/顺风/戏法空间 */
+  var hasSpeedCtrl=team.some(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];return mv.some(function(m){var mid=anMvId(m);return SPEED_CTRL.indexOf(mid)>-1})});
+  if(!hasSpeedCtrl)warns.push({icon:'⚠',label:'全队无控速手段',detail:'建议带顺风/电磁波/戏法空间/岩石封锁等速度控制招式'});
+  if(!warns.length)return '';
+  var h='<div style="margin:6px 0;padding:6px;border:1px solid #ffcc80;border-radius:8px;background:var(--warn-bg)">';
+  h+='<div style="font-size:11px;font-weight:600;margin-bottom:4px">队检告警</div><div>';
+  warns.forEach(function(w,i){
+    h+='<span class="qa-chip" data-idx="'+i+'" onclick="qaToggle(this)">'+w.icon+' '+w.label+'</span>';
+  });
+  h+='</div>';
+  warns.forEach(function(w,i){
+    h+='<div class="qa-detail" id="qa-d'+i+'">'+w.detail+'</div>';
+  });
+  h+='</div>';
+  return h;
+}
+function miniDefBar(){
+  if(!window.__erReady)return '';
+  var weak={};
+  ERDATA.types.forEach(function(at){
+    var w=0;team.forEach(function(s){try{var c=defCellTrio(s,at).inn;if(c>=2)w++}catch(e){}});
+    if(w>=2)weak[at]=w;
+  });
+  var keys=Object.keys(weak).sort(function(a,b){return weak[b]-weak[a]}).slice(0,6);
+  if(!keys.length)return '';
+  return '<div style="margin:6px 0"><div style="font-size:11px;color:var(--sub)">共同薄弱系</div><div class="mini-def">'+keys.map(function(at){return '<span>'+at+' ×'+weak[at]+'</span>'}).join('')+'</div></div>';
+}
+function roll16(lo,hi){
+  if(hi<=lo)return [lo];
+  var out=[],step=(hi-lo)/15;
+  for(var i=0;i<16;i++)out.push(Math.round(lo+step*i));
+  return out;
+}
+function koProb(dmgArr,hp,n){
+  var p=dmgArr.filter(function(d){return d>=hp}).length/dmgArr.length;
+  return {p16:p,pN:1-Math.pow(1-p,n)};
+}
+function loadFromHash(h){
+  try{
+    if(!h||h.indexOf('v2.1:')!==0)return false;
+    var raw=h.slice(5);
+    var items=decodeURIComponent(atob(raw)).split(';');
+    for(var i=0;i<Math.min(6,items.length);i++){
+      if(!items[i])continue;
+      var parts=items[i].split('|');
+      var sp=(ERDATA.species||[]).find(function(s){return ''+s.id===parts[0]});
+      if(sp){
+        team[i]=sp;
+        if(parts[1]&&window.natures)window.natures[i]=parts[1];
+        if(parts[2]&&window.evs)window.evs[i]=parts[2];
+        if(parts[3]&&window.moves)window.moves[i]=parts[3];
+        if(parts[4]&&window.items)window.items[i]=parts[4];
+      }
+    }
+    if(typeof renderAll==='function')renderAll();
+    return true;
+  }catch(e){return false}
+}
+function speedRoleZh(r){return r==='fast'?'高速速攻手':(r==='space'?'空间/慢速炮台':'中速清场')}
+function speedEnsureTable(){var b=document.getElementById('spdTableBox');if(!b)return;try{speedRefreshTable()}catch(e){}}
+function isMegaPreferred(s){return !optMegaOnly||!hasMegaForm(s)}
+function _spCacheK(k,fac){if(_spMemo[k]!==undefined)return _spMemo[k];var v=fac();_spMemo[k]=v;return v}
+function coreNature(s){
+  var r=coreRole(s).role,side=coreSide(s);
+  if(r.indexOf('速攻')>-1||r.indexOf('天气速攻')>-1)return side==='物理'?[['爽朗','+速度-特攻，先手压制'],['天真','+速度-特防']]:[['胆小','+速度-攻击，先手压制'],['急躁','+速度-防御']];
+  if(r.indexOf('空间')>-1)return side==='物理'?[['勇敢','+攻击-速度，空间内先手'],['固执','+攻击-特攻']]:[['冷静','+特攻-速度，空间内先手'],['内敛','+特攻-攻击']];
+  if(r.indexOf('慢速炮台')>-1)return side==='物理'?[['勇敢','+攻击-速度（配空间）'],['固执','+攻击-特攻']]:[['冷静','+特攻-速度（配空间）'],['内敛','+特攻-攻击']];
+  if(r.indexOf('肉盾')>-1)return [['淘气','+防御-特攻（物盾）'],['慎重','+特防-特攻（特盾）'],['大胆','+防御-攻击']];
+  if(r.indexOf('设置手')>-1)return [['慎重','+特防-特攻，站场保天气'],['沉着','+特防-攻击'],['大胆','+防御-攻击']];
+  return side==='物理'?[['固执','+攻击-特攻'],['爽朗','+速度-特攻']]:[['内敛','+特攻-攻击'],['胆小','+速度-攻击']];
+}
+function mechMcAbi(mc){var a=(mc&&mc.match&&mc.match.abilities)||[];return (a&&a.length)?(+a[0]):-1}
+function smogonPriorMeta(){try{return (ERDATA&&ERDATA.smogonPrior&&ERDATA.smogonPrior.meta)||null}catch(e){return null}}
+function smogonListOf(sp,key){if(!sp||!sp[key])return [];return sp[key]}
+function smogonMoveBonus(s,moveId){
+  if(!smogonOn())return 0;
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return 0;
+  var p=smogonPct(sp,'moves',moveId);if(!(p>0))return 0;
+  var mv=MV[moveId];if(!mv)return 0;
+  return SMOGON_PRIOR_W*SMOGON_MOVE_GAIN*(p/100);
+}
+function smogonMateIds(s){
+  if(!smogonOn())return [];
+  var sp=smogonPriorOf(s&&s.id);if(!sp)return [];
+  var out=[];(sp.teammates||[]).forEach(function(x){if(x&&x.id!==undefined&&x.id!==null)out.push(''+x.id)});
+  return out;
+}
+function mechMv(id){var m=MV[id];return m?{id:id,zh:m[1]||('#'+id),pow:m[5]||0,tys:(m[9]||'').split(',')}:null}
+function itemIsWeather(x){return WX_SYS.indexOf(x)>-1}
+function itemIsTerrain(x){return TERR_SYS.indexOf(x)>-1}
+function evioWhy(s,sys,space,side){var e=evioAdv(s,sys,space,side);return e?('进化奇石（非最终形态）—— '+e.why):''}
+function mvSrc(s,id){
+  var lv='-';
+  s.lv.forEach(function(p){if(p[1]==id&&(lv==='-'||p[0]<lv))lv='Lv'+p[0]});
+  if(lv==='-')lv='教学';
+  return lv;
+}
+function needRegistryOk(){
+  return Object.keys(NEED_KINDS).every(function(k){
+    var d=NEED_KINDS[k];
+    return d&&typeof d.gate==='function'&&d.kind&&d.role&&d.dims&&d.dims.length>0;
+  });
+}
+function isAbilSetAny(s){return isSetterAny(s)}
+function fillForNeed(need,cx0){
+  var p=poolForNeed(cx0.core,cx0,need,(cx0.team||[]),cx0.used);
+  return p.length?p[0]:null;
+}
+function reverseSpeed(target,baseSpd){
+  try{
+    baseSpd=baseSpd||100; /* v4.88 滑块同算法：种族值输入 */
+    for(var ev=0;ev<=252;ev+=4){
+      var spdWithNeutral=Math.floor((baseSpd*2+31+ev/4)*1.0);
+      if(spdWithNeutral>=target)return {ev:ev,nature:'认真/其他'};
+      var spdWithBoost=Math.floor((baseSpd*2+31+ev/4)*1.1);
+      if(spdWithBoost>=target)return {ev:ev,nature:'爽朗/胆小'};
+    }
+    return {ev:252,nature:'爽朗/胆小(仍不足)'};
+  }catch(e){return {ev:0,nature:'-'}}
+}
+function toggleFav(id){
+  try{
+    var f=JSON.parse(localStorage.getItem('er_favs')||'{}');
+    f[id]=!f[id];
+    if(!f[id])delete f[id];
+    localStorage.setItem('er_favs',JSON.stringify(f));
+    return !!f[id];
+  }catch(e){return false}
+}
 </script>
 </body>
 </html>
