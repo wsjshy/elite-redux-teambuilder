@@ -3704,6 +3704,18 @@ function abiDesc(el,id,box){
   var h='<div style="margin-bottom:3px"><b>'+esc(name)+'</b>'+esc(en)+' <span class="badge badge-neu">#'+id+'</span>'+
     '<button class="btn-mini" style="margin-left:6px" onclick="gotoAbi('+jsl(name)+')">特性反查 →</button></div>';
   h+='<div style="font-size:12px;line-height:1.9">'+glossify(zh||'（无中文描述）')+'</div>';
+  /* v4.186：入场类特性 —— 描述只写「入场时释放 XX」，玩家看不出该招式做什么 → 把招式原文附上（纯数据展开，名未命中就不显示） */
+  try{
+    var _em=/(?:入场|上场|出场|替换上场)[^，。;]{0,8}?(?:使用|释放|施放|发动|放出|自动使用)([^，。;（(、]{2,12})/.exec(zh);
+    if(_em){
+      var _mz=_em[1].trim().replace(/[.。,，]+$/,'').replace(/^(?:威力|持续)?\d+(?:回合|威力)?的?/,'').replace(/^一次/,'').trim();
+      var _mid=(_mz&&typeof mvIdByZhOrEn==='function')?mvIdByZhOrEn(_mz):null;
+      if(_mid!=null&&MV[_mid]){
+        var _mm=MV[_mid];
+        h+='<div class="ruleline" style="margin-top:4px">📌 <b>入场招式</b>：'+esc(_mz)+(tlabel&&_mm[3]?'（'+tlabel(_mm[3])+'）':'')+' — '+glossify(mvDescOf(_mm)||'（无描述）')+'</div>';
+      }
+    }
+  }catch(eEm){}
   /* v4.186：①复合特性自动展开（desc 形如 "A+B" 且两项都能索引到 → 并列各自全文）
      ②源码级手工详解 ABI_DETAIL（只收数据描述不足以说明机制的条目） */
   try{
