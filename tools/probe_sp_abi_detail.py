@@ -146,6 +146,18 @@ INJECT_JS = r"""
         var dE3=document.getElementById('abiDesc');
         r.desc86 = dE3? dE3.innerHTML : null;
       }catch(eE3){ r.desc86 = 'ERR:' + eE3; }
+      // 触发型（#788 冰川暴怒「使用冰属性招式后触发一格50威力的暴风雪」）
+      try{
+        abiDesc(null, '788');
+        var dE4=document.getElementById('abiDesc');
+        r.desc788 = dE4? dE4.innerHTML : null;
+      }catch(eE4){ r.desc788 = 'ERR:' + eE4; }
+      // 源码级详解 #733 拳舞
+      try{
+        abiDesc(null, '733');
+        var dE5=document.getElementById('abiDesc');
+        r.desc733 = dE5? dE5.innerHTML : null;
+      }catch(eE5){ r.desc733 = 'ERR:' + eE5; }
 
       put(r);
     }catch(e){ r.ERROR=String(e); r.stack=String(e&&e.stack||'').slice(0,500); put(r); }
@@ -284,13 +296,17 @@ def main():
     ck(data.get("detail_has439") is True, "D1 ABI_DETAIL 含 439 且有 rows")
     ck(data.get("detail_rows439", 0) >= 7, "D2 439 详解至少 7 行", str(data.get("detail_rows439")))
 
-    # E. 入场类特性自动展开
+    # E. 招式型特性自动展开
     d293 = data.get("desc293") or ""
     d320 = data.get("desc320") or ""
     d86 = data.get("desc86") or ""
-    ck("入场招式" in d293 and "变圆" in d293, "E1 「入场释放变圆」附上招式效果", d293[:70].replace("\n", " "))
-    ck("入场招式" in d320 and "顺风" in d320, "E2 「入场顺风」附上招式效果", d320[:70].replace("\n", " "))
-    ck("入场招式" not in d86, "E3 非入场类特性不误挂该块", d86[:60].replace("\n", " "))
+    d788 = data.get("desc788") or ""
+    d733 = data.get("desc733") or ""
+    ck("关联招式" in d293 and "变圆" in d293, "E1 「入场释放变圆」附上招式效果", d293[:64].replace("\n", " "))
+    ck("关联招式" in d320 and "顺风" in d320, "E2 「入场顺风」附上招式效果", d320[:64].replace("\n", " "))
+    ck("关联招式" not in d86, "E3 非招式型特性不误挂该块", d86[:54].replace("\n", " "))
+    ck("关联招式" in d788 and "暴风雪" in d788, "E4 「触发50威力暴风雪」附上招式效果", d788[:64].replace("\n", " "))
+    ck("机制详解" in d733 and "跟舞" in d733, "E5 733 拳舞有源码级详解", d733[:64].replace("\n", " "))
 
     print()
     if fails:

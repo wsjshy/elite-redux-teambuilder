@@ -3650,6 +3650,23 @@ function abiFuzzyId(part){
   }
   return cnt===1?best:null;
 }
+/* v4.186：从特性描述里抽出「被提及的招式名」。两类句式：
+   ①入场型「入场时使用/释放 XX」；②触发型「使用X属性招式后触发/追加 XX」。
+   抽出来后只做一件事：交给 mvIdByZhOrEn 精确匹配，命中才展示该招式的效果（命中不到就整块不显示）。 */
+function abiCleanMvName(desc){
+  if(!desc)return '';
+  var d=(''+desc);
+  var m=/(?:入场|上场|出场|替换上场)[^，。;\n]{0,8}?(?:使用|释放|施放|发动|放出|自动使用)([^，。;（(、\n]{2,14})/.exec(d);
+  if(!m)m=/(?:触发|追加)([^，。;（(、\n]{2,16})/.exec(d);
+  if(!m)return '';
+  var t=m[1].trim();
+  for(var i=0;i<4;i++){
+    var n=t.replace(/^[一二三四五六七八九十百]+[格次发]/,'').replace(/^(?:威力|持续|约|共)?(?:\d+(?:\.\d+)?)(?:%|回合|威力|点)?的?/,'').replace(/^的/,'').trim();
+    if(n===t)break;
+    t=n;
+  }
+  return t.replace(/[.。,，]+$/,'').trim();
+}
 function abiCompositeBreak(desc){
   if(!desc||desc.indexOf('+')<0||desc.indexOf('\n')>=0)return null;
   var parts=desc.split('+').map(function(s){return s.trim()}).filter(function(s){return s});
@@ -3685,6 +3702,15 @@ var ABI_DETAIL={
   head:'该特性未实装，无任何战斗效果（选它等于白占一个特性槽）。',
   rows:[['源码原文','#define ABILITY_BAD_COMPANY 369 // Not implemented right now. Has no effect.']],
   src:'ER 官方源码 include/constants/abilities.h'
+},
+'733':{
+  head:'本特性不改招式本身，只是给全部招式打上「舞类」标记；收益来自别的特性消费这个标记 —— 队里没有跟舞/舞者时，它几乎不产生实际收益。',
+  rows:[
+    ['跟舞 #517','因为自己每一招都被判成舞类，于是每次都追加一发固定威力 50 的「觉醒之舞」（不占自己的回合，按追加招式结算）'],
+    ['舞者 Dancer','别人施放舞类招式时，持舞者会跟着复刻一次；判定只看舞类标记，不看这招本来是不是跳舞招式'],
+    ['只影响一个判定','只改变「是否算舞类」；招式威力、属性、命中率、PP 一律不变']
+  ],
+  src:'ER 官方源码 src/battle_util.c：L9661-9675（ABILITY_TWO_STEP 检查 FLAG_DANCE 后 UseAttackerFollowUpMove(MOVE_REVELATION_DANCE, 50)）、L9222-9229（ABILITY_DANCER 检查 FLAG_DANCE）'
 }
 };
 function abiDesc(el,id,box){
@@ -3704,15 +3730,15 @@ function abiDesc(el,id,box){
   var h='<div style="margin-bottom:3px"><b>'+esc(name)+'</b>'+esc(en)+' <span class="badge badge-neu">#'+id+'</span>'+
     '<button class="btn-mini" style="margin-left:6px" onclick="gotoAbi('+jsl(name)+')">特性反查 →</button></div>';
   h+='<div style="font-size:12px;line-height:1.9">'+glossify(zh||'（无中文描述）')+'</div>';
-  /* v4.186：入场类特性 —— 描述只写「入场时释放 XX」，玩家看不出该招式做什么 → 把招式原文附上（纯数据展开，名未命中就不显示） */
+  /* v4.186：招式型特性 —— 「入场时释放 XX」「使用X属性招式后触发 XX」这类描述只写招式名，
+     玩家看不出这一招做什么 → 把招式原文附上（纯数据展开，名未命中就不显示） */
   try{
-    var _em=/(?:入场|上场|出场|替换上场)[^，。;]{0,8}?(?:使用|释放|施放|发动|放出|自动使用)([^，。;（(、]{2,12})/.exec(zh);
-    if(_em){
-      var _mz=_em[1].trim().replace(/[.。,，]+$/,'').replace(/^(?:威力|持续)?\d+(?:回合|威力)?的?/,'').replace(/^一次/,'').trim();
-      var _mid=(_mz&&typeof mvIdByZhOrEn==='function')?mvIdByZhOrEn(_mz):null;
+    var _mvName=abiCleanMvName(zh);
+    if(_mvName){
+      var _mid=(typeof mvIdByZhOrEn==='function')?mvIdByZhOrEn(_mvName):null;
       if(_mid!=null&&MV[_mid]){
         var _mm=MV[_mid];
-        h+='<div class="ruleline" style="margin-top:4px">📌 <b>入场招式</b>：'+esc(_mz)+(tlabel&&_mm[3]?'（'+tlabel(_mm[3])+'）':'')+' — '+glossify(mvDescOf(_mm)||'（无描述）')+'</div>';
+        h+='<div class="ruleline" style="margin-top:4px">📌 <b>关联招式</b>：'+esc(_mvName)+(tlabel&&_mm[3]?'（'+tlabel(_mm[3])+'）':'')+' — '+glossify(mvDescOf(_mm)||'（无描述）')+'</div>';
       }
     }
   }catch(eEm){}
