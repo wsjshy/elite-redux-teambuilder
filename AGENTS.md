@@ -43,7 +43,8 @@ D:\game\elite-redux\
 │   ├── B类目录内容抢救合辑_20261107.md ← C:\temp 121 个 `er-*` 目录内容按机制整合（120.5 KB：九章正文 + 121 目录映射表 + 判废清单 + 删前口径）
 │   ├── temp顶层逐项判定_20261107.csv   ← C:\temp 顶层 1023 项逐行判定（名称/类型/大小/类别/判定/依据）
 │   ├── temp顶层清理执行_20261107.md    ← 清理执行记录（删 1022 项 / 释放 936.8 MB / 剩余 3 项 + nn_data 未入库发现）
-│   └── 回归与未决验证_20261107.md / teamqa接入_20261107.md ← 队检告警接入与回归验证记录（v4.182）
+│   ├── 回归与未决验证_20261107.md / teamqa接入_20261107.md ← 队检告警接入与回归验证记录（v4.182）
+│   └── 特性反查冷启动全0_20261108.md ← 特性反查 Tab 冷启动「天性0/可选0」根因链（c87828c 快照复现：能力表已到 / species 分片未到 + 无补渲入口）+ c21e9f7「以 ERDATA.species.length 为就绪判据」加固 + 探针 A/B/C 复跑口径
 ├── docs\                           ← ★战斗分析文档体系（2026-10-06 新增，配招引擎升级依据）
 │   ├── 战斗分析\01_属性克制体系.md   ← ★机制分析：21×21克制表全表/火打地面=1x裁定/12条规则
 │   ├── 战斗分析\02_特性体系.md      ← 4特性机制(abis+inns)/ABI_TAGS 98条/14条规则
@@ -77,6 +78,7 @@ D:\game\elite-redux\
 │   ├── build_sprites.py             ← ★精灵图生成器（gameData NAME → sp<id>.png，四层匹配，可重复运行）
 │   ├── sprites_map.csv              ← 映射记录（id,name,NAME,sprite_file,layer）
 │   └── sprites_report.md            ← 统计与缺失清单（缺失仅 SPECIES_NONE 占位）
+├── tools\probe_abi_coldstart.py       ← 特性反查冷启动探针（零依赖，headless Chrome --virtual-time-budget + --dump-dom；断言 A 冷启动不得全 0 / B 冷启动态==toggle 后态逐卡一致 / C _hidN 自洽；--root 指任意快照目录做 before/after 对拍；exit 0=PASS）
 ├── 招式表_特性.csv                  ← ★特性中文新源（999 条 BOM；data.js↔gameData 反推，与网页同源；xlsm 已丢失）
 ├── 招式表_可学总表.csv              ← ★配招核心数据：112,580 行（宝可梦×招式×获得方式，含种族/特性/招式数值）
 ├── 招式表_招式数值.csv              ← 1,032 招全数值（中文/属性/分类/威力/命中/PP/先制/描述）
@@ -292,3 +294,13 @@ v4.55 / v4.82 两轮的历史状态快照另存于 [`docs/changelog/STATE_snapsh
 3. 线上另用 `curl` + `Get-FileHash -Algorithm SHA1` 校验文件 sha1（本次 `DE738760…` / 1,564,086 B，与本地一致）
 
 注意区分两种 hash：`rev-parse <rev>:<path>` 给的是 **git blob 对象 hash**（sha1 of "blob\0<size>\0<content>"），不等于文件的 sha1。
+
+## v4.185 补记：特性反查冷启动全 0 —— 从「信事件」改「信数据」
+
+**定性（与 §6 v4.182 条的关系）**：§6 已登记 v4.182 那次 P0（`bb315b9`，`__erReady` 为真即渲染、否则挂 `er-ready`）。本次 `c21e9f7`（分支 `fix/abi-coldstart-20261108`，基于 master `23abb80`；`index.html` +16/-2 行，1,564,086 → 1,565,045 B，**两个开关默认值一个未动**）是**同一指纹的加固**：门控改 `_abiBoot()`，以 `ERDATA.species.length` 为就绪判据，同时监听 `er-shard-species` 与 `er-ready`，数据到位后补渲并失效 `_abiOwners` 缓存。加固理由：`er-ready` 在 species 分片 `onerror` 路径（L1067 尾）也会照发（置 `window.__ER_PARTIAL=true`），旧逻辑会在物种缺失下画出 60 张「0/0」误导卡。
+
+**验证**：`tools/probe_abi_coldstart.py`（零依赖 headless Chrome；断言 A 冷启动不得全 0 / B 冷启动态==toggle 后态逐卡一致 / C `_hidN` 自洽）当前树实跑 `RESULT: PASS` exit 0——冷启动状态条「匹配 60 个特性 · 开关隐藏 1119 个持有者条目」、15 卡天性合计 138 / 可选合计 85、开关全关隐藏 0 / 全开 1119、冷启动态==toggle 后态 PASS；`node tools/smoke.js` **31/31** exit 0。历史快照对拍：before（`c87828c`）冷启动 15 卡全 0 / 隐藏 0，toggle 后隐藏 1119。
+
+**运维结论（重要）**：线上**已经包含** `bb315b9`（`gh-pages:index.html` 与 `master:index.html` 同一 blob `68dbfec9…` / 1,564,086 B；线上三次抓取 sha1 均 `DE738760…`）——用户截图要么是 2026-11-07 20:56 部署之前的，要么是浏览器缓存了旧 `index.html`。**如仍见全 0，先让用户硬刷新（Ctrl+F5），不要直接当代码 bug 重开工单。**
+
+**与既有文档的差异（已在新报告内指出，未改原文）**：`docs/research/技术债定级_20261108.md` L66-71 猜的「事件错过→永不渲染」被推翻——状态条文案只由 `renderAbi()` L5712 写入，渲染确实发生过，真因是「在 species 分片到达前渲染 + 无补渲入口」。详见 `docs/research/特性反查冷启动全0_20261108.md`（含「上线核验（待回填）」占位，部署后回填三方字节/sha1/`ER_ENGINE_VER`）。
