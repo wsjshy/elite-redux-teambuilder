@@ -436,6 +436,12 @@ a.cand{color:var(--acc);text-decoration:none;border-bottom:1px dashed var(--acc)
 .engbd{font-size:12px; line-height:1.85}
 .dim{color:var(--sub); font-size:12px}
 .tap44{min-height:44px; min-width:44px; display:inline-flex; align-items:center}
+/* v4.183 修复：战术模板「固定推荐队伍（Top 6）」卡片被 .tap44 的 inline-flex(row) 接管 →
+   精灵图/名字/分数/命中/入队全部横排挤进 .mxc 的 76px 定宽里，文字逐字换行，实测 display:flex + direction:row，
+   视觉上完全读不出内容。此处显式改回纵向堆叠、放宽宽度、名字允许换行。 */
+.mxc.tap44{display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:auto; min-width:118px; max-width:150px; padding:6px 6px 5px}
+.mxc.tap44 .mcnm{white-space:normal; overflow:visible; text-overflow:clip; line-height:1.25}
+.mxc.tap44 .mcx{line-height:1.35}
 .lmod{position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(15,23,42,.38); display:none;
   align-items:center; justify-content:center; z-index:300; padding:16px}
 .lmod.open{display:flex}
@@ -768,7 +774,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 </script>
 <header>
   <h1>ER 配招助手</h1>
-  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 v4.179</span>
+  <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 <b id="erVerNo">v4.183</b></span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:12px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）" aria-pressed="false">🌙 深色</button>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
@@ -14615,7 +14621,10 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.182';
+var ER_ENGINE_VER='v4.183';
+/* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
+   现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
+(function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b){b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');b.setAttribute('aria-pressed',t==='dark'?'true':'false');}}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}
