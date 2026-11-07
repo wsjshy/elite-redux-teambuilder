@@ -75,10 +75,10 @@ if ($dirty.Trim().Length -gt 0) {
     }
     Invoke-Git add --all | Out-Null
     Invoke-Git commit -m "$Message" | Out-Null
-    $rc = Invoke-Git push github master
+    Invoke-Git push github master | Out-Null
     # 2026-11-07：原代码 | Out-Null 吞掉 push 结果。master 若与远端分叉（non-fast-forward），
     # 推送会被拒但脚本继续部署 gh-pages —— 本地与远端永久分叉且无人察觉。此处改为失败即停。
-    if ($rc -ne 0) { throw "master push 失败（可能 non-fast-forward）。已中止，未改动 gh-pages" }
+    if ($LASTEXITCODE -ne 0) { throw "master push 失败（可能 non-fast-forward）。已中止，未改动 gh-pages" }
     Write-Host "[1/6] master committed & pushed"
 } else {
     Write-Host "[1/6] clean, skip commit"
@@ -136,16 +136,20 @@ if ($DryRun) {
 # 树里只有 19 个文件）。若不先对齐就 checkout 到旧树再覆写 23 个文件，新提交的父节点是旧 tip →
 # force-push 会把远端 139 个文件的 tip 整个换成约 24 个：**即使默认「增量模式」也会删掉 116 个线上文件**。
 # 所以必须先 fetch，再强制把本地分支对齐到 github/gh-pages（本地旧 tip 是它的祖先、ahead=0，无独有提交可丢）。
-$rc = Invoke-Git fetch github
-if ($rc -ne 0) { throw "fetch github 失败：无法确认远端 gh-pages 现状，已中止（未改动任何东西）" }
-$rc = Invoke-Git rev-parse --verify --quiet "github/gh-pages"
-if ($rc -eq 0) {
-    $rc = Invoke-Git checkout -B gh-pages "github/gh-pages"
-    if ($rc -ne 0) { throw "对齐 gh-pages 到 github/gh-pages 失败" }
+# 注意（2026-11-07 实跑踩到）：rev-parse 会把 sha 打到 stdout，而 Invoke-Git 的返回值 = 命令输出 + rc。
+# 数组解包后「唯一的 0」会变成标量 0，在 if 里是 falsy → 误判「远端没有 gh-pages」而走 orphan 分支。
+# 所以凡是要判 rc 的调用都改成 `| Out-Null` 后直读 $LASTEXITCODE。
+Invoke-Git fetch github | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "fetch github 失败：无法确认远端 gh-pages 现状，已中止（未改动任何东西）" }
+Invoke-Git rev-parse --verify --quiet "github/gh-pages" | Out-Null
+$hasRemoteGhPages = ($LASTEXITCODE -eq 0)
+if ($hasRemoteGhPages) {
+    Invoke-Git checkout -B gh-pages "github/gh-pages" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "对齐 gh-pages 到 github/gh-pages 失败" }
     Write-Host "[3/6] gh-pages realigned to github/gh-pages (增量底座正确)"
 } else {
-    $rc = Invoke-Git checkout --orphan gh-pages
-    if ($rc -ne 0) { throw "创建 gh-pages 分支失败" }
+    Invoke-Git checkout --orphan gh-pages | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "创建 gh-pages 分支失败（本地已有同名分支但不指向远端？请手动处理）" }
     Invoke-Git rm -rf --cached . | Out-Null
     Write-Host "[3/6] gh-pages orphan created (远端原本不存在)"
 }
@@ -169,8 +173,8 @@ if ($CleanMode) {
 # 步骤5：提交并推送 gh-pages（--force 覆盖历史部署，孤儿分支/更新通用）
 Invoke-Git add --all | Out-Null
 Invoke-Git commit -m "$Message" | Out-Null
-$rc = Invoke-Git push github gh-pages
-if ($rc -ne 0) {
+Invoke-Git push github gh-pages | Out-Null
+if ($LASTEXITCODE -ne 0) {
     # 2026-11-07：不再 --force。步骤3 已把本地分支对齐到 github/gh-pages，本次提交是它的直接后代，
     # 必然 fast-forward；若此处仍被拒，说明远端刚被并发推送，应当中止而不是覆盖。
     throw "gh-pages push 被拒（可能 non-fast-forward：远端已被并发更新）。未覆盖远端。先 git fetch 再重跑；回滚分支 ghpages-backup-20261107"
