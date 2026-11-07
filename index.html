@@ -5544,8 +5544,22 @@ var optMvFinal=true,optMvMega=true;     /* 招式反查「谁能学」 */
      而这里是页面初始化即渲染 —— 首次一定拿到空 ERDATA.species，abiOwners() 提前返回 {} ⇒
      每张卡都显示「天性 0 / 可选 0」，且 er-ready 事件的 7 个监听者里没有一个是反查页 ⇒ 数据到了也不刷新。
      改为：已就绪则立即渲染，未就绪则等 er-ready 再渲染（开关/搜索仍可随时重渲）。 */
-  if(window.__erReady){renderAbi();}
-  else{document.addEventListener('er-ready',function(){try{renderAbi()}catch(e){}});}
+  /* 2026-11-08 修复（P0，冷启动全 0）：上一版只等 er-ready 事件，但 er-ready 的判据是
+     __erPending 脚本计数归零（onload/onerror），不校验 ERDATA.species 是否真的写入。
+     species 分片 onload 先于数据就位触发时（网络竞态），renderAbi 用空 species 渲染，
+     abiOwners() 返回 {}（空返回不写缓存），且 er-shard-species 无补渲监听 ⇒
+     反查页停留全 0，直到用户手动 toggle。改为：以 ERDATA.species.length 为就绪判据，
+     同时监听 er-shard-species 与 er-ready，数据就位后补渲；并失效 _abiOwners 缓存。 */
+  function _abiBoot(){
+    try{
+      if(typeof ERDATA!=='undefined'&&ERDATA.species&&ERDATA.species.length){
+        if(window._abiOwners)window._abiOwners=null;
+        renderAbi();
+      }
+    }catch(e){}
+  }
+  if(window.__erReady&&typeof ERDATA!=='undefined'&&ERDATA.species&&ERDATA.species.length){renderAbi();}
+  else{document.addEventListener('er-ready',_abiBoot);document.addEventListener('er-shard-species',_abiBoot);}
 })();
 /* v4.x F⑪：特性持有者索引（懒构建，避免加载期依赖 NM2ID 定义顺序）
    ★ v4.40 修复（同名特性反查错位）：中文译名重合的 7 组 16 个 id（Stench(1)/Malodor(808) 均译
