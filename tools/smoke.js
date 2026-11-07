@@ -121,6 +121,21 @@ check('页头版本占位不回写过期版本号（须 v4.x 或与 ER_ENGINE_VE
   if (ph === ver) return 'same as ' + ver;
   throw new Error('静态占位 ' + ph + ' ≠ ER_ENGINE_VER ' + ver + ' —— 会显示过期版本');
 });
+check('代码引用的 DOM id 均已定义或运行时创建（防容器丢失静默空转）', () => {
+  // 2026-11-07 v4.184.3：v4.93「电脑区」三容器（#savPcQ/#savPcTypeRow/#savPcList）在某次 UI 重构中丢失，
+  // 而渲染函数写的是 `if(!el)return` —— 取不到节点就静默跳过，不报错、无告警，功能从页面上整片消失却长期无人察觉。
+  // 同类还有 #shareCard（浮层改名 #shareCardOverlay 后此处一直空转）。这条断言把「引用 vs 定义」的差集钉死。
+  const t = read('index.html');
+  const defined = new Set([...t.matchAll(/id="([A-Za-z0-9_-]+)"/g)].map(m => m[1]));
+  const runtime = new Set([...t.matchAll(/\.id\s*=\s*['"]([A-Za-z0-9_-]+)['"]/g)].map(m => m[1]));
+  const refIds = [
+    ...[...t.matchAll(/\$\('([A-Za-z0-9_-]+)'\)/g)].map(m => m[1]),
+    ...[...t.matchAll(/getElementById\('([A-Za-z0-9_-]+)'\)/g)].map(m => m[1])
+  ];
+  const missing = [...new Set(refIds)].filter(id => !defined.has(id) && !runtime.has(id));
+  if (missing.length) throw new Error('引用但从未定义/创建：' + missing.join(', '));
+  return refIds.length + ' 处引用全部可解析';
+});
 check('配招助手_ER.html 只能是轻量兼容入口（≤10KB 且跳转 index.html）', () => {
   // 2026-11-07 事故根因：v4.98 拆包后 data.js 退役，index.html 改好，但这份第二副本没跟着改
   // → 用户按 README 双击本地运行，拿到 v4.98 旧版且 data.js 404，页面只剩「数据加载失败」。

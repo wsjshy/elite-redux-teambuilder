@@ -2192,7 +2192,7 @@ function switchTab(name){
   /* v4.109：Tab 切换自动关闭所有浮层（直接 DOM 操作，不依赖闭包函数） */
   try{var sd=document.getElementById('spDrawer');if(sd)sd.classList.remove('open')}catch(e){}
   try{var gm=document.getElementById('glModal');if(gm)gm.classList.remove('open')}catch(e){}
-  try{var sc=document.getElementById('shareCard');if(sc)sc.classList.remove('open')}catch(e){}
+  try{var sc=document.getElementById('shareCardOverlay');if(sc)sc.remove()}catch(e){}   /* v4.184.3：原取的是旧版 id 'shareCard'（浮层早已改名 shareCardOverlay 且用 remove() 关闭），这行从改名起就一直空转，切 Tab 时分享卡盖着不走 */
   try{var ad=document.getElementById('anDetail');if(ad)ad.classList.remove('open')}catch(e){}
   try{var pm=document.getElementById('ppModal');if(pm)pm.classList.remove('open')}catch(e){}
   try{var mvd=document.getElementById('mvDrawer');if(mvd)mvd.classList.remove('open')}catch(e){}
@@ -14679,7 +14679,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.184.2';
+var ER_ENGINE_VER='v4.184.3';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
