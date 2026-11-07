@@ -128,6 +128,22 @@ INJECT_JS = r"""
       // --- D. ABI_DETAIL 表可用 ---
       r.detail_has439 = !!(typeof ABI_DETAIL!=='undefined' && ABI_DETAIL['439'] && ABI_DETAIL['439'].rows);
       r.detail_rows439 = (r.detail_has439 ? ABI_DETAIL['439'].rows.length : 0);
+      r.has104 = (typeof ABI_DETAIL!=='undefined' && ABI_DETAIL['104']) ? (ABI_DETAIL['104'].head||'').slice(0,40) : 'NONE';
+      try{ r.g104 = ('OK:' + glossify(ABI_DETAIL['104'].head)).slice(0, 60); }catch(eg104){ r.g104 = 'ERR:' + eg104.message; }
+      try{
+        abiDesc(null, '104');
+        var dD3=document.getElementById('abiDesc');
+        r.desc104 = dD3? dD3.innerHTML : null;
+        r.len104 = (r.desc104 || '').length;
+        r.hasMech = (r.desc104 || '').indexOf('机制详解') >= 0;
+        r.tail104 = (r.desc104 || '').slice(-200);
+        r.headPiece = (r.desc104 || '').slice(0, 260);
+      }catch(eD3){ r.desc104 = 'ERR:' + eD3; r.len104 = -1; }
+      try{
+        abiDesc(null, '163');
+        var dD4=document.getElementById('abiDesc');
+        r.desc163 = dD4? dD4.innerHTML : null;
+      }catch(eD4){ r.desc163 = 'ERR:' + eD4; }
 
       // --- E. 入场类特性展开（#293 滚起来「入场释放变圆」/#320 鼓风「入场顺风」）---
       try{
@@ -295,6 +311,10 @@ def main():
     # D. ABI_DETAIL
     ck(data.get("detail_has439") is True, "D1 ABI_DETAIL 含 439 且有 rows")
     ck(data.get("detail_rows439", 0) >= 7, "D2 439 详解至少 7 行", str(data.get("detail_rows439")))
+    d104 = data.get("desc104") or ""
+    d163 = data.get("desc163") or ""
+    ck("机制详解" in d104 and "白名单" in d104 and "先天槽同样穿透" in d104, "D3 破格详解：白名单口径 + 4 行表格齐全", "len=%s" % data.get("len104"))
+    ck("机制详解" in d163 and "白名单" in d163, "D4 涡轮火焰共用破格口径", d163[:60].replace("\n", " "))
 
     # E. 招式型特性自动展开
     d293 = data.get("desc293") or ""

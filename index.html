@@ -3711,6 +3711,32 @@ var ABI_DETAIL={
     ['只影响一个判定','只改变「是否算舞类」；招式威力、属性、命中率、PP 一律不变']
   ],
   src:'ER 官方源码 src/battle_util.c：L9661-9675（ABILITY_TWO_STEP 检查 FLAG_DANCE 后 UseAttackerFollowUpMove(MOVE_REVELATION_DANCE, 50)）、L9222-9229（ABILITY_DANCER 检查 FLAG_DANCE）'
+},
+'104':{
+  head:'「穿透特性」不是无视全部特性 —— 源码里有一张白名单 sAbilitiesAffectedByMoldBreaker，只有表内标记为 1 的特性会被穿透，共 108 条，约占全库 618 条的 1/6。',
+  rows:[
+    ['穿透得到','减伤 / 免疫 / 属性吸收这一大类：毛皮大衣、多重鳞片、厚脂肪、过滤、坚硬、飘浮、引火、蓄电、蓄水、防弹、防尘、甜幕、幻影、冰鳞粉、镜面装甲等'],
+    ['穿透不到','不在白名单里的一律照常生效；潮湿（Damp）在源码里被明确注释掉，就不是破格能穿的对象'],
+    ['会失效','自己吃到胃液（Gastro Acid）后破格失效；招式本身自带「无视目标特性」标记时不看破格，照样穿透'],
+    ['先天槽同样穿透','数据描述里的「同样影响先天特性」对应源码走 SpeciesHasInnate 判定 —— 先天槽带破格也照此穿透']
+  ],
+  src:'ER 官方源码 src/battle_util.c：L944-1061（白名单表）、L10136（表内为 0 直接 return FALSE）、L10140（招式自带标记）、L10148（胃液失效）、L10151-10154（先天特性判定）'
+},
+'163':{
+  head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，额外给自己招式加火属性。',
+  rows:[
+    ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
+    ['属性附加','在 battle_util.c / battle_main.c / pokemon.c 三个源文件里，它只出现在穿透判定与「忽略能力检查」两处，没有找到修改属性的实现；「加火属性」这句目前没有代码支撑，配招时按穿透理解更稳']
+  ],
+  src:'ER 官方源码 src/battle_util.c：L10144-10156（ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT / ABILITY_TURBOBLAZE 同一分支）'
+},
+'164':{
+  head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，额外给自己招式加电属性。',
+  rows:[
+    ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
+    ['属性附加','在 battle_util.c / battle_main.c / pokemon.c 三个源文件里，它只出现在穿透判定与「忽略能力检查」两处，没有找到修改属性的实现；「加电属性」这句目前没有代码支撑，配招时按穿透理解更稳']
+  ],
+  src:'ER 官方源码 src/battle_util.c：L10144-10156（ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT / ABILITY_TURBOBLAZE 同一分支）'
 }
 };
 function abiDesc(el,id,box){
