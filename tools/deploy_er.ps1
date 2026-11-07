@@ -170,9 +170,16 @@ if ($CleanMode) {
     Write-Host "[4/6] incremental done — 未删除线上任何文件"
 }
 
-# 步骤5：提交并推送 gh-pages（--force 覆盖历史部署，孤儿分支/更新通用）
-Invoke-Git add --all | Out-Null
+# 步骤5：提交并推送 gh-pages
+# 2026-11-07 事故修复（真事）：原代码 `git add --all`。
+# checkout 到 gh-pages 后，工作区里会残留 audit 分支的**未跟踪文件**（Excel 图鉴、nn_data 训练集、
+# 版本快照、__wtest*.tmp 等）；而 gh-pages 分支没有 .gitignore，`add --all` 把它们一并纳入提交
+# 并推到了公开站点（实测误推 26 个文件、51.67 MB）。现在只 add 明确的部署清单，绝不 add --all。
+Invoke-Git add -- @($ExpectedFiles) | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "git add 部署清单失败" }
 Invoke-Git commit -m "$Message" | Out-Null
+$treeCount = (& $Git -C $Repo ls-tree -r --name-only HEAD | Measure-Object).Count
+Write-Host "[5/6] gh-pages tree now $treeCount files"
 Invoke-Git push github gh-pages | Out-Null
 if ($LASTEXITCODE -ne 0) {
     # 2026-11-07：不再 --force。步骤3 已把本地分支对齐到 github/gh-pages，本次提交是它的直接后代，
