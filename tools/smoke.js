@@ -218,6 +218,15 @@ check('零引用函数（只允许历史保留白名单，禁止新增）', () =
     return '5 函数 + 入口 + 权重 + 双缓存';
   });
 
+check('nn_data 备份包在位（唯一副本守护）', () => {
+  // nn_data/ 被 .gitignore 忽略（不随提交走），其 chaos/raw 两份 Smogon 原始统计
+  // 无法重建（依赖 smogon.com 历史月份在线）。2026-11-07 打包入库作为唯一备份。
+  const p = R('nn_data_v2026-09.tar.gz');
+  if (!fs.existsSync(p)) throw new Error('缺少 nn_data_v2026-09.tar.gz（nn_data/ 不入库，此包是唯一副本）');
+  const sz = fs.statSync(p).size;
+  if (sz < 3 * 1024 * 1024) throw new Error('包仅 ' + sz + ' B，疑似截断（应约 4.17 MB）');
+  return (sz / 1048576).toFixed(2) + ' MB';
+});
 const okN = results.filter(r => r.ok).length;
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ ok: okN, total: results.length, results }, null, 1));
