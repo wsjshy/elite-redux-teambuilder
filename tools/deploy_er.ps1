@@ -175,8 +175,14 @@ if ($CleanMode) {
 # checkout 到 gh-pages 后，工作区里会残留 audit 分支的**未跟踪文件**（Excel 图鉴、nn_data 训练集、
 # 版本快照、__wtest*.tmp 等）；而 gh-pages 分支没有 .gitignore，`add --all` 把它们一并纳入提交
 # 并推到了公开站点（实测误推 26 个文件、51.67 MB）。现在只 add 明确的部署清单，绝不 add --all。
-Invoke-Git add -- @($ExpectedFiles) | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "git add 部署清单失败" }
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+# 直接调用而非 Invoke-Git：Invoke-Git 的 ValueFromRemainingArguments 会把数组拼成单个空格分隔的
+# pathspec 字符串（实测 "index.html README.md ..." did not match any files）。直接调用时 PowerShell 会展开数组。
+& $Git -C $Repo add -- $ExpectedFiles 2>&1 | Out-Null
+$addRc = $LASTEXITCODE
+$ErrorActionPreference = $prevEAP
+if ($addRc -ne 0) { throw "git add 部署清单失败（rc=$addRc）" }
 Invoke-Git commit -m "$Message" | Out-Null
 $treeCount = (& $Git -C $Repo ls-tree -r --name-only HEAD | Measure-Object).Count
 Write-Host "[5/6] gh-pages tree now $treeCount files"
