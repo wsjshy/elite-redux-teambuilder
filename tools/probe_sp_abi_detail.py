@@ -129,6 +129,24 @@ INJECT_JS = r"""
       r.detail_has439 = !!(typeof ABI_DETAIL!=='undefined' && ABI_DETAIL['439'] && ABI_DETAIL['439'].rows);
       r.detail_rows439 = (r.detail_has439 ? ABI_DETAIL['439'].rows.length : 0);
 
+      // --- E. 入场类特性展开（#293 滚起来「入场释放变圆」/#320 鼓风「入场顺风」）---
+      try{
+        abiDesc(null, '293');
+        var dE=document.getElementById('abiDesc');
+        r.desc293 = dE? dE.innerHTML : null;
+      }catch(eE){ r.desc293 = 'ERR:' + eE; }
+      try{
+        abiDesc(null, '320');
+        var dE2=document.getElementById('abiDesc');
+        r.desc320 = dE2? dE2.innerHTML : null;
+      }catch(eE2){ r.desc320 = 'ERR:' + eE2; }
+      // 反例：非入场类不应出现该块
+      try{
+        abiDesc(null, '86');
+        var dE3=document.getElementById('abiDesc');
+        r.desc86 = dE3? dE3.innerHTML : null;
+      }catch(eE3){ r.desc86 = 'ERR:' + eE3; }
+
       put(r);
     }catch(e){ r.ERROR=String(e); r.stack=String(e&&e.stack||'').slice(0,500); put(r); }
   }
@@ -265,6 +283,14 @@ def main():
     # D. ABI_DETAIL
     ck(data.get("detail_has439") is True, "D1 ABI_DETAIL 含 439 且有 rows")
     ck(data.get("detail_rows439", 0) >= 7, "D2 439 详解至少 7 行", str(data.get("detail_rows439")))
+
+    # E. 入场类特性自动展开
+    d293 = data.get("desc293") or ""
+    d320 = data.get("desc320") or ""
+    d86 = data.get("desc86") or ""
+    ck("入场招式" in d293 and "变圆" in d293, "E1 「入场释放变圆」附上招式效果", d293[:70].replace("\n", " "))
+    ck("入场招式" in d320 and "顺风" in d320, "E2 「入场顺风」附上招式效果", d320[:70].replace("\n", " "))
+    ck("入场招式" not in d86, "E3 非入场类特性不误挂该块", d86[:60].replace("\n", " "))
 
     print()
     if fails:
