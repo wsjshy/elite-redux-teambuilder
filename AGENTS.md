@@ -161,6 +161,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 6. 当前状态（2026-11-07，v4.179）
 
 - **版本**：`index.html` = v4.181（`ER_ENGINE_VER`，2026-11-07 评估修复版），已部署到 gh-pages 且与线上逐字节一致（基线见 §8）。
+- **分支收敛（2026-11-07）**：`master` 与 `audit-20261107` 自分叉点 `dbc3f54`（v4.159）合并为 `3d3cf0c`，**master 自此为唯一主战场**；`release/v4.181` 固定该版本供回溯。旧链 5 个提交（`a324503`…`c1746b6`）完整保留在 `master-legacy-20261107`，未删除任何内容。
 - **数据**：`data_*_v498.js` 三个分片是页面唯一数据源（lite 380 KB → species 1.36 MB → adv 576 KB，合计 2.32 MB）。`data.js` 已于 2026-11-07 退役归档至 `archive/`。
 - **生成器**：`build_tool_html.py` 已退役（停在 v4.136，v4.137–v4.179 共 43 版无脚本源），误跑会因 `ER_BUILD_FORCE_SYNC` 守卫 SKIP 而非覆盖。
 - **护栏**：`node tools/smoke.js` 26 项静态断言（数据完整性 / split 枚举 / 部署白名单 / 生成器退役 / data.js 退役 / 关键修复存在性 / 代码健康基线）。
@@ -191,6 +192,7 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 8. GitHub 部署（2026-10-08 起）
 
 - **仓库**：`github.com/wsjshy/elite-redux-teambuilder`（公开）；远程名 `github`。**当前本机无 git 代理**（2026-11-07 实测 `http.proxy` 为空，fetch/push 均直连成功）；若出现「push TLS 握手失败但 curl 直连正常」，那是残留死代理，先 `git config --get http.proxy` 查，再用 `git -c http.proxy= push` 绕过。
+- **分支策略（2026-11-07 用户定调，长期有效）**：**`master` 是唯一主战场**——所有开发、修复、文档更新都在 master 上提交，不再另开长期工作分支。**每次上库前必须先用分支固定当前状态**：`git branch release/<版本号> <commit>` 并随同 push（首个：`release/v4.181` → `3d3cf0c`）。固定分支**只读**，不再往里提交，用于回答「线上当时到底是哪份代码」。部署仍从 master 取产物，不直接从固定分支部署。
 - **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** 23 项：`index.html` + `README.md` + 三片 `data_*_v498.js` + `assets/` 14 项 + `.nojekyll` + `ER-source` 三 json）。**data.js 已于 v4.179 数据源合一退役，不得回归**。部署清单与 `tools\deploy_er.ps1` 的 `$ExpectedFiles` 逐项一致。
 - **一键部署（2026-11-07 重写，默认零删除）**：`tools\deploy_er.ps1` 默认**增量**——只覆盖那 23 项，线上其余文件一律保留；`-DryRun` 只暂存+断言+打印清单不推送；`-Clean` 才清空重建（执行前打印将删除的条目数）。关键前提：脚本先 `fetch github` 再 `checkout -B gh-pages github/gh-pages` **强制对齐远端 tip**——本地 `gh-pages` 曾落后远端 118 个提交（树里只有 19 个文件），不对齐则「增量」照样会删掉线上 116 个文件。推送改为普通 `push`（对齐后必然 fast-forward），被拒即中止，**不再 `--force`**。
 - **禁止 `git add --all`（2026-11-07 真实事故，必读）**：切到 gh-pages 后工作区仍残留 audit 分支的**未跟踪文件**（Excel 图鉴、`nn_data/` 训练集、版本快照、`__wtest*.tmp`），而 gh-pages 分支没有 `.gitignore` → `add --all` 把它们一并推到了公开站点（实测误推 26 个文件 / 51.67 MB）。脚本已改为只 `add` 明确的那 23 项；备份留痕 `C:\temp\ghpages-leak-backup-20261107`。
