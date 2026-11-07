@@ -344,7 +344,7 @@
 342,毒尾,Poison Tail,毒,物理,60,100,10,-6,10,Forces the target to Switch. May also poison.,An attack that forces the target to switch. 10% poison chance.
 343,渴望,Covet,一般,物理,60,100,20,0,100,Cutely begs to obtain an item held by the foe.,Steals or removes the foe's item. +1 priority if the user has no item.
 344,伏特攻击,Volt Tackle,电,物理,120,100,10,0,10,A life-risking tackle that slightly hurts the user.,"The user throws an electrified tackle. 25% recoil, 10% paralyze chance."
-345,魔法叶,Magical Leaf,草,特殊(取防御)5: 待定,80,0,20,0,0,Attacks with a strange leaf that cannot be evaded.,Attacks with a leaf that can't be evaded and deals physical damage.
+345,魔法叶,Magical Leaf,草,特殊(取防御),80,0,20,0,0,Attacks with a strange leaf that cannot be evaded.,Attacks with a leaf that can't be evaded and deals physical damage.
 346,玩水,Water Sport,水,变化,0,100,15,0,0,The user becomes soaked to raise resistance to fire.,Weakens Fire-type attacks while the user is in the battle.
 347,冥想,Calm Mind,超能,变化,0,0,20,0,0,Raises Sp. Atk and Sp. Def by focusing the mind.,The user focuses its mind to raise the Sp. Atk and Sp. Def stats.
 348,叶刃,Leaf Blade,草,物理,90,100,15,0,10,Slashes with a sharp leaf. High critical-hit ratio.,The foe is slashed with a sharp leaf. High crit ratio. Keen Edge boost.
@@ -472,7 +472,7 @@
 470,防守平分,Guard Split,超能,变化,0,0,10,0,0,Averages changes to Defense and Sp. Def with the foe.,The user's Defense and Sp. Def stats are averaged with those of the target.
 471,力量平分,Power Split,超能,变化,0,0,10,0,0,Averages changes to Attack and Sp. Atk with the foe.,The user's Attack and Sp. Atk stats are averaged with those of the target.
 472,奇妙空间,Wonder Room,超能,变化,0,0,10,0,0,Attack and SpAtk stats are swapped for 5 turns.,"For 5 turns, Attack and SpAtk stats are swapped and their stat buffs are ignored."
-473,精神冲击,Psyshock,超能,特殊(取防御)5: 待定,80,100,10,0,0,Attacks with a psychic wave that does physical damage.,The user casts an odd psychic wave to attack the foe for physical damage.
+473,精神冲击,Psyshock,超能,特殊(取防御),80,100,10,0,0,Attacks with a psychic wave that does physical damage.,The user casts an odd psychic wave to attack the foe for physical damage.
 474,毒液冲击,Venoshock,毒,特殊,65,100,10,0,0,Does double damage if the foe is poisoned.,A special liquid that damages for double the power on poisoned targets.
 475,身体轻量化,Autotomize,钢,变化,0,0,15,0,0,Sheds additional weight to sharply boost Speed.,"The user sheds part of its body to be lighter, sharply raising its Speed."
 476,愤怒粉,Rage Powder,虫,变化,0,0,20,2,0,Scatters powder to make foes attack only the user.,"Foes aim only at the user, enraged by a cloud of its irritating powder."
@@ -539,7 +539,7 @@
 537,疯狂滚压,Steamroller,虫,物理,80,100,10,0,0,A speedy attack that crushes the foe with the user's body.,Attacks as if Speed was 50% higher for determining turn order.
 538,棉花防守,Cotton Guard,草,变化,0,0,10,0,0,Wraps its body in cotton. Drastically raises Defense.,"The user protects itself with soft cotton, drastically raising its Defense."
 539,暗黑爆破,Night Daze,恶,特殊,40,100,15,1,0,Looses a pitch-black shock wave. Has +1 priority.,Strucks with a pitch-black shock wave. Has +1 priority.
-540,精神击破,Psystrike,超能,特殊(取防御)5: 待定,100,100,10,0,0,Attacks with a psychic wave that does physical damage.,The user casts an odd psychic wave to attack the foe for physical damage.
+540,精神击破,Psystrike,超能,特殊(取防御),100,100,10,0,0,Attacks with a psychic wave that does physical damage.,The user casts an odd psychic wave to attack the foe for physical damage.
 541,扫尾拍打,Tail Slap,一般,物理,25,100,10,0,0,Strikes the foe with its tail 2 to 5 times.,"The user attacks by striking the foe with its hard tail, two to five times."
 542,暴风,Hurricane,飞行,特殊,110,80,10,0,30,Traps the foe in a fierce wind. May cause confusion.,30% chance to confuse the foe. Weather-and Air-based.
 543,爆炸头突击,Head Charge,一般,物理,130,100,10,0,0,A charge using guard hair. It hurts the user a little.,Powerful guard hair headbutts the foe in an attack. 25% recoil damage.
@@ -547,7 +547,7 @@
 545,火焰弹,Searing Shot,火,特殊,100,100,5,0,30,Scarlet flames torch everything around the user.,Scarlet flames torch the field. 30% burn chance. Mega Launcher boost
 546,高科技光炮,Techno Blast,一般,特殊,120,100,5,0,0,The type varies based on the user.,A beam of light. Changes type based on Hidden Power type.
 547,古老之歌,Relic Song,一般,特殊(取最高攻),100,100,10,0,10,Attacks with an ancient song. May induce sleep.,An ancient song that may induce sleep. Uses highest Attack stat.
-548,神秘之剑,Secret Sword,格斗,特殊(取防御)5: 待定,85,100,10,0,0,Cuts with a long horn that does physical damage.,"The user cuts its foe, oddly dealing physical damage. Keen Edge boost."
+548,神秘之剑,Secret Sword,格斗,特殊(取防御),85,100,10,0,0,Cuts with a long horn that does physical damage.,"The user cuts its foe, oddly dealing physical damage. Keen Edge boost."
 549,冰封世界,Glaciate,冰,特殊,80,100,10,0,100,Blows very cold air at the foe. It lowers their Speed.,The user blows freezing cold air at its foes that lowers their Speed.
 550,雷击,Bolt Strike,电,物理,130,100,5,0,20,Strikes with a great amount of lightning. May paralyze.,The user strikes its foe with electricity. 30% paralyze chance.
 551,青焰,Blue Flare,火,特殊,130,100,5,0,20,Engulfs the foe in a blue flame. May inflict a burn.,The foe is engulfed in a beautiful flame. 20% burn chance.

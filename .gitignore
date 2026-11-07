@@ -18,6 +18,9 @@ assets/sprites/
 ER-source/*
 !ER-source/gameDataV2.65beta.json
 !ER-source/additionalV2.65beta.json
+# 2026-11-07：item_zh_cn.json 是部署产物（线上 gh-pages 必须带），原先被忽略导致只存在于 gh-pages 分支，
+# 切换分支时会被 git 从工作区删除（实测丢失过一次）。纳入版本控制，19 KB，一劳永逸。
+!ER-source/item_zh_cn.json
 
 # ===== NN 数据与模型（中间产物/大文件）=====
 nn_data/
@@ -30,3 +33,5 @@ nn_models/
 # ===== Python =====
 __pycache__/
 *.pyc
+# ===== 本地归档（不入库）：无脚本源的 43 版产物快照 ====
+archive/version-snapshots/index.html.*

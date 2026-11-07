@@ -187,7 +187,8 @@ def load_zh(path):
     物种/招式/特性：优先读根目录 CSV 表（与 build_tool_data.py 网页数据同源，搬迁后 xlsm 图鉴已不在）；
     xlsm 特性表（v0.3/v0.5 任一）存在时合并补缺；表/文件缺失时跳过不崩溃。
     """
-    import openpyxl, csv
+    import csv   # v4.180 评估修复：openpyxl 仅在 xlsm 补缺分支需要，改为惰性导入，
+                 # 使 README「Python 3，无第三方依赖」成立（此前无条件 import 会让 CLI 直接崩）
     dex_zh, abi_zh, mov_zh = {}, {}, {}
     base = os.path.dirname(os.path.abspath(__file__))
     sp_csv = os.path.join(base, '招式表_宝可梦基础.csv')   # 0编号 1中文 2英文
@@ -219,6 +220,11 @@ def load_zh(path):
                 if len(r) > 2 and r[2]:
                     abi_zh[iid] = (r[1] if len(r) > 1 else '', r[2])
     if path and os.path.exists(path):
+        try:
+            import openpyxl
+        except ImportError:
+            print('  [提示] 未安装 openpyxl，跳过 xlsm 图鉴补缺（CSV 主源不受影响）')
+            return dex_zh, abi_zh, mov_zh
         wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
         if '特性' in wb.sheetnames:
             for r in wb['特性'].iter_rows(values_only=True):
