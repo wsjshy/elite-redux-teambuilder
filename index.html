@@ -14603,7 +14603,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.179';
+var ER_ENGINE_VER='v4.181';
 /* v4.163 Phase A 深色模式入口：localStorage er_theme（light 默认/dark），html[data-theme] */
 function erApplyTheme(t){document.documentElement.dataset.theme=(t==='dark'?'dark':'');var b=document.getElementById('erThemeBtn');if(b){b.textContent=(t==='dark'?'☀️ 浅色':'🌙 深色');b.setAttribute('aria-pressed',t==='dark'?'true':'false');}}
 function erToggleTheme(){var cur=(document.documentElement.dataset.theme==='dark')?'light':'dark';try{localStorage.setItem('er_theme',cur)}catch(e){}erApplyTheme(cur);}

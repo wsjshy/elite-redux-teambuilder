@@ -160,11 +160,11 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 
 ## 6. 当前状态（2026-11-07，v4.179）
 
-- **版本**：`index.html` = v4.179（`ER_ENGINE_VER`），与线上 gh-pages 逐字节一致。
+- **版本**：`index.html` = v4.181（`ER_ENGINE_VER`，2026-11-07 评估修复版），已部署到 gh-pages 且与线上逐字节一致（基线见 §8）。
 - **数据**：`data_*_v498.js` 三个分片是页面唯一数据源（lite 380 KB → species 1.36 MB → adv 576 KB，合计 2.32 MB）。`data.js` 已于 2026-11-07 退役归档至 `archive/`。
 - **生成器**：`build_tool_html.py` 已退役（停在 v4.136，v4.137–v4.179 共 43 版无脚本源），误跑会因 `ER_BUILD_FORCE_SYNC` 守卫 SKIP 而非覆盖。
 - **护栏**：`node tools/smoke.js` 26 项静态断言（数据完整性 / split 枚举 / 部署白名单 / 生成器退役 / data.js 退役 / 关键修复存在性 / 代码健康基线）。
-- **2026-11-07 评估轮修复**：① `dmgCalc` 补 `hitsDef` 分支 + `splitLabel` 7 值 —— 精神冲击 / 精神击破 / 神秘之剑 / 魔法叶 4 招原先按特防结算，现按物防（31-37 → 48-57 等）；② 存档 0 记录改报错终止；③ 部署白名单 3→5 项（原白名单缺 3 个线上现役分片，下次部署会让线上 404）；④ 删 29 个零引用函数；⑤ 首屏遮罩 / 触屏 44px 热区 / `window.__ER_ERRORS` 错误观测。
+- **2026-11-07 评估轮修复**：① `dmgCalc` 补 `hitsDef` 分支 + `splitLabel` 7 值 —— 精神冲击 / 精神击破 / 神秘之剑 / 魔法叶 4 招原先按特防结算，现按物防（31-37 → 48-57 等）；② 存档 0 记录改报错终止；③ 部署白名单 3→5 项（原白名单缺 3 个线上现役分片，下次部署会让线上 404）；④ 曾删 29 个零引用函数，复核后按「清理冗余不删功能」口径**全部恢复**（它们在 v4.179 里本就没被调用，但含 v4.101 队检告警 / 战斗概率 / Smogon 先验等历史功能组）；⑤ 首屏遮罩 / 触屏 44px 热区 / `window.__ER_ERRORS` 错误观测。
 - **已知风险**：CDN 兜底依赖 jsDelivr，大陆实测三个分片全部 25 s 超时 —— 可靠性靠部署前断言，不要指望线上拉 CDN 救命。
 ## 7. 项目准则
 
@@ -191,10 +191,13 @@ python parse_er_save_v4.py <sav> [out.csv] [out.json]
 ## 8. GitHub 部署（2026-10-08 起）
 
 - **仓库**：`github.com/wsjshy/elite-redux-teambuilder`（公开）；远程名 `github`。**当前本机无 git 代理**（2026-11-07 实测 `http.proxy` 为空，fetch/push 均直连成功）；若出现「push TLS 握手失败但 curl 直连正常」，那是残留死代理，先 `git config --get http.proxy` 查，再用 `git -c http.proxy= push` 绕过。
-- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** `index.html` + `README.md` + `data_lite_v498.js` + `data_species_v498.js` + `data_adv_v498.js` + `assets/`（sheets 运行时合图 + sprites 图源）+ `.nojekyll` + `ER-source` 三 json（gameData/additional/item_zh_cn，可重建克隆 nextdex/.git.bak 不入库）。**data.js 已于 v4.179 数据源合一退役，不得回归**；部署白名单共 5 项，与 `tools\deploy_er.ps1` 的 `$DeployFiles` 一致）。**一键部署**：`tools\deploy_er.ps1 v4.179 <message>`（commit+push master → 暂存部署物 → 切 gh-pages 清空复制 → commit+push --force → 切回 master）。**清空 gh-pages 前必须先建备份分支**：远端 `github/gh-pages` 有 139 个文件、本地 `gh-pages` 仅 19 个，清空会删掉约 120 个历史备份（`index.html.v*`/`README.md.fill*`/`index.v*.html`），留底命令 `git branch ghpages-backup-<日期> github/gh-pages`。
+- **分支约定（防混淆）**：`master`=开发分支（源码+docs+数据 json）；`gh-pages`=部署分支（**仅** 23 项：`index.html` + `README.md` + 三片 `data_*_v498.js` + `assets/` 14 项 + `.nojekyll` + `ER-source` 三 json）。**data.js 已于 v4.179 数据源合一退役，不得回归**。部署清单与 `tools\deploy_er.ps1` 的 `$ExpectedFiles` 逐项一致。
+- **一键部署（2026-11-07 重写，默认零删除）**：`tools\deploy_er.ps1` 默认**增量**——只覆盖那 23 项，线上其余文件一律保留；`-DryRun` 只暂存+断言+打印清单不推送；`-Clean` 才清空重建（执行前打印将删除的条目数）。关键前提：脚本先 `fetch github` 再 `checkout -B gh-pages github/gh-pages` **强制对齐远端 tip**——本地 `gh-pages` 曾落后远端 118 个提交（树里只有 19 个文件），不对齐则「增量」照样会删掉线上 116 个文件。推送改为普通 `push`（对齐后必然 fast-forward），被拒即中止，**不再 `--force`**。
+- **禁止 `git add --all`（2026-11-07 真实事故，必读）**：切到 gh-pages 后工作区仍残留 audit 分支的**未跟踪文件**（Excel 图鉴、`nn_data/` 训练集、版本快照、`__wtest*.tmp`），而 gh-pages 分支没有 `.gitignore` → `add --all` 把它们一并推到了公开站点（实测误推 26 个文件 / 51.67 MB）。脚本已改为只 `add` 明确的那 23 项；备份留痕 `C:\temp\ghpages-leak-backup-20261107`。
+- **历史备份保留策略**：线上 139 个文件中约 116 个是历史快照（`index.html.v*` / `README.md.fill*` / `index.v*.html`）。默认增量模式不会删它们；确需瘦身时先建备份分支 `git branch ghpages-backup-<日期> github/gh-pages`（`ghpages-backup-20261107` → `80e14f8` 即部署前线上快照）。
 - **部署 URL（手机访问）**：`https://wsjshy.github.io/elite-redux-teambuilder/`。2026-11-07 线上基线：`index.html` 1,539,379 B / sha16 `CDBBBD382880EFCA`（v4.179）+ 三分片 379,679 / 1,362,446 / 575,962 B + `.nojekyll`，全部 200。本轮改动后本地为 1,537,423 B，**尚未部署**，与线上不再一致。
-- **更新流程**：改 build 脚本→重生成 HTML→`git commit`+`push github master`→孤儿分支重建 gh-pages（`checkout --orphan gh-pages`→清工作区**先移出 ER-source 与 4 项脱跟踪构建输入**（`招式表_可学总表.csv` / `ER2.65简汉化\ER2.65beta版图鉴v0.3.xlsm` / `ER2.65简汉化\分类.xlsx` / `ER2.5正式版图鉴v0.5.xlsm`——**曾于 v4.6.4 期被误删，重建见 §12**）→`checkout master -- 部署产物`→commit→`push github gh-pages --force`）→`checkout master`→移回 ER-source→`reset --hard master`。
-- **部署后必验（2026-10-10 教训，防"推了没生效"）**：① `git status`/`git ls-tree` 确认 **gh-pages 上无子模块 gitlink（160000）**——`ER-source/nextdex` 曾致 Pages 构建连续 4 次失败（`No url found for submodule path` exit 128），修复=`git rm --cached ER-source/nextdex`；② 部署文件提取一律 **Python 二进制 `git show master:<file>` 写盘**，禁止 PS `>` 重定向（UTF-16/BOM/编码破坏）；③ push 后查 Actions `pages build and deployment` run **conclusion=success**（API：`/actions/runs?per_page=5`），failure 时线上停留在最后成功版本；④ `curl` 线上 index.html 校验目标标记（如 `四特性体系`）与字节数 = 本地。
+- **更新流程（2026-11-07 起以增量部署为主，孤儿重建已弃用）**：改产物 → `node tools/smoke.js`（26 项门禁）→ 提交到开发分支并 push → `tools\deploy_er.ps1`（默认增量，自动对齐远端 tip）→ 部署后必验（见下条）。**孤儿重建不再手动执行**：它必然清空 gh-pages、删掉约 116 个历史快照；且必须先把 4 项脱跟踪构建输入（`招式表_可学总表.csv` / `ER2.65简汉化\*.xlsx` / `ER2.5正式版图鉴v0.5.xlsm`）移出工作区，否则会被 `add --all` 推到线上——这正是 2026-11-07 误推事故的成因。
+- **部署后必验（2026-10-10 教训，防"推了没生效"）**：① `git status`/`git ls-tree` 确认 **gh-pages 上无子模块 gitlink（160000）**——`ER-source/nextdex` 曾致 Pages 构建连续 4 次失败（`No url found for submodule path` exit 128），修复=`git rm --cached ER-source/nextdex`；② 部署文件提取一律 **Python 二进制 `git show master:<file>` 写盘**，禁止 PS `>` 重定向（UTF-16/BOM/编码破坏）；③ push 后查 Actions `pages build and deployment` run **conclusion=success**（API：`/actions/runs?per_page=5`），failure 时线上停留在最后成功版本；④ `curl` 线上 index.html 校验目标标记（如 `四特性体系`）与字节数 = 本地；⑤ **`git ls-tree -r --name-only gh-pages` 必须只含部署清单内的文件**——不得出现 `*.xlsm` / `*.xlsx` / `nn_data/*` / `index.html.v*` / `__wtest*`（2026-11-07 误推 26 个文件 / 51.67 MB 的教训），发现即 `git rm --cached` 后重推。
 - **部署硬前提**：HTML 与 `assets\sheets` 必须同目录（相对路径引用）；`.gitignore` 排除清单见文件本身（.gba/.sav/.ss*/ER2.65简汉化/ER-source 除两 json 外全部/nn_data/nn_models/顶层 `/_*` 探针/大 CSV/xlsx/**assets/sprites/**——旧精灵图源本地保留供 build_sprites_sheet.py 重跑，不入库）。
 - **ER-source 内嵌仓库处理**：官方克隆的 `ER-source\.git` 已改名 `.git.bak`（防 gitlink 吞文件）；恢复上游关联时改回 `.git` 即可，数据文件零改动。
 
