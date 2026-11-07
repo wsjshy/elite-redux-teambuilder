@@ -30,18 +30,23 @@ function Invoke-Git {
     return $rc
 }
 
-# 步骤0：确保在 master 且干净（坑2：master 有未提交改动时切分支会失败）
-Invoke-Git checkout master | Out-Null
+# 步骤0：记录起始分支；只在 master 上自动提交（2026-11-07 修复）
+# 原脚本硬编码 checkout master：本轮在 audit-20261107 上作业时若直接运行，
+# 会把工作区切回 master（该分支 index.html 仍是 v4.81、落后远端 189 个提交）→ 线上退回 v4.81。
+$StartBranch = (& $Git -C $Repo rev-parse --abbrev-ref HEAD).Trim()
+Write-Host "[0/6] start branch: $StartBranch"
 $dirty = (& $Git -C $Repo status --porcelain) -join "`n"
-# 有改动则提交（master 是开发分支，正常流程是提交后部署）
+# 有改动且在 master 上则提交（master 是开发分支，正常流程是提交后部署）
 if ($dirty.Trim().Length -gt 0) {
+    if ($StartBranch -ne "master") {
+        throw "当前分支 $StartBranch 有未提交改动；脚本不在非 master 分支上自动提交，请先手动提交或切回 master"
+    }
     Invoke-Git add --all | Out-Null
     Invoke-Git commit -m "$Message" | Out-Null
     Invoke-Git push github master | Out-Null
     Write-Host "[1/6] master committed & pushed"
 } else {
-    Write-Host "[1/6] master clean, skip commit"
-    Invoke-Git push github master | Out-Null
+    Write-Host "[1/6] clean, skip commit"
 }
 
 # 步骤2：确认部署产物存在（坑1：先复制到临时目录再切分支）
@@ -90,13 +95,12 @@ Invoke-Git add --all | Out-Null
 Invoke-Git commit -m "$Message" | Out-Null
 $rc = Invoke-Git push github gh-pages --force
 if ($rc -ne 0) {
-    Write-Host "[5/6] direct push failed, retry with proxy"
-    $rc = Invoke-Git -c http.proxy=http://127.0.0.1:7890 push github gh-pages --force
-    if ($rc -ne 0) { throw "gh-pages push failed with proxy too" }
+    # 2026-11-07：原脚本失败后重试 http://127.0.0.1:7890，该代理在本机已不存在，只会让失败变成等待超时。
+    throw "gh-pages push failed。先 git config --get http.proxy 查残留死代理，再用 git -c http.proxy= 手动重试"
 }
 Write-Host "[5/6] gh-pages pushed"
 
-# 步骤6：切回 master
-Invoke-Git checkout master | Out-Null
+# 步骤6：切回起始分支
+Invoke-Git checkout $StartBranch | Out-Null
 Remove-Item -Recurse -Force $Temp -ErrorAction SilentlyContinue
 Write-Host "[6/6] done, back on master. URL: https://wsjshy.github.io/elite-redux-teambuilder/"
