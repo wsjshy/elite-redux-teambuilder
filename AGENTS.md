@@ -1726,3 +1726,104 @@ git diff 显示 719 insertions / 698 deletions。功能没坏但污染了 diff�
 `FLAG_WEATHER_BASED`（14 招）只被 `DELTA_STREAM` 的 `.onImmune` 使用，是免疫判定不是增伤 → 证伪，不接。
 `Dual Shadow`（恶/电 ×1.35）数据层无中文名，跳过。
 暗黑/妖精气场是 `APPLY_ON_ANY`，工具近似为「只算自己」，`auraBreak → ×0.75` 未建模。
+
+
+---
+
+## v4.236：进攻侧条件型增伤 —— 18.24 判「算不了」的那批，一半能算
+
+### 结论先行
+
+18.24 把 63 条 `MUL()` 一块标注为「静态算不了」。实际其中一大批的条件**不依赖战斗进程**，
+只依赖「这一招是什么」：物理/特殊、基础威力、是否接触、是否声音、相性是否≥2、是否会心。
+这六个都能从 `ERDATA.moves[id][3][4][5]` + `MV_CONTACT` + `MV_FLAG` + `defCellTrio().opt` + `o.crit` 读出来。
+
+### 关键：先查作用域，再看倍率
+
+`.onOffensiveMultiplier` 有姊妹字段 `.onOffensiveMultiplierFor`：
+
+```cpp
+// include/abilities.hh:148-149
+APPLY_ON_ALLY      = 1 << 0,                            // 同伴，含自己
+APPLY_ON_ALLY_ONLY = APPLY_ON_ALLY | APPLY_IGNORE_SELF,  // 同伴，排除自己
+```
+
+全量扫只有 3+3+2：`ALLY_ONLY` = `BATTERY` 蓄电池 / `POWER_SPOT` 能量点 / `MOSH_PIT`；
+`ANY` = `DARK_AURA` / `FAIRY_AURA` / `PIXIE_POWER`（命中非伤害）；`ALLY` = `STEELY_SPIRIT` / `AIRBORNE`。
+
+**`能量点` 源码是 `{ MUL(1.3); }`，看上去最该接，但紧跟 `APPLY_ON_ALLY_ONLY`** —— 只给同伴，
+持有者自己一点不加。单打视角接进来等于白送 30% 伤害。`蓄电池` 同理。**这两条已撤回。**
+
+### 接入 10 条（覆盖 214 只物种）
+
+| 特性 | 倍率 | 条件 | 持有者 | 源码判定 |
+|---|---|---|---|---|
+| 活力 HUSTLE | ×1.4 | 无条件 | 37 | `MUL(1.4)` |
+| 远隔 LONG_REACH | ×1.2 | 物理招 | 43 | `IS_MOVE_PHYSICAL` |
+| 毒焰钳 VENOBLAZE_PINCERS | ×1.2 | 物理招 | 2 | `IS_MOVE_PHYSICAL` |
+| 一猩一意 GORILLA_TACTICS | ×1.5 | 物理招 | 14 | `IS_MOVE_PHYSICAL` |
+| 贤者之力 SAGE_POWER | ×1.5 | 特殊招 | 10 | `IS_MOVE_SPECIAL` |
+| 技术高手 TECHNICIAN | ×1.5 | 威力≤60 | 66 | `basePower <= 60` |
+| 健壮胸肌 BIG_PECKS | ×1.3 | 接触招式 | 27 | `IsMoveMakingContact` |
+| 脑核之力 NEUROFORCE | ×1.35 | 相性≥2.0 | 14 | `>= GetSuperEffectiveMult()` |
+| 狙击手 SNIPER | ×1.5 | 会心时 | 35 | `if (isCrit)` |
+| 湿润之声 LIQUID_VOICE | ×1.2 | 声音招式 | 8 | `IsSoundMove` |
+
+**技术高手 66 只**：配招门控里一直写着「威力≤60 ×1.5」，但实际伤害计算里从来没查过它 ——
+典型的「文档写了、代码没做」。这一版补上。
+
+### 实现
+
+```js
+var ABI_ATK_KIND={ '活力':{mul:1.4,need:'',src:'…'} … };   // 10 条
+function abiAtkKindOk(need,ctx,mvId){ … }   // need: ''/phys/spec/pow60/contact/se/crit/sound
+function dmgAtkAbiMul(sA,mType,wx,mvId,ctx)  // 第五参 ctx（v4.236 新增）
+```
+
+`dmgCalc` 传 `{isPhys, spec:(split==='特殊'||split==='特殊(取防御)'), pow:bp, contact:mvIsContact(...), eff:eff, crit:!!o.crit}`。
+**`spec` 必须带 `'特殊(取防御)'`** —— ER split 是 7 值枚举，漏掉会少算精神冲击/精神击破/神秘之剑/魔法叶 4 招。
+
+### 实测（全对）
+
+活力 1.4 ｜ 技术高手[40]=1.5 [85]=1 ｜ 一猩一意[物理]=1.5 [特殊]=1 ｜ 贤者之力[特殊]=1.5 [物理]=1 ｜
+远隔[物理接触]=1.2 [物理非接触]=1.2 [特殊]=1 ｜ 健壮胸肌[接触]=1.3 [非接触]=1 ｜
+脑核之力[相性2]=1.35 [相性1]=1 ｜ 狙击手[会心]=1.5 [普通]=1 ｜ 湿润之声[声音]=1.2 [非声音]=1
+
+**误判记录**：首轮用「水枪 #55」当物理招代表，`一猩一意`/`远隔`/`毒焰钳` 全返回 1，看着像 bug。
+实际水枪在 ER 是**特殊招**（`属性水 特殊 威力40`）。换 `#1 拍击` / `#6 聚宝盆` / `#13 旋风刀` 后全对。
+**探针挑代表招式必须读 `mv[4]`，不能按名字猜。**
+
+### 详情卡「⚔ 进攻增伤」
+
+`abiDesc` 在「🛡 受到伤害倍率」之后插入「⚔ 进攻增伤」区块，统一读 `ABI_ATK_MOD` / `ABI_ATK_COND` /
+`ABI_FLAG_ATK` / `ABI_ATK_KIND`。文案明确写「只放大**自己打出去**的伤害，与上面的减伤方向相反」——
+同卡上两组倍率方向相反，不点明会被误读。
+
+**踩坑**：`src` 最初写 `'IS_MOVE_PHYSICAL'` / `'basePower<=60'` 这种源码原文，渲染出来全是空括号 `（）`。
+`esc()` 内部走 `scrubLeak`，命中 `[A-Z][A-Z0-9]*_[A-Z0-9_]+` 就整段清空。改中文描述后正常。
+**凡是要进 `esc()` 的字符串，不能带大写+下划线的标识符。**
+
+### 顺带证伪：两条死代码
+
+`MEGA_DRILL`（`if (gBattleMoves[move].drill)`）与 `PHOTOKINESIS`（`.light`）：
+`include/pokemon.h:289` 有 `u8 drill:1;` 字段声明，但全仓 `.drill = TRUE` / `.light` **零赋值**，
+分支永不触发。两条特性数据层也无持有者。**按源码判定为死代码，不接。**
+
+### 门禁
+
+语法 0 ｜ `smoke.js` 32/32 ｜ `probe_sp_abi_detail.py` **113 项 ALL PASS**（新增 F89）
+
+```
+F89: N=10 无ALLYONLY=OK 活力=1.4 远隔P=1.2 远隔NP=1.2 远隔S=1 猩P=1.5 猩S=1 钳P=1.2 钳S=1
+     贤S=1.5 贤P=1 技低=1.5 技高=1 胸C=1.3 胸N=1 核SE=1.35 核N=1 狙C=1.5 狙N=1 声S=1.2 声N=1
+```
+
+### 版本
+
+`v4.236`，1,629,493 B，本地全绿，未提交。
+
+### 仍未接（真算不了）
+
+毅力/决心/中毒激升（需自身异常）｜蹲守（目标首回合）｜幻影（illusion）｜分析（回合顺序）
+｜复仇者（side timer）｜好胜（双方性别）｜公主的恩赐（目标降能力）｜无精打采（slowStartTimer）
+｜超级狙击手（转调+额外队列）｜武术 `MARTIAL_ARTS`（数据层无中文名）
