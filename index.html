@@ -3783,6 +3783,16 @@ function abiDesc(el,id,box){
   var h='<div style="margin-bottom:3px"><b>'+esc(name)+'</b>'+esc(en)+' <span class="badge badge-neu">#'+id+'</span>'+
     '<button class="btn-mini" style="margin-left:6px" onclick="gotoAbi('+jsl(name)+')">特性反查 →</button></div>';
   h+='<div style="font-size:12px;line-height:1.9">'+glossify(zh||'（无中文描述）')+'</div>';
+  /* v4.197：防御侧伤害倍率（不并入相性表 —— x0.7 / x1.25 这类不是相性值） */
+  try{
+    var _dm=ABI_DMG_MOD[name], _da=ABI_DMG_ALL[name], _rows=[];
+    if(_dm)_dm.forEach(function(x){
+      var _red=x.mul<1;
+      _rows.push('<b>'+glossify(x.t.join(' / '))+'</b> 招式 ×'+x.mul+'（'+(x.mul<0.5?'强减伤':(_red?'减伤':'增伤，是弱点'))+'）');
+    });
+    if(_da)_rows.push('不分属性，<b>所有伤害</b> ×'+_da+'（'+(_da<1?'减伤':'增伤')+'）');
+    if(_rows.length)h+='<div class="ruleline" style="margin-top:4px">🛡 <b>受到伤害倍率</b>（源码 .onDefensiveMultiplier，与属性相的 0.5×/2× 不是一回事）：'+_rows.join('；')+'</div>';
+  }catch(e){}
   /* v4.186：招式型特性 —— 「入场时释放 XX」「使用X属性招式后触发 XX」这类描述只写招式名，
      玩家看不出这一招做什么 → 把招式原文附上（纯数据展开，名未命中就不显示） */
   try{
@@ -4873,6 +4883,43 @@ function defMult(types,at){
    规则作用在被攻方「单个防守属性」上（源码 MulByTypeEffectiveness 逐 defType 调用再相乘），
    不是对最终乘积生效，否则双属性会被改错。
    mode:'force' 无条件设为 mul（源码无 CHECK_NOT）；'zero' 仅当原为 0；'floor' 仅当 0<原<1 时抬到 mul。 */
+/* v4.197：防御侧「伤害倍率」表 —— 与相性倍率（0/0.5/1/2）是两回事，单独展示。
+   来源：src/abilities.cc 每个 Impl<> 的 .onDefensiveMultiplier 段。
+   ABI_DMG_MOD：某个属性招式打过来时的固定倍率（x0.5 减半 / x0.25 强减 / x0.7 / x0.75 / x1.25 弱点 / x2 强弱点）
+   ABI_DMG_ALL：不分属性，对所有伤害的倍率
+   「条件型」（效果绝佳才减、满血才减、物理/特殊才减、会心才减等）新目不在这里，见文档第十六章。 */
+var ABI_DMG_MOD={
+  '免疫':[{t:["毒"],mul:0.5}],
+  '化石化':[{t:["岩石"],mul:0.5}],
+  '厚脂':[{t:["火","冰"],mul:0.25}],
+  '厚脂肪':[{t:["火","冰"],mul:0.5}],
+  '原木':[{t:["草"],mul:0.5}],
+  '坚实基础':[{t:["水","地面"],mul:0.5}],
+  '干燥皮肤':[{t:["火"],mul:1.25}],
+  '洁净之盐':[{t:["幽灵"],mul:0.5}],
+  '深度冻结':[{t:["火"],mul:0.5}],
+  '熔岩铠甲':[{t:["水","冰"],mul:0.7}],
+  '耐热':[{t:["火"],mul:0.5}],
+  '超净':[{t:["毒"],mul:0.5}],
+  '遇水凝固':[{t:["水"],mul:0.5}],
+  '重金属':[{t:["幽灵","恶"],mul:0.5}],
+  '黑暗亲和':[{t:["恶","妖精"],mul:0.75}]
+};
+
+var ABI_DMG_ALL={
+  'Rock Armor':0.9,
+  '北极毛皮':0.65,
+  '太晶宝藏':0.6,
+  '强投手':0.5,
+  '战斗盔甲':0.8,
+  '招架':0.8,
+  '斗争心':0.75,
+  '棱镜毛皮':0.5,
+  '气场铠甲':0.65,
+  '狂化增强':0.8,
+  '黏液膜':0.7
+};
+
 var ABI_TE_CALC={
   '一般皮肤':[{atk:['一般'],mul:1.0,mode:'floor'}],
   '胆量':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
@@ -15190,7 +15237,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.196';
+var ER_ENGINE_VER='v4.197';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
