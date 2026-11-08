@@ -1046,3 +1046,60 @@ probe F55–F57 固化这三条。
 |---|---|
 | 体积 | 1,590,052 → **1,591,201 B** |
 | commit | **`0e3629b`** / 文档 `db24b56` |
+
+
+## v4.211 ~ v4.213（2026-11-08）· 伤害判定接入非属性减伤
+
+### v4.211 先加后撤：干燥皮肤火 ×1.25 不归 `ABI_TAG_PATCH`
+
+`ABI_DMG_MOD` 15 条全量对账（`tools/../chk_dmgmod_all.py`）显示 `干燥皮肤`(#87，17 物种) 只有 `{im:['水']}`，「火 ×1.25」看起来丢了。补进 `ABI_TAG_PATCH` 后实测蘑蘑菇 #285 火 `opt=3.125`，即 `2×1.25×1.25` —— **乘了两次**。
+
+根因：`defCellTrio` L5118-5125 的 `mechRw` 机制层早已处理：
+
+```js
+var ma=mechDefAdjOf(s,at);
+if(ma.imm){inn=0;opt=0} else if(ma.hf){inn*=0.5;opt*=0.5}
+if(ma.down>1&&opt>0)opt*=ma.down;        // 干燥皮肤火 ×1.25
+```
+
+`mechEvalOf` 对干燥皮肤返回 `defImm=['水']` + `defDown=['火']`。撤销补丁、改成注释留痕。撤销后蘑蘑菇 #285：火 `base=2 inn=2 opt=2.5`、水 `base=0.5 inn=0 opt=0`，正确。
+
+**硬规则**：`mechRw` 机制层与 `ABI_TAG_PATCH` 是并行两条路，同一特性同一属性只能出现在一边。改 `ABI_TAG_PATCH` 前必须先跑 `mechDefAdjOf` 看 `defImm/defHf/defDown`。
+
+审计（8 条常见减半特性）：`厚脂肪/耐热/原木/免疫/深度冻结/重金属/坚实基础` 全部为空 → 无重叠；**`超净` 返回 `defImm=['水']`，但 `ABI_DMG_MOD` 登记「毒 ×0.5」—— 两边矛盾，待核查（非本次引入）**；`干燥皮肤` 归 `mechRw`。
+
+### v4.212 `dmgCalc` 接入非属性减伤
+
+`dmgCalc` 此前只用 `defCellTrio(...).opt` 拿属性相性，`ABI_DMG_ALL`(11 条不分属性) 与 `ABI_DMG_COND`(32 条条件型) **完全没进伤害** —— 多重鳞片满血 ×0.5、毛皮大衣物理 ×0.5 在 OHKO 判定里不存在，伤害偏高。
+
+新增三函数（紧贴 `dmgCalc` 前）：
+- `dmgDefAbis(sD)`：`inns` + `teamInfo[id].pick` + 可选池 `abis`（并入池对齐 `defCellTrio` 的 `opt` 口径）
+- `dmgCondHit(when,sD,sA,mType,isPhys,o,eff)`：只认静态可判定条件（物理/特殊、满血恒真、效果绝佳→`eff>=2`、会心→`o.crit`、沙暴/冰雹→`o.weather`、攻方是X属性→`sA.t1/t2`）；**认不出的条件返回 false，宁可不计不误乘**
+- `dmgDefAbiMul(...)` → `{mul,hits}`
+
+接入点在 `mod*=eff` 之后；返回值加 `abiMul`/`abiHit`，原字段不动。
+
+实测：水跃鱼(多重鳞片) `abiMul=0.5` `hits=["多重鳞片×0.5(满血时)"]`；小海狮(毛皮大衣) `0.5` `["毛皮大衣×0.5(物理招式)"]`；超级布里卡隆(脑容量) `0.5`。
+
+### v4.213 伤害面板显示减伤原因
+
+`dmgRender` 伤害行末尾追加 `· 特性减伤 ×0.5`（accent 加粗，title 悬停 = `abiHit.join('；')`），`abiMul===1` 时整段不渲染。
+
+**踩坑**：第一版用 `escAttr(...)`，项目里没这个函数（只有 `esc`），整段在 `try{}` 里被吞成静默无输出。改 `esc`。
+
+### probe F60–F62
+
+F60 多重鳞片 0.5 / F61 毛皮大衣 0.5 / F62 无减伤特性物种 `abiMul===1`（防汇总逻辑误乘）。
+
+### 本批提交与验证
+
+`73202f1`(v4.211 撤销) → `b4d7984`(v4.212+v4.213)。`index.html` = **1,599,660 B / `ER_ENGINE_VER='v4.213'` / SHA1 `F4F630A5BB36B8B837EB36B45E8764CAC51C431D` / 线上 VERIFIED-MATCH**。`node --check` 0、smoke 32/32、probe 72 项 ALL PASS。
+
+### 仍未接的点（明确记账）
+
+- `dmgCalc` 的 `eff=defCellTrio(sD,mType,null)` 传 `null` → 伤害判定不认防御方勾选的可选特性（`opt` 已含可选池最优，与勾选口径仍有差）。
+- 攻击方增伤特性（技术高手/强颚等）未进 `dmgCalc`。
+- `.onAfterTypeEffectiveness` 里依赖战斗状态的（`TERA_SHELL` 满血 2×→0.5×、`SOOTHSAYER` 5 回合递减、`FOGGY_EYE` 雾天封顶、`STEELWORKER` 需本体钢属性、`WONDER_GUARD`）静态表只能标注不能算。
+
+---
+
