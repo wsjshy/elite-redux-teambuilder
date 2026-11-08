@@ -215,6 +215,30 @@ INJECT_JS = r"""
           out.tagPatchN = Object.keys(ABI_TAG_PATCH||{}).length;
           /* v4.196：统一求值口 coverMultOf —— 模拟「带某特性的宝可梦，某属性招打某属性」 */
           out.cmBase = coverMultOf({inns:[],t1:'地面',t2:'-'},'电','地面');
+          out.dmgN   = Object.keys(ABI_DMG_MOD||{}).length;
+          out.dmgAll = Object.keys(ABI_DMG_ALL||{}).length;
+          out.dmgFat = (function(){var v=ABI_DMG_MOD['厚脂肪'];return v?(v[0].t.join('/')+'|'+v[0].mul):'NONE';})();
+          out.dmgBlub= (function(){var v=ABI_DMG_MOD['厚脂'];return v?(v[0].t.join('/')+'|'+v[0].mul):'NONE';})();
+          out.dmgArmor=(function(){var v=ABI_DMG_ALL['战斗盔甲'];return v===undefined?'NONE':''+v;})();
+          out.dmgText=(function(){
+            try{
+              var src=String(abiDesc);
+              return (/受到伤害倍率/.test(src) && /ABI_DMG_MOD/.test(src) && /ABI_DMG_ALL/.test(src))?'OK':'MISS';
+            }catch(e){ return 'ERR:'+e.message; }
+          })();
+          out.tblKey=(function(){try{return (ABI_DMG_MOD['厚脂肪']?'HIT':'MISS');}catch(e){return 'ERR:'+e.message;}})();
+          out.dmgReal=(function(){
+            try{
+              var d=document.createElement('div'); d.id='abiDesc'; document.body.appendChild(d);
+              var el=document.createElement('span'); el.textContent='厚脂肪';
+              var got=document.getElementById('abiDesc');
+              if(!got)return 'NO_CONTAINER';
+              abiDesc(el,'47','abiDesc');
+              var t=got.innerHTML||'';
+              return t?(/受到伤害倍率/.test(t)?'OK':('NOHDR:'+t.slice(0,100))):'EMPTY';
+            }catch(e){ return 'ERR:'+e.message; }
+          })();
+          out.abi47name=(function(){try{return (ABI['47']&&ABI['47'][2])||'NONE';}catch(e){return 'ERR';}})();
           out.cmGS   = coverMultOf({inns:['地面冲击'],t1:'地面',t2:'-'},'电','地面');
           out.cmCO   = coverMultOf({inns:['腐蚀'],t1:'毒',t2:'-'},'毒','钢');
           out.cmCO0  = coverMultOf({inns:[],t1:'毒',t2:'-'},'毒','钢');
@@ -488,7 +512,17 @@ def main():
     ck(tt.get("cmSrc") is True, "F39 coverMultOf 内部确实走 abiTeApplyOne", "%s" % tt.get("cmSrc"))
 
     ck("关联招式" in d788 and "暴风雪" in d788, "E4 「触发50威力暴风雪」附上招式效果", d788[:64].replace("\n", " "))
+    ck(tt.get("dmgN") == 15, "F40 防御伤害倍率表 15 条", "n=%s" % tt.get("dmgN"))
+    ck(tt.get("dmgAll") == 11, "F41 无条件全伤害表 11 条", "n=%s" % tt.get("dmgAll"))
+    ck(tt.get("dmgFat") == "火/冰|0.5", "F42 厚脂肪 火/冰 x0.5", "%s" % tt.get("dmgFat"))
+    ck(tt.get("dmgBlub") == "火/冰|0.25", "F43 厚脂 火/冰 x0.25", "%s" % tt.get("dmgBlub"))
+    ck(tt.get("dmgArmor") == "0.8", "F44 战斗盔甲 全伤害 x0.8", "%s" % tt.get("dmgArmor"))
+
     ck("机制详解" in d733 and "跟舞" in d733, "E5 733 拳舞有源码级详解", d733[:64].replace("\n", " "))
+    ck(tt.get("dmgText") == "OK", "F45 特性详情已接入「受到伤害倍率」渲染", "%s" % tt.get("dmgText"))
+    ck(tt.get("tblKey") == "HIT", "F46 中文名可正确索引到倍率表", "%s" % tt.get("tblKey"))
+    ck(tt.get("dmgReal") == "OK", "F47 厚脂肪详情实渲染出火/冰减伤", "%s" % tt.get("dmgReal"))
+
 
     # F. 属性相性改写倍数
     d285 = data.get("desc285") or ""
