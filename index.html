@@ -954,7 +954,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <h3>🎮 存档联动组队（我的宝可梦）<span class="mini" style="color:var(--sub);font-weight:400"> · 与下方「全图鉴组队」并列，互不替换</span></h3>
     <div id="myPickWrap" class="phasefade">
     <div class="mini" style="color:var(--sub);line-height:1.9"><span style="display:block">① 点上方「📂 解析存档 .sav」选文件（或粘贴 CSV 导入）</span><span style="display:block">② 下方出现你的队伍与箱子</span><span style="display:block">③ 点一只精灵 = 以它为核，走同一套需求驱动引擎出完整队伍方案</span></div>
-    <div class="poolgrid" id="myPoolWrap"><div class="mini" style="color:var(--sub)">尚未解析存档 —— 解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 招式）。</div></div>
+    <div class="poolgrid" id="myPoolWrap"><div class="mini" style="color:var(--sub);grid-column:1/-1">尚未解析存档 —— 解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 招式）。</div></div>
     </div><!-- /#myPickWrap：挑选阶段（我的宝可梦池） -->
     <div id="myDetailWrap" class="phasefade" style="display:none">
       <div class="corebackbar"><button class="btn coreback" onclick="myPhase('pick')" title="返回挑选（我的宝可梦池原样保留）">← 返回挑选</button><span class="mini" style="color:var(--sub)">此核心（来自存档）的完整配队方案</span></div>
@@ -5818,7 +5818,7 @@ function renderMyPool(){
   var w=$('myPoolWrap');if(!w)return;
   myPhase('pick',true); /* v4.6.3：重新解析/重置选择池 → 回到挑选阶段（noscroll，不抢当前滚动） */
   var list=myPoolFromSav(SAV_ROWS);
-  if(!list.length){w.innerHTML='<div class="mini" style="color:var(--sub)">尚未解析存档 —— 点上方「📂 解析存档 .sav」选文件，或用 CSV 导入；解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 招式）。</div>';return}
+  if(!list.length){w.innerHTML='<div class="mini" style="color:var(--sub);grid-column:1/-1">尚未解析存档 —— 点上方「📂 解析存档 .sav」选文件，或用 CSV 导入；解析后此处显示「我的宝可梦」选择池（精灵图 / 等级 / 特性 / 道具 / 招式）。</div>';return}
   w.innerHTML='<div class="mini" style="color:var(--sub);grid-column:1/-1">共 '+list.length+' 只（队伍优先、按存档顺序去重）—— 点卡片 = 以它为核出方案；悬停看招式/道具/特性明细</div>'+
     list.map(function(x){
       var t='招式：'+(x.moves.join(' / ')||'—')+'　道具：'+(x.item||'—')+'　特性：'+(x.abi||'—');
@@ -6246,17 +6246,29 @@ function speedDistBarHtml(){
   var q=speedPctiles();var arr=[];ERDATA.species.forEach(function(x){if(x&&x.base)arr.push(spdMaxOf(x))});arr.sort(function(a,b){return a-b});
   var mn=arr[0],mx=arr[arr.length-1],span=(mx-mn)||1;
   function pos(v){return Math.round((v-mn)*100/span)}
+  /* 直方图分桶（24 桶），柱高 = 该区间物种数 */
+  var NB=24,bins=[],i;
+  for(i=0;i<NB;i++)bins.push(0);
+  arr.forEach(function(v){var k=Math.floor((v-mn)*NB/span);if(k<0)k=0;if(k>NB-1)k=NB-1;bins[k]++});
+  var bmax=1;for(i=0;i<NB;i++)if(bins[i]>bmax)bmax=bins[i];
   var pts=[['P50',q.P50],['P75',q.P75],['P90',q.P90],['P95',q.P95],['P99',q.P99]];
   var h='<div class="sec" style="margin-top:8px"><h3>全库速度分布（极速档 252+速度性格，实测 n='+q.n+'）</h3>';
-  /* v4.80：分位标签移出条外（紧凑图例行 flex-wrap），删除 top/bottom 绝对定位标签，根除窄屏重叠 */
-  h+='<div style="display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--sub);margin-bottom:4px">';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--sub);margin-bottom:6px">';
   pts.forEach(function(p){h+='<span><b>'+p[0]+'</b> '+p[1]+'</span>'});
   h+='</div>';
-  h+='<div style="position:relative;height:34px;margin:0 4px;background:linear-gradient(90deg,var(--card),var(--accent));border-radius:6px;border:1px solid var(--line)">';
-  pts.forEach(function(p){var x=pos(p[1]);
-    h+='<div style="position:absolute;left:'+x+'%;top:0;bottom:0;width:2px;background:var(--fg)"></div>'});
+  h+='<div style="position:relative;height:104px;margin:20px 4px 8px">';
+  for(i=0;i<NB;i++){
+    var bh=Math.round(bins[i]*100/bmax);
+    h+='<div style="position:absolute;left:'+(i*100/NB)+'%;width:'+(100/NB)+'%;bottom:0;height:'+bh+'%;'
+      +'background:var(--accent);opacity:.45;border-radius:2px 2px 0 0"></div>';
+  }
+  pts.forEach(function(p){
+    var x=pos(p[1]);
+    h+='<div style="position:absolute;left:'+x+'%;top:0;bottom:0;width:2px;background:var(--fg);opacity:.85"></div>';
+    h+='<div style="position:absolute;left:'+x+'%;top:-18px;transform:translateX(-50%);font-size:11px;color:var(--sub);white-space:nowrap">'+p[1]+'</div>';
+  });
   h+='</div>';
-  h+='<div style="font-size:12px;color:var(--sub);margin-top:6px">慢端 '+mn+' ←── 极速值 ──→ 快端 '+mx+'（满速252中性档参考列见下表；本图=极速档）</div></div>';
+  h+='<div style="font-size:12.5px;color:var(--sub);margin-top:8px">慢端 '+mn+' ←── 极速值 ──→ 快端 '+mx+'　柱高=每个速度区间的物种数（共 '+arr.length+' 条）；竖线为分位切点</div></div>';
   return h}
 /* 卡线省EV实算：满速性格下达到 target 所需最小 EV(0/4/.../252)；返回 {ev,val,saved}，达不到返回 null */
 function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
@@ -15283,7 +15295,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.201';
+var ER_ENGINE_VER='v4.203';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
