@@ -4793,7 +4793,30 @@ ERDATA.abilities.forEach(function(a){
   var g=ERDATA.abiTags[a[0]];
   if(g&&g.im)g.im.forEach(function(t){(IMMUNE_RISK[t]=IMMUNE_RISK[t]||[]).push(a[2]||a[1])});
 });
-function abiTagOf(n){var id=NM2ID[n];return id?ERDATA.abiTags[id]:null}
+/* v4.194：abiTags 漏登记的免疫类特性（源码 .onAbsorb + CHECK(moveType == TYPE_X) 逐个核对出来的）。
+   ERDATA.abiTags 只有 107 条，这 7 个免疫特性没进去 → 工具会把它们算成「正常吃伤害」。
+   「乘风(WIND_RIDER)」判的是 gBattleMoves[move].airBased（风系招式而非属性），无法用属性表达，不补。 */
+var ABI_TAG_PATCH={
+  '毒素吸收':{im:['毒']},      /* src/abilities.cc:4446 POISON_ABSORB */
+  '引冰':{im:['冰']},          /* :4823 ICE_DEW */
+  '食土':{im:['地面']},        /* :5880 EARTH_EATER */
+  '蓄水器':{im:['水']},        /* :9290 RESERVOIR */
+  '散热器':{im:['火']},        /* :10565 HEAT_SINK */
+  '闪电形态':{im:['电']},      /* :10587 LIGHTNING_ASPECT */
+  '熔核':{im:['岩石']}         /* :10734 MOLTEN_CORE（岩石，反直觉但源码 CHECK(moveType == TYPE_ROCK)） */
+};
+function abiTagOf(n){
+  var id=NM2ID[n];
+  var t=(id&&ERDATA.abiTags)?ERDATA.abiTags[id]:null;
+  var p=ABI_TAG_PATCH[n];
+  if(!p)return t||null;
+  var o={},k;
+  if(t)for(k in t)o[k]=t[k];
+  if(p.im)o.im=(o.im||[]).concat(p.im);
+  if(p.hf)o.hf=(o.hf||[]).concat(p.hf);
+  if(p.add)o.add=(o.add||[]).concat(p.add);
+  return o;
+}
 /* 生效属性：基础属性 + 天性 add（固定）+ 可选池 add（仅提示） */
 function effTypesOf(s){
   var base=[];if(s.t1&&s.t1!=='-')base.push(s.t1);if(s.t2&&s.t2!=='-'&&s.t2!==s.t1)base.push(s.t2);
@@ -15110,7 +15133,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.193';
+var ER_ENGINE_VER='v4.194';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
