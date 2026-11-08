@@ -241,6 +241,11 @@ INJECT_JS = r"""
     var r=dmgCalc({sA:sA,sD:sD,moveId:mv,evA:0,evD:0,natA:'',natD:'',itemA:'',weather:'',terrain:'',crit:false});
     return r?r.abiMul:null;
   })();
+  /* v4.215：ABI_ATK_MOD 进攻侧属性增伤 */
+  out.atkModN = Object.keys(ABI_ATK_MOD||{}).length;
+  out.atkWater = (function(){return dmgAtkAbiMul({inns:[],abis:['水泡']},'水').mul;})();
+  out.atkWaterMiss = (function(){return dmgAtkAbiMul({inns:[],abis:['水泡']},'火').mul;})();
+  out.atkLevitate = (function(){return dmgAtkAbiMul({inns:[],abis:['飘浮']},'飞行').mul;})();
   out.dmgAbiNone = (function(){
     var sD=null,sA=null,mv=null;
     ERDATA.species.forEach(function(x){
@@ -557,6 +562,10 @@ def main():
     ck(tt.get("dmgAbiMul") == 0.5, "F60 dmgCalc 计入多重鳞片满血 ×0.5", "v=%s" % tt.get("dmgAbiMul"))
     ck(tt.get("dmgAbiFur") == 0.5, "F61 dmgCalc 计入毛皮大衣物理 ×0.5", "v=%s" % tt.get("dmgAbiFur"))
     ck(tt.get("dmgAbiNone") == 1, "F62 dmgCalc 无减伤特性时不误乘", "v=%s" % tt.get("dmgAbiNone"))
+    ck(tt.get("atkModN") == 16, "F63 ABI_ATK_MOD 16 条（6 有物种 + 10 备查）", "n=%s" % tt.get("atkModN"))
+    ck(tt.get("atkWater") == 2.0, "F64 水泡·水属性招 ×2", "v=%s" % tt.get("atkWater"))
+    ck(tt.get("atkWaterMiss") == 1, "F65 水泡·非水属性招不增伤", "v=%s" % tt.get("atkWaterMiss"))
+    ck(tt.get("atkLevitate") == 1.25, "F66 飘浮·飞行招 ×1.25", "v=%s" % tt.get("atkLevitate"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))

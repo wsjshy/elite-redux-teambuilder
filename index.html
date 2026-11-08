@@ -4959,6 +4959,28 @@ var ABI_DMG_COND={
   '羽衣':[{mul:0.7,when:'相性倍率小于 1（本来抗）时'},{mul:0.85,when:'相性倍率不小于 1 时'}]
 };
 
+/* 进攻侧属性增伤（源码 abilities.cc 的 .onOffensiveMultiplier 里「只按 moveType 判定」的那一类）。
+   逐条来自 Impl<ABILITY_X>.onOffensiveMultiplier 形如 if (moveType == TYPE_火) MUL(1.5);
+   与 ABI_DMG_MOD（防守侧减伤）是两条独立维度，同一特性可以同时出现在两边（如 原木：防守草×0.5 / 进攻草×1.2）。 */
+var ABI_ATK_MOD={
+  '飘浮':[{t:['飞行'],mul:1.25}],          /* LEVITATE L780；另 .levitate=TRUE 免疫地面 */
+  '水泡':[{t:['水'],mul:2.0}],             /* WATER_BUBBLE */
+  '电晶体':[{t:['电'],mul:1.5}],           /* TRANSISTOR */
+  '龙颚':[{t:['龙'],mul:1.5}],             /* DRAGONS_MAW */
+  '原木':[{t:['草'],mul:1.2}],             /* RAW_WOOD */
+  '燃烧':[{t:['火'],mul:1.5}],             /* COMBUSTION */
+  /* 以下 10 条数据层当前无物种携带，登记备查；有物种后自动生效（消费点按持有检查） */
+  '钢之意志':[{t:['钢'],mul:1.3}],         /* STEELY_SPIRIT */
+  '发电细胞':[{t:['电'],mul:1.25}],        /* ELECTROCYTES */
+  '化石化':[{t:['岩石'],mul:1.2}],         /* FOSSILIZED */
+  '黑暗亲和':[{t:['恶'],mul:1.25}],        /* NOCTURNAL */
+  '电力爆发':[{t:['电'],mul:1.35}],        /* ELECTRIC_BURST */
+  '沙暴恐惧':[{t:['地面'],mul:1.2}],       /* DUNE_TERROR */
+  '地狱愤怒':[{t:['火'],mul:1.35}],        /* INFERNAL_RAGE */
+  '飞空助力':[{t:['飞行'],mul:1.3}],       /* AIRBORNE */
+  '水栖栖息者':[{t:['水'],mul:1.5}],       /* AQUATIC_DWELLER */
+  '厄运冲击':[{t:['恶'],mul:1.35}]         /* DOOM_BLAST */
+};
 var ABI_DMG_ALL={
   'Rock Armor':0.9,
   '北极毛皮':0.65,
@@ -6540,6 +6562,29 @@ function megaFormOf(s,itemZh){
   }catch(e){return s}
 }
 /* 伤害核心：o={sA,sD,moveId,evA,evD,natA,natD,itemA,weather,crit}；返回 {lo,hi,eff,stab} */
+/* 进攻方实际持有的特性名单 */
+function dmgAtkAbis(sA){
+  var a=[];
+  try{
+    if(sA&&sA.inns)a=sA.inns.slice();
+    if(sA&&sA.abis)sA.abis.forEach(function(n){if(a.indexOf(n)<0)a.push(n)});
+  }catch(e){}
+  return a;
+}
+/* 进攻侧属性增伤倍率 */
+function dmgAtkAbiMul(sA,mType){
+  var m=1,hit=[];
+  try{
+    dmgAtkAbis(sA).forEach(function(n){
+      var rows=ABI_ATK_MOD[n];
+      if(!rows)return;
+      rows.forEach(function(r){
+        if(r.t.indexOf(mType)>-1){m*=r.mul;hit.push(n+'×'+r.mul)}
+      });
+    });
+  }catch(e){}
+  return {mul:m,hits:hit};
+}
 /* 防守方实际持有的特性名单（天性 + 已勾选的可选特性），伤害链路专用 */
 function dmgDefAbis(sD){
   var a=[];
@@ -6601,7 +6646,10 @@ function dmgCalc(o){
   var stab=(mType===sA.t1||mType===sA.t2);   /* STAB：本系或 -ate 转换后本系（ABI_ATE.stabConvert） */
   if(!stab){try{var cv=convOf(sA);if(cv&&cv.to===mType)stab=ABI_ATE.stabConvert!==false}catch(e){}}
   if(stab)mod*=1.5;
-  var eff=1;try{eff=defCellTrio(sD,mType,null).opt}catch(e){eff=1}   /* 克制×特性免疫/减半：唯一真值源 */
+  /* v4.214：第三参传 undefined（而不是 null）→ 走 defCellTrio 的全局 teamInfo 分支，
+     与属性克制页/弱点表用同一口径（防御方若在队伍里且勾了可选特性，伤害判定同样认）。
+     注意：sD 是「对手」，通常不在 teamInfo 里，此时行为与传 null 完全一致。 */
+  var eff=1;try{eff=defCellTrio(sD,mType).opt}catch(e){eff=1}   /* 克制×特性免疫/减半：唯一真值源 */
   if(eff===0)return {lo:0,hi:0,eff:0,stab:stab};
   mod*=eff;
   /* 防守方非属性减伤（多鳞/毛皮大衣/冰鳞粉/棱镜毛皮…，共 40+ 条）——
@@ -6609,6 +6657,10 @@ function dmgCalc(o){
   var abiMul=1,abiHit=[];
   try{var _dm=dmgDefAbiMul(sD,sA,mType,isPhys,o,eff);abiMul=_dm.mul;abiHit=_dm.hits;}catch(e){}
   if(abiMul!==1)mod*=abiMul;
+  /* 进攻侧属性增伤（飘浮飞行×1.25 / 水泡水×2 / 电晶体电×1.5 …） */
+  var atkMul=1,atkHit=[];
+  try{var _am=dmgAtkAbiMul(sA,mType);atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
+  if(atkMul!==1)mod*=atkMul;
   if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
   if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
   /* v4.91 任务B：场地 boost 接线（WCONF.terrainBoost=1.3 考古定稿；薄雾=龙系减伤×0.5）。
@@ -6621,7 +6673,7 @@ function dmgCalc(o){
   if(isPhys&&/讲究头带/.test(o.itemA||''))mod*=1.5;
   if(!isPhys&&/讲究眼镜/.test(o.itemA||''))mod*=1.5;
   if(o.crit)mod*=2;
-  return {lo:Math.floor(base*mod*0.85),hi:Math.floor(base*mod),eff:eff,stab:stab,base:base,mod:mod,abiMul:abiMul,abiHit:abiHit};
+  return {lo:Math.floor(base*mod*0.85),hi:Math.floor(base*mod),eff:eff,stab:stab,base:base,mod:mod,abiMul:abiMul,abiHit:abiHit,atkMul:atkMul,atkHit:atkHit};
 }
 /* 反解：evA 从 0 按 4 步递增，首个 min-roll ≥ 对手HP 的 EV（OHKO 线） */
 /* v4.95 A：耐久反推——给定威胁(o)与存活次数 N，求最省 EV(HP+单防)。
@@ -6776,7 +6828,8 @@ function dmgRender(boxId){
   var solve=ohkoSolveEv(o,hpD);
   box.innerHTML='<div style="font-size:13.5px;margin:2px 0">'+esc(sA.zh)+' → '+esc(sD.zh)+'（HP '+hpD+'）'+
     '<br>伤害 <b style="font-size:19.5px;font-weight:700;color:var(--accent)">'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+
-      (r.abiMul&&r.abiMul!==1?(' · <span title="'+esc(r.abiHit.join('；'))+'" style="color:var(--accent);font-weight:700">特性减伤 ×'+r.abiMul+'</span>'):'')+'）'+verdict+
+      (r.abiMul&&r.abiMul!==1?(' · <span title="'+esc(r.abiHit.join('；'))+'" style="color:var(--accent);font-weight:700">特性减伤 ×'+r.abiMul+'</span>'):'')+
+      (r.atkMul&&r.atkMul!==1?(' · <span title="'+esc(r.atkHit.join('；'))+'" style="color:var(--ok);font-weight:700">特性增伤 ×'+r.atkMul+'</span>'):'')+'）'+verdict+
     '<br>'+(solve>=0
       ?'达到 OHKO 最低攻端 EV = <b style="font-size:16px;font-weight:700;color:var(--accent)">'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
       :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
@@ -15373,7 +15426,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.213';
+var ER_ENGINE_VER='v4.216';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
