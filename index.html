@@ -4824,6 +4824,8 @@ var ABI_TAG_PATCH={
   '熔岩铠甲':{hf:['水','冰'],hfMul:{水:0.7,冰:0.7}},
   '遇水凝固':{hf:['水'],hfMul:{水:0.5}},
   '黑暗亲和':{hf:['恶','妖精'],hfMul:{恶:0.75,妖精:0.75}}
+  /* 注：干燥皮肤的火 ×1.25 由 mechRw 机制层（L5118-5125 的 ma.down）负责，不要在这里重复登记，
+     否则 opt 会被乘两次（实测 2×1.25×1.25=3.125）。 */
 };
 var ABI_TAG_CACHE={};
 function _abUniq(a){var r=[],i;for(i=0;i<a.length;i++)if(r.indexOf(a[i])<0)r.push(a[i]);return r}
@@ -6538,6 +6540,51 @@ function megaFormOf(s,itemZh){
   }catch(e){return s}
 }
 /* 伤害核心：o={sA,sD,moveId,evA,evD,natA,natD,itemA,weather,crit}；返回 {lo,hi,eff,stab} */
+/* 防守方实际持有的特性名单（天性 + 已勾选的可选特性），伤害链路专用 */
+function dmgDefAbis(sD){
+  var a=[];
+  try{
+    if(sD&&sD.inns)a=sD.inns.slice();
+    var info=teamInfo[sD.id];
+    if(info&&info.pick&&a.indexOf(info.pick)<0)a.push(info.pick);
+    /* 未勾选时也把可选池并入（对齐 defCellTrio 的 opt 口径：取最有利/最不利的保守解） */
+    if(sD&&sD.abis)sD.abis.forEach(function(n){if(a.indexOf(n)<0)a.push(n)});
+  }catch(e){}
+  return a;
+}
+/* 条件型减伤的判定：只认能在静态分析里确定的那些条件，其余一律不计（避免误算） */
+function dmgCondHit(when,sD,sA,mType,isPhys,o,eff){
+  if(!when)return false;
+  if(/物理招式/.test(when))return isPhys;
+  if(/特殊招式/.test(when))return !isPhys;
+  if(/满血时/.test(when))return true;          /* 静态分析按满血假设（最不利） */
+  if(/效果绝佳/.test(when))return eff>=2;
+  if(/会心/.test(when))return !!o.crit;
+  if(/沙暴/.test(when))return o.weather==='沙暴';
+  if(/冰雹|雪天/.test(when))return o.weather==='雪'||o.weather==='冰雹';
+  if(/攻方是(\S+?)属性/.test(when)){
+    var t=when.match(/攻方是(\S+?)属性/)[1];
+    return !!(sA&&(sA.t1===t||sA.t2===t));
+  }
+  return false;                                 /* 认不出的条件不计 */
+}
+/* 防守方的非属性减伤总倍率（不分属性的 × 条件型），1 表示没有命中任何一条 */
+function dmgDefAbiMul(sD,sA,mType,isPhys,o,eff){
+  var m=1,hit=[];
+  try{
+    var names=dmgDefAbis(sD);
+    names.forEach(function(n){
+      var v=ABI_DMG_ALL[n];
+      if(v!==undefined&&v>0){m*=v;hit.push(n+'×'+v)}
+      var cs=ABI_DMG_COND[n];
+      if(cs)cs.forEach(function(c){
+        if(!dmgCondHit(c.when,sD,sA,mType,isPhys,o,eff))return;
+        m*=c.mul;hit.push(n+'×'+c.mul+'('+c.when+')');
+      });
+    });
+  }catch(e){}
+  return {mul:m,hits:hit};
+}
 function dmgCalc(o){
   var mv=ERDATA.moves[o.moveId];if(!mv||!(+mv[5]>0))return null;
   var bp=+mv[5],mType=mv[3],split=mv[4],isPhys=(split==='物理');
@@ -6557,6 +6604,11 @@ function dmgCalc(o){
   var eff=1;try{eff=defCellTrio(sD,mType,null).opt}catch(e){eff=1}   /* 克制×特性免疫/减半：唯一真值源 */
   if(eff===0)return {lo:0,hi:0,eff:0,stab:stab};
   mod*=eff;
+  /* 防守方非属性减伤（多鳞/毛皮大衣/冰鳞粉/棱镜毛皮…，共 40+ 条）——
+     不进 ERDATA.matchup 相性表（与属性无关），但真实伤害必须算，否则 OHKO 判定偏高 */
+  var abiMul=1,abiHit=[];
+  try{var _dm=dmgDefAbiMul(sD,sA,mType,isPhys,o,eff);abiMul=_dm.mul;abiHit=_dm.hits;}catch(e){}
+  if(abiMul!==1)mod*=abiMul;
   if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
   if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
   /* v4.91 任务B：场地 boost 接线（WCONF.terrainBoost=1.3 考古定稿；薄雾=龙系减伤×0.5）。
@@ -6569,7 +6621,7 @@ function dmgCalc(o){
   if(isPhys&&/讲究头带/.test(o.itemA||''))mod*=1.5;
   if(!isPhys&&/讲究眼镜/.test(o.itemA||''))mod*=1.5;
   if(o.crit)mod*=2;
-  return {lo:Math.floor(base*mod*0.85),hi:Math.floor(base*mod),eff:eff,stab:stab,base:base,mod:mod};
+  return {lo:Math.floor(base*mod*0.85),hi:Math.floor(base*mod),eff:eff,stab:stab,base:base,mod:mod,abiMul:abiMul,abiHit:abiHit};
 }
 /* 反解：evA 从 0 按 4 步递增，首个 min-roll ≥ 对手HP 的 EV（OHKO 线） */
 /* v4.95 A：耐久反推——给定威胁(o)与存活次数 N，求最省 EV(HP+单防)。
@@ -6723,7 +6775,8 @@ function dmgRender(boxId){
   var verdict=r.lo>=hpD?'<span style="color:var(--ok);font-size:14.5px;font-weight:700">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub);font-size:14.5px;font-weight:700">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred);font-size:14.5px;font-weight:700">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
   var solve=ohkoSolveEv(o,hpD);
   box.innerHTML='<div style="font-size:13.5px;margin:2px 0">'+esc(sA.zh)+' → '+esc(sD.zh)+'（HP '+hpD+'）'+
-    '<br>伤害 <b style="font-size:19.5px;font-weight:700;color:var(--accent)">'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+'）'+verdict+
+    '<br>伤害 <b style="font-size:19.5px;font-weight:700;color:var(--accent)">'+r.lo+'–'+r.hi+'</b>（克制 ×'+r.eff+' · '+(r.stab?'本系×1.5':'非本系')+
+      (r.abiMul&&r.abiMul!==1?(' · <span title="'+esc(r.abiHit.join('；'))+'" style="color:var(--accent);font-weight:700">特性减伤 ×'+r.abiMul+'</span>'):'')+'）'+verdict+
     '<br>'+(solve>=0
       ?'达到 OHKO 最低攻端 EV = <b style="font-size:16px;font-weight:700;color:var(--accent)">'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
       :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
@@ -15320,7 +15373,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.210';
+var ER_ENGINE_VER='v4.213';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
