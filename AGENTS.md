@@ -1273,3 +1273,73 @@ h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击�
 
 ---
 
+## v4.220 ~ v4.222（2026-11-08）· 可学招式表接入招式完整详情 可学招式表 → 招式完整详情（v4.220 ~ v4.222）
+
+### v4.220 ~ v4.222（2026-11-08）· 可学招式表接入招式完整详情.1 起点：先确认「哪些表真的点不动」
+
+用户「详细信息看不到」的诉求顺着查，先把同类表格全过一遍，避免改错对象：
+
+| 表 | 位置 | 原先状态 |
+|---|---|---|
+| 速度线表 | `speedRenderTable` L6955 | 纯只读 → **v4.217/.218/.219 已修** |
+| 招式反查表 | `renderMv` L3879 / `#mvTable` | **本来就整行可点**：`tr.onclick=function(){openMv(m)}`（L3897） |
+| 特性反查卡 | `renderAbi` L6126 / `.abicard` | **本来就整卡可点**：`abiToggle(card)` |
+| 物种可学招式表 | `renderMvSp(s)` L3846 / `#mvBodySp` | **只能点行展开一句描述**（`mvRow(this)`），没有完整详情入口 |
+
+**所以真正缺入口的是第 4 张 —— 在宝可梦详情里看到「这只能不能学摔打」，想知道摔打到底是什么，点不进去。**
+
+### v4.220 ~ v4.222（2026-11-08）· 可学招式表接入招式完整详情.2 v4.220 招式名可点
+
+`renderMvSp` 的行渲染里，招式名列改为可点（整行仍保留「展开描述」，两种交互不冲突）：
+
+```js
+window._mvById=window._mvById||{};window._mvById[''+m[0]]=m;
+html+='<tr class="mv" onclick="mvRow(this)"><td>'+r.way+'</td>'+
+  '<td><span onclick="event.stopPropagation();openMvById(\''+m[0]+'\')" '+
+  'title="点击查看 '+esc(m[1])+' 的完整详情（威力/命中/PP/先制/中文说明/机制提示/代价标签）" '+
+  'style="cursor:pointer;color:var(--accent);font-weight:600;border-bottom:1px dashed currentColor">'+esc(m[1])+'</span>'+
+  mvPhTag(m[0])+'</td>…';
+```
+
+新增 `openMvById(id)`：从 `window._mvById` 回查同一个对象，取不到就扫 `ERDATA.moves` 兜底 —— **不复制字段，详情视图与反查页共用同一份数据**。
+
+### v4.220 ~ v4.222（2026-11-08）· 可学招式表接入招式完整详情.3 v4.221 z-index 抬高
+
+招式详情的容器 `#mvDrawer` 与宝可梦详情的 `#spDrawer` **都是 `.modal`（z-index:80）**。`spDrawer` 是 `document.body.appendChild` 动态创建的，在 DOM 中更靠后 → 同层级时盖住 `mvDrawer`。
+
+招式是比物种更深的一层，单独抬高：
+
+```css
+#mvDrawer{z-index:90}
+```
+
+### v4.220 ~ v4.222（2026-11-08）· 可学招式表接入招式完整详情.4 v4.222 真正的坑：mvDrawer 在 tab-mv 容器内
+
+抬了 z-index 还是看不见。实测 `getComputedStyle(#mvDrawer).display === 'flex'`，但 `getBoundingClientRect()` **全是 0**：
+
+```
+rect={"x":0,"y":0,"width":0,"height":0,...}
+```
+
+**`display:flex` 却没有布局尺寸 = 祖先不渲染。** `#mvDrawer` 静态定义在「招式反查」tab 的容器里（L884），而 `openSp` 是从「宝可梦」tab 打开的 —— 当前 active tab 是 `core`，`tab-mv` 是 `display:none`，`position:fixed` 也不会让它在隐藏祖先下渲染。
+
+修法：打开时先把它挂到 `body`（与 `spDrawer` 一致）：
+
+```js
+try{document.body.appendChild($('mvDrawer'))}catch(eMvMove){}
+$('mvDrawer').classList.add('open');
+```
+
+修后 `rect = {0,0,1170,808}`、内层 `.mbox` 宽 820 ✓。
+
+**这个坑的通用形态**：单文件 HTML 里弹层定义在某个 tab 容器内 → 从别的 tab 调用时「逻辑成功、视觉全无」，且 `display` 检查会骗人，必须看 `getBoundingClientRect()`。
+
+### v4.220 ~ v4.222（2026-11-08）· 可学招式表接入招式完整详情.5 实测
+
+皮卡丘（`openSpById('25')`）：
+- `#mvBodySp` 120 行、**60 个可点招式名**（另一半是 `mvdesc` 描述行）；
+- 点「摔打」→ `#mvDrawer` 显示，内容：`摔打 Slam #21 / 一般 / 物理 / 威力 95 / 命中 100 / PP 10 / 先制 0` + 英文原文 + 「本招为 ER 新增招式，官方中文说明暂缺」+ 「谁能学 共 51 只」精灵图卡网格 + 两个形态筛选开关；
+- 叠在宝可梦详情之上可见（z 90 > 80）。
+
+---
+
