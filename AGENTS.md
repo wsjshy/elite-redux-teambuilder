@@ -631,6 +631,9 @@ Hell 训练师战敌方最多额外带 3 个特性（`pokemon.c:6323` + `HELL_MO
 
 | 项 | 值 |
 |---|---|
-| 体积 | 1,581,257 → **1,584,513 B** |
+| 体积 | 1,581,257 → **1,584,334 B** |
 | commit | **`36dafb2`**（3 files / 216 insertions / 22 deletions） |
-| 部署 | `gh-pages@a2b7b17` |
+| 线上 | 1,584,334 B / SHA1 `C7F95F54…` **实测双一致** |
+
+（部署 hash 不再手写：`ls-remote` 拿到的 gh-pages ref 与部署脚本输出对不上，
+且其 commit message 是历史遗留的「Deploy: v4.181」，不能当版本判据。判据只用线上字节 + SHA1。）
