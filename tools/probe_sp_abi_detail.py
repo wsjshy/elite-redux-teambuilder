@@ -213,6 +213,13 @@ INJECT_JS = r"""
           /* 直接测规则函数（这些特性在库里几乎无持有者，没法靠真实物种测） */
           out.fnGS0=abiTeApplyOne('无',   '电','地面',0,['地面']);
           out.tagPatchN = Object.keys(ABI_TAG_PATCH||{}).length;
+          /* v4.196：统一求值口 coverMultOf —— 模拟「带某特性的宝可梦，某属性招打某属性」 */
+          out.cmBase = coverMultOf({inns:[],t1:'地面',t2:'-'},'电','地面');
+          out.cmGS   = coverMultOf({inns:['地面冲击'],t1:'地面',t2:'-'},'电','地面');
+          out.cmCO   = coverMultOf({inns:['腐蚀'],t1:'毒',t2:'-'},'毒','钢');
+          out.cmCO0  = coverMultOf({inns:[],t1:'毒',t2:'-'},'毒','钢');
+          out.cmDual = coverMultOf({inns:['腐蚀'],t1:'毒',t2:'钢'},'毒','钢') * coverMultOf({inns:['腐蚀'],t1:'毒',t2:'钢'},'钢','钢');
+          out.cmSrc  = (function(){ try{ var f=coverMultOf.toString(); return /abiTeApplyOne/.test(f); }catch(e){ return false; } })();
           out.tagTummy = (function(){var g=abiTagOf('胃痛');return g&&g.hf?g.hf.join('/'):'NONE';})();
           out.tagBubble= (function(){var g=abiTagOf('火焰泡泡');return g&&g.hf?g.hf.join('/'):'NONE';})();
           out.tagIron  = (function(){var g=abiTagOf('钢铁巨人');return g&&g.hf?g.hf.join('/'):'NONE';})();
@@ -475,6 +482,11 @@ def main():
     ck(tt.get("tagWing") == "地面", "F35 幸运之翼(天恩+巨翼)继承地面免疫", "%s" % tt.get("tagWing"))
 
     ck("关联招式" not in d86, "E3 非招式型特性不误挂该块", d86[:54].replace("\n", " "))
+    ck(tt.get("cmBase") == 0, "F36 coverMultOf 无特性 电打地面=0", "%s" % tt.get("cmBase"))
+    ck(tt.get("cmGS") == 0.5, "F37 coverMultOf 地面冲击 电打地面=0.5", "%s" % tt.get("cmGS"))
+    ck(tt.get("cmCO0") == 0 and tt.get("cmCO") == 2, "F38 coverMultOf 腐蚀 毒打钢 0->2", "%s->%s" % (tt.get("cmCO0"), tt.get("cmCO")))
+    ck(tt.get("cmSrc") is True, "F39 coverMultOf 内部确实走 abiTeApplyOne", "%s" % tt.get("cmSrc"))
+
     ck("关联招式" in d788 and "暴风雪" in d788, "E4 「触发50威力暴风雪」附上招式效果", d788[:64].replace("\n", " "))
     ck("机制详解" in d733 and "跟舞" in d733, "E5 733 拳舞有源码级详解", d733[:64].replace("\n", " "))
 

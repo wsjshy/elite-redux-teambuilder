@@ -4912,8 +4912,27 @@ function abiTeApplyOne(name,at,dt,cur,selfTypes){
     else if(r.mode==='zero'){if(out===0)out=r.mul;}
     else if(r.mode==='floor'){if(out>0&&out<r.mul)out=r.mul;}
   }
+
   return out;
 }
+/* v4.196：统一的「攻击方属性 × 防守方属性 → 实际倍率」求值口。
+   归一化到 0 / 0.5 / 1 / 2，再逐条应用攻击方自己的相性改写特性（源码 gAbilities[].onTypeEffectiveness 挂在 battlerAtk）。
+   凡是「某只宝可梦的某属性招式打某属性」都要走这里，不要再直接查 ERDATA.matchup。 */
+function coverMultOf(s,atkTy,defTy){
+  var ai=tIdx(atkTy),di=tIdx(defTy);
+  if(ai<0||di<0)return 1;
+  /* ERDATA.matchup 是 [防守属性][攻击属性] —— 先防守再攻击，别写反 */
+  var v=ERDATA.matchup[di][ai];
+  var c=(v===0?0:((v===0.5||v===3)?0.5:(v===2?2:1)));
+  var abn=(s&&s.inns)?s.inns:[];
+  if(!abn.length)return c;
+  var selfT=[];
+  if(s.t1&&s.t1!=='-')selfT.push(s.t1);
+  if(s.t2&&s.t2!=='-')selfT.push(s.t2);
+  for(var q=0;q<abn.length;q++){c=abiTeApplyOne(abn[q],atkTy,defTy,c,selfT);}
+  return c;
+}
+
 /* 逐防守属性求倍率并应用特性改写（abNames 空 = 纯属性口径） */
 /* 倍率简写（格值显示用） */
 function hb(x){return x>=4?'4x':(x>1?x+'x':(x<1?'抗':'-'))}
@@ -10893,7 +10912,7 @@ function oppTargets(s){
   var key='op'+s.id;
   if(_thrMemo[key])return _thrMemo[key];
   var T=effTypesOf(s).base,weak=[],quad=[];
-  Object.keys(RESIST_BERRY).forEach(function(t){var m=defMult(T,t);if(m>=4)quad.push(t);else if(m>=2)weak.push(t)});
+  Object.keys(RESIST_BERRY).forEach(function(t){var m=1;try{m=defCellTrio(s,t).inn}catch(e){m=defMult(T,t)};if(m>=4)quad.push(t);else if(m>=2)weak.push(t)});
   weak=weak.concat(quad);
   var env={hazFrac:thrFrac(FUNC_MV.hazard),remFrac:thrFrac(FUNC_MV.removal||[]),
            boostFrac:thrFrac(FUNC_MV.boost),prioFrac:thrFrac((function(){var r=[];Object.keys(MV).forEach(function(i){var m=MV[i];if(m&&m[8]>0)r.push(+i)});return r})())};
@@ -11055,7 +11074,7 @@ function itemResistBerryFor(s,tg){
   var t=(tg.quad[0]||tg.weak[0]);if(!t)return null;
   var id=RESIST_BERRY[t];if(!id)return null;
   return {id:id,zh:itemZhName(id,'防'+t+'果'),
-    why:'对位最大弱点（'+t+'系 '+defMult(effTypesOf(s).base,t)+'×）：中该属性招减半（一次性）'};
+    why:'对位最大弱点（'+t+'系 '+((function(){try{return defCellTrio(s,t).inn}catch(e){return defMult(effTypesOf(s).base,t)}})())+'×）：中该属性招减半（一次性）'};
 }
 /* P2~P5 打分 + why 组装（零硬门：适用即入候选，按原则排序） */
 var EVIO_PRIORITY=2.0;   /* v4.3.2 裁定常量：奇石权衡通过 → 主推（非涌现排序，便于回归锚定） */
@@ -11872,7 +11891,7 @@ function coverHoles(s){
     var holes=[];
     ERDATA.types.forEach(function(t){
       if(t==='星晶'||t==='无'||t==='神秘')return;
-      var ti=tIdx(t),v=ERDATA.matchup[ai][ti]*(bi>-1?ERDATA.matchup[bi][ti]:1);
+      var v=coverMultOf(s,s.t1,t)*(bi>-1?coverMultOf(s,s.t2,t):1);
       if(v<2)holes.push(t); /* 本系最多 1x 视为盲点 */
     });
     return holes.slice();
@@ -13458,7 +13477,7 @@ function finalPool(){if(!_finalPool)_finalPool=ERDATA.species.filter(function(s)
 function canHitSuper(s,t,learn){
   var L=learn||learnC(s),ti=tIdx(t);if(ti<0)return false;
   for(var i=0;i<L.length;i++){var m=MV[L[i]];if(!m||m[4]==='变化')continue;if(!m[5]||m[5]<60)continue;
-    var ai=tIdx(m[3]);if(ai<0)continue;if(ERDATA.matchup[ai][ti]>=2)return true}
+    if(tIdx(m[3])<0)continue;if(coverMultOf(s,m[3],t)>=2)return true}
   return false;
 }
 /* 队内共同弱点：≥2 只共有、且无人抵抗的属性（D9/D10 的输入，逐槽位动态更新） */
@@ -13504,7 +13523,7 @@ function needList(core,cx){
   /* 点名类：核心盲点 → 答案（R07-26）。按「核心对该属性进攻倍率」升序，最难受的排前面 */
   var ai=tIdx(core.t1),bi=tIdx(core.t2);
   var holes=coverHoles(core).map(function(t){
-    var ti=tIdx(t),v=ERDATA.matchup[ai][ti]*(bi>-1?ERDATA.matchup[bi][ti]:1);
+    var v=coverMultOf(core,core.t1,t)*(bi>-1?coverMultOf(core,core.t2,t):1);
     return {t:t,v:v};
   }).sort(function(a,b){return a.v-b.v}).slice(0,4);
   holes.forEach(function(h,ix){add('cover',ix<2?4:3,h.t)});
@@ -15171,7 +15190,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.195';
+var ER_ENGINE_VER='v4.196';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
