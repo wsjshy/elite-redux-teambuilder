@@ -213,6 +213,10 @@ INJECT_JS = r"""
           /* 直接测规则函数（这些特性在库里几乎无持有者，没法靠真实物种测） */
           out.fnGS0=abiTeApplyOne('无',   '电','地面',0,['地面']);
           out.tagPatchN = Object.keys(ABI_TAG_PATCH||{}).length;
+  out.tagBlubber = (function(){var g=abiTagOf('厚脂');return g&&g.hfMul?JSON.stringify(g.hfMul):'NONE';})();
+  out.hfMulFire = (function(){return _hfMulOf(abiTagOf('厚脂'),'火');})();
+  out.hfMulLava = (function(){return _hfMulOf(abiTagOf('熔岩铠甲'),'水');})();
+  out.hfMulPlain = (function(){return _hfMulOf(abiTagOf('厚脂肪'),'火');})();
           /* v4.196：统一求值口 coverMultOf —— 模拟「带某特性的宝可梦，某属性招打某属性」 */
           out.cmBase = coverMultOf({inns:[],t1:'地面',t2:'-'},'电','地面');
           out.dmgN   = Object.keys(ABI_DMG_MOD||{}).length;
@@ -505,7 +509,11 @@ def main():
     ck(tt.get("fnSelf2") == 1.0, "F23 龙族皮肤自身为龙才触发", "v=%s" % tt.get("fnSelf2"))
     ck(tt.get("coverHas") is True, "F24 打击面 setCoverProfile 已接入", "v=%s" % tt.get("coverHas"))
     ck(tt.get("fnPyro") == 2.0, "F20 火岩浆流 火打岩石 2.0", "v=%s" % tt.get("fnPyro"))
-    ck(tt.get("tagPatchN") == 7, "F25 免疫补丁 7 条", "n=%s" % tt.get("tagPatchN"))
+    ck(tt.get("tagPatchN") == 11, "F25 特性补丁 11 条（7 免疫 + 4 减半）", "n=%s" % tt.get("tagPatchN"))
+    ck('0.25' in (tt.get("tagBlubber") or ''), "F51 厚脂 hfMul 火=0.25", "%s" % tt.get("tagBlubber"))
+    ck(tt.get("hfMulFire") == 0.25, "F52 _hfMulOf 厚脂火 0.25", "v=%s" % tt.get("hfMulFire"))
+    ck(tt.get("hfMulLava") == 0.7, "F53 _hfMulOf 熔岩铠甲水 0.7", "v=%s" % tt.get("hfMulLava"))
+    ck(tt.get("hfMulPlain") == 0.5, "F54 无自定义倍率回退 0.5", "v=%s" % tt.get("hfMulPlain"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
