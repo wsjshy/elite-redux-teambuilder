@@ -3826,7 +3826,7 @@ function renderMvSp(s){
     if(!fzAny(q,[m[0],m[1],m[2],mvDescOf(m)]))return;
     if(ty&&m[3]!==ty)return;
     if(sp&&m[4]!==sp)return;
-    html+='<tr class="mv" onclick="mvRow(this)"><td>'+r.way+'</td><td>'+esc(m[1])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td></tr>';
+    html+='<tr class="mv" onclick="mvRow(this)"><td>'+r.way+'</td><td>'+esc(m[1])+mvPhTag(m[0])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td></tr>';
     html+='<tr class="mvdesc"><td colspan="8">'+glossify(mvDescOf(m))+'</td></tr>';
   });
   $('mvBodySp').innerHTML=html||'<tr><td colspan="8" style="color:var(--sub)">无匹配招式</td></tr>';
@@ -3860,7 +3860,7 @@ function renderMv(){
     if(prmin>=0&&m[8]<prmin)return;
     shown++;
     var tr=document.createElement('tr');tr.className='mv';
-    tr.innerHTML='<td>'+m[0]+'</td><td>'+esc(m[1])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td>';
+    tr.innerHTML='<td>'+m[0]+'</td><td>'+esc(m[1])+mvPhTag(m[0])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td>';
     tr.onclick=function(){openMv(m)};
     tb.appendChild(tr);
   });
@@ -3917,10 +3917,20 @@ function mvLookupRender(fromUI){
 }
 /* v4.x UI 定稿：招式详情改居中 modal → 遮罩点击关闭 */
 (function(){var d=$('mvDrawer');if(d)d.onclick=function(ev){if(ev.target===d)closeMv()}})();
+/* v4.188：EFFECT_PLACEHOLDER 招式（源码占位、游戏内无效果）
+   —— data/battle_scripts_1.s:3291 BattleScript_EffectPlaceholder 只做 attackcanceler / attackstring /
+      pppreduce + printstring STRINGID_NOTDONEYET(487) + MoveEnd，
+      即「扣 PP → 提示还没做好 → 什么都不发生」。数据层却给了名字与威力（最高 150）。 */
+var MV_PLACEHOLDER={502:1,507:1,658:1,698:1,738:1,913:1,927:1,930:1,931:1,932:1,933:1,934:1,
+  935:1,936:1,937:1,938:1,939:1,940:1,941:1,943:1,944:1,945:1};
+function mvPhTag(id){
+  return MV_PLACEHOLDER[''+id]?' <span class="badge" style="background:#b4423a;color:#fff">未实装</span>':'';
+}
 function openMv(m){
   var html='<h2>'+esc(m[1])+' <span style="font-size:13px;color:var(--sub)">'+esc(m[2])+' #'+m[0]+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(m[3])+' '+splitLabel(m[4])+
     ' 威力 <b>'+(m[5]||'-')+'</b> 命中 <b>'+(m[6]||'-')+'</b> PP <b>'+m[7]+'</b> 先制 <b>'+(m[8]||'0')+'</b></div>';
+  if(MV_PLACEHOLDER[''+m[0]])html+='<div class="tip tip-warn" style="font-size:12px">⚠ <b>本招在 2.65 里未实装</b>：源码里它的效果是 EFFECT_PLACEHOLDER，脚本只做「扣 PP → 提示还没做好 → 结束」，<b>不会造成任何伤害或效果</b>。下面的名字、威力和描述来自数据层，不要按描述配招。</div>';
   if(ERDATA.movesNotes&&ERDATA.movesNotes[m[0]])html+='<div class="tip tip-warn" style="font-size:12px">💡 '+esc(ERDATA.movesNotes[m[0]])+'</div>';
   /* v4.x A②：招式介绍中文优先（ERDATA.mvDescZh → 英文 desc m[9] → ER lDesc m[10]），机制词条标蓝可点 */
   html+='<div class="abid">'+glossify(mvDescOf(m))+'</div>';

@@ -145,6 +145,17 @@ INJECT_JS = r"""
         r.desc163 = dD4? dD4.innerHTML : null;
       }catch(eD4){ r.desc163 = 'ERR:' + eD4; }
 
+      // --- G. 未实装招式提示（v4.188）---
+      try{
+        r.phCount = Object.keys(MV_PLACEHOLDER || {}).length;
+        r.ph507 = (function(){ var m=MV[507]; return m? openMv(m) : null; })();
+        r.phOpen = MV[507] ? $('#mvDetail') : null;
+        r.desc507 = (function(){
+          var box=document.getElementById('mvDetail');
+          return box? box.innerHTML : null;
+        })();
+      }catch(eG){ r.desc507 = 'ERR:' + eG; }
+
       // --- F. 属性相性改写倍数（v4.187）---
       try{
         abiDesc(null, '285');
@@ -352,6 +363,13 @@ def main():
     ck("相性改写（源码倍率）" in d285 and "0.5 倍" in d285, "F1 285 地面冲击给出真实倍率 0.5", d285[:70].replace("\n", " "))
     ck("相性改写（源码倍率）" in d349 and "2.0 倍" in d349, "F2 349 电力过载给出 2.0", d349[:70].replace("\n", " "))
     ck("相性改写" not in d86b, "F3 非相性改写特性不误挂该块", d86b[:60].replace("\n", " "))
+
+    # G. 未实装（EFFECT_PLACEHOLDER）招式提示
+    phc = data.get("phCount")
+    d507 = data.get("desc507") or ""
+    ck(phc == 22, "G1 占位符招式表收录 22 条", "n=%s" % phc)
+    ck("未实装" in d507, "G2 507 自由落体详情写明「未实装」", d507[:70].replace("\n", " "))
+    ck("EFFECT_PLACEHOLDER" in d507 or "不会造成任何伤害" in d507, "G3 详情给出源码依据", d507[:70].replace("\n", " "))
 
     print()
     if fails:
