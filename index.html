@@ -4998,8 +4998,15 @@ var ABI_TE_CALC={
 var MOVE_TE_CALC={
   '天使暴怒':[{move:'毒针',atk:['毒'],def:['钢'],mul:2.0,mode:'force'}]
 };
-function abiTeApplyOne(name,at,dt,cur,selfTypes){
-  var arr=ABI_TE_CALC[name];if(!arr)return cur;
+function abiTeApplyOne(name,at,dt,cur,selfTypes,mvName){
+  var arr=ABI_TE_CALC[name];
+  /* 招式级规则（MOVE_TE_CALC）：只对指定招式生效，如「天使暴怒」仅改写毒针打钢
+     → 与 ABI_TE_CALC 合并评估；调用方传入招式名才生效 */
+  if(mvName&&MOVE_TE_CALC[name]){
+    var lifted=MOVE_TE_CALC[name].filter(function(x){return !x.move||x.move===mvName});
+    arr=(arr||[]).concat(lifted);
+  }
+  if(!arr||!arr.length)return cur;
   var out=cur,i,r;
   for(i=0;i<arr.length;i++){
     r=arr[i];
@@ -8089,7 +8096,7 @@ var v=ERDATA.matchup[tIdx(at)][tIdx(ty)];
 var val=(v===0?0:((v===0.5||v===3)?0.5:(v===2?2:1)));
 if(abn.length){
   if(!selfT){selfT=[];if(s.t1&&s.t1!=='-')selfT.push(s.t1);if(s.t2&&s.t2!=='-')selfT.push(s.t2);}
-  for(var q=0;q<abn.length;q++){val=abiTeApplyOne(abn[q],ty,at,val,selfT);}
+  for(var q=0;q<abn.length;q++){val=abiTeApplyOne(abn[q],ty,at,val,selfT,m[1]);}
 }
 if(val>mx)mx=val;
 });
@@ -15307,7 +15314,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.204';
+var ER_ENGINE_VER='v4.205';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

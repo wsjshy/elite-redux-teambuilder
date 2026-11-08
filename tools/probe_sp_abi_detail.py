@@ -217,6 +217,9 @@ INJECT_JS = r"""
   out.hfMulFire = (function(){return _hfMulOf(abiTagOf('厚脂'),'火');})();
   out.hfMulLava = (function(){return _hfMulOf(abiTagOf('熔岩铠甲'),'水');})();
   out.hfMulPlain = (function(){return _hfMulOf(abiTagOf('厚脂肪'),'火');})();
+  out.mvTeHit   = (function(){return abiTeApplyOne('天使暴怒','毒','钢',0,['毒'],'毒针');})();
+  out.mvTeMiss  = (function(){return abiTeApplyOne('天使暴怒','毒','钢',0,['毒'],'污泥炸弹');})();
+  out.mvTeNoMv  = (function(){return abiTeApplyOne('天使暴怒','毒','钢',0,['毒']);})();
           /* v4.196：统一求值口 coverMultOf —— 模拟「带某特性的宝可梦，某属性招打某属性」 */
           out.cmBase = coverMultOf({inns:[],t1:'地面',t2:'-'},'电','地面');
           out.dmgN   = Object.keys(ABI_DMG_MOD||{}).length;
@@ -514,6 +517,9 @@ def main():
     ck(tt.get("hfMulFire") == 0.25, "F52 _hfMulOf 厚脂火 0.25", "v=%s" % tt.get("hfMulFire"))
     ck(tt.get("hfMulLava") == 0.7, "F53 _hfMulOf 熔岩铠甲水 0.7", "v=%s" % tt.get("hfMulLava"))
     ck(tt.get("hfMulPlain") == 0.5, "F54 无自定义倍率回退 0.5", "v=%s" % tt.get("hfMulPlain"))
+    ck(tt.get("mvTeHit") == 2.0, "F55 天使暴怒对毒针改写为 2.0", "v=%s" % tt.get("mvTeHit"))
+    ck(tt.get("mvTeMiss") == 0, "F56 天使暴怒对其他毒招不生效", "v=%s" % tt.get("mvTeMiss"))
+    ck(tt.get("mvTeNoMv") == 0, "F57 未传招式名时不擅自改写", "v=%s" % tt.get("mvTeNoMv"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
