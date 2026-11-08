@@ -1618,3 +1618,111 @@ git diff 显示 719 insertions / 698 deletions。功能没坏但污染了 diff�
 ### 版本
 
 `v4.230`（+3 条）→ `v4.231`（+6 条），1,617,232 B，线上 SHA1 `25F90113E2036ED0D57063AA26A3AF8AE1529199`（VERIFIED-MATCH）。
+
+
+---
+
+## v4.232 ～ v4.235：招 flag 静态化 + `.onModifyMoveFlags` + 速度列
+
+### v4.232 招 flag 进进攻乘区（124 只物种首次计入）
+
+`battle_moves_master.h` 每个招式块都有 `.flags`，能逐招提取（与 18.22 的 `FLAG_MAKES_CONTACT` 同源）。
+7 类首批：`jaw` 25 / `sound` 36 / `reckless` 18 / `sheer` 255 / `field` 15 / `dance` 11 / `bone` 5。
+
+实现：内联 `MV_FLAG`（纯 id 逗号串）+ `mvHasFlag(id,k)`；
+`ABI_FLAG_ATK`（5 条）；`dmgAtkAbiMul` 加第四参 `mvId`；`dmgCondHit` 加四条分支；
+`ABI_DMG_COND` 增 `'庞克摇滚':[{mul:0.5,when:'声音招式'}]`。
+
+**实测**：咬住#44→1.3 / 叫声#45→1.3 / 飞踢#26→1.2 / 火焰拳#7→1.3；防守侧声音招 0.5。
+
+### v4.233 重扫 flag 全量：7 类 → 11 类（456 招）
+
+18.25 的方法有个根本错误：**拿着猜到的特性名去反查 flag**，等于先猜答案再验题。
+改为**先把 `battle_moves_master.h` 里出现的全部 32 个 flag 常量列全**，再逐个找谁吃它。
+
+补出 4 类：
+
+| flag | 招数 | 特性 | 中文 | 倍率 | 持有者 |
+|---|---|---|---|---|---|
+| `FLAG_MEGA_LAUNCHER_BOOST` | 78 | MEGA_LAUNCHER L2417 | 超级发射器 | ×1.3 | 38 |
+| `FLAG_KEEN_EDGE_BOOST` | 47 | KEEN_EDGE L3662 | 锐利之刃 | ×1.3 | 0 |
+| `FLAG_IRON_FIST_BOOST` | 31 | IRON_FIST L1503 | 铁拳 | ×1.3 | 47 |
+| `FLAG_STRIKER_BOOST` | 17 | STRIKER L4619 | 猛踢 | ×1.3 | 0 |
+
+**同时修正一个错常量名**：`FLAG_RECKLESS` 实为 **`FLAG_RECKLESS_BOOST`**（18.25 是子串凑巧命中）。
+
+三个薄壳 `IsMegaLauncherBoosted` / `IsIronFistBoosted` / `IsStrikerBoosted` 都在
+`battle_util.c:9491-9499`，走 `DoesMoveMatchFlag`。
+
+**实测端到端**：`dmgCalc` 超级发射器 + 水枪 lo=38 hi=45 vs 无特性 lo=29 hi=35，比率 1.286（×1.3 取整损耗）。
+
+### v4.234 `.onModifyMoveFlags`：特性把招「当成」某一类
+
+`include/abilities.hh:125` 有 7 个抽象 `MoveFlag`；`DoesMoveMatchFlag`（`abilities.cc:331`）
+先查原始 `FLAG_*`，没命中再问各特性自己的 `onModifyMoveFlags` —— **是 `or` 关系，不是叠加**。
+
+12 个带该钩子的特性里只有 3 个同时带 `onOffensiveMultiplier`：
+
+- `GUNMAN` **枪手** L9602：`= MEGA_LAUNCHER` ×1.3
+- `BACKSTREET_BOY` **后街男孩** L11670：`= STRIKER` ×1.3，额外把 `FLAG_DANCE` 算踢类
+- `CHESTNUT_AXE` **栗子斧** L11809：`= KEEN_EDGE` ×1.3，额外把**所有草属性**招算锐利
+
+其余 9 个只是「把类别借给别人的特性」，工具不模拟场上他人特性 → 不接。
+
+实现：`ABI_FLAG_ATK` 的 `k` 改数组形式 + 可选 `t` 属性，`ok` 置真后**只乘一次**（精确对应 `or`）。
+
+### v4.235 速度线页「特性×2」整列 `—`
+
+用户贴图说「这个就只能看吗，详细信息完全看不到」。三层原因：
+
+**① 只查 `s.abis` 不查 `s.inns`（第 4 次踩）**——古代活性 16 只全部在 `inns` 里，一只都看不到；
+悠游自如 inns=7 / 叶绿素 inns=10 / 飞毛腿 inns=13 同样被漏。
+
+**② 倍率写死 ×2，源码里只有轻装是真 ×2**
+
+```cpp
+// L868  SWIFT_SWIM   雨天  *stat *= 1.5
+// L876  CHLOROPHYLL  晴天  *stat *= 1.5
+// L2752 SLUSH_RUSH   冰雹  *stat *= 1.5
+// L1450 UNBURDEN 轻装        *stat *= 2   ← 唯一
+```
+
+**③ 名单只覆盖 4 个，源码实际 14 个**
+
+新建 `SPD_ABI`（14 条，每条带源码行号）+ `spdSpeedAbiOf(s)`（`abis`+`inns` 合并查、
+加速项优先、多加速取最高、全无加速才返回减速项）。
+配套修三处硬编码 ×2：`spdWeatherVal`、`spdModMul`（有效速度轴实算卡）、详情弹窗 chip（`天气×2` → `特性×`+动态倍率）。
+
+列名 `特性×2` → **`特性加速`**；单元格从光秃数字改成「大号数值 + 小字『特性名 ×倍率（条件）』」。
+
+**实测**：飞腿郎轻装 ×2 = 600 / 雄伟牙古代活性 450 / 哥达鸭悠游自如 442 / 小拉达飞毛腿 400。
+页面渲染：敏捷虫 → `854 轻装 ×2（消耗掉道具后）`；帕路奇亚-起源形态 → `624 悠游自如 ×1.5（雨天）`。
+
+同时验证整行点击链路：`spDrawer` 1487×1108、内层 `.mbox` 820×909，含种族值条/配速建议/
+超速滑块/多目标配速对比表 —— **弹层是通的，「看不到」真正原因是那一列本身没有可读信息**。
+
+### 门禁
+
+语法 0 ｜ `smoke.js` 32/32 ｜ `probe_sp_abi_detail.py` **112 项 ALL PASS**（新增 F87/F88）
+
+### 踩坑（v4.235）
+
+`s.find` 返回 -1 后切片：`s[:i]` 退化成 `s[:-1]`、`s[j:]` 从中间切走，文件被写成 2,460,187 B；
+`node --check` 仍返回 0，是 `smoke.js` 掉到 29/32 才暴露。回滚后改用带 `<td class="` 前缀的精确锚点。
+**任何按位置切片的补丁必须先 `if i < 0: raise`，替换前 `print(repr(old))` 核长度。**
+
+### 版本
+
+| 版本 | 字节 | SHA1 | 状态 |
+|---|---|---|---|
+| v4.232 | 1,620,439 | `379B88940B860FF6E327A888BE0E847DCDEB2E18` | VERIFIED-MATCH |
+| v4.233 | 1,621,893 | `C4BF136C815387BF64A400118F1DDE3FBC7300AA` | VERIFIED-MATCH |
+| v4.234 | 1,622,799 | `E192962D86FE818CC4A02B2EA0780252BA29A884` | VERIFIED-MATCH |
+| v4.235 | 1,625,196 | — | 本地全绿 |
+
+### 仍是「静态算不了」的
+
+约 45 条 `.onOffensiveMultiplier` 依赖 `IS_MOVE_PHYSICAL`/目标状态/己方状态/场上他人/回合/场地/天气。
+`FLAG_WEATHER_BASED`（14 招）只被 `DELTA_STREAM` 的 `.onImmune` 使用，是免疫判定不是增伤 → 证伪，不接。
+`Dual Shadow`（恶/电 ×1.35）数据层无中文名，跳过。
+暗黑/妖精气场是 `APPLY_ON_ANY`，工具近似为「只算自己」，`auraBreak → ×0.75` 未建模。

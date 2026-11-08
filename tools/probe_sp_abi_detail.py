@@ -348,6 +348,24 @@ INJECT_JS = r"""
     var p=dmgDefAbiMul({inns:['超净'],abis:[]},null,'毒',false,{moveId:92},1).mul;
     return [g,p].join('/');
   })();
+  out.spdAbi = (function(){                  /* v4.235 速度特性：源码 .onStat(STAT_SPEED) 口径 */
+    function pick(n){
+      var r=null;
+      ERDATA.species.forEach(function(x){
+        var pool=[].concat(x.abis||[],x.inns||[]);
+        if(!r && pool.indexOf(n)>-1) r=x;
+      });
+      return r;
+    }
+    var names=['悠游自如','叶绿素','拨雪','飞毛腿','轻装','轻金属'];
+    var o=[];
+    names.forEach(function(n){
+      var sp=pick(n); if(!sp){o.push(n+':NO');return;}
+      var r=spdSpeedAbiOf(sp);
+      o.push(n+'='+(r?(r.mul+':'+Math.floor(spdMaxOf(sp)*r.mul)):'NONE'));
+    });
+    return o.join('/')+'|N='+SPD_ABI.length;
+  })();
   out.dmgAbiNone = (function(){
     var sD=null,sA=null,mv=null;
     ERDATA.species.forEach(function(x){
@@ -688,6 +706,8 @@ def main():
     ck(tt.get("flagAtk") == "1.3/1|1.3/1|1.2/1|1.3/1|1.3/1|1.3/1|1.3/1|1.3/1", "F84 八个 flag 型特性 命中 flag 时增伤、无招时不增", "%s" % tt.get("flagAtk"))
     ck(tt.get("punkDef") == "0.5/1", "F85 庞克摇滚 防守侧 声音招 ×0.5", "%s" % tt.get("punkDef"))
     ck(tt.get("inherAtk") == "1.3/1/1.3/1.3", "F86 栗子斧(草招∪锐利)/后街男孩(舞蹈∪踢)/枪手(波动) 扩类后仍 ×1.3，非触发招不增", "%s" % tt.get("inherAtk"))
+    ck((tt.get("spdAbi") or "").endswith("|N=14"), "F87 SPD_ABI 收录 14 条速度修正特性（源码 .onStat 口径）", "%s" % tt.get("spdAbi"))
+    ck("悠游自如=1.5:" in (tt.get("spdAbi") or "") and "轻装=2:" in (tt.get("spdAbi") or ""), "F88 天气类 ×1.5 与轻装 ×2 倍率区分正确（18.21 曾误写全线 ×2）", "%s" % tt.get("spdAbi"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
