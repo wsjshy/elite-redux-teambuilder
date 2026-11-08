@@ -838,6 +838,43 @@ F47 才证明「用户真的能在页面上看到」（`abiDesc` 实渲染出减
 | 体积 | 1,587,914 → **1,590,052 B** |
 | commit | **`2e52784`** / 文档 `995d126` |
 
+## v4.199 / v4.201（2026-11-08）· 条件型减伤表 + `RESISTANCE` 死分量
+
+### v4.199 · `ABI_DMG_COND`（32 键）
+`.onDefensiveMultiplier` 的三分类落地：
+- **A 表 `ABI_DMG_MOD` 15 条**（固定属性倍率，`{t:[属性],mul}`）
+- **B 表 `ABI_DMG_ALL` 11 条**（不分属性，值是倍率）
+- **C 表 `ABI_DMG_COND` 32 键**（`[{mul,when,note?}]`，条件写在 `when`）
+
+判据：`Impl<ABILITY_X>` 块内 `.onDefensiveMultiplier` 段
+**恰好 1 条规则**才进 A/B；**多于 1 条**整体进 C。
+例：`FLUFFY` 毛茸茸段内「火 ×2 + 接触 ×0.5」两条 → 进 C，两条并列。
+
+对账教训：`dmg_mod3.py` 报 A 类 18 条，实为 15 —— 差的 3 条
+（`FLUFFY` / `FLUFFIEST` / `LIQUIFIED`）是**增伤**，被当减伤过滤。
+若只信分类脚本会漏装。
+
+### v4.201 · `RESISTANCE(x)` 不是 ×x²
+`src/abilities.cc:133-138` 里 `RESISTANCE(val)` 同时往 `resistance` 与 `modifier`
+两个累乘器各乘一次 val，看似 ×x²。但 `battle_util.c:7041-7070`
+的 `CalculateAbilityMultipliers(..., u16* resistanceMultiplier)` **只 `return multiplier`**，
+而唯一调用方 `CalcFinalDmg:7597-7612` 传进去的是 `u16 ignored`，**声明后从未读取**。
+⇒ `resistance` 分量为死写，`RESISTANCE(x)` 净效果 = ×x。
+
+数据层「极致蓬松 4 倍 / 毛茸茸 2 倍」是旧公式遗留文案。
+数值照源码写 ×2.0，另加一行浅色注解说明差异。
+
+`master` 分支无 `onDefensiveMultiplier` / `CalculateAbilityMultipliers` 任何定义，
+这套钩子是 upcoming 独有；数据层 1034 条特性同源 ⇒ 按 upcoming 判正确。
+
+### 门禁盲区
+- `esc()` = `scrubLeak(mdInline(...))`，`scrubLeak` 触发正则含 **`源码` / `口径` /
+  `v\d.\d` / `[A-Z][A-Z0-9]*_[A-Z0-9_]+` / `L\d{2,5}` / `→` / `【` / 空括号** 等，
+  命中即**整句剥空**。玩家可见文案不得出现这些词；手写常量注解应绕开 `esc` 直接拼接。
+- `smoke.js` 只编译不执行、`probe` 断言在函数级 ⇒ **DOM 空表 + 控制台无报错**这类问题
+  全绿也发现不了。只能靠真实渲染走查（`%TEMP%\cdp_shot.py` 逐 tab 截图、
+  `%TEMP%\shot_cond.py` 定点渲染详情卡片）。
+
 ## v4.198（2026-11-08）· 界面可读性整改
 
 用户反馈「字体太小、重点不明确」。查下来是两件事叠在一起。
