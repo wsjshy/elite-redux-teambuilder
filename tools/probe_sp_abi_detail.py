@@ -246,6 +246,24 @@ INJECT_JS = r"""
   out.atkWater = (function(){return dmgAtkAbiMul({inns:[],abis:['水泡']},'水').mul;})();
   out.atkWaterMiss = (function(){return dmgAtkAbiMul({inns:[],abis:['水泡']},'火').mul;})();
   out.atkLevitate = (function(){return dmgAtkAbiMul({inns:[],abis:['飘浮']},'飞行').mul;})();
+  /* v4.224：接触招式判定（源码 FLAG_MAKES_CONTACT）+ 超净属性修正 */
+  out.contactN = Object.keys(MV_CONTACT||{}).length;
+  out.contact21 = mvIsContact(21);            /* 摔打：接触 */
+  out.contact85 = mvIsContact(85);            /* 十万伏特：非接触 */
+  out.mrPunch = (function(){                 /* 毛茸茸 + 一般接触招 -> 0.5 */
+    return dmgDefAbiMul({inns:['毛茸茸'],abis:[]},null,'一般',true,{moveId:1},1).mul;
+  })();
+  out.mrFireContact = (function(){           /* 毛茸茸 + 火焰拳（火·接触）-> 2.0*0.5 = 1 */
+    return dmgDefAbiMul({inns:['毛茸茸'],abis:[]},null,'火',true,{moveId:7},1).mul;
+  })();
+  out.mrFireNoContact = (function(){         /* 毛茸茸 + 喷射火焰（火·非接触）-> 2 */
+    return dmgDefAbiMul({inns:['毛茸茸'],abis:[]},null,'火',false,{moveId:53},1).mul;
+  })();
+  out.saltMul = (function(){                 /* 超净：幽灵招 0.5 / 毒招 1 */
+    var g=dmgDefAbiMul({inns:['超净'],abis:[]},null,'幽灵',false,{moveId:247},1).mul;
+    var p=dmgDefAbiMul({inns:['超净'],abis:[]},null,'毒',false,{moveId:92},1).mul;
+    return [g,p].join('/');
+  })();
   out.dmgAbiNone = (function(){
     var sD=null,sA=null,mv=null;
     ERDATA.species.forEach(function(x){
@@ -566,6 +584,12 @@ def main():
     ck(tt.get("atkWater") == 2.0, "F64 水泡·水属性招 ×2", "v=%s" % tt.get("atkWater"))
     ck(tt.get("atkWaterMiss") == 1, "F65 水泡·非水属性招不增伤", "v=%s" % tt.get("atkWaterMiss"))
     ck(tt.get("atkLevitate") == 1.25, "F66 飘浮·飞行招 ×1.25", "v=%s" % tt.get("atkLevitate"))
+    ck(tt.get("contactN") == 318, "F67 接触招式表 318 条（源码 FLAG_MAKES_CONTACT）", "n=%s" % tt.get("contactN"))
+    ck(tt.get("contact21") is True and tt.get("contact85") is False, "F68 摔打接触 / 十万伏特非接触", "%s/%s" % (tt.get("contact21"), tt.get("contact85")))
+    ck(tt.get("mrPunch") == 0.5, "F69 毛茸茸·一般接触招 ×0.5", "v=%s" % tt.get("mrPunch"))
+    ck(tt.get("mrFireContact") == 1, "F70 毛茸茸·火接触招 火×2 与接触×0.5 抵消为 1", "v=%s" % tt.get("mrFireContact"))
+    ck(tt.get("mrFireNoContact") == 2, "F71 毛茸茸·火非接触招 ×2", "v=%s" % tt.get("mrFireNoContact"))
+    ck(tt.get("saltMul") == "0.5/1", "F72 超净 幽灵×0.5、毒×1（原误登记毒）", "%s" % tt.get("saltMul"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
