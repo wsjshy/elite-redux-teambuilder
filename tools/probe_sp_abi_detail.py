@@ -259,6 +259,42 @@ INJECT_JS = r"""
   out.mrFireNoContact = (function(){         /* 毛茸茸 + 喷射火焰（火·非接触）-> 2 */
     return dmgDefAbiMul({inns:['毛茸茸'],abis:[]},null,'火',false,{moveId:53},1).mul;
   })();
+  /* v4.227：防守侧条件型相性改写 5 条 + 进攻侧雾眼 */
+  out.teDefCondN = Object.keys(ABI_TE_DEF_COND||{}).length;
+  /* 注意：太晶甲壳 / 神奇守护在数据层挂在 inns（天性）上，不是 abis —— 查找必须两边都查 */
+  function _teHolder(n){
+    var s=null;
+    ERDATA.species.forEach(function(x){
+      if(s)return;
+      if((x.abis||[]).indexOf(n)>-1||(x.inns||[]).indexOf(n)>-1)s=x;
+    });
+    return s;
+  }
+  out.teraFight = (function(){               /* 太晶甲壳：格斗 2.0 -> 0.5 */
+    var s=_teHolder('太晶甲壳');
+    if(!s)return null;return defCellTrio(s,'格斗').opt;
+  })();
+  out.teraImmun = (function(){              /* 太晶甲壳：免疫属性 0 不动 */
+    var s=_teHolder('太晶甲壳');
+    if(!s)return null;return defCellTrio(s,'幽灵').opt;
+  })();
+  out.wgWater = (function(){                /* 神奇守护：水 1.0 -> 0 */
+    var s=_teHolder('神奇守护');
+    if(!s)return null;return defCellTrio(s,'水').opt;
+  })();
+  out.wgFire = (function(){                 /* 神奇守护：火 2.0 保留 */
+    var s=_teHolder('神奇守护');
+    if(!s)return null;return defCellTrio(s,'火').opt;
+  })();
+  out.fogDef = (function(){                 /* 雾眼：幽灵招 无雾 / 雾天 */
+    var s=null;ERDATA.species.forEach(function(x){if(!s&&((x.abis||[]).indexOf('雾眼')>-1||(x.inns||[]).indexOf('雾眼')>-1))s=x});
+    if(!s)return null;return [defCellTrio(s,'幽灵').opt,defCellTrio(s,'幽灵',undefined,'雾').opt].join('/');
+  })();
+  out.fogAtk = (function(){                 /* 雾眼进攻侧：无雾 1 / 雾天 1.5 */
+    var a=dmgAtkAbiMul({inns:['雾眼'],abis:[]},'幽灵','').mul;
+    var b=dmgAtkAbiMul({inns:['雾眼'],abis:[]},'幽灵','雾').mul;
+    return [a,b].join('/');
+  })();
   out.saltMul = (function(){                 /* 超净：幽灵招 0.5 / 毒招 1 */
     var g=dmgDefAbiMul({inns:['超净'],abis:[]},null,'幽灵',false,{moveId:247},1).mul;
     var p=dmgDefAbiMul({inns:['超净'],abis:[]},null,'毒',false,{moveId:92},1).mul;
@@ -590,6 +626,13 @@ def main():
     ck(tt.get("mrFireContact") == 1, "F70 毛茸茸·火接触招 火×2 与接触×0.5 抵消为 1", "v=%s" % tt.get("mrFireContact"))
     ck(tt.get("mrFireNoContact") == 2, "F71 毛茸茸·火非接触招 ×2", "v=%s" % tt.get("mrFireNoContact"))
     ck(tt.get("saltMul") == "0.5/1", "F72 超净 幽灵×0.5、毒×1（原误登记毒）", "%s" % tt.get("saltMul"))
+    ck(tt.get("teDefCondN") == 5, "F73 防守侧条件型相性改写 5 条", "n=%s" % tt.get("teDefCondN"))
+    ck(tt.get("teraFight") == 0.5, "F74 太晶甲壳 格斗 2.0 压到 0.5", "v=%s" % tt.get("teraFight"))
+    ck(tt.get("teraImmun") == 0, "F75 太晶甲壳 免疫属性 0 不动", "v=%s" % tt.get("teraImmun"))
+    ck(tt.get("wgWater") == 0, "F76 神奇守护 非绝佳 1.0 归零", "v=%s" % tt.get("wgWater"))
+    ck(tt.get("wgFire") == 2, "F77 神奇守护 效果绝佳 2.0 保留", "v=%s" % tt.get("wgFire"))
+    ck(tt.get("fogDef") == "1/0.5", "F78 雾眼 防守侧 无雾1/雾天0.5", "%s" % tt.get("fogDef"))
+    ck(tt.get("fogAtk") == "1/1.5", "F79 雾眼 进攻侧 无雾1/雾天1.5", "%s" % tt.get("fogAtk"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))

@@ -3797,6 +3797,22 @@ function abiDesc(el,id,box){
     if(_dc)_dc.forEach(function(x){
       _rows.push('<span style="opacity:.72">条件：'+glossify(x.when)+'</span> 时不分类别 ×'+x.mul+'（'+(x.mul<0.5?'强减伤':(x.mul<1?'减伤':'增伤'))+'）'+(x.note?('<br><span style="opacity:.62;font-style:italic;padding-left:1.6em">注：'+x.note+'</span>'):''));
     });
+    /* v4.227：防守侧条件型相性改写（太晶甲壳/占卜大师/雾眼/钢能力者/神奇守护）——
+       这一类真的改属性克制倍率，且只在满足条件时生效，必须在详情卡讲清楚前提 */
+    var _tcd=ABI_TE_DEF_COND[name];
+    if(_tcd&&_tcd.length){
+      var _ts=[];
+      _tcd.forEach(function(x){
+        var _c=x.need==='maxhp'?'HP 全满时':(x.need==='turn4'?'入场后 4 回合内':
+                (x.need==='fog'?'雾天（当前未指定天气时按不计处理）':
+                (x.need==='selfSteel'?'自身含钢属性时':'始终')))+
+                (x.t?('，对 <b>'+glossify(x.t.join(' / '))+'</b> 属性招式'):'，对所有属性招式');
+        _ts.push(_c+' → 倍率'+(x.mode==='zeroIfNotSE'?'归零（仅效果绝佳可打进来）':
+                (x.mode==='cap'?('封顶 ×'+x.val):('×'+x.val)))+
+                '<span style="opacity:.6">（'+esc(x.note)+'）</span>');
+      });
+      h+='<div class="ruleline" style="margin-top:4px">✨ <b>相性改写</b>（源码 .onAfterTypeEffectiveness · <b>会改</b>上图属性克制倍率）：'+_ts.join('；')+'</div>';
+    }
     if(_rows.length)h+='<div class="ruleline" style="margin-top:4px">🛡 <b>受到伤害倍率</b>（源码 .onDefensiveMultiplier；这些倍率已计入伤害判定，但<b>不改</b>上图属性克制倍率——能改相性的是另一批「相性改写」特性）：'+_rows.join('；')+'</div>';
   }catch(e){}
   /* v4.186：招式型特性 —— 「入场时释放 XX」「使用X属性招式后触发 XX」这类描述只写招式名，
@@ -5009,6 +5025,55 @@ var ABI_DMG_ALL={
   '黏液膜':0.7
 };
 
+/* v4.227：防守侧「条件型相性改写」——源码 .onAfterTypeEffectiveness + APPLY_ON_TARGET 的那一类。
+   与 ABI_TE_CALC（攻方特性改写防守方相性）是相反的一侧，别混。
+   五条都是 static 可判定的（满血按假设、雾天从 wx 入参、自身钢查 t1/t2、绝佳查 cur>=2）：
+     太晶甲壳 TERA_SHELL   : if (*mod >= 1.0 && BATTLER_MAX_HP(target)) *mod = 0.5
+     占卜大师 SOOTHSAYER   : 入场 4 回合内 if (*mod >= 1.0) *mod = 0.5
+     雾眼     FOGGY_EYE    : 雾天 + 幽灵招 if (*mod > 0.5) *mod = 0.5
+     钢能力者 STEELWORKER  : 自身含钢属性时 恶/幽灵 *mod /= 2
+     神奇守护 WONDER_GUARD : if (*mod < GetSuperEffectiveMult()) *mod = 0   （SE 阈值 2.0）
+   数据层只写了钢能力者的进攻侧「钢招 1.3 倍」，漏了这条防守侧，源码为准。 */
+var ABI_TE_DEF_COND={
+  '太晶甲壳':[{mode:'cap',cap:1.0,val:0.5,need:'maxhp',note:'HP 全满时把 ≥1.0 的倍率压到 0.5'}],
+  '占卜大师':[{mode:'cap',cap:1.0,val:0.5,need:'turn4',note:'入场后 4 回合内把 ≥1.0 的倍率压到 0.5'}],
+  '雾眼':[{mode:'cap',cap:0.5,val:0.5,t:['幽灵'],need:'fog',note:'雾天幽灵招封顶 0.5'}],
+  '钢能力者':[{mode:'mul',val:0.5,t:['恶','幽灵'],need:'selfSteel',note:'自身含钢属性时恶/幽灵 ×0.5'}],
+  '神奇守护':[{mode:'zeroIfNotSE',need:'se',note:'非效果绝佳（<2.0）归零'}]
+};
+/* 返回 {val,whys}；cur===0（已免疫）或负值时不动 */
+function abiTeDefCondOf(s,at,cur,wx){
+  var res={val:cur,whys:[]};
+  if(cur===0||cur<0)return res;
+  var names=[];
+  try{
+    if(s&&s.inns)names=names.concat(s.inns);
+    var info=(typeof teamInfo!=='undefined'&&teamInfo)?teamInfo[s.id]:null;
+    if(info&&info.pick&&names.indexOf(info.pick)<0)names.push(info.pick);
+    if(s&&s.abis)s.abis.forEach(function(n){if(names.indexOf(n)<0)names.push(n)});
+  }catch(e){}
+  names.forEach(function(n){
+    var rows=ABI_TE_DEF_COND[n];if(!rows)return;
+    rows.forEach(function(r){
+      if(r.t&&r.t.indexOf(at)<0)return;
+      if(r.need==='selfSteel'&&!(s&&(s.t1==='钢'||s.t2==='钢')))return;
+      if(r.need==='fog'&&String(wx||'').indexOf('雾')<0)return;
+      if(r.mode==='zeroIfNotSE'){
+        if(res.val<2.0){res.whys.push(n+'：非效果绝佳 → 0');res.val=0;}
+        return;
+      }
+      if(r.mode==='cap'){
+        if(res.val>=r.cap){res.whys.push(n+'：封顶 ×'+r.val);res.val=r.val;}
+        return;
+      }
+      if(r.mode==='mul'){
+        res.val*=r.val;res.whys.push(n+' ×'+r.val);
+        return;
+      }
+    });
+  });
+  return res;
+}
 var ABI_TE_CALC={
   '一般皮肤':[{atk:['一般'],mul:1.0,mode:'floor'}],
   '胆量':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
@@ -5105,7 +5170,7 @@ function _hfMulOf(g,at){
   var m=g&&g.hfMul?g.hfMul[at]:undefined;
   return (m===undefined?0.5:m);
 }
-function defCellTrio(s,at,pickOv){
+function defCellTrio(s,at,pickOv,wx){   /* v4.227：wx = 当前天气文本（可选），供雾眼等天气条件相性改写 */
   var t=effTypesOf(s);
   var base=defMult(t.base,at);
   var inn=defMult(t.base.concat(t.inn),at);
@@ -5158,7 +5223,14 @@ function defCellTrio(s,at,pickOv){
       if(ma.down>1&&opt>0)opt=opt*ma.down;
     }
   }catch(e){}
-  return {base:base,inn:inn,opt:opt,pick:pick};
+  /* v4.227：防守侧条件型相性改写（太晶甲壳/占卜大师/雾眼/钢能力者/神奇守护）。
+     只改生效口径 opt（不动 inn），与干燥皮肤 ma.down 的处理纪律一致。 */
+  var _teWhys=[];
+  try{
+    var _tc=abiTeDefCondOf(s,at,opt,wx);
+    if(_tc.val!==opt){_teWhys=_tc.whys;opt=_tc.val;}
+  }catch(e){}
+  return {base:base,inn:inn,opt:opt,pick:pick,teWhys:_teWhys};
 }
 /* 特性徽章 HTML（免疫/半伤/加属性/特殊备注） */
 function abiBadges(s){
@@ -6593,14 +6665,25 @@ function dmgAtkAbis(sA){
   return a;
 }
 /* 进攻侧属性增伤倍率 */
-function dmgAtkAbiMul(sA,mType){
+/* v4.228：进攻侧「条件型属性增伤」—— .onOffensiveMultiplier 里还带天气等前置条件的那一类。
+   雾眼 FOGGY_EYE: if (moveType == TYPE_GHOST && 雾天) MUL(1.5)；同特性的防守侧见 ABI_TE_DEF_COND。
+   （其余带条件的增伤依赖 HP/回合/队友/招式 flag，静态算不了，只在详情卡展示。） */
+var ABI_ATK_COND={
+  '雾眼':[{t:['幽灵'],mul:1.5,need:'fog'}]
+};
+function dmgAtkAbiMul(sA,mType,wx){
   var m=1,hit=[];
   try{
     dmgAtkAbis(sA).forEach(function(n){
       var rows=ABI_ATK_MOD[n];
-      if(!rows)return;
-      rows.forEach(function(r){
+      if(rows)rows.forEach(function(r){
         if(r.t.indexOf(mType)>-1){m*=r.mul;hit.push(n+'×'+r.mul)}
+      });
+      var cs=ABI_ATK_COND[n];
+      if(cs)cs.forEach(function(c){
+        if(c.t&&c.t.indexOf(mType)<0)return;
+        if(c.need==='fog'&&String(wx||'').indexOf('雾')<0)return;
+        m*=c.mul;hit.push(n+'·'+mType+'×'+c.mul+'('+(c.need==='fog'?'雾天':'条件')+')');
       });
     });
   }catch(e){}
@@ -6692,7 +6775,7 @@ function dmgCalc(o){
   /* v4.214：第三参传 undefined（而不是 null）→ 走 defCellTrio 的全局 teamInfo 分支，
      与属性克制页/弱点表用同一口径（防御方若在队伍里且勾了可选特性，伤害判定同样认）。
      注意：sD 是「对手」，通常不在 teamInfo 里，此时行为与传 null 完全一致。 */
-  var eff=1;try{eff=defCellTrio(sD,mType).opt}catch(e){eff=1}   /* 克制×特性免疫/减半：唯一真值源 */
+  var eff=1;try{eff=defCellTrio(sD,mType,undefined,(o&&o.weather)||'').opt}catch(e){eff=1}   /* 克制×特性免疫/减半：唯一真值源 */
   if(eff===0)return {lo:0,hi:0,eff:0,stab:stab};
   mod*=eff;
   /* 防守方非属性减伤（多鳞/毛皮大衣/冰鳞粉/棱镜毛皮…，共 40+ 条）——
@@ -6702,7 +6785,7 @@ function dmgCalc(o){
   if(abiMul!==1)mod*=abiMul;
   /* 进攻侧属性增伤（飘浮飞行×1.25 / 水泡水×2 / 电晶体电×1.5 …） */
   var atkMul=1,atkHit=[];
-  try{var _am=dmgAtkAbiMul(sA,mType);atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
+  try{var _am=dmgAtkAbiMul(sA,mType,(o&&o.weather)||'');atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
   if(atkMul!==1)mod*=atkMul;
   if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
   if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
@@ -15495,7 +15578,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.226';
+var ER_ENGINE_VER='v4.229';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
