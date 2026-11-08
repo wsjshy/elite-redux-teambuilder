@@ -169,6 +169,68 @@ INJECT_JS = r"""
       }catch(eF2){ r.desc349 = 'ERR:' + eF2; }
       try{
         r.tmCount = Object.keys(ABI_TYPE_MOD || {}).length;
+        r.teTest = (function(){
+          var out={}, SP=ERDATA.species||[];
+          function pickGround(abName){
+            for(var i=0;i<SP.length;i++){
+              var sp=SP[i], ins=(sp.inns||[]);
+              if(ins.indexOf('地面冲击')<0) continue;
+              var ts=[sp.t1,sp.t2].filter(function(x){return x&&x!=='-'});
+              if(ts.indexOf('地面')>=0) return sp;
+            }
+            return null;
+          }
+          function pickElec(abName){
+            for(var i=0;i<SP.length;i++){
+              var sp=SP[i], ins=(sp.inns||[]);
+              if(ins.indexOf(abName)<0) continue;
+              var ts=[sp.t1,sp.t2].filter(function(x){return x&&x!=='-'});
+              if(ts.indexOf('电')>=0) return sp;
+            }
+            return null;
+          }
+          function plainGround(){
+            for(var i=0;i<SP.length;i++){
+              var sp=SP[i], ts=[sp.t1,sp.t2].filter(function(x){return x&&x!=='-'});
+              if(ts.indexOf('地面')<0) continue;
+              if((sp.inns||[]).indexOf('地面冲击')>=0) continue;
+              return sp;
+            }
+            return null;
+          }
+          function plainElec(){
+            for(var i=0;i<SP.length;i++){
+              var sp=SP[i], ts=[sp.t1,sp.t2].filter(function(x){return x&&x!=='-'});
+              if(ts.indexOf('电')<0) continue;
+              var ins=sp.inns||[];
+              if(ins.indexOf('电力过载')>=0||ins.indexOf('腐化')>=0) continue;
+              return sp;
+            }
+            return null;
+          }
+          var gs=pickGround(), pg=plainGround(), oc=pickElec('电力过载'), pe=plainElec();
+          if(pg) out.gsBase=defCellTrio(pg,'电').inn;
+          /* 直接测规则函数（这些特性在库里几乎无持有者，没法靠真实物种测） */
+          out.fnGS0=abiTeApplyOne('无',   '电','地面',0,['地面']);
+          out.fnGS =abiTeApplyOne('地面冲击','电','地面',0,['地面']);
+          out.fnOC0=abiTeApplyOne('无',   '电','电',0.5,['电']);
+          out.fnOC =abiTeApplyOne('电力过载','电','电',0.5,['电']);
+          out.fnCO0=abiTeApplyOne('无',   '毒','钢',0,['钢']);
+          out.fnCO =abiTeApplyOne('腐蚀','毒','钢',0,['钢']);
+          out.fnSCR=abiTeApplyOne('胆量','一般','幽灵',0,['幽灵']);
+          out.fnDual=abiTeApplyOne('腐蚀','毒','钢',0,['钢','水']);
+          out.fnPyro=abiTeApplyOne('火岩浆流','火','岩石',0.5,['岩石']);
+          out.fnNF =abiTeApplyOne('一般皮肤','一般','岩石',0.5,['一般']);
+          out.fnSelf=abiTeApplyOne('龙族皮肤','龙','妖精',0,['妖精']);
+          out.fnSelf2=abiTeApplyOne('龙族皮肤','龙','妖精',0,['龙']);
+          out.coverHas = (function(){
+            try{ return typeof setCoverProfile==='function'; }catch(e){ return false; }
+          })();
+          if(gs){ out.gsSp=gs.zh; out.gsAb=defCellTrio(gs,'电').inn; }
+          if(pe) out.ocBase=defCellTrio(pe,'电').inn;
+          if(oc){ out.ocSp=oc.zh; out.ocAb=defCellTrio(oc,'电').inn; }
+          return out;
+        })();
         abiDesc(null, '635');
         var dF3=document.getElementById('abiDesc');
         r.desc635 = dF3? dF3.innerHTML : null;
@@ -359,6 +421,11 @@ def main():
     ck(tmCnt == 22, "F5 ABI_TYPE_MOD 全量 22 条", "count=%s" % tmCnt)
     ck(("2.0 倍" in d635), "F6 火岩浆流两条判定串联", d635[:60])
     ck(("不标记" in d774), "F7 腐化思维只改倍率不标记", d774[:60])
+    # F8. 特性改写相性进了计算（v4.193）
+    tt = data.get("teTest") or {}
+    ck(tt.get("gsBase") == 0, "F8 无特性时电打地面仍是免疫 0", "base=%s" % tt.get("gsBase"))
+    ck(tt.get("ocBase") == 0.5, "F10 无特性时电打电是抗性 0.5", "base=%s" % tt.get("ocBase"))
+
 
 
     # E. 招式型特性自动展开
@@ -368,6 +435,20 @@ def main():
     d788 = data.get("desc788") or ""
     d733 = data.get("desc733") or ""
     ck("关联招式" in d293 and "变圆" in d293, "E1 「入场释放变圆」附上招式效果", d293[:64].replace("\n", " "))
+    ck(tt.get("fnGS0") == 0, "F12 函数级：无特性电打地面 0", "v=%s" % tt.get("fnGS0"))
+    ck(tt.get("fnGS") == 0.5, "F13 函数级：地面冲击 0->0.5", "v=%s" % tt.get("fnGS"))
+    ck(tt.get("fnOC0") == 0.5, "F14 函数级：无特性电打电 0.5", "v=%s" % tt.get("fnOC0"))
+    ck(tt.get("fnOC") == 2.0, "F15 函数级：电力过载 0.5->2.0", "v=%s" % tt.get("fnOC"))
+    ck(tt.get("fnCO0") == 0, "F16 函数级：无特性毒打钢 0", "v=%s" % tt.get("fnCO0"))
+    ck(tt.get("fnCO") == 2.0, "F17 函数级：腐蚀 0->2.0", "v=%s" % tt.get("fnCO"))
+    ck(tt.get("fnSCR") == 1.0, "F18 函数级：胆量 幽灵免疫->1.0", "v=%s" % tt.get("fnSCR"))
+    ck(tt.get("fnDual") == 2.0, "F19 腐蚀对钢那一半生效", "v=%s" % tt.get("fnDual"))
+    ck(tt.get("fnNF") == 1.0, "F21 一般皮肤把抗性 0.5 抬到 1.0", "v=%s" % tt.get("fnNF"))
+    ck(tt.get("fnSelf") == 0, "F22 龙族皮肤非龙系自身不触发", "v=%s" % tt.get("fnSelf"))
+    ck(tt.get("fnSelf2") == 1.0, "F23 龙族皮肤自身为龙才触发", "v=%s" % tt.get("fnSelf2"))
+    ck(tt.get("coverHas") is True, "F24 打击面 setCoverProfile 已接入", "v=%s" % tt.get("coverHas"))
+    ck(tt.get("fnPyro") == 2.0, "F20 火岩浆流 火打岩石 2.0", "v=%s" % tt.get("fnPyro"))
+
     ck("关联招式" in d320 and "顺风" in d320, "E2 「入场顺风」附上招式效果", d320[:64].replace("\n", " "))
     ck("关联招式" not in d86, "E3 非招式型特性不误挂该块", d86[:54].replace("\n", " "))
     ck("关联招式" in d788 and "暴风雪" in d788, "E4 「触发50威力暴风雪」附上招式效果", d788[:64].replace("\n", " "))

@@ -4808,6 +4808,52 @@ function defMult(types,at){
     if(v===0)m=0;else if(v===0.5||v===3)m*=0.5;else if(v===2)m*=2;});
   return m;
 }
+/* v4.193：特性改写相性 —— 与源码 gAbilities[].onTypeEffectiveness 同口径。
+   规则作用在被攻方「单个防守属性」上（源码 MulByTypeEffectiveness 逐 defType 调用再相乘），
+   不是对最终乘积生效，否则双属性会被改错。
+   mode:'force' 无条件设为 mul（源码无 CHECK_NOT）；'zero' 仅当原为 0；'floor' 仅当 0<原<1 时抬到 mul。 */
+var ABI_TE_CALC={
+  '一般皮肤':[{atk:['一般'],mul:1.0,mode:'floor'}],
+  '胆量':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
+  '心眼':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
+  '失控之怒':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
+  '猛禽':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
+  '腐蚀':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
+  '垃圾堆':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
+  '酸性粘液':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
+  '胃痛':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
+  '地面冲击':[{atk:['电'],def:['地面'],mul:0.5,mode:'zero'}],
+  '压倒':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero'}],
+  '电力过载':[{atk:['电'],def:['电'],mul:2.0,mode:'force'}],
+  '腐化':[{atk:['电'],def:['电'],mul:2.0,mode:'force'}],
+  '熔岩':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'}],
+  '岩浆吞噬者':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'}],
+  '龙族皮肤':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero',selfType:'龙'}],
+  '龙之威仪':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero'}],
+  '幻痛':[{atk:['幽灵'],def:['一般'],mul:1.0,mode:'zero'}],
+  '灵魂吞噬':[{atk:['幽灵'],def:['一般'],mul:1.0,mode:'zero'}],
+  '火岩浆流':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'},{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
+  '腐化思维':[{atk:['超能'],mul:1.0,mode:'floor'}]
+  /* 天使暴怒只对「毒针」生效 → 招式级，见 MOVE_TE_CALC */
+};
+var MOVE_TE_CALC={
+  '天使暴怒':[{move:'毒针',atk:['毒'],def:['钢'],mul:2.0,mode:'force'}]
+};
+function abiTeApplyOne(name,at,dt,cur,selfTypes){
+  var arr=ABI_TE_CALC[name];if(!arr)return cur;
+  var out=cur,i,r;
+  for(i=0;i<arr.length;i++){
+    r=arr[i];
+    if(r.selfType&&selfTypes.indexOf(r.selfType)<0)continue;
+    if(r.atk.indexOf(at)<0)continue;
+    if(r.def&&r.def.indexOf(dt)<0)continue;
+    if(r.mode==='force')out=r.mul;
+    else if(r.mode==='zero'){if(out===0)out=r.mul;}
+    else if(r.mode==='floor'){if(out>0&&out<r.mul)out=r.mul;}
+  }
+  return out;
+}
+/* 逐防守属性求倍率并应用特性改写（abNames 空 = 纯属性口径） */
 /* 倍率简写（格值显示用） */
 function hb(x){return x>=4?'4x':(x>1?x+'x':(x<1?'抗':'-'))}
 /* 免疫/减半集合：{属性: '天性'|'可选'} + 备注 + 物理减伤 */
@@ -7832,19 +7878,27 @@ function atkCover(s,id){
 }
 /* B9 分层5：4 招对 21 属性取「最优倍率」（max）→ 盲点=全部 ≤0.5x 的属性 */
 function setCoverProfile(s,ids,conv){
-  var prof={};
-  ERDATA.types.forEach(function(at){
-    var mx=0;
-    ids.forEach(function(id){
-      var m=MV[id];if(!m)return;
-      var ty=effMvType(s,m,conv);
-      var v=ERDATA.matchup[tIdx(at)][tIdx(ty)];
-      var val=(v===0?0:((v===0.5||v===3)?0.5:(v===2?2:1)));
-      if(val>mx)mx=val;
-    });
-    prof[at]=mx;
-  });
-  return prof;
+var prof={};
+/* v4.193：攻击方自己的相性改写特性（源码 gAbilities[].onTypeEffectiveness 挂的是 battlerAtk）
+   例：带「地面冲击」→ 自己的电招打地面从「无效 0」变成「抵抗 0.5」；带「腐蚀」→ 毒打钢从 0 变 2 */
+var abn=(s&&s.inns)?s.inns.slice():[];
+var selfT=null;
+ERDATA.types.forEach(function(at){
+var mx=0;
+ids.forEach(function(id){
+var m=MV[id];if(!m)return;
+var ty=effMvType(s,m,conv);
+var v=ERDATA.matchup[tIdx(at)][tIdx(ty)];
+var val=(v===0?0:((v===0.5||v===3)?0.5:(v===2?2:1)));
+if(abn.length){
+  if(!selfT){selfT=[];if(s.t1&&s.t1!=='-')selfT.push(s.t1);if(s.t2&&s.t2!=='-')selfT.push(s.t2);}
+  for(var q=0;q<abn.length;q++){val=abiTeApplyOne(abn[q],ty,at,val,selfT);}
+}
+if(val>mx)mx=val;
+});
+prof[at]=mx;
+});
+return prof;
 }
 function blindList(prof){
   var out=[];ERDATA.types.forEach(function(at){if(prof[at]<1)out.push(at)});return out;
@@ -15056,7 +15110,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.192';
+var ER_ENGINE_VER='v4.193';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
