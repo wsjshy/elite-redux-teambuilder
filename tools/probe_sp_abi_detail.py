@@ -220,6 +220,8 @@ INJECT_JS = r"""
   out.mvTeHit   = (function(){return abiTeApplyOne('天使暴怒','毒','钢',0,['毒'],'毒针');})();
   out.mvTeMiss  = (function(){return abiTeApplyOne('天使暴怒','毒','钢',0,['毒'],'污泥炸弹');})();
   out.mvTeNoMv  = (function(){return abiTeApplyOne('天使暴怒','毒','钢',0,['毒']);})();
+  out.floorZero = (function(){return abiTeApplyOne('一般皮肤','一般','幽灵',0,['一般']);})();
+  out.floorHalf = (function(){return abiTeApplyOne('一般皮肤','一般','钢',0.5,['一般']);})();
           /* v4.196：统一求值口 coverMultOf —— 模拟「带某特性的宝可梦，某属性招打某属性」 */
           out.cmBase = coverMultOf({inns:[],t1:'地面',t2:'-'},'电','地面');
           out.dmgN   = Object.keys(ABI_DMG_MOD||{}).length;
@@ -520,6 +522,8 @@ def main():
     ck(tt.get("mvTeHit") == 2.0, "F55 天使暴怒对毒针改写为 2.0", "v=%s" % tt.get("mvTeHit"))
     ck(tt.get("mvTeMiss") == 0, "F56 天使暴怒对其他毒招不生效", "v=%s" % tt.get("mvTeMiss"))
     ck(tt.get("mvTeNoMv") == 0, "F57 未传招式名时不擅自改写", "v=%s" % tt.get("mvTeNoMv"))
+    ck(tt.get("floorZero") == 1.0, "F58 一般皮肤把无效(0)抬到 1.0", "v=%s" % tt.get("floorZero"))
+    ck(tt.get("floorHalf") == 1.0, "F59 一般皮肤把抵抗(0.5)抬到 1.0", "v=%s" % tt.get("floorHalf"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
