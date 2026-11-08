@@ -5009,7 +5009,22 @@ var ABI_ATK_MOD={
   '地狱愤怒':[{t:['火'],mul:1.35}],        /* INFERNAL_RAGE */
   '飞空助力':[{t:['飞行'],mul:1.3}],       /* AIRBORNE */
   '水栖栖息者':[{t:['水'],mul:1.5}],       /* AQUATIC_DWELLER */
-  '厄运冲击':[{t:['恶'],mul:1.35}]         /* DOOM_BLAST */
+  '厄运冲击':[{t:['恶'],mul:1.35}],        /* DOOM_BLAST */
+  /* v4.230：三条「有持有者但一直没接」的属性增伤（源码 .onOffensiveMultiplier 纯属性型） */
+  '暗黑气场':[{t:['恶'],mul:1.33}],          /* DARK_AURA L2499：恶招 ×1.33；场上出现气场破坏(AURA_BREAK)时改 ×0.75
+                                                —— .onOffensiveMultiplierFor = APPLY_ON_ANY，即场上任何人的恶招都吃，
+                                                本工具按「持有者=我方出战术」这一静态近似处理（详情卡已注明） */
+  '妖精气场':[{t:['妖精'],mul:1.33}],        /* FAIRY_AURA L2514：妖精招 ×1.33；气场破坏时 ×0.75；同上 APPLY_ON_ANY */
+  '南极鸟':[{t:['飞行','冰'],mul:1.3}],      /* ANTARCTIC_BIRD L3723：飞行/冰招 ×1.3，无前置条件 */
+  /* v4.230：再补四条「有持有者但一直没接」的纯属性增伤。
+     深度冻结 DEEP_FREEZE 冰/水 ×1.25 —— 注意它与 ABI_DMG_MOD 里那条同名特性的防守侧减伤是两回事，两侧各算 */
+  '深度冻结':[{t:['冰','水'],mul:1.25}],
+  '战争贩子':[{t:['格斗','岩石','钢'],mul:1.3}],   /* WARMONGER */
+  '恶作剧礼物':[{t:['冰'],mul:1.5}],              /* DEVIOUS_PRESENT */
+  '停电':[{t:['电'],mul:2.0}],                    /* POWER_OUTAGE */
+  /* 仍无持有者、登记备查 */
+  '搬岩':[{t:['岩石'],mul:1.5}],                  /* ROCKY_PAYLOAD */
+  '等离子灯':[{t:['电','火'],mul:1.2}]            /* PLASMA_LAMP */
 };
 var ABI_DMG_ALL={
   'Rock Armor':0.9,
@@ -15578,7 +15593,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.229';
+var ER_ENGINE_VER='v4.231';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

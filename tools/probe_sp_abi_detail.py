@@ -290,6 +290,9 @@ INJECT_JS = r"""
     var s=null;ERDATA.species.forEach(function(x){if(!s&&((x.abis||[]).indexOf('雾眼')>-1||(x.inns||[]).indexOf('雾眼')>-1))s=x});
     if(!s)return null;return [defCellTrio(s,'幽灵').opt,defCellTrio(s,'幽灵',undefined,'雾').opt].join('/');
   })();
+  out.darkAura = dmgAtkAbiMul({inns:['暗黑气场'],abis:[]},'恶','').mul;
+  out.fairyAura = dmgAtkAbiMul({inns:['妖精气场'],abis:[]},'妖精','').mul;
+  out.antarctic = dmgAtkAbiMul({inns:['南极鸟'],abis:[]},'冰','').mul;
   out.fogAtk = (function(){                 /* 雾眼进攻侧：无雾 1 / 雾天 1.5 */
     var a=dmgAtkAbiMul({inns:['雾眼'],abis:[]},'幽灵','').mul;
     var b=dmgAtkAbiMul({inns:['雾眼'],abis:[]},'幽灵','雾').mul;
@@ -616,7 +619,7 @@ def main():
     ck(tt.get("dmgAbiMul") == 0.5, "F60 dmgCalc 计入多重鳞片满血 ×0.5", "v=%s" % tt.get("dmgAbiMul"))
     ck(tt.get("dmgAbiFur") == 0.5, "F61 dmgCalc 计入毛皮大衣物理 ×0.5", "v=%s" % tt.get("dmgAbiFur"))
     ck(tt.get("dmgAbiNone") == 1, "F62 dmgCalc 无减伤特性时不误乘", "v=%s" % tt.get("dmgAbiNone"))
-    ck(tt.get("atkModN") == 16, "F63 ABI_ATK_MOD 16 条（6 有物种 + 10 备查）", "n=%s" % tt.get("atkModN"))
+    ck(tt.get("atkModN") == 25, "F63 ABI_ATK_MOD 25 条（13 有物种 + 12 备查）", "n=%s" % tt.get("atkModN"))
     ck(tt.get("atkWater") == 2.0, "F64 水泡·水属性招 ×2", "v=%s" % tt.get("atkWater"))
     ck(tt.get("atkWaterMiss") == 1, "F65 水泡·非水属性招不增伤", "v=%s" % tt.get("atkWaterMiss"))
     ck(tt.get("atkLevitate") == 1.25, "F66 飘浮·飞行招 ×1.25", "v=%s" % tt.get("atkLevitate"))
@@ -633,6 +636,9 @@ def main():
     ck(tt.get("wgFire") == 2, "F77 神奇守护 效果绝佳 2.0 保留", "v=%s" % tt.get("wgFire"))
     ck(tt.get("fogDef") == "1/0.5", "F78 雾眼 防守侧 无雾1/雾天0.5", "%s" % tt.get("fogDef"))
     ck(tt.get("fogAtk") == "1/1.5", "F79 雾眼 进攻侧 无雾1/雾天1.5", "%s" % tt.get("fogAtk"))
+    ck(tt.get("darkAura") == 1.33, "F80 暗黑气场 恶招 ×1.33", "v=%s" % tt.get("darkAura"))
+    ck(tt.get("fairyAura") == 1.33, "F81 妖精气场 妖精招 ×1.33", "v=%s" % tt.get("fairyAura"))
+    ck(tt.get("antarctic") == 1.3, "F82 南极鸟 冰招 ×1.3", "v=%s" % tt.get("antarctic"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
