@@ -6691,17 +6691,21 @@ var ABI_ATK_COND={
 /* v4.232：进攻侧「招 flag 型增伤」—— 前置条件是某个招式 flag，而 flag 能从源码逐招静态提取（MV_FLAG）。
    这批以前被当成「静态算不了」，其实只是没人去提取；接上后 124 只物种的输出第一次被计入。 */
 var ABI_FLAG_ATK={
-  '强壮之颚':[{k:'jaw',mul:1.3}],       /* STRONG_JAW L2343：FLAG_STRONG_JAW_BOOST ×1.3（25 招）*/
-  '庞克摇滚':[{k:'sound',mul:1.3}],     /* PUNK_ROCK L3293：IsSoundMove ×1.3（36 招）；防守侧 ×0.5 见 ABI_DMG_COND */
-  '舍身':[{k:'reckless',mul:1.2}],      /* RECKLESS L1815：IsRecklessBoosted ×1.2（18 招）*/
-  '强行':[{k:'sheer',mul:1.3}],         /* SHEER_FORCE L1854：FLAG_SHEER_FORCE_BOOST ×1.3（255 招）*/
-  '超级发射器':[{k:'launcher',mul:1.3}], /* MEGA_LAUNCHER L2417：IsMegaLauncherBoosted ×1.3（78 招）持有 38 */
-  '铁拳':[{k:'fist',mul:1.3}],           /* IRON_FIST L1503：IsIronFistBoosted ×1.3（31 招）持有 47 */
-  '锐利之刃':[{k:'keen',mul:1.3}],       /* KEEN_EDGE L3662：MOVE_FLAG_KEEN_EDGE ×1.3（47 招，数据层无持有者）*/
-  '猛踢':[{k:'striker',mul:1.3}],        /* STRIKER L4619：IsStrikerBoosted ×1.3（17 招，数据层无持有者）*/
-  '大牙狸之佑':[{k:'field',mul:1.5}]     /* FIELD_EXPLORER L4611：FLAG_FIELD_BASED ×1.5（15 招，数据层无持有者）*/
-};
-function dmgAtkAbiMul(sA,mType,wx,mvId){
+  '强壮之颚':[{k:['jaw'],mul:1.3}],        /* STRONG_JAW L2343：FLAG_STRONG_JAW_BOOST ×1.3（25 招）*/
+  '庞克摇滚':[{k:['sound'],mul:1.3}],      /* PUNK_ROCK L3293：IsSoundMove ×1.3（36 招）；防守侧 ×0.5 见 ABI_DMG_COND */
+  '舍身':[{k:['reckless'],mul:1.2}],       /* RECKLESS L1815：IsRecklessBoosted ×1.2（18 招）*/
+  '强行':[{k:['sheer'],mul:1.3}],          /* SHEER_FORCE L1854：FLAG_SHEER_FORCE_BOOST ×1.3（255 招）*/
+  '超级发射器':[{k:['launcher'],mul:1.3}], /* MEGA_LAUNCHER L2417：IsMegaLauncherBoosted ×1.3（78 招）*/
+  '铁拳':[{k:['fist'],mul:1.3}],           /* IRON_FIST L1503：IsIronFistBoosted(FLAG_IRON_FIST_BOOST) ×1.3（31 招）*/
+  '锐利之刃':[{k:['keen'],mul:1.3}],       /* KEEN_EDGE L3662：MOVE_FLAG_KEEN_EDGE ×1.3（47 招）*/
+  '猛踢':[{k:['striker'],mul:1.3}],        /* STRIKER L4619：IsStrikerBoosted(FLAG_STRIKER_BOOST) ×1.3（17 招）*/
+  '大牙狸之佑':[{k:['field'],mul:1.5}],    /* FIELD_EXPLORER L4611：FLAG_FIELD_BASED ×1.5（15 招）*/
+  /* v4.234：三个「继承他人倍率 + 自己扩类」的特性。源码里都是 .onOffensiveMultiplier 复用 + .onModifyMoveFlags 扩类，
+     扩类结果决定「哪些招能吃到倍率」，是纯静态可算的（不含任何人/回合/天气条件）。 */
+  '枪手':[{k:['launcher'],mul:1.3}],       /* GUNMAN L9602：= MEGA_LAUNCHER；额外把变化招算波动类（变化招无伤害，实际无影响）*/
+  '后街男孩':[{k:['striker','dance'],mul:1.3}], /* BACKSTREET_BOY L11670：= STRIKER；额外把 FLAG_DANCE 招算踢类 → 踢类∪舞蹈招 */
+  '栗子斧':[{k:['keen'],t:['草'],mul:1.3}]      /* CHESTNUT_AXE L11809：= KEEN_EDGE；额外把所有草属性招算锐利 → 锐利招∪草招 */
+};function dmgAtkAbiMul(sA,mType,wx,mvId){
   var m=1,hit=[];
   try{
     dmgAtkAbis(sA).forEach(function(n){
@@ -6717,8 +6721,11 @@ function dmgAtkAbiMul(sA,mType,wx,mvId){
       });
       var fs=ABI_FLAG_ATK[n];
       if(fs)fs.forEach(function(f){
-        if(!mvHasFlag(mvId,f.k))return;
-        m*=f.mul;hit.push(n+'·'+f.k+'×'+f.mul);
+        var ks=[].concat(f.k||[]),lb=null,ok=false;
+        ks.forEach(function(kk){if(mvHasFlag(mvId,kk)){ok=true;lb=(lb?lb+'/':'')+kk}});
+        if(!ok&&f.t&&f.t.indexOf(mType)>=0){ok=true;lb=mType+'属性'}
+        if(!ok)return;
+        m*=f.mul;hit.push(n+'·'+lb+'×'+f.mul);
       });
     });
   }catch(e){}
@@ -15627,7 +15634,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.233';
+var ER_ENGINE_VER='v4.234';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
