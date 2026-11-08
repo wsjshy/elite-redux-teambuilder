@@ -213,6 +213,11 @@ INJECT_JS = r"""
           /* 直接测规则函数（这些特性在库里几乎无持有者，没法靠真实物种测） */
           out.fnGS0=abiTeApplyOne('无',   '电','地面',0,['地面']);
           out.tagPatchN = Object.keys(ABI_TAG_PATCH||{}).length;
+          out.tagTummy = (function(){var g=abiTagOf('胃痛');return g&&g.hf?g.hf.join('/'):'NONE';})();
+          out.tagBubble= (function(){var g=abiTagOf('火焰泡泡');return g&&g.hf?g.hf.join('/'):'NONE';})();
+          out.tagIron  = (function(){var g=abiTagOf('钢铁巨人');return g&&g.hf?g.hf.join('/'):'NONE';})();
+          out.tagResv  = (function(){var g=abiTagOf('蓄水器');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagWing  = (function(){var g=abiTagOf('幸运之翼');return g&&g.im?g.im.join('/'):'NONE';})();
           out.tagPoison = (function(){var g=abiTagOf('毒素吸收');return g&&g.im?g.im.join('/'):'NONE';})();
           out.tagIce    = (function(){var g=abiTagOf('引冰');return g&&g.im?g.im.join('/'):'NONE';})();
           out.tagRock   = (function(){var g=abiTagOf('熔核');return g&&g.im?g.im.join('/'):'NONE';})();
@@ -463,6 +468,12 @@ def main():
 
 
     ck("关联招式" in d320 and "顺风" in d320, "E2 「入场顺风」附上招式效果", d320[:64].replace("\n", " "))
+    ck(tt.get("tagTummy") == "火/冰", "F31 胃痛(厚脂肪+腐蚀)继承火冰减半", "%s" % tt.get("tagTummy"))
+    ck(tt.get("tagBubble") == "火", "F32 火焰泡泡(水泡+燃烧之魂)继承火减半", "%s" % tt.get("tagBubble"))
+    ck(tt.get("tagIron") == "火", "F33 钢铁巨人(耐热+重型坦克)继承火减半", "%s" % tt.get("tagIron"))
+    ck(tt.get("tagResv") == "水", "F34 蓄水器(储水+引水)继承水免疫", "%s" % tt.get("tagResv"))
+    ck(tt.get("tagWing") == "地面", "F35 幸运之翼(天恩+巨翼)继承地面免疫", "%s" % tt.get("tagWing"))
+
     ck("关联招式" not in d86, "E3 非招式型特性不误挂该块", d86[:54].replace("\n", " "))
     ck("关联招式" in d788 and "暴风雪" in d788, "E4 「触发50威力暴风雪」附上招式效果", d788[:64].replace("\n", " "))
     ck("机制详解" in d733 and "跟舞" in d733, "E5 733 拳舞有源码级详解", d733[:64].replace("\n", " "))
