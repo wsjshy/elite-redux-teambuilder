@@ -3785,12 +3785,15 @@ function abiDesc(el,id,box){
   h+='<div style="font-size:13.5px;line-height:1.9">'+glossify(zh||'（无中文描述）')+'</div>';
   /* v4.197：防御侧伤害倍率（不并入相性表 —— x0.7 / x1.25 这类不是相性值） */
   try{
-    var _dm=ABI_DMG_MOD[name], _da=ABI_DMG_ALL[name], _rows=[];
+    var _dm=ABI_DMG_MOD[name], _da=ABI_DMG_ALL[name], _dc=ABI_DMG_COND[name], _rows=[];
     if(_dm)_dm.forEach(function(x){
       var _red=x.mul<1;
       _rows.push('<b>'+glossify(x.t.join(' / '))+'</b> 招式 ×'+x.mul+'（'+(x.mul<0.5?'强减伤':(_red?'减伤':'增伤，是弱点'))+'）');
     });
     if(_da)_rows.push('不分属性，<b>所有伤害</b> ×'+_da+'（'+(_da<1?'减伤':'增伤')+'）');
+    if(_dc)_dc.forEach(function(x){
+      _rows.push('<span style="opacity:.72">条件：'+glossify(x.when)+'</span> 时不分类别 ×'+x.mul+'（'+(x.mul<0.5?'强减伤':(x.mul<1?'减伤':'增伤'))+'）');
+    });
     if(_rows.length)h+='<div class="ruleline" style="margin-top:4px">🛡 <b>受到伤害倍率</b>（源码 .onDefensiveMultiplier，与属性相的 0.5×/2× 不是一回事）：'+_rows.join('；')+'</div>';
   }catch(e){}
   /* v4.186：招式型特性 —— 「入场时释放 XX」「使用X属性招式后触发 XX」这类描述只写招式名，
@@ -4907,6 +4910,46 @@ var ABI_DMG_MOD={
   '遇水凝固':[{t:["水"],mul:0.5}],
   '重金属':[{t:["幽灵","恶"],mul:0.5}],
   '黑暗亲和':[{t:["恶","妖精"],mul:0.75}]
+};
+
+/* v4.198：C 类「条件型」减伤 —— 源码里 .onDefensiveMultiplier 前带 if 判定，
+   静态表无法直接算出，只能把「在什么条件下减到多少」写明。
+   条件取自 %TEMP%\ERsrc2\abilities.cc 的 if 表达式，不是数据层描述。
+   判据：一个 .onDefensiveMultiplier 段内出现多于 1 条规则 ⇒ 整体归本表（含 if/else 双分支）。 */
+var ABI_DMG_COND={
+  '恶兆':[{mul:0.25,when:'会心一击时'}],
+  '脑容量':[{mul:0.5,when:'满血时'}],
+  '雪之精神':[{mul:0.5,when:'冰雹天'}],
+  '合金外壳':[{mul:0.6,when:'特殊招式'}],
+  '猎龙者':[{mul:0.5,when:'攻方是龙属性'}],
+  '龙首藻':[{mul:0.65,when:'本场还没消耗完（一次性计数未清零）'}],
+  '沙暴恐惧':[{mul:0.65,when:'沙暴天'}],
+  '妖精猎者':[{mul:0.5,when:'攻方是妖精属性'}],
+  '过滤':[{mul:0.65,when:'效果绝佳时'}],
+  '消防员':[{mul:0.5,when:'攻方是火属性'}],
+  '毛皮大衣':[{mul:0.5,when:'物理招式'}],
+  '守护者外套':[{mul:0.8,when:'物理招式'}],
+  '冰鳞粉':[{mul:0.5,when:'特殊招式'}],
+  'INSECTEATER':[{mul:0.5,when:'攻方是虫属性'}],
+  '铅质外壳':[{mul:0.6,when:'物理招式'}],
+  '伐木工':[{mul:0.5,when:'攻方是草属性'}],
+  '怪物猎人':[{mul:0.5,when:'攻方是恶属性'}],
+  '多重鳞片':[{mul:0.5,when:'满血时'}],
+  '防尘':[{mul:0.8,when:'特殊招式'}],
+  '永冻层':[{mul:0.65,when:'效果绝佳时'}],
+  '根源盔甲':[{mul:0.5,when:'效果绝佳时'}],
+  '棱镜鳞片':[{mul:0.7,when:'特殊招式'}],
+  '庞克摇滚':[{mul:0.5,when:'声音招式'}],
+  '沙漠守护':[{mul:0.5,when:'沙暴天且为特殊招式'}],
+  '海草':[{mul:0.5,when:'自身是草属性且挨火招式'}],
+  '慢出':[{mul:0.7,when:'本回合行动顺序靠后'}],
+  '晒太阳':[{mul:0.5,when:'晴天'}],
+  /* 以下四条在同一段里有多条规则（属性固定值 + 条件值，或 if/else 双分支），故不进 A 表 */
+  '毛茸茸':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）'},{mul:0.5,when:'接触招式'}],
+  '极致蓬松':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）'},{mul:0.5,when:'接触招式'}],
+  '液化':[{mul:2.0,when:'水属性招式（这是增伤，自找弱点）'},{mul:0.5,when:'接触招式'}],
+  '树皮':[{mul:0.7,when:'效果绝佳时'},{mul:0.85,when:'非效果绝佳时'}],
+  '羽衣':[{mul:0.7,when:'相性倍率小于 1（本来抗）时'},{mul:0.85,when:'相性倍率不小于 1 时'}]
 };
 
 var ABI_DMG_ALL={
@@ -15240,7 +15283,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.198';
+var ER_ENGINE_VER='v4.199';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

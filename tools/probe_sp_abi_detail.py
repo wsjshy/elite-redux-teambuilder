@@ -227,6 +227,21 @@ INJECT_JS = r"""
             }catch(e){ return 'ERR:'+e.message; }
           })();
           out.tblKey=(function(){try{return (ABI_DMG_MOD['厚脂肪']?'HIT':'MISS');}catch(e){return 'ERR:'+e.message;}})();
+out.dmgCond  = Object.keys(ABI_DMG_COND||{}).length;
+out.dmgCondFlu = (function(){try{
+  var r=ABI_DMG_COND['毛茸茸']||[];
+  if(r.length!==2)return 'N='+r.length;
+  var has2=r.some(function(x){return x.mul===2.0}), has05=r.some(function(x){return x.mul===0.5&&/接触/.test(x.when)});
+  return (has2&&has05)?'OK':'MISS '+JSON.stringify(r);
+}catch(e){return 'ERR:'+e.message;}})();
+out.dmgCondRender = (function(){try{
+  var d=document.createElement('div');d.id='abiDescProbeCond';document.body.appendChild(d);
+  abiDesc(d,'218','abiDescProbeCond');
+  var h=d.innerHTML||'';
+  var ok=(h.indexOf('条件：')>=0)&&(h.indexOf('接触招式')>=0);
+  document.body.removeChild(d);
+  return ok?'OK':'NO '+h.replace(/<[^>]+>/g,'').slice(0,90);
+}catch(e){return 'ERR:'+e.message;}})();
           out.dmgReal=(function(){
             try{
               var d=document.createElement('div'); d.id='abiDesc'; document.body.appendChild(d);
@@ -522,6 +537,9 @@ def main():
     ck(tt.get("dmgText") == "OK", "F45 特性详情已接入「受到伤害倍率」渲染", "%s" % tt.get("dmgText"))
     ck(tt.get("tblKey") == "HIT", "F46 中文名可正确索引到倍率表", "%s" % tt.get("tblKey"))
     ck(tt.get("dmgReal") == "OK", "F47 厚脂肪详情实渲染出火/冰减伤", "%s" % tt.get("dmgReal"))
+    ck(tt.get("dmgCond") == 32, "F48 条件型减伤表 32 条(30 常量 + 树皮/羽衣独立键)", "n=%s" % tt.get("dmgCond"))
+    ck(tt.get("dmgCondFlu") == "OK", "F49 毛茸茸条件表含 火x2.0 与 接触x0.5", "%s" % tt.get("dmgCondFlu"))
+    ck(tt.get("dmgCondRender") == "OK", "F50 毛茸茸详情实渲染出条件型减伤", "%s" % tt.get("dmgCondRender"))
 
 
     # F. 属性相性改写倍数
