@@ -212,6 +212,12 @@ INJECT_JS = r"""
           if(pg) out.gsBase=defCellTrio(pg,'电').inn;
           /* 直接测规则函数（这些特性在库里几乎无持有者，没法靠真实物种测） */
           out.fnGS0=abiTeApplyOne('无',   '电','地面',0,['地面']);
+          out.tagPatchN = Object.keys(ABI_TAG_PATCH||{}).length;
+          out.tagPoison = (function(){var g=abiTagOf('毒素吸收');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagIce    = (function(){var g=abiTagOf('引冰');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagRock   = (function(){var g=abiTagOf('熔核');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagWater  = (function(){var g=abiTagOf('引水');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagFire   = (function(){var g=abiTagOf('引火');return g&&g.im?g.im.join('/'):'NONE';})();
           out.fnGS =abiTeApplyOne('地面冲击','电','地面',0,['地面']);
           out.fnOC0=abiTeApplyOne('无',   '电','电',0.5,['电']);
           out.fnOC =abiTeApplyOne('电力过载','电','电',0.5,['电']);
@@ -448,6 +454,13 @@ def main():
     ck(tt.get("fnSelf2") == 1.0, "F23 龙族皮肤自身为龙才触发", "v=%s" % tt.get("fnSelf2"))
     ck(tt.get("coverHas") is True, "F24 打击面 setCoverProfile 已接入", "v=%s" % tt.get("coverHas"))
     ck(tt.get("fnPyro") == 2.0, "F20 火岩浆流 火打岩石 2.0", "v=%s" % tt.get("fnPyro"))
+    ck(tt.get("tagPatchN") == 7, "F25 免疫补丁 7 条", "n=%s" % tt.get("tagPatchN"))
+    ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
+    ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
+    ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
+    ck(tt.get("tagWater") == "水", "F29 引水原有免疫水未被破坏", "%s" % tt.get("tagWater"))
+    ck(tt.get("tagFire") == "火", "F30 引火原有免疫火未被破坏", "%s" % tt.get("tagFire"))
+
 
     ck("关联招式" in d320 and "顺风" in d320, "E2 「入场顺风」附上招式效果", d320[:64].replace("\n", " "))
     ck("关联招式" not in d86, "E3 非招式型特性不误挂该块", d86[:54].replace("\n", " "))
