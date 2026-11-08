@@ -440,3 +440,64 @@ upcoming 把常量头文件改成**生成式**（有 `.github/workflows/regenera
 `'164':{ Unexpected string`。回滚（`git checkout -- index.html`）后改为
 `iend` 分别取 `},`（163）与 `}`（164），一次通过。
 **教训：行区间切锚点要先确认边界行的真实结尾字符（`,` / `}` / `},`）。**
+
+## v4.190（2026-11-08）· 破格穿透：白名单表已废弃，改成特性自带 breakable 标志
+
+上一轮定了「upcoming 才是当前分支」，本轮就用它把之前基于 master 的结论逐条复核。
+天气（结论仍成立）之后，破格这条彻底翻了。
+
+### 判据换了
+
+| 项 | 旧分支 master（2025-06） | 当前 branch upcoming（2026-11） |
+|---|---|---|
+| 机制 | 中心白名单表 `sAbilitiesAffectedByMoldBreaker` | **特性结构体自带 `.breakable` 标志** |
+| 表是否存在 | 有，108 条 | **整个符号全仓 0 命中** |
+| 规模 | 108 | **207**（占 1034 的 20%，旧版约 1/6） |
+
+`src/battle_util.c:9369` `IsSuppressed`：
+
+```c
+if ((checkMoldBreaker && battler != gBattlerAttacker && gHitMarker & HITMARKER_MOLD_BREAKER
+     && gAbilities[ability].breakable) || ...)
+    return !DoesBattlerHaveAbilityShield(battler);
+```
+
+**四个条件缺一不可**：调用方要求检查 / 出招方不是被打的一方 / 本回合命中标记带破格 / 目标特性 `.breakable`。
+
+### 一条对配招真正有用的新边界
+
+`return !DoesBattlerHaveAbilityShield(battler)` ——
+**对手带 Ability Shield（特性护盾）时，破格直接穿不进去**。
+这是打破格队唯一不靠特性、纯靠道具的反制。
+
+### 不可被破的
+
+破格三兄弟（`MOLD_BREAKER` / `TURBOBLAZE` / `TERAVOLT`）在 `abilities.cc` 里用 `.onMoldBreaker`
+（声明「我是破格系」），**不是** `.breakable`（「我可被破」）→ 彼此穿不进去。同类还有 `BLIND_RAGE` / `OVERRULE`。
+
+### 复核过程中确认「没变」的一条
+
+天气「ER 无水火属性加成」**在当前分支依然成立**：
+`CalcMoveBasePowerAfterModifiers` 全文只有 134 行，函数体里唯一天气判断是
+`EFFECT_SOLARBEAM` 在恶劣天气减半（`:7137`）；全文件「WEATHER 与 MulModifier 相邻」仅 1 处。
+所以「别为雨天堆水招」这条配招建议继续有效。
+
+### 一个无法用源码验证的边界（已如实写进页面）
+
+招式占位符名单来自 `battle_moves.h`，而当前分支的 `src/data/` **整层 gitignore**（数据由
+`tools/codegen` 的 Kotlin 生成器产出），**招名逐个核对不了**。
+占位符机制本身仍在（`EFFECT_PLACEHOLDER` 在 `battle_script_commands.c` / `battle_ai_attack.c` / `pokemon.c` 都有），
+所以页面警示框补了一句「名单取自 2.65 招式数据表，新版数据表由工具生成、无法逐个核对招名」。
+
+### 落地
+
+| 项 | 值 |
+|---|---|
+| 体积 | 1,578,729 → **1,579,375 B** |
+| commit | **`85a79c8`**（index.html + probe + 文档） |
+| 部署 | `gh-pages@72269d0` |
+| 门禁 | smoke 32/32、probe 29 项 ALL PASS（D3/D4 断言从「白名单」改为 `breakable` + `207`）、`node --check` 通过 |
+
+**顺手修掉文档结构问题**：`ER通用机制与源码口径` 原本有两个「## 六」、两个「## 七」，且天气章物理位置在 Monotype 之前。
+按物理出现顺序重编为 **〇→十二**，顺带把唯一一处交叉引用「见第五节」改成「见第六节」，
+标题里的「全量特性普查结论（618 条）」也改为「（游戏内 1034 条，旧分支仅覆盖 618）」。
