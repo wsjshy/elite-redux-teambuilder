@@ -168,6 +168,15 @@ INJECT_JS = r"""
         r.desc349 = dF2? dF2.innerHTML : null;
       }catch(eF2){ r.desc349 = 'ERR:' + eF2; }
       try{
+        r.tmCount = Object.keys(ABI_TYPE_MOD || {}).length;
+        abiDesc(null, '635');
+        var dF3=document.getElementById('abiDesc');
+        r.desc635 = dF3? dF3.innerHTML : null;
+        abiDesc(null, '774');
+        var dF4=document.getElementById('abiDesc');
+        r.desc774 = dF4? dF4.innerHTML : null;
+      }catch(eF3){ r.desc635 = 'ERR:' + eF3; r.desc774 = 'ERR:' + eF3; }
+      try{
         abiDesc(null, '86');
         var dF3=document.getElementById('abiDesc');
         r.desc86b = dF3? dF3.innerHTML : null;
@@ -343,6 +352,14 @@ def main():
     d163 = data.get("desc163") or ""
     ck("机制详解" in d104 and "breakable" in d104 and "207" in d104 and "先天槽同样穿透" in d104, "D3 破格详解：breakable 口径 + 行表格齐全", "len=%s" % data.get("len104"))
     ck("机制详解" in d163 and "207" in d163, "D4 涡轮火焰共用破格口径", d163[:60].replace("\n", " "))
+    # F5. 相性改写全量（22 条，v4.192）
+    tmCnt = data.get("tmCount")
+    d635 = data.get("desc635") or ""
+    d774 = data.get("desc774") or ""
+    ck(tmCnt == 22, "F5 ABI_TYPE_MOD 全量 22 条", "count=%s" % tmCnt)
+    ck(("2.0 倍" in d635), "F6 火岩浆流两条判定串联", d635[:60])
+    ck(("不标记" in d774), "F7 腐化思维只改倍率不标记", d774[:60])
+
 
     # E. 招式型特性自动展开
     d293 = data.get("desc293") or ""
