@@ -6994,12 +6994,28 @@ function speedRenderTable(){
   var cap=(qv&&rows.length<=window._spdN)?rows.length:window._spdN;
   var capRows=(window._spdN==='all')?rows:rows.slice(0,cap);
   /* v4.83 P1-2：全库速度表加横向滚动容器（黑盒实测 11 列 794px 宽撑破 375px 容器；.spd-hide-sm 隐藏列后内容仍强制最小宽度） */
-  var h='<div class="scroll" style="-webkit-overflow-scrolling:touch"><table class="tbl spdtbl"><thead><tr><th>#</th><th>物种</th><th class="spd-hide-sm">0努力</th><th>满速252中性</th><th>极速252+性格</th><th class="spd-hide-sm">围巾×1.5</th><th class="spd-hide-sm">特性×2</th><th class="spd-hide-sm">+1级强化</th><th>分位</th><th>省EV建议</th><th>定位</th></tr></thead><tbody>';
+  var h='<div class="scroll" style="-webkit-overflow-scrolling:touch"><table class="tbl spdtbl"><thead><tr>'+
+    '<th title="全库编号">#</th>'+
+    '<th title="点击任意一行 → 打开这只的完整详情（种族值 / 特性 / 天性 / 配速 / 进化链）">物种</th>'+
+    '<th class="spd-hide-sm" title="速度 EV 全不投（0）的实速：floor((2×种族速度+31+0/4+5)×性格1.0)">0努力</th>'+
+    '<th title="252 EV + 中性性格（不加速也不减速）的实速">满速252中性</th>'+
+    '<th title="252 EV + 加速性格（+10%）的实速 —— 本表排序与分位都以这一列为准">极速252+性格</th>'+
+    '<th class="spd-hide-sm" title="讲究围巾 ×1.5（占道具位；不与特性乘区叠加）">围巾×1.5</th>'+
+    '<th class="spd-hide-sm" title="天气/低血加速特性 ×2 后的实速（轻装 / 悠游自如 / 叶绿素 / 拨雪）；无此类特性显示 —，不计入主表">特性×2</th>'+
+    '<th class="spd-hide-sm" title="速度 +1 级（高速移动 / 龙舞等）×1.5 后的实速；不计入主表">+1级强化</th>'+
+    '<th title="全库极速档排名分位（P50 / P90 / P99 切点见本页顶部分位表）">分位</th>'+
+    '<th title="只求卡过 P50/P75 线时所需的最小速度 EV，省下的可挪去 HP（不必无脑 252）">省EV建议</th>'+
+    '<th title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95（反向拉低速）｜清场：其余。点击徽标可直接按该定位筛选">定位</th>'+
+    '</tr></thead><tbody>';
   capRows.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
     var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:13px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td>'+_spdBadge(p)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
+    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
+      '<td><span onclick="event.stopPropagation();speedToggleFilter(\'role\',\''+(role==='fast'?'fast':(role==='space'?'space':'clear'))+'\')" '+
+        'title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95｜清场：其余。点击按此定位筛选全表" '+
+        'style="cursor:pointer;color:var(--accent);border-bottom:1px dashed currentColor;font-weight:600">'+
+        (role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</span></td></tr>';
   });
   h+='</tbody></table></div>';
   /* v4.72 P2：命中计数 + 空结果提示 + 截断提示 */
@@ -15443,7 +15459,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.218';
+var ER_ENGINE_VER='v4.219';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
