@@ -2900,7 +2900,7 @@ function buildVetCardHtml(R){
     return out.length?out.join(''):'<div style="color:var(--ok)">✅ 道具/性格/EV 体检通过（EV 守恒、性格配速、道具联动无冲突）</div>';
   }catch(e){return ''}
 }
-/* ⑨ 有效速度轴实算卡：天气×2 / 围巾×1.5 / 顺风×2 / 空间反转（spdMaxOf 体系独立实算，不动既有 teamSpeedCard） */
+/* ⑨ 有效速度轴实算卡：特性加速(源码 ×1.5 / 轻装 ×2) / 围巾×1.5 / 顺风×2 / 空间反转（spdMaxOf 体系独立实算，不动既有 teamSpeedCard） */
 function effSpeedCardHtml(R){
   try{
     var bm={};(R.builds||[]).forEach(function(b){bm[''+b.id]=b});
@@ -2920,7 +2920,7 @@ function effSpeedCardHtml(R){
         '<span style="width:110px;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(sp.zh)+'</span>'+
         '<span style="flex:1;font-size:13.5px">实速 <b>'+v+'</b>'+(mul.length?(' <span style="color:var(--acc,#1976d2)">（'+mul.join(' × ')+'）</span>'):'')+'</span></div>';
     });
-    return rowsH+'<div class="tip" style="margin-top:3px">基础=252EV+性格实算；天气×2 仅当队伍天气轴命中该提速特性'+
+    return rowsH+'<div class="tip" style="margin-top:3px">基础=252EV+性格实算；特性加速按源码倍率（天气类 ×1.5，轻装 ×2）仅当命中该提速特性'+
       (R.sys.hasSpace?'；⚠ 戏法空间在场：速度排序反转（慢=快），上表为空间外口径':'')+'</div>';
   }catch(e){return ''}
 }
@@ -6378,8 +6378,39 @@ function spd0Of(s){var b=bstI(s,5);return 2*b+36}                    /* 0努力�
 function spdFullOf(s){var b=bstI(s,5);return 2*b+99}                /* 满速252中性（参考列） */
 function spdMaxOf(s){var b=bstI(s,5);return Math.floor((2*b+99)*1.1)}/* 极速252+速度性格（主表） */
 function spdScarfOf(s){var b=bstI(s,5);return Math.floor((2*b+99)*1.5)} /* 讲究围巾×1.5（满速中性，参考列） */
-function spdWeatherOf(s){var W=['轻装','悠游自如','叶绿素','拨雪'];var hit=null;(s.abis||[]).forEach(function(a){if(a&&W.indexOf(a)>-1)hit=a});return hit} /* 天气×2特性（参考列） */
-function spdWeatherVal(s){var h=spdWeatherOf(s);return h?Math.floor(spdMaxOf(s)*2):null}
+/* v4.235：速度修正型特性 —— 数值全部取自源码 abilities.cc 的 .onStat（statId==STAT_SPEED）分支，
+   不采数据层文案。原文见 docs 18.28。轻装 ×2 是唯一真正的 ×2，天气那批全是 ×1.5（18.21 那版写成 ×2 是错的）。 */
+var SPD_ABI=[
+  {zh:'悠游自如',mul:1.5,cond:'rain',label:'雨天',src:'SWIFT_SWIM L868'},
+  {zh:'叶绿素',mul:1.5,cond:'sun',label:'晴天',src:'CHLOROPHYLL L876'},
+  {zh:'拨雪',mul:1.5,cond:'hail',label:'冰雹/雪天',src:'SLUSH_RUSH L2752'},
+  {zh:'拨沙',mul:1.5,cond:'sand',label:'沙暴',src:'SAND_RUSH'},
+  {zh:'冲浪之尾',mul:1.5,cond:'terrain',label:'电气场地',src:'SURGE_SURFER'},
+  {zh:'缥缈奔腾',mul:1.5,cond:'fog',label:'雾天',src:'ETHEREAL_RUSH'},
+  {zh:'飞毛腿',mul:1.5,cond:'status',label:'自身有异常状态',src:'QUICK_FEET'},
+  {zh:'古代活性',mul:1.5,cond:'sun',label:'晴天（或携带驱劲能量×1.3）',src:'PROTOSYNTHESIS'},
+  {zh:'轻装',mul:2,cond:'item',label:'消耗掉道具后',src:'UNBURDEN L1450'},
+  {zh:'轻金属',mul:1.3,cond:'always',label:'始终',src:'LIGHT_METAL'},
+  {zh:'飞行皮肤',mul:1.1,cond:'always',label:'始终',src:'AERILATE'},
+  {zh:'铅质外壳',mul:0.9,cond:'always',label:'始终',src:'LEAD_COAT'},
+  {zh:'慢启动',mul:0.5,cond:'turn5',label:'前 5 回合',src:'SLOW_START'},
+  {zh:'太晶宝藏',mul:0.8,cond:'always',label:'始终',src:'TERASTAL_TREASURE'}
+];
+/* 返回 {zh,mul,label,down}；加速项优先（>1），全无加速才返回减速项。abis 与 inns 都要查。 */
+function spdSpeedAbiOf(s){
+  var pool=[].concat(s&&s.abis||[],s&&s.inns||[]);
+  var up=null,dn=null;
+  pool.forEach(function(a){
+    if(!a)return;
+    SPD_ABI.forEach(function(r){
+      if(r.zh!==a)return;
+      if(r.mul>1){if(!up||r.mul>up.mul)up=r;}else{if(!dn||r.mul<dn.mul)dn=r;}
+    });
+  });
+  return up||dn;
+}
+function spdWeatherOf(s){var r=spdSpeedAbiOf(s);return (r&&r.mul>1)?r.zh:null} /* 保留旧名，语义收窄为「加速特性名」 */
+function spdWeatherVal(s){var r=spdSpeedAbiOf(s);return (r&&r.mul>1)?Math.floor(spdMaxOf(s)*r.mul):null} /* v4.235：按源码倍率（1.5/2）算，不再硬编码 ×2 */
 var _spdPct=null;
 function speedPctiles(){if(!ERDATA.species||!ERDATA.species.length)return {n:0,P50:0,P75:0,P90:0,P95:0,P99:0};if(_spdPct)return _spdPct;
   var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
@@ -6503,7 +6534,7 @@ function spdNatAdvice(s,p,M){
 }
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
 var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null};
-function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx)m*=2;if(__spdSl.tailwind)m*=2;return m}
+function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx){var _r=spdSpeedAbiOf(__spdSl.s);m*=(_r&&_r.mul>1)?_r.mul:1.5}if(__spdSl.tailwind)m*=2;return m}
 function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+onclick+'}else if(event.key===\'ArrowLeft\'||event.key===\'ArrowRight\'){event.preventDefault();var g=this.parentNode;var cs=[].slice.call(g.children).filter(function(x){return x.classList&&x.classList.contains(\'chipopt\')});var i=cs.indexOf(this);var d=event.key===\'ArrowLeft\'?-1:1;var n=i+d;if(n>=0&&n<cs.length)cs[n].focus();}">'+label+'</span>'}
 function speedSliderHtml(s){
   try{
@@ -6520,7 +6551,7 @@ function speedSliderHtml(s){
       '</div>'+
       '<div style="font-size:13.5px;margin:4px 0">ER修正乘区（默认开，可关）：<span class="chipgrp">'+
         spdSlChip('围巾×1.5',__spdSl.scarf,'spdTgl(\'scarf\')')+
-        spdSlChip('天气×2',__spdSl.wx,'spdTgl(\'wx\')')+
+        spdSlChip('特性×'+((spdSpeedAbiOf(__spdSl.s)||{mul:1.5}).mul),__spdSl.wx,'spdTgl(\'wx\')')+
         spdSlChip('顺风×2',__spdSl.tailwind,'spdTgl(\'tailwind\')')+'</span></div>'+
       '<div style="font-size:13.5px;margin:4px 0;display:flex;align-items:center;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%"><span style="white-space:nowrap;flex:0 0 auto">耐久分配 bias：</span><span class="chipgrp" id="spdBiasG" style="flex:0 0 auto;max-width:none">'+
         spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
@@ -7176,17 +7207,17 @@ function speedRenderTable(){
     '<th title="252 EV + 中性性格（不加速也不减速）的实速">满速252中性</th>'+
     '<th title="252 EV + 加速性格（+10%）的实速 —— 本表排序与分位都以这一列为准">极速252+性格</th>'+
     '<th class="spd-hide-sm" title="讲究围巾 ×1.5（占道具位；不与特性乘区叠加）">围巾×1.5</th>'+
-    '<th class="spd-hide-sm" title="天气/低血加速特性 ×2 后的实速（轻装 / 悠游自如 / 叶绿素 / 拨雪）；无此类特性显示 —，不计入主表">特性×2</th>'+
+    '<th class="spd-hide-sm" title="按源码 .onStat(STAT_SPEED) 修正后的实速：悠游自如/叶绿素/拨雪/拨沙/冲浪之尾/缥缈奔腾/飞毛腿/古代活性 ×1.5，轻装 ×2，轻金属 ×1.3；无此类特性显示 —。此列为参考，不计入主表排序">特性加速</th>'+
     '<th class="spd-hide-sm" title="速度 +1 级（高速移动 / 龙舞等）×1.5 后的实速；不计入主表">+1级强化</th>'+
     '<th title="全库极速档排名分位（P50 / P90 / P99 切点见本页顶部分位表）">分位</th>'+
     '<th title="只求卡过 P50/P75 线时所需的最小速度 EV，省下的可挪去 HP（不必无脑 252）">省EV建议</th>'+
     '<th title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95（反向拉低速）｜清场：其余。点击徽标可直接按该定位筛选">定位</th>'+
     '</tr></thead><tbody>';
-  capRows.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wv=spdWeatherVal(s),wa=spdWeatherOf(s);
+  capRows.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wa=spdSpeedAbiOf(s),wv=wa?Math.floor(mx*wa.mul):null;
     var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:13px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
+    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:12px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+'</div>'):'<span style="color:var(--sub)">—</span>')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
       '<td><span onclick="event.stopPropagation();speedToggleFilter(\'role\',\''+(role==='fast'?'fast':(role==='space'?'space':'clear'))+'\')" '+
         'title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95｜清场：其余。点击按此定位筛选全表" '+
         'style="cursor:pointer;color:var(--accent);border-bottom:1px dashed currentColor;font-weight:600">'+
@@ -15634,7 +15665,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.234';
+var ER_ENGINE_VER='v4.235';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
