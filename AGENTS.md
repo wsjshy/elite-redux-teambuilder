@@ -1103,3 +1103,63 @@ F60 多重鳞片 0.5 / F61 毛皮大衣 0.5 / F62 无减伤特性物种 `abiMul=
 
 ---
 
+
+## v4.214 ~ v4.216（2026-11-08）· 伤害链路三层接入收口
+
+### v4.214 `dmgCalc` 统一 pick 口径
+
+原 `defCellTrio(sD,mType,null)` 显式声明「没有勾选」，跳过 `teamInfo` 分支。改成 `defCellTrio(sD,mType)`（第三参省略）后走全局 `teamInfo`，与属性克制页/弱点表/打击面完全同一套口径。`sD` 通常不在 `teamInfo` 里，多数情况行为不变。
+
+### v4.215 `ABI_ATK_MOD`（16 条）：源码 `.onOffensiveMultiplier` 的纯属性增伤
+
+**关键发现**：`abilities.cc` 里 `.onBasePower` / `.onModifyDamage` **一个都没有**。统计全部 `.onXxx`：
+
+| 钩子 | 次数 |
+|---|---|
+| `onOffensiveMultiplier` | **311** |
+| `onEntry` | 310 |
+| `onAttacker` | 169 |
+| `onDefensiveMultiplier` | 153 |
+| `onDefender` | 151 |
+
+`onOffensiveMultiplier` 才是攻击侧主通道。按 `Impl<ABILITY_X>\s*=\s*\{` + 配平取 1071 块，含该钩子的 **186 个**（其余 125 个是 `Impl<X>.onOffensiveMultiplier` 别名，78 条链如 `MINUS→PLUS`、`TOUGH_CLAWS→BIG_PECKS`）。
+
+按「函数体只有一条 `if (moveType == TYPE_X) MUL(y)`」筛出 16 条，全部登记：
+
+`飘浮`飞行1.25(158物种)｜`水泡`水2.0(11)｜`电晶体`电1.5(17)｜`龙颚`龙1.5(20)｜`原木`草1.2(15)｜`燃烧`火1.5(4)｜`钢之意志`钢1.3｜`发电细胞`电1.25｜`化石化`岩石1.2｜`黑暗亲和`恶1.25｜`电力爆发`电1.35｜`沙暴恐惧`地面1.2｜`地狱愤怒`火1.35｜`飞空助力`飞行1.3｜`水栖栖息者`水1.5｜`厄运冲击`恶1.35（后 10 条物种 0，登记备查）
+
+**与 `ABI_DMG_MOD` 是两条独立维度，可以同时出现在同一个特性上**：原木（防守草×0.5 / 进攻草×1.2）、化石化（岩石×0.5 / ×1.2）、黑暗亲和（恶妖精×0.75 / 恶×1.25）。
+
+新函数 `dmgAtkAbis(sA)` / `dmgAtkAbiMul(sA,mType)`。
+
+**坑**：`inns` 必须算。实测「飘浮」在巴大蝶的 `inns` 里不在 `abis` 里（158 物种），只读 `abis` 会全漏。
+
+### v4.216 面板同时显示减伤与增伤
+
+`28–33（克制 ×0.5 · 本系×1.5 · 特性减伤 ×0.5 · 特性增伤 ×2）` —— 减伤蓝 `var(--accent)`、增伤绿 `var(--ok)`，`title` 悬停显示明细。实测溜溜糖球(水泡,攀瀑) 打 角金鱼。
+
+### 一次伤害的完整修正链
+
+```
+1. 克制倍率  eff   = defCellTrio(sD,mType).opt   ← 相性 + im/hf/hfMul + mechRw
+2. 防守减伤  abiMul= dmgDefAbiMul(...)           ← ABI_DMG_ALL(11) + ABI_DMG_COND(32)
+3. 进攻增伤  atkMul= dmgAtkAbiMul(sA,mType)      ← ABI_ATK_MOD(16)
+4. 天气/场地/道具/会心
+5. STAB ×1.5（含 -ate 转换）
+```
+
+### probe F63–F66
+
+`ABI_ATK_MOD` 16 条 / 水泡·水 ×2 / 水泡·非水不增伤 / 飘浮·飞行 ×1.25。
+
+### 本批提交与验证
+
+`d22b9f5`。`index.html` = **1,602,649 B / `ER_ENGINE_VER='v4.216'` / SHA1 `86969BEF42E8E2F67FEB5D9277B6F364B309E263` / 线上 VERIFIED-MATCH**。`node --check` 0、smoke 32/32、probe 77 项 ALL PASS。
+
+### 仍未接（明确记账）
+
+- `.onOffensiveMultiplier` 剩下 **170 个带条件的**（需状态/HP/回合/队友/天气/招式 flag），静态表算不了，只在详情卡展示。
+- `ABI_DMG_COND` 里依赖战斗计数的条件（如「本场还没消耗完」）`dmgCondHit` 一律不计。
+
+---
+
