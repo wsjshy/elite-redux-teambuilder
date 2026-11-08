@@ -501,3 +501,78 @@ if ((checkMoldBreaker && battler != gBattlerAttacker && gHitMarker & HITMARKER_M
 **顺手修掉文档结构问题**：`ER通用机制与源码口径` 原本有两个「## 六」、两个「## 七」，且天气章物理位置在 Monotype 之前。
 按物理出现顺序重编为 **〇→十二**，顺带把唯一一处交叉引用「见第五节」改成「见第六节」，
 标题里的「全量特性普查结论（618 条）」也改为「（游戏内 1034 条，旧分支仅覆盖 618）」。
+
+## v4.192（2026-11-08）· 相性改写全量 22 条 + Hell 难度改倍率
+
+按新口径（upcoming）继续复核「相性改写」这批特性，**又发现一处机制搬家**：
+
+| | 旧分支 master | 当前分支 upcoming |
+|---|---|---|
+| 写法 | `MulByTypeEffectiveness` 里 19 个 `else if` | **每个特性自己的 `.onTypeEffectiveness` 钩子** |
+| 函数体积 | 带全部特性分支 | **只剩 45 行、0 个 `ABILITY_`** |
+| 特性数 | 19 | **25** |
+
+当前分支的调用形式：
+
+```c
+ON_ABILITY(battlerAtk, FALSE, gAbilities[ability].onTypeEffectiveness,
+    if (gAbilities[ability].onTypeEffectiveness(battlerAtk, defType, move, moveType, &mod)) {
+        abilityModified = TRUE; break;
+    })
+```
+
+### 落地：从 9 条补到 22 条
+
+`ABI_TYPE_MOD` 原来只有 9 条，实际 `abilities.cc` 里带 `.onTypeEffectiveness` 的有 25 个 `Impl<>` 块。
+其中 `EARTH_WIRE` / `OVERCLOCK` / `SOUR_APPLE` **在数据层 1034 条里对不上名字**
+（代码里有、游戏里还没有）→ 只上 **22 条**。
+
+新增 13 条：413 龙族皮肤 / 439 天使暴怒 / 535 心眼 / 635 火岩浆流 / 694 失控之怒 /
+716 腐化 / 725 垃圾堆 / 760 酸性粘液 / 765 灵魂吞噬 / 774 腐化思维 / 841 龙之威仪 /
+954 胃痛 / 1003 猛禽。
+
+**一个必须分清的对照**：
+
+| 特性 | 电 打 地面 | 倍率 |
+|---|---|---|
+| 285 地面冲击 | 本来 0 | **0.5** |
+| `EARTH_WIRE`（未上线） | 本来 0 | **2.0** |
+
+同一个相性组合，两个特性给出相反答案。
+
+### 意外挖到的通用机制：Hell 难度会改相性倍率
+
+`src/pokemon.c:6377`：`isHellMode()` = 存档里 `gameDifficulty == DIFFICULTY_HELL` —— **玩家自己选的难度档**。
+
+`src/battle_util.c:8038`：
+
+```c
+// Super-effective damage is reduced from 2x to 1.5x, and 4x to 2x
+if (isHellMode() && HELL_MODE_TYPE_EFFECTIVENESS_CHANGE) {
+    case UQ_4_12(2.0): modifier = UQ_4_12(1.5); break;
+    case UQ_4_12(4.0): modifier = UQ_4_12(2.5); break;
+}
+```
+
+| 相性 | 标准 | Hell |
+|---|---|---|
+| 效果绝佳 2× | 2.0 | **1.5** |
+| 双重 4× | 4.0 | **2.5** |
+
+**注释写「4x to 2x」，代码实际 2.5 —— 注释与实现不一致，按代码为准。**
+
+附带：Hell 下退缩对玩家侧概率归零（`battle_script_commands.c:3102`）；
+Hell 训练师战敌方最多额外带 3 个特性（`pokemon.c:6323` + `HELL_MODE_EXTRA_ABILITIES 3`）。
+
+**这条以前完全没写过，对配招影响很直接：Hell 难度下堆相性收益从 100% 降到 50%。**
+
+### 落地
+
+| 项 | 值 |
+|---|---|
+| 体积 | 1,579,375 → **1,581,257 B** |
+| commit | **`b7b98c3`**（index.html + probe + 文档，3 files / 141 insertions） |
+| 部署 | `gh-pages@d67f7e2` |
+| 门禁 | smoke 32/32、probe **32 项** ALL PASS（新增 F5/F6/F7 三条确认 22 条与两条关键实现） |
+
+页面相性改写卡片里也补了 Hell 提示，并把「依据」行号从旧分支的 `:15186` 更正为当前分支的 `:7947`。
