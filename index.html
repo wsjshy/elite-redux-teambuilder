@@ -4805,17 +4805,55 @@ var ABI_TAG_PATCH={
   '闪电形态':{im:['电']},      /* :10587 LIGHTNING_ASPECT */
   '熔核':{im:['岩石']}         /* :10734 MOLTEN_CORE（岩石，反直觉但源码 CHECK(moveType == TYPE_ROCK)） */
 };
-function abiTagOf(n){
+var ABI_TAG_CACHE={};
+function _abUniq(a){var r=[],i;for(i=0;i<a.length;i++)if(r.indexOf(a[i])<0)r.push(a[i]);return r}
+/* 取 id 对应的 [id,en,zh,desc,tags] */
+function _abEnt(id){
+  var A=ERDATA.abilities;if(!A)return null;
+  if(A[id]&&A[id][0]===''+id)return A[id];
+  for(var i=0;i<A.length;i++)if(A[i][0]===''+id)return A[i];
+  return null;
+}
+/* 复合特性继承：数据层描述形如「厚脂肪 + 腐蚀.」→ 递归合并基础特性的 im / hf / add。
+   这一条修的是系统性缺口：abiTags 不会把「A + B」组合特性的基础标签带上来，
+   实测 89 个可解析的复合特性里有 8 个因此丢掉了免疫/减半。 */
+function abiTagOf(n,dep){
+  dep=dep||0;
+  var ck=(dep?'d':'')+'|'+n;
+  if(ABI_TAG_CACHE[ck]!==undefined)return ABI_TAG_CACHE[ck];
   var id=NM2ID[n];
-  var t=(id&&ERDATA.abiTags)?ERDATA.abiTags[id]:null;
-  var p=ABI_TAG_PATCH[n];
-  if(!p)return t||null;
+  var base=(id&&ERDATA.abiTags)?ERDATA.abiTags[id]:null;
   var o={},k;
-  if(t)for(k in t)o[k]=t[k];
-  if(p.im)o.im=(o.im||[]).concat(p.im);
-  if(p.hf)o.hf=(o.hf||[]).concat(p.hf);
-  if(p.add)o.add=(o.add||[]).concat(p.add);
-  return o;
+  if(base)for(k in base)o[k]=base[k];
+  var p=ABI_TAG_PATCH[n];
+  if(p){
+    if(p.im)o.im=(o.im||[]).concat(p.im);
+    if(p.hf)o.hf=(o.hf||[]).concat(p.hf);
+    if(p.add)o.add=(o.add||[]).concat(p.add);
+  }
+  if(dep<2&&id){
+    var ent=_abEnt(id);
+    if(ent&&ent[3]){
+      var parts=(''+ent[3]).split('\n')[0].split('+');
+      if(parts.length===2){
+        for(var q=0;q<2;q++){
+          var nm=(''+parts[q]).replace(/[。.\s]/g,'');
+          if(!nm||nm===n)continue;
+          if(!NM2ID[nm])continue;
+          var sub=abiTagOf(nm,dep+1);
+          if(!sub)continue;
+          if(sub.im)o.im=(o.im||[]).concat(sub.im);
+          if(sub.hf)o.hf=(o.hf||[]).concat(sub.hf);
+          if(sub.add)o.add=(o.add||[]).concat(sub.add);
+        }
+      }
+    }
+  }
+  if(o.im)o.im=_abUniq(o.im);
+  if(o.hf)o.hf=_abUniq(o.hf);
+  var ret=(Object.keys(o).length?o:null);
+  ABI_TAG_CACHE[ck]=ret;
+  return ret;
 }
 /* 生效属性：基础属性 + 天性 add（固定）+ 可选池 add（仅提示） */
 function effTypesOf(s){
@@ -15133,7 +15171,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.194';
+var ER_ENGINE_VER='v4.195';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
