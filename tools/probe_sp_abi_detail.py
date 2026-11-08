@@ -341,8 +341,8 @@ def main():
     ck(data.get("detail_rows439", 0) >= 7, "D2 439 详解至少 7 行", str(data.get("detail_rows439")))
     d104 = data.get("desc104") or ""
     d163 = data.get("desc163") or ""
-    ck("机制详解" in d104 and "白名单" in d104 and "先天槽同样穿透" in d104, "D3 破格详解：白名单口径 + 4 行表格齐全", "len=%s" % data.get("len104"))
-    ck("机制详解" in d163 and "白名单" in d163, "D4 涡轮火焰共用破格口径", d163[:60].replace("\n", " "))
+    ck("机制详解" in d104 and "breakable" in d104 and "207" in d104 and "先天槽同样穿透" in d104, "D3 破格详解：breakable 口径 + 行表格齐全", "len=%s" % data.get("len104"))
+    ck("机制详解" in d163 and "207" in d163, "D4 涡轮火焰共用破格口径", d163[:60].replace("\n", " "))
 
     # E. 招式型特性自动展开
     d293 = data.get("desc293") or ""
