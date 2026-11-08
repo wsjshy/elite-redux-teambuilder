@@ -222,6 +222,36 @@ INJECT_JS = r"""
   out.mvTeNoMv  = (function(){return abiTeApplyOne('天使暴怒','毒','钢',0,['毒']);})();
   out.floorZero = (function(){return abiTeApplyOne('一般皮肤','一般','幽灵',0,['一般']);})();
   out.floorHalf = (function(){return abiTeApplyOne('一般皮肤','一般','钢',0.5,['一般']);})();
+  /* v4.212：dmgCalc 接入 ABI_DMG_ALL / ABI_DMG_COND（非属性减伤） */
+  out.dmgAbiMul = (function(){
+    var sD=null,sA=null,mv=null;
+    ERDATA.species.forEach(function(x){if(!sD&&(x.abis||[]).indexOf('多重鳞片')>-1)sD=x});
+    ERDATA.species.forEach(function(x){if(!sA&&+x.base[1]>100)sA=x});
+    for(var id in MV){var m=MV[id];if(m&&m[4]==='物理'&&+m[5]>=80&&m[1]&&m[1]!=='-'){mv=id;break}}
+    if(!sD||!sA||!mv)return null;
+    var r=dmgCalc({sA:sA,sD:sD,moveId:mv,evA:0,evD:0,natA:'',natD:'',itemA:'',weather:'',terrain:'',crit:false});
+    return r?r.abiMul:null;
+  })();
+  out.dmgAbiFur = (function(){
+    var sD=null,sA=null,mv=null;
+    ERDATA.species.forEach(function(x){if(!sD&&(x.abis||[]).indexOf('毛皮大衣')>-1)sD=x});
+    ERDATA.species.forEach(function(x){if(!sA&&+x.base[1]>100)sA=x});
+    for(var id in MV){var m=MV[id];if(m&&m[4]==='物理'&&+m[5]>=80&&m[1]&&m[1]!=='-'){mv=id;break}}
+    if(!sD||!sA||!mv)return null;
+    var r=dmgCalc({sA:sA,sD:sD,moveId:mv,evA:0,evD:0,natA:'',natD:'',itemA:'',weather:'',terrain:'',crit:false});
+    return r?r.abiMul:null;
+  })();
+  out.dmgAbiNone = (function(){
+    var sD=null,sA=null,mv=null;
+    ERDATA.species.forEach(function(x){
+      if(!sD && (x.abis||[]).length && !(x.abis||[]).some(function(n){return ABI_DMG_ALL[n]!==undefined||ABI_DMG_COND[n]!==undefined}))sD=x;
+    });
+    ERDATA.species.forEach(function(x){if(!sA&&+x.base[1]>100)sA=x});
+    for(var id in MV){var m=MV[id];if(m&&m[4]==='物理'&&+m[5]>=80&&m[1]&&m[1]!=='-'){mv=id;break}}
+    if(!sD||!sA||!mv)return null;
+    var r=dmgCalc({sA:sA,sD:sD,moveId:mv,evA:0,evD:0,natA:'',natD:'',itemA:'',weather:'',terrain:'',crit:false});
+    return r?r.abiMul:null;
+  })();
           /* v4.196：统一求值口 coverMultOf —— 模拟「带某特性的宝可梦，某属性招打某属性」 */
           out.cmBase = coverMultOf({inns:[],t1:'地面',t2:'-'},'电','地面');
           out.dmgN   = Object.keys(ABI_DMG_MOD||{}).length;
@@ -524,6 +554,9 @@ def main():
     ck(tt.get("mvTeNoMv") == 0, "F57 未传招式名时不擅自改写", "v=%s" % tt.get("mvTeNoMv"))
     ck(tt.get("floorZero") == 1.0, "F58 一般皮肤把无效(0)抬到 1.0", "v=%s" % tt.get("floorZero"))
     ck(tt.get("floorHalf") == 1.0, "F59 一般皮肤把抵抗(0.5)抬到 1.0", "v=%s" % tt.get("floorHalf"))
+    ck(tt.get("dmgAbiMul") == 0.5, "F60 dmgCalc 计入多重鳞片满血 ×0.5", "v=%s" % tt.get("dmgAbiMul"))
+    ck(tt.get("dmgAbiFur") == 0.5, "F61 dmgCalc 计入毛皮大衣物理 ×0.5", "v=%s" % tt.get("dmgAbiFur"))
+    ck(tt.get("dmgAbiNone") == 1, "F62 dmgCalc 无减伤特性时不误乘", "v=%s" % tt.get("dmgAbiNone"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
