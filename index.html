@@ -3726,7 +3726,7 @@ var ABI_DETAIL={
   head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，额外给自己招式加火属性。',
   rows:[
     ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
-    ['属性附加','在 battle_util.c / battle_main.c / pokemon.c 三个源文件里，它只出现在穿透判定与「忽略能力检查」两处，没有找到修改属性的实现；「加火属性」这句目前没有代码支撑，配招时按穿透理解更稳']
+    ['属性附加','当前发行版源码（master）里搜遍全部 .c/.h/.s 都没有 AddBattlerType，也就是说 2.65 里「加火属性」没有生效；上游 upcoming 分支已在 abilities.cc 写好 .onEntry = AddBattlerType(battler, TYPE_FIRE) + .addsType = TYPE_FIRE，属于下一版才实装的预留效果']
   ],
   src:'ER 官方源码 src/battle_util.c：L10144-10156（ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT / ABILITY_TURBOBLAZE 同一分支）'
 },
@@ -3734,7 +3734,7 @@ var ABI_DETAIL={
   head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，额外给自己招式加电属性。',
   rows:[
     ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
-    ['属性附加','在 battle_util.c / battle_main.c / pokemon.c 三个源文件里，它只出现在穿透判定与「忽略能力检查」两处，没有找到修改属性的实现；「加电属性」这句目前没有代码支撑，配招时按穿透理解更稳']
+    ['属性附加','当前发行版源码（master）里搜遍全部 .c/.h/.s 都没有 AddBattlerType，也就是说 2.65 里「加电属性」没有生效；上游 upcoming 分支已在 abilities.cc 写好 .onEntry = AddBattlerType(battler, TYPE_ELECTRIC) + .addsType = TYPE_ELECTRIC，属于下一版才实装的预留效果']
   ],
   src:'ER 官方源码 src/battle_util.c：L10144-10156（ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT / ABILITY_TURBOBLAZE 同一分支）'
 }
