@@ -3723,20 +3723,20 @@ var ABI_DETAIL={
   src:'ER 官方源码 src/battle_util.c：L944-1061（白名单表）、L10136（表内为 0 直接 return FALSE）、L10140（招式自带标记）、L10148（胃液失效）、L10151-10154（先天特性判定）'
 },
 '163':{
-  head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，额外给自己招式加火属性。',
+  head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，另外入场时给自己追加火属性。',
   rows:[
     ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
-    ['属性附加','当前发行版源码（master）里搜遍全部 .c/.h/.s 都没有 AddBattlerType，也就是说 2.65 里「加火属性」没有生效；上游 upcoming 分支已在 abilities.cc 写好 .onEntry = AddBattlerType(battler, TYPE_FIRE) + .addsType = TYPE_FIRE，属于下一版才实装的预留效果']
+    ['属性附加','入场时把火属性写进第三属性槽（type3），是「叠加出第三个属性」，不是替换原属性；本来已经是火属性时不触发。源码 src/abilities.cc 的 Impl<ABILITY_TURBOBLAZE>：.onEntry = AddBattlerType(battler, TYPE_FIRE) + .addsType = TYPE_FIRE']
   ],
-  src:'ER 官方源码 src/battle_util.c：L10144-10156（ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT / ABILITY_TURBOBLAZE 同一分支）'
+  src:'src/abilities.cc Impl<ABILITY_TURBOBLAZE>（属性附加）；src/battle_util.c L10144-10156（与 ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT 同一分支）'
 },
 '164':{
-  head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，额外给自己招式加电属性。',
+  head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，另外入场时给自己追加电属性。',
   rows:[
     ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
-    ['属性附加','当前发行版源码（master）里搜遍全部 .c/.h/.s 都没有 AddBattlerType，也就是说 2.65 里「加电属性」没有生效；上游 upcoming 分支已在 abilities.cc 写好 .onEntry = AddBattlerType(battler, TYPE_ELECTRIC) + .addsType = TYPE_ELECTRIC，属于下一版才实装的预留效果']
+    ['属性附加','入场时把电属性写进第三属性槽（type3），是「叠加出第三个属性」，不是替换原属性；本来已经是电属性时不触发。源码 src/abilities.cc 的 Impl<ABILITY_TERAVOLT>：.onEntry = AddBattlerType(battler, TYPE_ELECTRIC) + .addsType = TYPE_ELECTRIC']
   ],
-  src:'ER 官方源码 src/battle_util.c：L10144-10156（ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT / ABILITY_TURBOBLAZE 同一分支）'
+  src:'src/abilities.cc Impl<ABILITY_TERAVOLT>（属性附加）；src/battle_util.c L10144-10156（与 ABILITY_MOLD_BREAKER / ABILITY_TURBOBLAZE 同一分支）'
 }
 };
 var ABI_TYPE_MOD={
@@ -15040,7 +15040,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.187';
+var ER_ENGINE_VER='v4.189';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
