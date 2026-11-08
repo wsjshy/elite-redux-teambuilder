@@ -3713,19 +3713,21 @@ var ABI_DETAIL={
   src:'ER 官方源码 src/battle_util.c：L9661-9675（ABILITY_TWO_STEP 检查 FLAG_DANCE 后 UseAttackerFollowUpMove(MOVE_REVELATION_DANCE, 50)）、L9222-9229（ABILITY_DANCER 检查 FLAG_DANCE）'
 },
 '104':{
-  head:'「穿透特性」不是无视全部特性 —— 源码里有一张白名单 sAbilitiesAffectedByMoldBreaker，只有表内标记为 1 的特性会被穿透，共 108 条，约占全库 618 条的 1/6。',
+  head:'「穿透特性」不是无视全部特性。当前版本不再用中心白名单表，改成特性结构体自带 breakable 标志，标了它的才会被穿透，全库共 207 个（旧版 2025-06 分支是 108 条白名单，已作废）。',
   rows:[
+    ['判定条件','四个条件同时成立才穿透：① 出招的是破格方（不是被打的一方）② 目标不是自己 ③ 本回合命中标记带破格 ④ 目标那个特性的 breakable 为真'],
     ['穿透得到','减伤 / 免疫 / 属性吸收这一大类：毛皮大衣、多重鳞片、厚脂肪、过滤、坚硬、飘浮、引火、蓄电、蓄水、防弹、防尘、甜幕、幻影、冰鳞粉、镜面装甲等'],
-    ['穿透不到','不在白名单里的一律照常生效；潮湿（Damp）在源码里被明确注释掉，就不是破格能穿的对象'],
+    ['穿透不到','没标 breakable 的一律照常生效；破格三兄弟（破格 / 涡轮火焰 / 兆级电压）自己，以及盲怒、否决这几个「破格系」特性本身不可被破'],
+    ['会被挡下','对手持有「特性护盾 Ability Shield」道具时穿透直接被挡掉 —— 源码 return !DoesBattlerHaveAbilityShield(battler)'],
     ['会失效','自己吃到胃液（Gastro Acid）后破格失效；招式本身自带「无视目标特性」标记时不看破格，照样穿透'],
-    ['先天槽同样穿透','数据描述里的「同样影响先天特性」对应源码走 SpeciesHasInnate 判定 —— 先天槽带破格也照此穿透']
+    ['先天槽同样穿透','数据描述里的「同样影响先天特性」对应源码走先天槽判定 —— 先天槽带的特性一样会被穿透']
   ],
-  src:'ER 官方源码 src/battle_util.c：L944-1061（白名单表）、L10136（表内为 0 直接 return FALSE）、L10140（招式自带标记）、L10148（胃液失效）、L10151-10154（先天特性判定）'
+  src:'当前版本 src/battle_util.c:9369 IsSuppressed（判据 gAbilities[ability].breakable + Ability Shield 兜底）；旧版 src/battle_util.c L944-1061 白名单表（108 条，已作废）'
 },
 '163':{
   head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，另外入场时给自己追加火属性。',
   rows:[
-    ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
+    ['穿透范围','同 #104：只穿透标了 breakable 的 207 个特性，不是无视一切'],
     ['属性附加','入场时把火属性写进第三属性槽（type3），是「叠加出第三个属性」，不是替换原属性；本来已经是火属性时不触发。源码 src/abilities.cc 的 Impl<ABILITY_TURBOBLAZE>：.onEntry = AddBattlerType(battler, TYPE_FIRE) + .addsType = TYPE_FIRE']
   ],
   src:'src/abilities.cc Impl<ABILITY_TURBOBLAZE>（属性附加）；src/battle_util.c L10144-10156（与 ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT 同一分支）'
@@ -3733,7 +3735,7 @@ var ABI_DETAIL={
 '164':{
   head:'破格三兄弟之一（破格 / 涡轮火焰 / 兆级电压 走同一段判定），穿透范围与破格完全一致，另外入场时给自己追加电属性。',
   rows:[
-    ['穿透范围','同 #104：只穿透 108 条白名单特性，不是无视一切'],
+    ['穿透范围','同 #104：只穿透标了 breakable 的 207 个特性，不是无视一切'],
     ['属性附加','入场时把电属性写进第三属性槽（type3），是「叠加出第三个属性」，不是替换原属性；本来已经是电属性时不触发。源码 src/abilities.cc 的 Impl<ABILITY_TERAVOLT>：.onEntry = AddBattlerType(battler, TYPE_ELECTRIC) + .addsType = TYPE_ELECTRIC']
   ],
   src:'src/abilities.cc Impl<ABILITY_TERAVOLT>（属性附加）；src/battle_util.c L10144-10156（与 ABILITY_MOLD_BREAKER / ABILITY_TURBOBLAZE 同一分支）'
@@ -3930,7 +3932,7 @@ function openMv(m){
   var html='<h2>'+esc(m[1])+' <span style="font-size:13px;color:var(--sub)">'+esc(m[2])+' #'+m[0]+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(m[3])+' '+splitLabel(m[4])+
     ' 威力 <b>'+(m[5]||'-')+'</b> 命中 <b>'+(m[6]||'-')+'</b> PP <b>'+m[7]+'</b> 先制 <b>'+(m[8]||'0')+'</b></div>';
-  if(MV_PLACEHOLDER[''+m[0]])html+='<div class="tip tip-warn" style="font-size:12px">⚠ <b>本招在 2.65 里未实装</b>：源码里它的效果是 EFFECT_PLACEHOLDER，脚本只做「扣 PP → 提示还没做好 → 结束」，<b>不会造成任何伤害或效果</b>。下面的名字、威力和描述来自数据层，不要按描述配招。</div>';
+  if(MV_PLACEHOLDER[''+m[0]])html+='<div class="tip tip-warn" style="font-size:12px">⚠ <b>本招未实装</b>：源码里它的效果是 EFFECT_PLACEHOLDER，脚本只做「扣 PP → 提示还没做好 → 结束」，<b>不会造成任何伤害或效果</b>。下面的名字、威力和描述来自数据层，不要按描述配招。<br><span style="color:var(--sub)">占位符机制在当前分支仍然存在；这份名单取自 2.65 招式数据表，新版数据表由工具生成、无法逐个核对招名。</span></div>';
   if(ERDATA.movesNotes&&ERDATA.movesNotes[m[0]])html+='<div class="tip tip-warn" style="font-size:12px">💡 '+esc(ERDATA.movesNotes[m[0]])+'</div>';
   /* v4.x A②：招式介绍中文优先（ERDATA.mvDescZh → 英文 desc m[9] → ER lDesc m[10]），机制词条标蓝可点 */
   html+='<div class="abid">'+glossify(mvDescOf(m))+'</div>';
@@ -15040,7 +15042,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.189';
+var ER_ENGINE_VER='v4.190';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
