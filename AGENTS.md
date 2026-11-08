@@ -368,3 +368,75 @@ v4.55 / v4.82 两轮的历史状态快照另存于 [`docs/changelog/STATE_snapsh
 **踩坑（重要）**：`patch_ph.py` 第一版 anchor 用了 `'</td>'`，实际文件是 `</td><td>`（少一个引号），`count=0` 早退；
 但**前两步的替换已在内存里、只是没写盘** → 第二次只补后两步时 `mvPhTag` 未定义，页面直接抛 `ReferenceError`。
 教训：**多锚点补丁必须一次事务写完，不能拆成多次补跑**；探针的「页面内异常」断言正好抓住了这种半成品状态。
+
+## v4.189（2026-11-08）· 口径更正：master 不是当前分支，163/164 加属性其实已实装
+
+**起因**：查 `#788 冰川暴怒` 能否补详解时，发现它的常量在 master 里**根本不存在**，
+顺手核对后发现一个会推翻大量既有结论的事实。
+
+### 两条分支到底哪条对应玩家在玩的版本
+
+| 分支 | 最后提交 | 特性定义数 |
+|---|---|---|
+| `master` | **2025-06-04** | **618 条 `#define`**（id 0–617，末条 `ABILITY_ROCKHARD_WILL 617`，`ABILITIES_COUNT=618`） |
+| `upcoming` | **2026-11-07** | **1073 个 `Impl<ABILITY_>` 名字** |
+
+游戏数据层 `ERDATA.abilities` 有 **1034 条**（id 0–1033，连续无缺口）。
+**1034 只对得上 upcoming，对不上 618** → 之前「master = 2.65 发行版对应代码」的口径是错的，
+**master 是一年前的旧分支**。
+
+判据不要用「哪个源文件大 / 是不是 C++」，用**提交日期 + 数据层条目数**交叉。
+
+### 直接后果：163 涡轮火焰 / 164 兆级电压的结论原来写反了
+
+旧文案写「`AddBattlerType` 在 master 全仓 0 命中 → 2.65 里不生效，是下一版预留」。
+真相是 `src/abilities.cc:2256` 有完整实现，`AddBattlerType`（`:227`）把属性写进 **`type3` 第三属性槽**：
+
+```cpp
+static int AddBattlerType(u8 battler, Type type) {
+    CHECK_NOT(IS_BATTLER_OF_TYPE(battler, type))   // 本来就是这个属性 → 不加
+    gBattleMons[battler].type3 = type;             // 叠加出第三个属性，不是替换
+    ...
+}
+```
+
+页面文案已改为「入场时把属性写进第三属性槽，是叠加出第三个属性，不是替换原属性；
+本来已经是该属性时不触发」，`head` 也从「给自己招式加属性」改成「给自己追加属性」（原来这句本身就说错了）。
+
+### 416 个超出 master 的 id 怎么查
+
+upcoming 把常量头文件改成**生成式**（有 `.github/workflows/regenerate-ability-files.yml`），
+`include/constants/abilities.h` 在它树里**整个不存在**，没法按 id 查 → **改按英文名匹配 `Impl<ABILITY_>`**。
+台账 `docs/research/特性覆盖台账_20261108.json`（1034 条）：
+
+| 可查方式 | 条数 |
+|---|---|
+| master（id 0–617） | 618 |
+| upcoming 按英文名匹配 | **397**（占超出部分的 95.4%） |
+| 两个分支都没有 | **19** |
+| **可查率** | **1015 / 1034 = 98.2%** |
+
+19 条无源样本：`#628 Pretty Privilege`、`#629 Shallow Grave`、`#642 Jackhammer`、
+`#653 Rest in Peace`、`#675 Max Acceleration`、`#688 Imposing Wings`、`#708 Megabite`、
+`#751 Energy Horns`、`#752 Rising Dough`、`#756 Twinkle Toes` 等。
+
+### 顺带修掉一个真实缺陷：版本号漏改
+
+`ER_ENGINE_VER` 还停在 **v4.187** —— v4.188 那轮加了功能却**没改版本常量**，
+用户看到的页头版本一直是旧的。本轮一并改为 **v4.189**。
+
+### 落地
+
+| 项 | 值 |
+|---|---|
+| 体积 | 1,578,721 → **1,578,729 B** |
+| commit | **`e8089b4`**（index.html + 两份 doc）、台账单独一个 commit |
+| 部署 | `gh-pages@ebfd370` |
+| 线上核验 | 1,578,729 B / SHA1 `21B33084BF7FD3FEFB86B8FB1F750C86A75664D4`，与本地双一致 |
+| 门禁 | smoke **32/32**、probe **29 项 ALL PASS**、`node --check` 通过 |
+
+**踩坑**：改 163/164 时用「行区间」切锚点，`iend` 写成 `strip()=='}'`，
+但 163 块结尾其实是 `},`（带逗号），结果把 164 块一起吞进替换范围，`node --check` 报
+`'164':{ Unexpected string`。回滚（`git checkout -- index.html`）后改为
+`iend` 分别取 `},`（163）与 `}`（164），一次通过。
+**教训：行区间切锚点要先确认边界行的真实结尾字符（`,` / `}` / `},`）。**
