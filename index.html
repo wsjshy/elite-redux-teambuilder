@@ -3739,6 +3739,17 @@ var ABI_DETAIL={
   src:'ER 官方源码 src/battle_util.c：L10144-10156（ABILITY_MOLD_BREAKER / ABILITY_TERAVOLT / ABILITY_TURBOBLAZE 同一分支）'
 }
 };
+var ABI_TYPE_MOD={
+ '96':'一般属性招式「无视对方属性抗性」，相性一律强制为 1.0 倍（既不是 2 倍，也不看对方是什么属性）',
+ '113':'格斗/一般属性招式打幽灵系，从「无效 0 倍」改为「正常 1.0 倍」',
+ '457':'幽灵属性招式打一般系，从「无效 0 倍」改为「正常 1.0 倍」',
+ '285':'电属性招式打地面系，从「无效 0 倍」改为「抵抗 0.5 倍」——能打，但只有一半伤害，不是正常伤害',
+ '349':'电属性招式打电属性，改为「效果绝佳 2.0 倍」（正统是 0.5 倍抗性），并且能让电系麻痹',
+ '357':'火属性招式打岩石系，改为「效果绝佳 2.0 倍」（正统是 0.5 倍抗性）',
+ '467':'火属性招式打岩石系，改为「效果绝佳 2.0 倍」，与「熔岩」同一套判定',
+ '212':'毒属性招式打钢系，从「无效 0 倍」改为「效果绝佳 2.0 倍」；另可使任何属性中毒',
+ '328':'龙属性招式打妖精系，从「无效 0 倍」改为「正常 1.0 倍」'
+};
 function abiDesc(el,id,box){
   /* v4.x A①：特性/天性共用——中文描述优先（abiDescZh → 数据层中文 → abiTags.nt），词条标蓝，可跳特性反查
      box：挂载容器 id —— 特性块用 'abiDesc'，天性块用 'spInnDesc'（描述须紧跟各自的 chip 行，互不串块） */
@@ -3788,6 +3799,17 @@ function abiDesc(el,id,box){
         '</div>';
     }
   }catch(eDt){}
+  /* v4.187：属性相性改写 —— 数据描述里「可命中」「效果绝佳」这类说法不给倍率，
+     源码 MulByTypeEffectiveness 里其实写死了 0.5 / 1.0 / 2.0，直接把真实倍率摊开 */
+  try{
+    var _tm=ABI_TYPE_MOD[''+id];
+    if(_tm){
+      h+='<div class="ruleline" style="line-height:1.75;margin-top:4px">🎯 <b>相性改写（源码倍率）</b>'+
+        '<div style="margin:3px 0 0">'+glossify(_tm)+'</div>'+
+        '<div class="mini" style="color:var(--sub);margin-top:4px">依据：src/battle_util.c:15186 MulByTypeEffectiveness</div>'+
+        '</div>';
+    }
+  }catch(eTm){}
   var tg=abiTagLines(id);
   if(tg.length)h+='<div class="ruleline">战斗意义：'+tg.map(function(x){return esc(x)}).join('；')+'</div>';
   d.innerHTML=h;
@@ -15008,7 +15030,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.186';
+var ER_ENGINE_VER='v4.187';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

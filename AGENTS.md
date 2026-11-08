@@ -324,3 +324,18 @@ v4.55 / v4.82 两轮的历史状态快照另存于 [`docs/changelog/STATE_snapsh
 **踩坑**：首版补丁字符串续接多写一个 `'`，整段主 script 语法中断（所有函数 undefined），`smoke.js` 仍 31/31 —— **smoke 不检查 JS 语法，是已知盲区**，建议后续把 `node --check` 纳入门禁。
 
 **产物**：分支 `fix/abi-dedup-detail-20261108`（`7aa75e3` → `e144e11` → `7cb4d09`），线上 `gh-pages@f3bef1a`，`index.html` 1,565,045 → 1,571,658 B。详见 `docs/research/特性描述深化_20261108.md`。
+
+## v4.187 补记（2026-11-08）：相性改写摊开 + 全量普查结论
+
+**① 修正一处线上错误文案**：163 涡轮火焰 / 164 兆级电压原先写「加属性没有代码支撑」。后续在上游 `upcoming` 分支的 `src/abilities.cc` 看到 `Impl<ABILITY_TURBOBLAZE>` 有 `.onEntry = AddBattlerType(battler, TYPE_FIRE)` + `.addsType = TYPE_FIRE`，说明**写了一半**。实测：`AddBattlerType` 在 **master 全仓 0 命中**、在 **upcoming 22 命中** → 加属性是**下一版才实装**，2.65 里不生效。文案已改为双版本口径（`f2510f8`）。
+
+**② 新增「相性改写（源码倍率）」块**：数据层对这类特性只写「可以命中」「效果绝佳」，不给倍率，玩家极易算错。源码 `src/battle_util.c:15186` `MulByTypeEffectiveness` 里倍率是写死的，已把 9 条摊到详情里（`ABI_TYPE_MOD`）：
+96 一般皮肤 → 强制 1.0；113 胆量 → 0 改 1.0；457 幻痛 → 0 改 1.0；**285 地面冲击 → 0 改 0.5（抵抗，不是正常伤害）**；**349 电力过载 → 2.0**；357 熔岩 → 2.0；467 岩浆吞噬者 → 2.0；212 腐蚀 → 0 改 2.0；328 压倒 → 0 改 1.0。
+
+**③ 全量特性普查（618 条）**：用 `include/constants/abilities.h` 的 `#define ABILITY_XXX <id>` 做 id→常量映射（**数据层英文名是压缩过的**，`WandrngSprit`/`CuriusMedicn` 推不出常量名，第一版按英文名推得 441 条假「零命中」）。结论：**618/618 有引用，616 条在效果文件里有实现**；例外仅 **#180 共生**（只在 AI 判断）、**#600 龙族拳手**（只有声明与文本）。`battle_util.c` 命中数中位数仅 **2** → 绝大多数是表驱动或单点判定，**逐条自动写效果摘要被证伪**（只有 34 条关键行带注释）。
+
+**④ 新增文档**：`docs/research/ER通用机制与源码口径_20261108.md` —— 伤害公式链（`DoMoveDamageCalcInternal`）、相性改写全表（含 6 条不属于任何特性的全局规则，如**强风天气把飞行系受到的克制压回 1.0**）、能力等级倍率表（标准 Gen3 未魔改）、993 个 `EFFECT_` 的招式分派机制、ER 独有 Monotype Champ 修正、618 条覆盖台账。
+
+**验证**：`tools/probe_sp_abi_detail.py` 26 项断言 ALL PASS（新增 F1~F3 覆盖相性改写块）；`tools/smoke.js` 32/32；`node --check` 通过。线上 `gh-pages@698856c`，`index.html` 1,575,991 B / SHA1 `53FA74AE…`（163/164 修正版），随后 v4.187 到 1,577,659 B。
+
+**踩坑（本轮最贵的一次）**：用 `s.replace('**','')` 想去掉 markdown 加粗，结果**全局替换 675 处**、改动 662 行，把 `AXIS_LIB` 数据和注释里的合法 `**` 一起删了。已 `git checkout -- index.html` 全量回滚后重打补丁（只改 23 行）。**教训：单文件大产物上做全局字符串替换前，必须先 `count()` 并和预期数量对账，数量差一个量级就停下。**

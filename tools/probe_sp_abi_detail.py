@@ -145,6 +145,23 @@ INJECT_JS = r"""
         r.desc163 = dD4? dD4.innerHTML : null;
       }catch(eD4){ r.desc163 = 'ERR:' + eD4; }
 
+      // --- F. 属性相性改写倍数（v4.187）---
+      try{
+        abiDesc(null, '285');
+        var dF1=document.getElementById('abiDesc');
+        r.desc285 = dF1? dF1.innerHTML : null;
+      }catch(eF1){ r.desc285 = 'ERR:' + eF1; }
+      try{
+        abiDesc(null, '349');
+        var dF2=document.getElementById('abiDesc');
+        r.desc349 = dF2? dF2.innerHTML : null;
+      }catch(eF2){ r.desc349 = 'ERR:' + eF2; }
+      try{
+        abiDesc(null, '86');
+        var dF3=document.getElementById('abiDesc');
+        r.desc86b = dF3? dF3.innerHTML : null;
+      }catch(eF3){ r.desc86b = 'ERR:' + eF3; }
+
       // --- E. 入场类特性展开（#293 滚起来「入场释放变圆」/#320 鼓风「入场顺风」）---
       try{
         abiDesc(null, '293');
@@ -327,6 +344,14 @@ def main():
     ck("关联招式" not in d86, "E3 非招式型特性不误挂该块", d86[:54].replace("\n", " "))
     ck("关联招式" in d788 and "暴风雪" in d788, "E4 「触发50威力暴风雪」附上招式效果", d788[:64].replace("\n", " "))
     ck("机制详解" in d733 and "跟舞" in d733, "E5 733 拳舞有源码级详解", d733[:64].replace("\n", " "))
+
+    # F. 属性相性改写倍数
+    d285 = data.get("desc285") or ""
+    d349 = data.get("desc349") or ""
+    d86b = data.get("desc86b") or ""
+    ck("相性改写（源码倍率）" in d285 and "0.5 倍" in d285, "F1 285 地面冲击给出真实倍率 0.5", d285[:70].replace("\n", " "))
+    ck("相性改写（源码倍率）" in d349 and "2.0 倍" in d349, "F2 349 电力过载给出 2.0", d349[:70].replace("\n", " "))
+    ck("相性改写" not in d86b, "F3 非相性改写特性不误挂该块", d86b[:60].replace("\n", " "))
 
     print()
     if fails:
