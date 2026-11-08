@@ -312,6 +312,23 @@ INJECT_JS = r"""
     one('猛踢','striker','1.3/1');
     return r.join('|');
   })();
+  /* v4.234：继承型「倍率 + 扩类」三特性 */
+  out.inherAtk = (function(){
+    function c(abil,id,mt){ return dmgAtkAbiMul({inns:[abil],abis:[]},mt,'',id).mul; }
+    function findId(pred){
+      var out=0;
+      Object.keys(ERDATA.moves).forEach(function(k){
+        var m=ERDATA.moves[k]; if(!out && +m[5]>0 && pred(m,+k)) out=+k;
+      });
+      return out;
+    }
+    var grass=findId(function(m,k){return m[3]==='草' && !mvHasFlag(k,'keen')});
+    var fire=findId(function(m,k){return m[3]==='火' && !mvHasFlag(k,'keen')});
+    var dance=findId(function(m,k){return mvHasFlag(k,'dance') && !mvHasFlag(k,'striker')});
+    var laun=parseInt(MV_FLAG['launcher'].split(',')[0],10);
+    var lmv=ERDATA.moves[laun];
+    return [c('栗子斧',grass,'草'), c('栗子斧',fire,'火'), c('后街男孩',dance,'草'), c('枪手',laun,lmv[3])].join('/');
+  })();
   out.punkDef = (function(){
     var id=parseInt(MV_FLAG['sound'].split(',')[0],10);
     var a=dmgDefAbiMul({inns:['庞克摇滚'],abis:[]},{inns:[],abis:[]},'一般',false,{moveId:id},1).mul;
@@ -670,6 +687,7 @@ def main():
     ck(tt.get("mvFlagCounts") == '{"jaw":25,"sound":36,"reckless":18,"sheer":255,"field":15,"dance":11,"bone":5,"launcher":78,"keen":47,"fist":31,"striker":17}', "F83 招 flag 表 11 类全量", "%s" % tt.get("mvFlagCounts"))
     ck(tt.get("flagAtk") == "1.3/1|1.3/1|1.2/1|1.3/1|1.3/1|1.3/1|1.3/1|1.3/1", "F84 八个 flag 型特性 命中 flag 时增伤、无招时不增", "%s" % tt.get("flagAtk"))
     ck(tt.get("punkDef") == "0.5/1", "F85 庞克摇滚 防守侧 声音招 ×0.5", "%s" % tt.get("punkDef"))
+    ck(tt.get("inherAtk") == "1.3/1/1.3/1.3", "F86 栗子斧(草招∪锐利)/后街男孩(舞蹈∪踢)/枪手(波动) 扩类后仍 ×1.3，非触发招不增", "%s" % tt.get("inherAtk"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
