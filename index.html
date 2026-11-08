@@ -3792,7 +3792,7 @@ function abiDesc(el,id,box){
     });
     if(_da)_rows.push('不分属性，<b>所有伤害</b> ×'+_da+'（'+(_da<1?'减伤':'增伤')+'）');
     if(_dc)_dc.forEach(function(x){
-      _rows.push('<span style="opacity:.72">条件：'+glossify(x.when)+'</span> 时不分类别 ×'+x.mul+'（'+(x.mul<0.5?'强减伤':(x.mul<1?'减伤':'增伤'))+'）');
+      _rows.push('<span style="opacity:.72">条件：'+glossify(x.when)+'</span> 时不分类别 ×'+x.mul+'（'+(x.mul<0.5?'强减伤':(x.mul<1?'减伤':'增伤'))+'）'+(x.note?('<br><span style="opacity:.62;font-style:italic;padding-left:1.6em">注：'+x.note+'</span>'):''));
     });
     if(_rows.length)h+='<div class="ruleline" style="margin-top:4px">🛡 <b>受到伤害倍率</b>（源码 .onDefensiveMultiplier，与属性相的 0.5×/2× 不是一回事）：'+_rows.join('；')+'</div>';
   }catch(e){}
@@ -4945,9 +4945,9 @@ var ABI_DMG_COND={
   '慢出':[{mul:0.7,when:'本回合行动顺序靠后'}],
   '晒太阳':[{mul:0.5,when:'晴天'}],
   /* 以下四条在同一段里有多条规则（属性固定值 + 条件值，或 if/else 双分支），故不进 A 表 */
-  '毛茸茸':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）'},{mul:0.5,when:'接触招式'}],
-  '极致蓬松':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）'},{mul:0.5,when:'接触招式'}],
-  '液化':[{mul:2.0,when:'水属性招式（这是增伤，自找弱点）'},{mul:0.5,when:'接触招式'}],
+  '毛茸茸':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）',note:'数据层文案写「4 倍」，源码是 RESISTANCE(2.0)，但它的 resistance 分量在本版被丢弃，实际只有 ×2'},{mul:0.5,when:'接触招式'}],
+  '极致蓬松':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）',note:'数据层文案写「4 倍」，源码是 RESISTANCE(2.0)，但它的 resistance 分量在本版被丢弃，实际只有 ×2'},{mul:0.5,when:'接触招式'}],
+  '液化':[{mul:2.0,when:'水属性招式（这是增伤，自找弱点）',note:'数据层文案写「2 倍」，源码是 RESISTANCE(2.0)，但它的 resistance 分量在本版被丢弃，实际只有 ×2'},{mul:0.5,when:'接触招式'}],
   '树皮':[{mul:0.7,when:'效果绝佳时'},{mul:0.85,when:'非效果绝佳时'}],
   '羽衣':[{mul:0.7,when:'相性倍率小于 1（本来抗）时'},{mul:0.85,when:'相性倍率不小于 1 时'}]
 };
@@ -15283,7 +15283,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.199';
+var ER_ENGINE_VER='v4.201';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
