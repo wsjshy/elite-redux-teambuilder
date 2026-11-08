@@ -6303,10 +6303,14 @@ function speedDistBarHtml(){
   pts.forEach(function(p){h+='<span><b>'+p[0]+'</b> '+p[1]+'</span>'});
   h+='</div>';
   h+='<div style="position:relative;height:104px;margin:20px 4px 8px">';
+  var _pb=(window._spdFilter||{}).bin;
   for(i=0;i<NB;i++){
     var bh=Math.round(bins[i]*100/bmax);
-    h+='<div style="position:absolute;left:'+(i*100/NB)+'%;width:'+(100/NB)+'%;bottom:0;height:'+bh+'%;'
-      +'background:var(--accent);opacity:.45;border-radius:2px 2px 0 0"></div>';
+    var lo=Math.round(mn+i*span/NB), hi=Math.round(mn+(i+1)*span/NB-1);
+    var sel=(_pb!==undefined&&+_pb===i);
+    h+='<div onclick="speedPickBin('+i+','+lo+','+hi+')" title="极速 '+lo+'–'+hi+'：'+bins[i]+' 只（点击只看这些）" '
+      +'style="position:absolute;left:'+(i*100/NB)+'%;width:'+(100/NB)+'%;bottom:0;height:'+(bh<3?3:bh)+'%;cursor:pointer;'
+      +'background:'+(sel?'var(--ok,#2e7d32)':'var(--accent)')+';opacity:'+(sel?'1':'.45')+';border-radius:2px 2px 0 0"></div>';
   }
   pts.forEach(function(p){
     var x=pos(p[1]);
@@ -6315,6 +6319,9 @@ function speedDistBarHtml(){
   });
   h+='</div>';
   h+='<div style="font-size:13.5px;color:var(--sub);margin-top:8px">慢端 '+mn+' ←── 极速值 ──→ 快端 '+mx+'　柱高=每个速度区间的物种数（共 '+arr.length+' 条）；竖线为分位切点</div></div>';
+  var _pb2=(window._spdFilter||{}).bin;
+  if(_pb2!==undefined){var _b=window._spdBinRange||{};
+    h+='<div style="margin:2px 0 6px;font-size:13.5px">已选中极速区间 <b style="color:var(--ok,#2e7d32)">'+(_b.lo||'')+'–'+(_b.hi||'')+'</b>：下方表格只列这些宝可梦 <button class="btn-mini" onclick="speedPickBin(-1)" style="margin-left:6px">取消区间筛选</button></div>';}
   return h}
 /* 卡线省EV实算：满速性格下达到 target 所需最小 EV(0/4/.../252)；返回 {ev,val,saved}，达不到返回 null */
 function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
@@ -6970,6 +6977,9 @@ function speedRenderTable(){
       if(f.role==='space'&&r!=='space')return false;
       if(f.role==='clear'&&r!=='clear')return false;}
     if(f.type&&!(isType(s,f.type)))return false; /* v4.94 A：属性 chip 筛选 */
+    if(f.bin!==undefined){ /* v4.218：直方图柱子选中 → 只列该极速区间 */
+      var _r=window._spdBinRange||{};var _v=spdMaxOf(s);
+      if(_r.lo!==undefined&&(_v<_r.lo||_v>_r.hi))return false;}
     return true;
   });
   var sort=window._spdSort||'maxdesc';
@@ -6989,7 +6999,7 @@ function speedRenderTable(){
     var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:13px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr><td>'+s.id+'</td><td>'+esc(s.zh)+'</td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td>'+_spdBadge(p)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
+    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wv?('<span style="color:var(--acc)">'+wv+'</span>'):'—')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td>'+_spdBadge(p)+'</td><td>'+evTip+'</td><td>'+(role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</td></tr>';
   });
   h+='</tbody></table></div>';
   /* v4.72 P2：命中计数 + 空结果提示 + 截断提示 */
@@ -7002,6 +7012,13 @@ var _spdDbt=null;
 function speedOnSearch(){clearTimeout(_spdDbt);_spdDbt=setTimeout(speedRefreshTable,150)}   /* v4.72 P2③：150ms 防抖 */
 function speedSetN(n){window._spdN=n;speedRender(true)}
 function speedSetSort(v){window._spdSort=v;speedRender(true)}
+/* v4.218：点直方图柱子 → 表格只列该速度区间；i<0 等于取消 */
+function speedPickBin(i,lo,hi){
+  window._spdFilter=window._spdFilter||{};
+  if(i<0||window._spdFilter.bin===i){delete window._spdFilter.bin;window._spdBinRange=null}
+  else{window._spdFilter.bin=i;window._spdBinRange={lo:lo,hi:hi}}
+  speedRender(true);
+}
 /* v4.94 A：chip 筛选切换（同 chip 再点=取消；整页重渲染同步 active 样式） */
 function speedToggleFilter(k,v){window._spdFilter=window._spdFilter||{};if(window._spdFilter[k]===v)delete window._spdFilter[k];else window._spdFilter[k]=v;speedRender(true)}
 function speedRender(){if((!window.__erReady&&!window.__ER_PARTIAL)||!ERDATA.species||!ERDATA.species.length){var _sb=document.getElementById('speedBox');if(_sb)_sb.innerHTML='<div class="tip">数据加载中…</div>';return}try{var q=speedPctiles();
@@ -15426,7 +15443,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.216';
+var ER_ENGINE_VER='v4.218';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
