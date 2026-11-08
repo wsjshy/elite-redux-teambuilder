@@ -4824,6 +4824,8 @@ var ABI_TAG_PATCH={
   '熔岩铠甲':{hf:['水','冰'],hfMul:{水:0.7,冰:0.7}},
   '遇水凝固':{hf:['水'],hfMul:{水:0.5}},
   '黑暗亲和':{hf:['恶','妖精'],hfMul:{恶:0.75,妖精:0.75}}
+  /* 注：干燥皮肤的火 ×1.25 由 mechRw 机制层（L5118-5125 的 ma.down）负责，不要在这里重复登记，
+     否则 opt 会被乘两次（实测 2×1.25×1.25=3.125）。 */
 };
 var ABI_TAG_CACHE={};
 function _abUniq(a){var r=[],i;for(i=0;i<a.length;i++)if(r.indexOf(a[i])<0)r.push(a[i]);return r}
@@ -15320,7 +15322,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.210';
+var ER_ENGINE_VER='v4.211';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
