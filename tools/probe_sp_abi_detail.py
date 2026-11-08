@@ -290,30 +290,34 @@ INJECT_JS = r"""
     var s=null;ERDATA.species.forEach(function(x){if(!s&&((x.abis||[]).indexOf('雾眼')>-1||(x.inns||[]).indexOf('雾眼')>-1))s=x});
     if(!s)return null;return [defCellTrio(s,'幽灵').opt,defCellTrio(s,'幽灵',undefined,'雾').opt].join('/');
   })();
-  /* v4.232：招 flag 静态表 */
-  out.mvFlagCounts = (function(){
-    var o={};Object.keys(MV_FLAG||{}).forEach(function(k){o[k]=MV_FLAG[k].split(',').length});return JSON.stringify(o);
-  })();
-  out.flagAtk = (function(){
-    var r=[];
-    function one(nm,k,want){
-      var id=MV_FLAG[k].split(',')[0];
-      var hit=dmgAtkAbiMul({inns:[nm],abis:[]},'一般','',parseInt(id,10)).mul;
-      var miss=dmgAtkAbiMul({inns:[nm],abis:[]},'一般','',0).mul;
-      r.push(hit+'/'+miss);
-    }
-    one('强壮之颚','jaw','1.3/1');
-    one('庞克摇滚','sound','1.3/1');
-    one('舍身','reckless','1.2/1');
-    one('强行','sheer','1.3/1');
-    return r.join('|');
-  })();
-  out.punkDef = (function(){
-    var id=parseInt(MV_FLAG['sound'].split(',')[0],10);
-    var a=dmgDefAbiMul({inns:['庞克摇滚'],abis:[]},{inns:[],abis:[]},'一般',false,{moveId:id},1).mul;
-    var b=dmgDefAbiMul({inns:['庞克摇滚'],abis:[]},{inns:[],abis:[]},'一般',false,{moveId:0},1).mul;
-    return a+'/'+b;
-  })();
+  /* v4.232：招 flag 静态表 */
+  out.mvFlagCounts = (function(){
+    var o={};Object.keys(MV_FLAG||{}).forEach(function(k){o[k]=MV_FLAG[k].split(',').length});return JSON.stringify(o);
+  })();
+  out.flagAtk = (function(){
+    var r=[];
+    function one(nm,k,want){
+      var id=MV_FLAG[k].split(',')[0];
+      var hit=dmgAtkAbiMul({inns:[nm],abis:[]},'一般','',parseInt(id,10)).mul;
+      var miss=dmgAtkAbiMul({inns:[nm],abis:[]},'一般','',0).mul;
+      r.push(hit+'/'+miss);
+    }
+    one('强壮之颚','jaw','1.3/1');
+    one('庞克摇滚','sound','1.3/1');
+    one('舍身','reckless','1.2/1');
+    one('强行','sheer','1.3/1');
+    one('超级发射器','launcher','1.3/1');
+    one('铁拳','fist','1.3/1');
+    one('锐利之刃','keen','1.3/1');
+    one('猛踢','striker','1.3/1');
+    return r.join('|');
+  })();
+  out.punkDef = (function(){
+    var id=parseInt(MV_FLAG['sound'].split(',')[0],10);
+    var a=dmgDefAbiMul({inns:['庞克摇滚'],abis:[]},{inns:[],abis:[]},'一般',false,{moveId:id},1).mul;
+    var b=dmgDefAbiMul({inns:['庞克摇滚'],abis:[]},{inns:[],abis:[]},'一般',false,{moveId:0},1).mul;
+    return a+'/'+b;
+  })();
   out.darkAura = dmgAtkAbiMul({inns:['暗黑气场'],abis:[]},'恶','').mul;
   out.fairyAura = dmgAtkAbiMul({inns:['妖精气场'],abis:[]},'妖精','').mul;
   out.antarctic = dmgAtkAbiMul({inns:['南极鸟'],abis:[]},'冰','').mul;
@@ -663,8 +667,8 @@ def main():
     ck(tt.get("darkAura") == 1.33, "F80 暗黑气场 恶招 ×1.33", "v=%s" % tt.get("darkAura"))
     ck(tt.get("fairyAura") == 1.33, "F81 妖精气场 妖精招 ×1.33", "v=%s" % tt.get("fairyAura"))
     ck(tt.get("antarctic") == 1.3, "F82 南极鸟 冰招 ×1.3", "v=%s" % tt.get("antarctic"))
-    ck(tt.get("mvFlagCounts") == '{"jaw":25,"sound":36,"reckless":18,"sheer":255,"field":15,"dance":11,"bone":5}', "F83 招 flag 表 7 类全量", "%s" % tt.get("mvFlagCounts"))
-    ck(tt.get("flagAtk") == "1.3/1|1.3/1|1.2/1|1.3/1", "F84 强壮之颚/庞克摇滚/舍身/强行 命中 flag 时增伤、无招时不增", "%s" % tt.get("flagAtk"))
+    ck(tt.get("mvFlagCounts") == '{"jaw":25,"sound":36,"reckless":18,"sheer":255,"field":15,"dance":11,"bone":5,"launcher":78,"keen":47,"fist":31,"striker":17}', "F83 招 flag 表 11 类全量", "%s" % tt.get("mvFlagCounts"))
+    ck(tt.get("flagAtk") == "1.3/1|1.3/1|1.2/1|1.3/1|1.3/1|1.3/1|1.3/1|1.3/1", "F84 八个 flag 型特性 命中 flag 时增伤、无招时不增", "%s" % tt.get("flagAtk"))
     ck(tt.get("punkDef") == "0.5/1", "F85 庞克摇滚 防守侧 声音招 ×0.5", "%s" % tt.get("punkDef"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
