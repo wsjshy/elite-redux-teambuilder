@@ -4954,6 +4954,8 @@ var ABI_DMG_MOD={
    条件取自 %TEMP%\ERsrc2\abilities.cc 的 if 表达式，不是数据层描述。
    判据：一个 .onDefensiveMultiplier 段内出现多于 1 条规则 ⇒ 整体归本表（含 if/else 双分支）。 */
 var ABI_DMG_COND={
+  /* v4.232：庞克摇滚防守侧（源码 L3298 .onDefensiveMultiplier: IsSoundMove → MUL(.5)） */
+  '庞克摇滚':[{mul:0.5,when:'声音招式'}],
   '恶兆':[{mul:0.25,when:'会心一击时'}],
   '脑容量':[{mul:0.5,when:'满血时'}],
   '雪之精神':[{mul:0.5,when:'冰雹天'}],
@@ -6686,7 +6688,16 @@ function dmgAtkAbis(sA){
 var ABI_ATK_COND={
   '雾眼':[{t:['幽灵'],mul:1.5,need:'fog'}]
 };
-function dmgAtkAbiMul(sA,mType,wx){
+/* v4.232：进攻侧「招 flag 型增伤」—— 前置条件是某个招式 flag，而 flag 能从源码逐招静态提取（MV_FLAG）。
+   这批以前被当成「静态算不了」，其实只是没人去提取；接上后 124 只物种的输出第一次被计入。 */
+var ABI_FLAG_ATK={
+  '强壮之颚':[{k:'jaw',mul:1.3}],       /* STRONG_JAW L2343：FLAG_STRONG_JAW_BOOST ×1.3（25 招）*/
+  '庞克摇滚':[{k:'sound',mul:1.3}],     /* PUNK_ROCK L3293：IsSoundMove ×1.3（36 招）；防守侧 ×0.5 见 ABI_DMG_COND */
+  '舍身':[{k:'reckless',mul:1.2}],      /* RECKLESS L1815：IsRecklessBoosted ×1.2（18 招）*/
+  '强行':[{k:'sheer',mul:1.3}],         /* SHEER_FORCE L1854：FLAG_SHEER_FORCE_BOOST ×1.3（255 招）*/
+  '大牙狸之佑':[{k:'field',mul:1.5}]     /* FIELD_EXPLORER L4611：FLAG_FIELD_BASED ×1.5（15 招，数据层无持有者，备查）*/
+};
+function dmgAtkAbiMul(sA,mType,wx,mvId){
   var m=1,hit=[];
   try{
     dmgAtkAbis(sA).forEach(function(n){
@@ -6699,6 +6710,11 @@ function dmgAtkAbiMul(sA,mType,wx){
         if(c.t&&c.t.indexOf(mType)<0)return;
         if(c.need==='fog'&&String(wx||'').indexOf('雾')<0)return;
         m*=c.mul;hit.push(n+'·'+mType+'×'+c.mul+'('+(c.need==='fog'?'雾天':'条件')+')');
+      });
+      var fs=ABI_FLAG_ATK[n];
+      if(fs)fs.forEach(function(f){
+        if(!mvHasFlag(mvId,f.k))return;
+        m*=f.mul;hit.push(n+'·'+f.k+'×'+f.mul);
       });
     });
   }catch(e){}
@@ -6732,6 +6748,10 @@ function dmgCondHit(when,sD,sA,mType,isPhys,o,eff){
   if(/沙暴/.test(when))return o.weather==='沙暴';
   if(/冰雹|雪天/.test(when))return o.weather==='雪'||o.weather==='冰雹';
   if(/接触招式/.test(when))return mvIsContact(o&&o.moveId);
+  if(/声音招式/.test(when))return mvHasFlag(o&&o.moveId,'sound');   /* v4.232 庞克摇滚防守侧 */
+  if(/咬类招式/.test(when))return mvHasFlag(o&&o.moveId,'jaw');
+  if(/反作用招式/.test(when))return mvHasFlag(o&&o.moveId,'reckless');
+  if(/场地类招式/.test(when))return mvHasFlag(o&&o.moveId,'field');
   if(/(\S+?)属性招式/.test(when)){
     var mt=when.match(/(\S+?)属性招式/)[1];
     return mType===mt;                       /* 招式属性（非攻方属性） */
@@ -6800,7 +6820,7 @@ function dmgCalc(o){
   if(abiMul!==1)mod*=abiMul;
   /* 进攻侧属性增伤（飘浮飞行×1.25 / 水泡水×2 / 电晶体电×1.5 …） */
   var atkMul=1,atkHit=[];
-  try{var _am=dmgAtkAbiMul(sA,mType,(o&&o.weather)||'');atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
+  try{var _am=dmgAtkAbiMul(sA,mType,(o&&o.weather)||'',(o&&o.moveId)||0);atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
   if(atkMul!==1)mod*=atkMul;
   if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
   if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
@@ -6819,18 +6839,23 @@ function dmgCalc(o){
 /* 反解：evA 从 0 按 4 步递增，首个 min-roll ≥ 对手HP 的 EV（OHKO 线） */
 /* v4.95 A：耐久反推——给定威胁(o)与存活次数 N，求最省 EV(HP+单防)。
    算法：HP EV 升序(0..252 step4) 外层、单防 EV 升序内层；首个「hi-roll × N ≤ 当前 HP」组合即最省（HP 优先协调折线）。 */
-function surviveSolve(o,N){
-  N=N||1;
-  for(var evHp=0;evHp<=252;evHp+=4){
-    var hp=dmgStatOf(bstI(o.sD,0),evHp,31,0,'');
-    for(var evD=0;evD<=252;evD+=4){
-      var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:o.evA||0,evD:evD,natA:o.natA||'',natD:'',itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
-      if(!r)return null;
-      if(r.hi*N<=hp)return {hpEv:evHp,defEv:evD,tot:evHp+evD,hp:hp,dmgHi:r.hi,dmgLo:r.lo};
-    }
-  }
-  return null; /* 252/252 也扛不住 */
+/* v4.232：招 flag 内联表 —— 来自 battle_moves_master.h 的 .flags 字段逐招提取（950 招全覆盖）。
+   与 18.22 的 MV_CONTACT 同源，用于「只依赖招式 flag、不依赖运行时状态」的那批 .onOffensiveMultiplier。 */
+var MV_FLAG={
+  jaw:'44,141,158,162,242,305,365,422,423,424,450,660,692,700,701,707,755,757,762,763,764,765,770,786,794',   /* FLAG_STRONG_JAW_BOOST，25 条 */
+  sound:'45,46,47,48,49,103,173,195,215,253,304,319,320,336,405,448,459,485,496,497,547,555,568,574,575,586,590,627,654,703,714,754,849,856,872,909',   /* FLAG_SOUND，36 条 */
+  reckless:'26,36,38,66,136,344,394,407,413,452,457,543,617,758,780,820,839,912',   /* FLAG_RECKLESS，18 条 */
+  sheer:'7,8,9,12,15,22,23,29,30,32,34,40,41,44,51,52,53,58,59,60,61,62,65,75,84,85,87,93,94,121,122,123,124,125,126,127,132,139,143,145,146,148,149,152,157,158,161,163,173,181,188,189,190,192,196,209,211,221,223,224,225,231,232,239,242,246,247,249,252,257,295,296,299,302,305,306,309,310,317,318,324,326,329,330,337,340,341,342,344,348,352,394,395,398,399,400,403,404,405,407,411,412,414,421,422,423,424,426,427,428,429,430,431,435,436,440,441,442,444,448,451,465,466,482,488,490,491,503,517,523,524,527,528,529,531,534,537,542,545,547,549,550,551,552,553,554,555,556,573,583,585,591,592,595,609,612,623,625,627,638,640,642,643,651,653,662,664,670,677,678,681,682,689,706,708,712,715,716,717,718,729,734,735,743,749,750,751,754,755,756,757,759,761,763,764,765,766,768,769,770,771,774,785,786,788,789,791,792,793,794,798,809,812,814,815,816,817,819,833,834,840,841,844,848,856,864,865,866,867,868,871,872,876,877,889,890,895,896,899,900,902,909,914,915,918,921,922,923,924,925,928,929,946,948,949',   /* FLAG_SHEER_FORCE_BOOST，255 条 */
+  field:'15,19,29,57,70,91,127,148,250,290,291,428,431,726,851',   /* FLAG_FIELD_BASED，15 条 */
+  dance:'14,80,297,298,349,461,483,552,649,871,920',   /* FLAG_DANCE，11 条 */
+  bone:'125,155,198,662,846',   /* FLAG_BONE，5 条 */
+};
+function mvHasFlag(id,k){
+  if(!id||!k)return false;
+  var s=MV_FLAG[k];
+  return s? (','+s+',').indexOf(','+id+',')>-1 : false;
 }
+
 function ohkoSolveEv(o,hpD){
   for(var ev=0;ev<=252;ev+=4){
     var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
@@ -15593,7 +15618,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.231';
+var ER_ENGINE_VER='v4.232';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
