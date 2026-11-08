@@ -721,3 +721,71 @@ Hell 训练师战敌方最多额外带 3 个特性（`pokemon.c:6323` + `HELL_MO
 | 体积 | 1,584,334 → 1,585,481 B | → **1,586,942 B** |
 | commit | `fb5db6d` | **`ad97e49`** |
 | 线上 | 已核验 | **1,586,942 B / SHA1 `645B8348…` 双一致** |
+
+## v4.196（2026-11-08）· 工具内相性计算接入点全量盘点
+
+用户要求「不止属性克制，工具的其他地方也都要考虑到」。全扫 `index.html`，
+把所有涉及相性/伤害的调用点列出来逐项判过。
+
+### 全量分布
+
+| 函数 | 调用点数 | 语义 | 处理 |
+|---|---|---|---|
+| `defCellTrio(s,at,pickOv)` | **30** | 防守口径，`s` = 被攻击方 | 已接（走 `abiImHf` → `abiTagOf`） |
+| `setCoverProfile(s,ids,conv)` | **6** | 打击面，`s` = 攻击方 | 已接（v4.193） |
+| `defMult(types,at)` | 4 内层 + **2 绕过** | 纯属性乘积 | 2 处绕过已改 |
+| `ERDATA.matchup` 直查 | **16** | — | 3 处已改，其余纯属性维度不接 |
+
+### 改了哪 5 处
+
+| 位置 | 用途 | 原算法 |
+|---|---|---|
+| 抗性果推荐（弱点判定） | 挑 2×/4× 弱点 | `defMult(effTypesOf(s).base,t)` ← **绕过了 `defCellTrio`** |
+| 抗性果推荐（文案倍率） | 显示给用户的倍率 | 同上 |
+| `coverHoles` 盲点计算 | 本系最多 1× 视为盲点 | `matchup[ai][ti]` |
+| `canHitSuper(s,t,learn)` | 能否打出超效 | `matchup[ai][ti]>=2` |
+| 核心盲点排序 | 按难受程度排序 | `matchup[ai][ti]` |
+
+### 顺带发现的真实缺陷：`matchup` 索引方向反了
+
+`ERDATA.matchup` 布局是 **`[防守属性][攻击属性]`**。实测：
+
+```
+matchup[地面][电] = 0      ← 电打地面无效
+matchup[电][地面] = 2      ← 地面打电克制
+matchup[钢][毒]   = 0      ← 毒打钢无效
+matchup[毒][钢]   = 1
+```
+
+上述三处写的是 `matchup[攻击][防守]`，**方向是反的** —— 算出来的是
+「目标属性招式打自己」。v4.196 统一改走 `coverMultOf`，方向一并修正。
+
+**这会改变「盲点计算」「canHitSuper」「核心盲点排序」的结果**，属于修 bug 不是改需求。
+
+### 新增统一求值口 `coverMultOf(s,atkTy,defTy)`
+
+**约定：凡是「某只宝可梦的某属性招式打某属性」，一律走 `coverMultOf`，
+不要再直接查 `ERDATA.matchup`。** 纯属性维度（属性页、`_supSetCache` 等）照旧直查。
+
+### 踩坑：插入位置插进了函数体内
+
+第一次插入 `coverMultOf` 时，用「找 `function abiTeApplyOne(` → 找下一个
+`strip()=='}'`」定位结尾 —— 那个 `}` 是 **`for` 循环的右括号**，不是函数结尾，
+于是 `coverMultOf` 被塞进 `abiTeApplyOne` 体内，probe 全崩
+（`ReferenceError: coverMultOf is not defined`，连带 32 项 FAIL）。
+
+**正确做法**：用「函数结尾的语义特征行」定位 —— `abiTeApplyOne` 的结尾是
+`'  return out;'` 且下一行 `'}'`，两个条件同时成立才算函数结束。
+
+### 门禁
+
+smoke 32/32；probe 扩到 **52 项**。新增 F36–F39 专测 `coverMultOf`：
+无特性电打地面=0、地面冲击=0.5、腐蚀毒打钢 0→2、内部确实走 `abiTeApplyOne`。
+
+### 落地
+
+| 项 | 值 |
+|---|---|
+| 体积 | 1,586,942 → **1,587,914 B** |
+| commit | **`629a883`** |
+| 线上 | 1,587,914 B / SHA1 `CA99285B…` **双实测一致** |
