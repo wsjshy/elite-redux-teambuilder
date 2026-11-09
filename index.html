@@ -2154,6 +2154,63 @@ function spRoleTags(s){
   return t;
 }
 /* --- ⑪特性标签解读（im/hf/add/out/def/conv/nt 逐标签） --- */
+/* v4.245：特性 id → 物种表口径中文名（懒惰建，首次调用时扫 species；species 是分片异步，
+   故不能写在顶层执行，见 AGENTS v4.244-D 的踩坑）。判定表键一律物种表口径。 */
+var AB_ZH_SP=null;
+function abiZhSp(id){
+  try{
+    if(!AB_ZH_SP){
+      if(!window.ERDATA||!ERDATA.species||!ERDATA.species.length)return null;
+      AB_ZH_SP={};
+      ERDATA.species.forEach(function(x){
+        if(!x)return;
+        (x.abiIds||[]).forEach(function(i,k){var n=(x.abis||[])[k];if(i&&n&&!AB_ZH_SP[i])AB_ZH_SP[i]=n});
+        (x.innIds||[]).forEach(function(i,k){var n=(x.inns||[])[k];if(i&&n&&!AB_ZH_SP[i])AB_ZH_SP[i]=n});
+      });
+    }
+    return AB_ZH_SP[''+id]||null;
+  }catch(e){return null}
+}
+/* v4.245：把 8 张计算类判定表（工具真正计入倍率的那几张）折成一行行摘要，供特性反查卡展示。
+   只输出「进到计算里的倍率」，回合/命中/换场类不入表 → 返回空数组时说明实话。
+   注意：调用方会过 esc()，而 esc 内部走 scrubLeak（触发集合含「源码」「→」「口径」等整段清空），
+   故本函数返回的文本一律避开这些词。 */
+function abiSrcBrief(id){
+  var out=[],zh=abiZhSp(id);
+  if(!zh){var a=(typeof ABI!=='undefined')&&ABI[''+id];zh=a?a[2]:''}
+  if(!zh)return out;
+  var K={phys:'物理招',spec:'特殊招',pow60:'威力≤60 的招式',contact:'接触招式',se:'效果绝佳时',crit:'会心时',
+         sound:'声音招式',fog:'雾天',stPhys:'自身有异常(物理)',stSpec:'自身有异常(特殊)',poison:'自身中毒时',
+         tgtNew:'目标未行动时',tgtMoved:'目标已行动时','':'无条件'};
+  var F={jaw:'咬类',sound:'声音类',reckless:'反作用类',sheer:'强行类',field:'场地类',dance:'舞蹈类',
+         bone:'骨类',launcher:'波动/弹类',keen:'锐利类',fist:'拳类',striker:'踢类'};
+  function put(t){if(t)out.push(t)}
+  try{
+    var m=ABI_ATK_MOD[zh];
+    if(m)m.forEach(function(x){put('打出去 · '+(x.t?x.t.join('/')+'招':'所有招')+' ×'+x.mul)});
+    var c=ABI_ATK_COND[zh];
+    if(c)c.forEach(function(x){put('打出去 · '+(x.t?x.t.join('/')+'招':'所有招')+' ×'+x.mul+'（'+((K[x.need]||x.need)||'无条件')+'）')});
+    var f=ABI_FLAG_ATK[zh];
+    if(f)f.forEach(function(x){
+      var ks=(x.k||[]).map(function(k){return F[k]||k}).join('/');
+      put('打出去 · '+(x.t?x.t.join('/')+'招 或 ':'')+ks+' ×'+x.mul);
+    });
+    var k=ABI_ATK_KIND[zh];
+    if(k)put('打出去 · '+(K[k.need]||'无条件')+' ×'+k.mul);
+    var dm=ABI_DMG_MOD[zh];
+    if(dm)dm.forEach(function(x){put('承受 · '+(x.t?x.t.join('/')+'招':'所有招')+' ×'+x.mul)});
+    if(typeof ABI_DMG_ALL[zh]==='number')put('承受 · 全属性 ×'+ABI_DMG_ALL[zh]);
+    var dc=ABI_DMG_COND[zh];
+    if(dc)dc.forEach(function(x){put('承受 · '+x.when+' ×'+x.mul)});
+    var td=ABI_TE_DEF_COND[zh];
+    if(td)td.forEach(function(x){
+      var need=x.need==='maxhp'?'HP全满时':(x.need==='turn4'?'入场 4 回合内':(x.need==='fog'?'雾天':(x.need==='selfSteel'?'自身含钢属性时':'始终')));
+      var eff=(x.mode==='zeroIfNotSE')?'归零（只有效果绝佳才打得进来）':('封顶 ×'+x.val);
+      put('改相性 · '+need+(x.t?('，对 '+x.t.join('/')+'招'):'，对所有属性招')+' '+eff);
+    });
+  }catch(e){}
+  return out;
+}
 function abiTagLines(id){
   var g=ERDATA.abiTags[''+id];if(!g)return [];
   var L=[];
@@ -6309,7 +6366,7 @@ function renderAbi(){
     var grp={ab:lkFilter(_g0.ab,optAbiFinal,optAbiMega),inn:lkFilter(_g0.inn,optAbiFinal,optAbiMega)};
     _hidN+=(_g0.ab.length-grp.ab.length)+(_g0.inn.length-grp.inn.length);
     var tl=[];
-    try{tl=abiTagLines(a[0])}catch(e){tl=[];console.warn('abiTagLines('+a[0]+')',e)}
+    try{tl=abiTagLines(a[0])}catch(e){tl=[];console.warn('abiTagLines('+a[0]+')',e)}var _src=[];try{_src=abiSrcBrief(a[0])}catch(e){_src=[]}
     var card=document.createElement('div');card.className='abicard';
     card.style.cssText='border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer';
     /* F⑪ 交互：标题行 + 「点击展开」提示均在 .abihd 内；整卡可点（含留白），详情区/按钮内点击不切换 */
@@ -6319,7 +6376,9 @@ function renderAbi(){
       '<div class="abimain" style="display:none">'+
         '<div class="sec" style="margin:8px 0"><h3>中文描述</h3><div style="font-size:14.5px;line-height:1.95">'+glossify(desc||'（无中文描述）')+'</div></div>'+
         '<div class="sec" style="margin:8px 0"><h3>特性效果（战斗意义）</h3><div style="font-size:14.5px;line-height:1.9">'+
-          (tl.length?tl.map(function(x){return '• '+esc(x)}).join('<br>'):'<span style="color:var(--sub)">（ABI_TAGS 未登记标签）</span>')+'</div></div>'+
+          (tl.length?tl.map(function(x){return '• '+esc(x)}).join('<br>'):'<span style="color:var(--sub)">（数据层未登记标签，以下方「计算倍率」为准）</span>')+'</div></div>'+
+         '<div class="sec" style="margin:8px 0"><h3>计算倍率（工具真正计入伤害的部分）</h3><div style="font-size:14.5px;line-height:1.9">'+
+           (_src.length?_src.map(function(x){return '• '+esc(x)}).join('<br>'):'<span style="color:var(--sub)">（不在计算类判定表中：属速度 / 回合 / 命中 / 换场类效果，不产生伤害倍率；速度类见「速度线」页）</span>')+'</div></div>'+
         '<div class="sec" style="margin:8px 0"><h3>持有者（分两列：可选池 / 天性固定）</h3><div class="abicol">'+
           abiOwnerCol('作为特性（可选池）',grp.ab)+abiOwnerCol('作为天性（固定）',grp.inn)+'</div></div>'+
       '</div>';
@@ -15827,7 +15886,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.244';
+var ER_ENGINE_VER='v4.245';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
