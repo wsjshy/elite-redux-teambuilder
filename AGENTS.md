@@ -2267,9 +2267,76 @@ if(document.addEventListener){document.addEventListener('er-ready',___immRiskRem
 
 ---
 
+## v4.246（2026-11-09）· 推荐卡「② 核心机制」补特性计算倍率（同一函数三处口径统一）
+
+### A. 起点是一次覆盖率审计
+
+对 15 个 UI 渲染函数逐个扫「是否引用了 8 张计算表」，结果：
+
+| 函数 | 行 | 计算表 |
+|---|---|---|
+| `abiDesc` | 3850 | **8 张全有** |
+| `renderAbi` | 6346 | `abiSrcBrief`（v4.245 补的） |
+| `roleCard5Html` | 3295 | 仅 `ABI_ATK_KIND`（**且不是为了展示**） |
+| `deriveBuilds` / `coreAbiPick` / `renderCore` / `renderAnTab` / `speedSliderHtml` / `dmgRender` | — | **0** |
+
+`roleCard5Html` 里的 `ABI_ATK_KIND` 出现在 L3316-3322，用途是**推断前提状态**：`need==='poison'` → `_stA='poison'`、`need==='tgtMoved'` → `_tgt='moved'`，再传给 `dmgCalc`。**只影响算，不影响显示。**
+
+⇒ 用户「拆解出的结论要在工具各个地方体现」这句话，在推荐卡这一格是空的：卡片写着「特性「分析」」，却不说它乘了多少。
+
+### B. 改法（一处，最小）
+
+`roleCard5Html` 的「② 核心机制」里，特性名拼接处：
+
+```js
+if(_abN)mechBits.push('特性「'+String(_abN)+'」'+(_br.length?(...):''));
+```
+
+改为先取 `_br = abiSrcBrief(_ab0.id)`，有值就在特性名后追加 `<span style="font-size:12.5px;color:var(--sub)">（前 2 条；超过 2 条写「等 N 条」）</span>`。
+
+**为什么复用 `abiSrcBrief` 而不是新写一套**：三处（`abiDesc` / `renderAbi` / `roleCard5Html`）共用同一批表 + 同一个函数，**口径不可能分裂**。若各写一份，迟早出现「这页说 ×1.5、那页说 ×1.3」。
+
+**为什么只取前 2 条**：`② 核心机制` 后面还紧跟现算击杀线，塞满会挤掉真正要看的伤害数字（用户明确抱怨过字号小、重点不突出）。
+
+### C. 实测（`verify_246.py`，逐只渲染 ② 段）
+
+| 只 | 推荐特性 | ② 段实测 |
+|---|---|---|
+| 小磁怪 #81 | #148 分析 | `特性「分析」（打出去 · 目标已行动时 ×1.3）` ✅ |
+| 小拉达 #19 | #55 活力 | `特性「活力」（打出去 · 无条件 ×1.4）` ✅ |
+| 大嘴雀 #22 | #177 疾风之翼 | `特性「疾风之翼」`（无灰字，正确 —— 回合类） |
+| 胡地 #65 | #287 奇迹力量 | 同上 |
+| 耿鬼 #94 | #276 猛鬼 | 同上 |
+| 水箭龟 #9 | #144 再生力 | 同上 |
+
+6 只里 2 只带倍率、4 只不带，**没有一只报错**，`roleCard5Html` 返回长度正常（`htmlLen=793`）。
+
+### D. 配套配图重拍：`analyze_reccard.png`
+
+原图是 v4.241 拍的（592×637），当时还没有这段灰字。已用 v4.246 重拍为 **684×474**，同一案例（小磁怪 #81 → 浩大鲸 `1107–1302` + `（按「对手已先行动」前提）` + 确定 OHKO），**新增可见「特性「分析」（打出去 · 目标已行动时 ×1.3）」**。
+
+**截图踩坑（记下来免得再试）**：
+- `--window-size` 在 `--headless=new` 下**不可靠**（同一 profile 二次启动实测视口塌成 593 宽）。改用 **`Emulation.setDeviceMetricsOverride(width, height, deviceScaleFactor, mobile)`** 固定视口，实测稳定 1400×1100 / dpr 1.25。
+- `#anDetail` 的祖先链是 `DIV.lmod open` → `MAIN`（1200×1049）→ `BODY`，**没有 `.mbox`**（`.mbox.mboxwide` 那次量到 0×0）。按 `.mbox` 裁剪会直接返回 null。
+- 裁「玩法流派 + 角色定位」的正确做法：取 `.andethead` 的 `top/left` 作左上角，取 `#anDetail` 内**所有元素的最大 `right`** 作右边界（`.fld` 只有 635 宽，长文字会溢出到 ~1034，按 `.fld.right` 裁会把行尾切掉）。
+
+### E. 验证
+
+| 门禁 | 结果 |
+|---|---|
+| 语法 | 0 |
+| `node tools\smoke.js` | **32/32** |
+| `python -X utf8 tools\probe_sp_abi_detail.py` | **ALL PASS** |
+| CDP `ER_ENGINE_VER` | **v4.246** |
+
+**版本**：`1,643,573 B` / `0D6BC67C88307CF14F4A9B4D1FD94CBF989BE174`
+
+---
+
 ### 版本
 
 | 版本 | 字节 | SHA1 | 状态 |
+| v4.246 | 1,643,573 | `0D6BC67C88307CF14F4A9B4D1FD94CBF989BE174` | VERIFIED-MATCH |
 | v4.245 | 1,643,331 | `A34241DF68C497A9D9025A99A032B2947B21C130` | VERIFIED-MATCH |
 | v4.244 | 1,639,431 | `A9313394B21567C3FC34BE5FFA1D0C353AB693FA` | VERIFIED-MATCH |
 |---|---|---|---|
