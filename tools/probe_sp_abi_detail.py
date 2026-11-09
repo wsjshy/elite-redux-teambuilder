@@ -174,7 +174,7 @@ INJECT_JS = r"""
           function pickGround(abName){
             for(var i=0;i<SP.length;i++){
               var sp=SP[i], ins=(sp.inns||[]);
-              if(ins.indexOf('地面冲击')<0) continue;
+              if(ins.indexOf('大地冲击')<0) continue;
               var ts=[sp.t1,sp.t2].filter(function(x){return x&&x!=='-'});
               if(ts.indexOf('地面')>=0) return sp;
             }
@@ -193,7 +193,7 @@ INJECT_JS = r"""
             for(var i=0;i<SP.length;i++){
               var sp=SP[i], ts=[sp.t1,sp.t2].filter(function(x){return x&&x!=='-'});
               if(ts.indexOf('地面')<0) continue;
-              if((sp.inns||[]).indexOf('地面冲击')>=0) continue;
+              if((sp.inns||[]).indexOf('大地冲击')>=0) continue;
               return sp;
             }
             return null;
@@ -203,12 +203,12 @@ INJECT_JS = r"""
               var sp=SP[i], ts=[sp.t1,sp.t2].filter(function(x){return x&&x!=='-'});
               if(ts.indexOf('电')<0) continue;
               var ins=sp.inns||[];
-              if(ins.indexOf('电力过载')>=0||ins.indexOf('腐化')>=0) continue;
+              if(ins.indexOf('过载')>=0||ins.indexOf('堕落')>=0) continue;
               return sp;
             }
             return null;
           }
-          var gs=pickGround(), pg=plainGround(), oc=pickElec('电力过载'), pe=plainElec();
+          var gs=pickGround(), pg=plainGround(), oc=pickElec('过载'), pe=plainElec();
           if(pg) out.gsBase=defCellTrio(pg,'电').inn;
           /* 直接测规则函数（这些特性在库里几乎无持有者，没法靠真实物种测） */
           out.fnGS0=abiTeApplyOne('无',   '电','地面',0,['地面']);
@@ -494,7 +494,7 @@ out.dmgCondRender = (function(){try{
             }catch(e){ return 'ERR:'+e.message; }
           })();
           out.abi47name=(function(){try{return (ABI['47']&&ABI['47'][2])||'NONE';}catch(e){return 'ERR';}})();
-          out.cmGS   = coverMultOf({inns:['地面冲击'],t1:'地面',t2:'-'},'电','地面');
+          out.cmGS   = coverMultOf({inns:['大地冲击'],t1:'地面',t2:'-'},'电','地面');
           out.cmCO   = coverMultOf({inns:['腐蚀'],t1:'毒',t2:'-'},'毒','钢');
           out.cmCO0  = coverMultOf({inns:[],t1:'毒',t2:'-'},'毒','钢');
           out.cmDual = coverMultOf({inns:['腐蚀'],t1:'毒',t2:'钢'},'毒','钢') * coverMultOf({inns:['腐蚀'],t1:'毒',t2:'钢'},'钢','钢');
@@ -502,24 +502,24 @@ out.dmgCondRender = (function(){try{
           out.tagTummy = (function(){var g=abiTagOf('胃痛');return g&&g.hf?g.hf.join('/'):'NONE';})();
           out.tagBubble= (function(){var g=abiTagOf('火焰泡泡');return g&&g.hf?g.hf.join('/'):'NONE';})();
           out.tagIron  = (function(){var g=abiTagOf('钢铁巨人');return g&&g.hf?g.hf.join('/'):'NONE';})();
-          out.tagResv  = (function(){var g=abiTagOf('蓄水器');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagResv  = (function(){var g=abiTagOf('水库');return g&&g.im?g.im.join('/'):'NONE';})();
           out.tagWing  = (function(){var g=abiTagOf('幸运之翼');return g&&g.im?g.im.join('/'):'NONE';})();
-          out.tagPoison = (function(){var g=abiTagOf('毒素吸收');return g&&g.im?g.im.join('/'):'NONE';})();
-          out.tagIce    = (function(){var g=abiTagOf('引冰');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagPoison = (function(){var g=abiTagOf('毒吸收');return g&&g.im?g.im.join('/'):'NONE';})();
+          out.tagIce    = (function(){var g=abiTagOf('冰露');return g&&g.im?g.im.join('/'):'NONE';})();
           out.tagRock   = (function(){var g=abiTagOf('熔核');return g&&g.im?g.im.join('/'):'NONE';})();
           out.tagWater  = (function(){var g=abiTagOf('引水');return g&&g.im?g.im.join('/'):'NONE';})();
           out.tagFire   = (function(){var g=abiTagOf('引火');return g&&g.im?g.im.join('/'):'NONE';})();
-          out.fnGS =abiTeApplyOne('地面冲击','电','地面',0,['地面']);
+          out.fnGS =abiTeApplyOne('大地冲击','电','地面',0,['地面']);
           out.fnOC0=abiTeApplyOne('无',   '电','电',0.5,['电']);
-          out.fnOC =abiTeApplyOne('电力过载','电','电',0.5,['电']);
+          out.fnOC =abiTeApplyOne('过载','电','电',0.5,['电']);
           out.fnCO0=abiTeApplyOne('无',   '毒','钢',0,['钢']);
           out.fnCO =abiTeApplyOne('腐蚀','毒','钢',0,['钢']);
           out.fnSCR=abiTeApplyOne('胆量','一般','幽灵',0,['幽灵']);
           out.fnDual=abiTeApplyOne('腐蚀','毒','钢',0,['钢','水']);
-          out.fnPyro=abiTeApplyOne('火岩浆流','火','岩石',0.5,['岩石']);
+          out.fnPyro=abiTeApplyOne('火山碎屑流','火','岩石',0.5,['岩石']);
           out.fnNF =abiTeApplyOne('一般皮肤','一般','岩石',0.5,['一般']);
-          out.fnSelf=abiTeApplyOne('龙族皮肤','龙','妖精',0,['妖精']);
-          out.fnSelf2=abiTeApplyOne('龙族皮肤','龙','妖精',0,['龙']);
+          out.fnSelf=abiTeApplyOne('龙化','龙','妖精',0,['妖精']);
+          out.fnSelf2=abiTeApplyOne('龙化','龙','妖精',0,['龙']);
           out.coverHas = (function(){
             try{ return typeof setCoverProfile==='function'; }catch(e){ return false; }
           })();
@@ -716,8 +716,8 @@ def main():
     d635 = data.get("desc635") or ""
     d774 = data.get("desc774") or ""
     ck(tmCnt == 22, "F5 ABI_TYPE_MOD 全量 22 条", "count=%s" % tmCnt)
-    ck(("2.0 倍" in d635), "F6 火岩浆流两条判定串联", d635[:60])
-    ck(("不标记" in d774), "F7 腐化思维只改倍率不标记", d774[:60])
+    ck(("2.0 倍" in d635), "F6 火山碎屑流两条判定串联", d635[:60])
+    ck(("不标记" in d774), "F7 扭曲心灵只改倍率不标记", d774[:60])
     # F8. 特性改写相性进了计算（v4.193）
     tt = data.get("teTest") or {}
     ck(tt.get("gsBase") == 0, "F8 无特性时电打地面仍是免疫 0", "base=%s" % tt.get("gsBase"))
@@ -733,18 +733,18 @@ def main():
     d733 = data.get("desc733") or ""
     ck("关联招式" in d293 and "变圆" in d293, "E1 「入场释放变圆」附上招式效果", d293[:64].replace("\n", " "))
     ck(tt.get("fnGS0") == 0, "F12 函数级：无特性电打地面 0", "v=%s" % tt.get("fnGS0"))
-    ck(tt.get("fnGS") == 0.5, "F13 函数级：地面冲击 0->0.5", "v=%s" % tt.get("fnGS"))
+    ck(tt.get("fnGS") == 0.5, "F13 函数级：大地冲击 0->0.5", "v=%s" % tt.get("fnGS"))
     ck(tt.get("fnOC0") == 0.5, "F14 函数级：无特性电打电 0.5", "v=%s" % tt.get("fnOC0"))
-    ck(tt.get("fnOC") == 2.0, "F15 函数级：电力过载 0.5->2.0", "v=%s" % tt.get("fnOC"))
+    ck(tt.get("fnOC") == 2.0, "F15 函数级：过载 0.5->2.0", "v=%s" % tt.get("fnOC"))
     ck(tt.get("fnCO0") == 0, "F16 函数级：无特性毒打钢 0", "v=%s" % tt.get("fnCO0"))
     ck(tt.get("fnCO") == 2.0, "F17 函数级：腐蚀 0->2.0", "v=%s" % tt.get("fnCO"))
     ck(tt.get("fnSCR") == 1.0, "F18 函数级：胆量 幽灵免疫->1.0", "v=%s" % tt.get("fnSCR"))
     ck(tt.get("fnDual") == 2.0, "F19 腐蚀对钢那一半生效", "v=%s" % tt.get("fnDual"))
     ck(tt.get("fnNF") == 1.0, "F21 一般皮肤把抗性 0.5 抬到 1.0", "v=%s" % tt.get("fnNF"))
-    ck(tt.get("fnSelf") == 0, "F22 龙族皮肤非龙系自身不触发", "v=%s" % tt.get("fnSelf"))
-    ck(tt.get("fnSelf2") == 1.0, "F23 龙族皮肤自身为龙才触发", "v=%s" % tt.get("fnSelf2"))
+    ck(tt.get("fnSelf") == 0, "F22 龙化非龙系自身不触发", "v=%s" % tt.get("fnSelf"))
+    ck(tt.get("fnSelf2") == 1.0, "F23 龙化自身为龙才触发", "v=%s" % tt.get("fnSelf2"))
     ck(tt.get("coverHas") is True, "F24 打击面 setCoverProfile 已接入", "v=%s" % tt.get("coverHas"))
-    ck(tt.get("fnPyro") == 2.0, "F20 火岩浆流 火打岩石 2.0", "v=%s" % tt.get("fnPyro"))
+    ck(tt.get("fnPyro") == 2.0, "F20 火山碎屑流 火打岩石 2.0", "v=%s" % tt.get("fnPyro"))
     ck(tt.get("tagPatchN") == 11, "F25 特性补丁 11 条（7 免疫 + 4 减半）", "n=%s" % tt.get("tagPatchN"))
     ck('0.25' in (tt.get("tagBlubber") or ''), "F51 厚脂 hfMul 火=0.25", "%s" % tt.get("tagBlubber"))
     ck(tt.get("hfMulFire") == 0.25, "F52 _hfMulOf 厚脂火 0.25", "v=%s" % tt.get("hfMulFire"))
@@ -790,8 +790,8 @@ def main():
        "F89 进攻侧静态条件增伤 10 条：物理/特殊/威力≤60/接触/相性≥2/会心/声音 逐项判定正确，且已剔除 APPLY_ON_ALLY_ONLY", "%s" % tt.get("atkKind"))
     ck((tt.get("spdAbi") or "").endswith("|N=14"), "F87 SPD_ABI 收录 14 条速度修正特性（源码 .onStat 口径）", "%s" % tt.get("spdAbi"))
     ck("悠游自如=1.5:" in (tt.get("spdAbi") or "") and "轻装=2:" in (tt.get("spdAbi") or ""), "F88 天气类 ×1.5 与轻装 ×2 倍率区分正确（18.21 曾误写全线 ×2）", "%s" % tt.get("spdAbi"))
-    ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
-    ck(tt.get("tagIce") == "冰", "F27 引冰补为免疫冰", "%s" % tt.get("tagIce"))
+    ck(tt.get("tagPoison") == "毒", "F26 毒吸收补为免疫毒", "%s" % tt.get("tagPoison"))
+    ck(tt.get("tagIce") == "冰", "F27 冰露补为免疫冰", "%s" % tt.get("tagIce"))
     ck(tt.get("tagRock") == "岩石", "F28 熔核补为免疫岩石", "%s" % tt.get("tagRock"))
     ck(tt.get("tagWater") == "水", "F29 引水原有免疫水未被破坏", "%s" % tt.get("tagWater"))
     ck(tt.get("tagFire") == "火", "F30 引火原有免疫火未被破坏", "%s" % tt.get("tagFire"))
@@ -801,12 +801,12 @@ def main():
     ck(tt.get("tagTummy") == "火/冰", "F31 胃痛(厚脂肪+腐蚀)继承火冰减半", "%s" % tt.get("tagTummy"))
     ck(tt.get("tagBubble") == "火", "F32 火焰泡泡(水泡+燃烧之魂)继承火减半", "%s" % tt.get("tagBubble"))
     ck(tt.get("tagIron") == "火", "F33 钢铁巨人(耐热+重型坦克)继承火减半", "%s" % tt.get("tagIron"))
-    ck(tt.get("tagResv") == "水", "F34 蓄水器(储水+引水)继承水免疫", "%s" % tt.get("tagResv"))
+    ck(tt.get("tagResv") == "水", "F34 水库(储水+引水)继承水免疫", "%s" % tt.get("tagResv"))
     ck(tt.get("tagWing") == "地面", "F35 幸运之翼(天恩+巨翼)继承地面免疫", "%s" % tt.get("tagWing"))
 
     ck("关联招式" not in d86, "E3 非招式型特性不误挂该块", d86[:54].replace("\n", " "))
     ck(tt.get("cmBase") == 0, "F36 coverMultOf 无特性 电打地面=0", "%s" % tt.get("cmBase"))
-    ck(tt.get("cmGS") == 0.5, "F37 coverMultOf 地面冲击 电打地面=0.5", "%s" % tt.get("cmGS"))
+    ck(tt.get("cmGS") == 0.5, "F37 coverMultOf 大地冲击 电打地面=0.5", "%s" % tt.get("cmGS"))
     ck(tt.get("cmCO0") == 0 and tt.get("cmCO") == 2, "F38 coverMultOf 腐蚀 毒打钢 0->2", "%s->%s" % (tt.get("cmCO0"), tt.get("cmCO")))
     ck(tt.get("cmSrc") is True, "F39 coverMultOf 内部确实走 abiTeApplyOne", "%s" % tt.get("cmSrc"))
 
@@ -830,8 +830,8 @@ def main():
     d285 = data.get("desc285") or ""
     d349 = data.get("desc349") or ""
     d86b = data.get("desc86b") or ""
-    ck("相性改写（源码倍率）" in d285 and "0.5 倍" in d285, "F1 285 地面冲击给出真实倍率 0.5", d285[:70].replace("\n", " "))
-    ck("相性改写（源码倍率）" in d349 and "2.0 倍" in d349, "F2 349 电力过载给出 2.0", d349[:70].replace("\n", " "))
+    ck("相性改写（源码倍率）" in d285 and "0.5 倍" in d285, "F1 285 大地冲击给出真实倍率 0.5", d285[:70].replace("\n", " "))
+    ck("相性改写（源码倍率）" in d349 and "2.0 倍" in d349, "F2 349 过载给出 2.0", d349[:70].replace("\n", " "))
     ck("相性改写" not in d86b, "F3 非相性改写特性不误挂该块", d86b[:60].replace("\n", " "))
 
     # G. 未实装（EFFECT_PLACEHOLDER）招式提示

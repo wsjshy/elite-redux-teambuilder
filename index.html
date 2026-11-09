@@ -4881,10 +4881,10 @@ ERDATA.abilities.forEach(function(a){
    ERDATA.abiTags 只有 107 条，这 7 个免疫特性没进去 → 工具会把它们算成「正常吃伤害」。
    「乘风(WIND_RIDER)」判的是 gBattleMoves[move].airBased（风系招式而非属性），无法用属性表达，不补。 */
 var ABI_TAG_PATCH={
-  '毒素吸收':{im:['毒']},      /* src/abilities.cc:4446 POISON_ABSORB */
-  '引冰':{im:['冰']},          /* :4823 ICE_DEW */
+  '毒吸收':{im:['毒']},      /* src/abilities.cc:4446 POISON_ABSORB */
+  '冰露':{im:['冰']},          /* :4823 ICE_DEW */
   '食土':{im:['地面']},        /* :5880 EARTH_EATER */
-  '蓄水器':{im:['水']},        /* :9290 RESERVOIR */
+  '水库':{im:['水']},        /* :9290 RESERVOIR */
   '散热器':{im:['火']},        /* :10565 HEAT_SINK */
   '闪电形态':{im:['电']},      /* :10587 LIGHTNING_ASPECT */
   '熔核':{im:['岩石']},        /* :10734 MOLTEN_CORE（岩石，反直觉但源码 CHECK(moveType == TYPE_ROCK)） */
@@ -4977,7 +4977,7 @@ var ABI_DMG_MOD={
   '原木':[{t:["草"],mul:0.5}],
   '坚实基础':[{t:["水","地面"],mul:0.5}],
   '干燥皮肤':[{t:["火"],mul:1.25}],
-  '洁净之盐':[{t:["幽灵"],mul:0.5}],
+  '净化之盐':[{t:["幽灵"],mul:0.5}],
   '深度冻结':[{t:["火"],mul:0.5}],
   '熔岩铠甲':[{t:["水","冰"],mul:0.7}],
   '耐热':[{t:["火"],mul:0.5}],
@@ -4996,34 +4996,34 @@ var ABI_DMG_COND={
   '庞克摇滚':[{mul:0.5,when:'声音招式'}],
   '恶兆':[{mul:0.25,when:'会心一击时'}],
   '脑容量':[{mul:0.5,when:'满血时'}],
-  '雪之精神':[{mul:0.5,when:'冰雹天'}],
-  '合金外壳':[{mul:0.6,when:'特殊招式'}],
-  '猎龙者':[{mul:0.5,when:'攻方是龙属性'}],
+  '圣诞精神':[{mul:0.5,when:'冰雹天'}],
+  '铬涂层':[{mul:0.6,when:'特殊招式'}],
+  '屠龙者':[{mul:0.5,when:'攻方是龙属性'}],
   '龙首藻':[{mul:0.65,when:'本场还没消耗完（一次性计数未清零）'}],
   '沙丘恐惧':[{mul:0.65,when:'沙暴天'}],
-  '妖精猎者':[{mul:0.5,when:'攻方是妖精属性'}],
+  '妖精猎人':[{mul:0.5,when:'攻方是妖精属性'}],
   '过滤':[{mul:0.65,when:'效果绝佳时'}],
   '消防员':[{mul:0.5,when:'攻方是火属性'}],
   '毛皮大衣':[{mul:0.5,when:'物理招式'}],
   '守护者外套':[{mul:0.8,when:'物理招式'}],
   '冰鳞粉':[{mul:0.5,when:'特殊招式'}],
   'INSECTEATER':[{mul:0.5,when:'攻方是虫属性'}],
-  '铅质外壳':[{mul:0.6,when:'物理招式'}],
+  '铅衣':[{mul:0.6,when:'物理招式'}],
   '伐木工':[{mul:0.5,when:'攻方是草属性'}],
   '怪物猎人':[{mul:0.5,when:'攻方是恶属性'}],
   '多重鳞片':[{mul:0.5,when:'满血时'}],
   '防尘':[{mul:0.8,when:'特殊招式'}],
-  '永冻层':[{mul:0.65,when:'效果绝佳时'}],
-  '根源盔甲':[{mul:0.5,when:'效果绝佳时'}],
+  '永冻土':[{mul:0.65,when:'效果绝佳时'}],
+  '原始铠甲':[{mul:0.5,when:'效果绝佳时'}],
   '棱镜鳞片':[{mul:0.7,when:'特殊招式'}],
   '庞克摇滚':[{mul:0.5,when:'声音招式'}],
-  '沙漠守护':[{mul:0.5,when:'沙暴天且为特殊招式'}],
+  '沙之守卫':[{mul:0.5,when:'沙暴天且为特殊招式'}],
   '海草':[{mul:0.5,when:'自身是草属性且挨火招式'}],
-  '慢出':[{mul:0.7,when:'本回合行动顺序靠后'}],
-  '晒太阳':[{mul:0.5,when:'晴天'}],
+  '后攻':[{mul:0.7,when:'本回合行动顺序靠后'}],
+  '沐日':[{mul:0.5,when:'晴天'}],
   /* 以下四条在同一段里有多条规则（属性固定值 + 条件值，或 if/else 双分支），故不进 A 表 */
   '毛茸茸':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）',note:'数据层文案写「4 倍」，源码是 RESISTANCE(2.0)，但它的 resistance 分量在本版被丢弃，实际只有 ×2'},{mul:0.5,when:'接触招式'}],
-  '极致蓬松':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）',note:'数据层文案写「4 倍」，源码是 RESISTANCE(2.0)，但它的 resistance 分量在本版被丢弃，实际只有 ×2'},{mul:0.5,when:'接触招式'}],
+  '最毛茸茸':[{mul:2.0,when:'火属性招式（这是增伤，自找弱点）',note:'数据层文案写「4 倍」，源码是 RESISTANCE(2.0)，但它的 resistance 分量在本版被丢弃，实际只有 ×2'},{mul:0.5,when:'接触招式'}],
   '液化':[{mul:2.0,when:'水属性招式（这是增伤，自找弱点）',note:'数据层文案写「2 倍」，源码是 RESISTANCE(2.0)，但它的 resistance 分量在本版被丢弃，实际只有 ×2'},{mul:0.5,when:'接触招式'}],
   '树皮':[{mul:0.7,when:'效果绝佳时'},{mul:0.85,when:'非效果绝佳时'}],
   '羽衣':[{mul:0.7,when:'相性倍率小于 1（本来抗）时'},{mul:0.85,when:'相性倍率不小于 1 时'}]
@@ -5068,13 +5068,13 @@ var ABI_ATK_MOD={
 };
 var ABI_DMG_ALL={
   'Rock Armor':0.9,
-  '北极毛皮':0.65,
+  '极地毛发':0.65,
   '太晶宝藏':0.6,
   '强投手':0.5,
   '战斗盔甲':0.8,
   '招架':0.8,
   '斗争心':0.75,
-  '棱镜毛皮':0.5,
+  '棱彩毛发':0.5,
   '气场铠甲':0.65,
   '狂化增强':0.8,
   '黏液膜':0.7
@@ -5133,24 +5133,24 @@ var ABI_TE_CALC={
   '一般皮肤':[{atk:['一般'],mul:1.0,mode:'floor'}],
   '胆量':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
   '心眼':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
-  '失控之怒':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
+  '盲目狂怒':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
   '猛禽':[{atk:['一般','格斗'],def:['幽灵'],mul:1.0,mode:'zero'}],
   '腐蚀':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
   '垃圾堆':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
-  '酸性粘液':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
+  '酸性黏液':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
   '胃痛':[{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
-  '地面冲击':[{atk:['电'],def:['地面'],mul:0.5,mode:'zero'}],
-  '压倒':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero'}],
-  '电力过载':[{atk:['电'],def:['电'],mul:2.0,mode:'force'}],
-  '腐化':[{atk:['电'],def:['电'],mul:2.0,mode:'force'}],
-  '熔岩':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'}],
-  '岩浆吞噬者':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'}],
-  '龙族皮肤':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero',selfType:'龙'}],
+  '大地冲击':[{atk:['电'],def:['地面'],mul:0.5,mode:'zero'}],
+  '压制':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero'}],
+  '过载':[{atk:['电'],def:['电'],mul:2.0,mode:'force'}],
+  '堕落':[{atk:['电'],def:['电'],mul:2.0,mode:'force'}],
+  '熔解':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'}],
+  '岩浆食者':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'}],
+  '龙化':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero',selfType:'龙'}],
   '龙之威仪':[{atk:['龙'],def:['妖精'],mul:1.0,mode:'zero'}],
   '幻痛':[{atk:['幽灵'],def:['一般'],mul:1.0,mode:'zero'}],
-  '灵魂吞噬':[{atk:['幽灵'],def:['一般'],mul:1.0,mode:'zero'}],
-  '火岩浆流':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'},{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
-  '腐化思维':[{atk:['超能'],mul:1.0,mode:'floor'}]
+  '灵魂吞噬者':[{atk:['幽灵'],def:['一般'],mul:1.0,mode:'zero'}],
+  '火山碎屑流':[{atk:['火'],def:['岩石'],mul:2.0,mode:'force'},{atk:['毒'],def:['钢'],mul:2.0,mode:'force'}],
+  '扭曲心灵':[{atk:['超能'],mul:1.0,mode:'floor'}]
   /* 天使暴怒只对「毒针」生效 → 招式级，见 MOVE_TE_CALC */
 };
 var MOVE_TE_CALC={
@@ -6422,15 +6422,15 @@ var SPD_ABI=[
   {zh:'悠游自如',mul:1.5,cond:'rain',label:'雨天',src:'SWIFT_SWIM L868'},
   {zh:'叶绿素',mul:1.5,cond:'sun',label:'晴天',src:'CHLOROPHYLL L876'},
   {zh:'拨雪',mul:1.5,cond:'hail',label:'冰雹/雪天',src:'SLUSH_RUSH L2752'},
-  {zh:'拨沙',mul:1.5,cond:'sand',label:'沙暴',src:'SAND_RUSH'},
+  {zh:'挖沙',mul:1.5,cond:'sand',label:'沙暴',src:'SAND_RUSH'},
   {zh:'冲浪之尾',mul:1.5,cond:'terrain',label:'电气场地',src:'SURGE_SURFER'},
-  {zh:'缥缈奔腾',mul:1.5,cond:'fog',label:'雾天',src:'ETHEREAL_RUSH'},
+  {zh:'飘渺冲刺',mul:1.5,cond:'fog',label:'雾天',src:'ETHEREAL_RUSH'},
   {zh:'飞毛腿',mul:1.5,cond:'status',label:'自身有异常状态',src:'QUICK_FEET'},
   {zh:'古代活性',mul:1.5,cond:'sun',label:'晴天（或携带驱劲能量×1.3）',src:'PROTOSYNTHESIS'},
   {zh:'轻装',mul:2,cond:'item',label:'消耗掉道具后',src:'UNBURDEN L1450'},
   {zh:'轻金属',mul:1.3,cond:'always',label:'始终',src:'LIGHT_METAL'},
   {zh:'飞行皮肤',mul:1.1,cond:'always',label:'始终',src:'AERILATE'},
-  {zh:'铅质外壳',mul:0.9,cond:'always',label:'始终',src:'LEAD_COAT'},
+  {zh:'铅衣',mul:0.9,cond:'always',label:'始终',src:'LEAD_COAT'},
   {zh:'慢启动',mul:0.5,cond:'turn5',label:'前 5 回合',src:'SLOW_START'},
   {zh:'太晶宝藏',mul:0.8,cond:'always',label:'始终',src:'TERASTAL_TREASURE'}
 ];
@@ -6441,7 +6441,9 @@ function spdSpeedAbiOf(s){
   pool.forEach(function(a){
     if(!a)return;
     SPD_ABI.forEach(function(r){
-      if(r.zh!==a)return;
+      /* v4.243：原为 r.zh!==a 严格全等，别名（拨沙/挖沙、缥缈奔腾/飘渺冲刺、铅质外壳/铅衣）永不命中。改 abiSame 别名感知比较；表内已同歩物种表口径，双保险。 */
+      var _same=false;try{_same=abiSame(r.zh,a)}catch(e){_same=(r.zh===a)}
+      if(!_same)return;
       if(r.mul>1){if(!up||r.mul>up.mul)up=r;}else{if(!dn||r.mul<dn.mul)dn=r;}
     });
   });
@@ -15803,7 +15805,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.242';
+var ER_ENGINE_VER='v4.243';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
