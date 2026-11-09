@@ -371,6 +371,8 @@ details.inline>summary{cursor:pointer; font-size:14.5px; color:var(--sub)}
 @media(max-width:640px){.famlab{flex-basis:64px; font-size:13.5px}.evoroute .famlab{flex-basis:52px}}
 /* v4.72 P5：速度线表窄屏隐藏次要列（保留 编号/物种/满速/极速/分位/省EV/定位） */
 @media(max-width:768px){.spdtbl .spd-hide-sm{display:none}}
+/* v4.253：编号列在窄屏被压成一字一行（2176 → 2/1/7/6），钉死不换行并略缩字号 */
+.spdtbl th:first-child,.spdtbl td:first-child{white-space:nowrap;font-size:12.5px;width:1%}
 .bktabs{display:flex; align-items:center; gap:6px; height:48px; overflow-x:auto; margin:6px 0 8px;
   padding:0 2px; position:sticky; top:0; z-index:60; background:var(--bg); /* v4.68 黑盒P2-1：main 为独立滚动容器(已在页眉下)，bktabs 钉在 main 顶部=视口51px */
   box-shadow:0 1px 0 var(--line); -webkit-overflow-scrolling:touch}
@@ -7458,6 +7460,9 @@ function speedRenderTable(){
       if(_r.lo!==undefined&&(_v<_r.lo||_v>_r.hi))return false;}
     return true;
   });
+  /* v4.253：开了「只列有提速特性的」时强制显示「特性加速」列 ——
+     手机端该列默认 spd-hide-sm，筛了却看不到为什么筛。 */
+  var _showAbiCol=(f.abi==='1');
   var sort=window._spdSort||'maxdesc';
   rows.sort(function(a,b){
     if(sort==='maxdesc')return spdMaxOf(b)-spdMaxOf(a);
@@ -7477,7 +7482,7 @@ function speedRenderTable(){
     '<th title="252 EV + 中性性格（不加速也不减速）的实速">满速252中性</th>'+
     '<th title="252 EV + 加速性格（+10%）的实速 —— 本表排序与分位都以这一列为准">极速252+性格</th>'+
     '<th class="spd-hide-sm" title="讲究围巾 ×1.5（占道具位；不与特性乘区叠加）">围巾×1.5</th>'+
-    '<th class="spd-hide-sm" title="按源码 .onStat(STAT_SPEED) 修正后的实速：悠游自如/叶绿素/拨雪/拨沙/冲浪之尾/缥缈奔腾/飞毛腿/古代活性 ×1.5，轻装 ×2，轻金属 ×1.3；无此类特性显示 —。此列为参考，不计入主表排序">特性加速</th>'+
+    '<th class="'+(_showAbiCol?'':'spd-hide-sm')+'" title="按源码修正后的实速：悠游自如/叶绿素/拨雪/拨沙/冲浪之尾/缥缈奔腾/飞毛腿/古代活性 ×1.5，轻装 ×2，轻金属 ×1.3；无此类特性显示 —。此列为参考，不计入主表排序">特性加速</th>'+
     '<th class="spd-hide-sm" title="速度 +1 级（高速移动 / 龙舞等）×1.5 后的实速；不计入主表">+1级强化</th>'+
     '<th title="全库极速档排名分位（P50 / P90 / P99 切点见本页顶部分位表）">分位</th>'+
     '<th title="只求卡过 P50/P75 线时所需的最小速度 EV，省下的可挪去 HP（不必无脑 252）">省EV建议</th>'+
@@ -7487,7 +7492,7 @@ function speedRenderTable(){
     var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:13px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="spd-hide-sm">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:12px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+'</div>'):'<span style="color:var(--sub)">—</span><div style="color:var(--sub);font-size:11px;line-height:1.3">无提速特性</div>')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
+    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="'+(_showAbiCol?'':'spd-hide-sm')+'">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:12px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+'</div>'):'<span style="color:var(--sub)">—</span><div style="color:var(--sub);font-size:11px;line-height:1.3">无提速特性</div>')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
       '<td><span onclick="event.stopPropagation();speedToggleFilter(\'role\',\''+(role==='fast'?'fast':(role==='space'?'space':'clear'))+'\')" '+
         'title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95｜清场：其余。点击按此定位筛选全表" '+
         'style="cursor:pointer;color:var(--accent);border-bottom:1px dashed currentColor;font-weight:600">'+
@@ -7540,7 +7545,7 @@ function speedRender(){if((!window.__erReady&&!window.__ER_PARTIAL)||!ERDATA.spe
   h+='<span style="font-size:13.5px;color:var(--sub)">属性</span>';
   ['一般','火','水','草','电','冰','格斗','毒','地面','飞行','超能力','虫','岩石','幽灵','龙','钢','恶','妖精'].forEach(function(t){h+=ch('type',t,t)});
   h+='</div></div>';
-  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码 <b>.onStat(STAT_SPEED)</b> 实算（14 条 SPD_ABI）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。</div>';
+  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码逐条实算（共 17 条速度特性）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。</div>';
 
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
   var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
@@ -15944,7 +15949,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.252';
+var ER_ENGINE_VER='v4.253';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

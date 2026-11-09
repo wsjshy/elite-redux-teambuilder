@@ -2667,9 +2667,10 @@ GitHub 首页默认显示 master，所以看起来「停滞」。
 ### 版本
 
 | 版本 | 字节 | SHA1 | 状态 |
+| v4.253 | 1,650,856 | 6C43F8C1FB531670F7F0328DDEF798C46FD02270 | 待部署 |
 | v4.249 | 1,647,902 | A045F0FD0FD6707135257D6D9F13C9AB0971C86E | VERIFIED-MATCH |
-| v4.252 | 1,649,690 | 5860F39804E8720AD9F62459ACE254A0C5A96653 | 待部署 |
-| v4.251 | 1,649,100 | 6607A3FA52E3962EE8A2D3FAC47CBFB4560179FB | 待部署 |
+| v4.252 | 1,649,690 | 5860F39804E8720AD9F62459ACE254A0C5A96653 | VERIFIED-MATCH |
+| v4.251 | 1,649,100 | 6607A3FA52E3962EE8A2D3FAC47CBFB4560179FB | VERIFIED-MATCH |
 | v4.248 | 1,647,140 | `99660D4FC378BF9B31577F6AF21D70A926E5AD1D` | VERIFIED-MATCH |
 | v4.247 | 1,645,148 | `5874E58C2515596D195A1F795DF423223B15F7D8` | VERIFIED-MATCH |
 | v4.246 | 1,643,573 | `0D6BC67C88307CF14F4A9B4D1FD94CBF989BE174` | VERIFIED-MATCH |
@@ -3167,3 +3168,52 @@ F91: 蹲守N=1 蹲守New=2 蹲守Mov=1 分析N=1 分析New=1 分析Mov=1.3
 ### 版本
 
 `v4.239`，1,634,630 B，`425BAE9519F143C9643AD9592B8271046AA6486A`（VERIFIED-MATCH），commit `fed867a`。
+
+## v4.253 速度线「特性加速」列在手机端被藏起来（A~E）
+
+### A. 现象与定性
+用户手机截图里「只列有提速特性的」已勾上、名单也确实只剩 293 只，但**截图中找不到「特性加速」列**。
+诊断口径：`thead th` 全部 11 列都在 DOM 里、`tableW == boxW == 390`（无横向溢出），
+真正的差别是 **4 列带 `.spd-hide-sm`**：`0努力 / 围巾×1.5 / 特性加速 / +1级强化`，
+CSS 在 `@media(max-width:768px)` 里把它们 `display:none`。
+**这是一个真实的可读性缺陷**：筛选的唯一目的就是「看谁有提速特性、为什么」，而这一列恰好被收起。
+
+### B. 修法
+`speedRenderTable()` 里新增
+
+```js
+var _showAbiCol=(f.abi==='1');
+```
+
+表头与单元格 class 从固定 `spd-hide-sm` 改为 `'+(_showAbiCol?'':'spd-hide-sm')+'`。
+桌面端（>768px）原本就不隐藏，行为不变；移动端只在勾了筛选时展开该列。
+顺带把 `th` 的 `title` 里残留的 `.onStat(STAT_SPEED)` 一起去掉（对外不讲技术词）。
+
+### C. 二次修复：编号列被压成一字一行
+加了那一列后窄屏每列更窄，`#` 列出现 `2633 → 2 / 6 / 3 / 3` 竖排。加一条 CSS：
+
+```css
+.spdtbl th:first-child,.spdtbl td:first-child{white-space:nowrap;font-size:12.5px;width:1%}
+```
+
+注意：`@media` 块里有全局 `th,td{white-space:normal}`，但 `.spdtbl td:first-child` 特异性更高，
+不会被打回。改完必须**新开 CDP 会话**验证，否则读到的是缓存里的旧 CSS（本次踩坑一次：
+`verify_253.py` 用旧 `user-data-dir` 截出来的图仍是断行，`check_nowrap.py` 换新 UD 才读到 `nowrap`）。
+
+### D. 提示条文案
+`「特性加速」列按源码 <b>.onStat(STAT_SPEED)</b> 实算（14 条 SPD_ABI）`
+→ `「特性加速」列按源码逐条实算（共 17 条速度特性）`。
+v4.251 补表后条数已变 17，旧文案两个问题：数字过期 + 技术标识符面向玩家无意义。
+
+### E. 验收证据
+| 项 | 结果 |
+|---|---|
+| 未筛选（手机 430 宽） | `特性加速` td `display:none`、宽 0 —— 保持原行为 |
+| 勾筛选 | `display:table-cell`、宽 89px、`window._spdFilter={"abi":"1"}`、tbody 293 行 |
+| 编号列 | `whiteSpace:nowrap`、宽 39px、`innerText="2633"` 单行 |
+| 表格溢出 | `tableW 390 / boxW 390 / overflow 0` |
+| 门禁 | smoke 32/32、`probe_sp_abi_detail.py` ALL PASS |
+| 配图 | `docs/manual/img/speed_2.png` 重拍 391,794 B（293 只 + 特性加速列可见 + 编号单行） |
+
+---
+
