@@ -6756,12 +6756,43 @@ function spdSliderPosToVal(s,p,M){var pts=spdReachPoints(s);var idx=Math.max(0,M
 function spdSliderValToPos(s,T,M){var pts=spdReachPoints(s);var Te=T/M;var best=0,bd=1e9;for(var i=0;i<pts.length;i++){var d=Math.abs(pts[i].val-Te);if(d<bd){bd=d;best=i}}return Math.max(0,Math.min(99,Math.round((best/(pts.length-1))*99)))}
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
 var __spdSl={s:null,p:50,scarf:false,wx:false,tailwind:false,bias:'balanced',allocMode:'auto',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null,stA:'',tgt:''};
+/* v4.264 跨 Tab 速度配法单一真源：每只可采用一套配速，localStorage 持久化，核心配队/队伍/分析同读 */
+var SPD_PLAN_KEY='er_spdPlan_v1';
+function spdPlanStore(){try{return JSON.parse(localStorage.getItem(SPD_PLAN_KEY)||'{}')||{}}catch(e){return {}}}
+function spdPlanWrite(m){try{localStorage.setItem(SPD_PLAN_KEY,JSON.stringify(m))}catch(e){return false}return true}
+function spdPlanGet(id){var m=spdPlanStore();return (id!=null&&m[String(id)])||null}
+function spdPlanSave(id,rec){var m=spdPlanStore();m[String(id)]=rec;spdPlanWrite(m)}
+function spdPlanClear(id){var m=spdPlanStore();if(m[String(id)]){delete m[String(id)];spdPlanWrite(m)}}
+function spdPlanAdopt(){
+  var s=__spdSl.s;if(!s){toast('先选一只宝可梦');return}
+  var M=spdModMul(),pts=spdReachPoints(s);
+  var idx=Math.max(0,Math.min(pts.length-1,Math.round((Math.max(0,Math.min(99,__spdSl.p))/99)*(pts.length-1))));
+  var pt=pts[idx],main;
+  if(__spdSl.natOv){
+    var Te=pt.val,plans=spdPlanForTarget(s,Te),hit=null;
+    plans.forEach(function(pl){if(pl.nat===__spdSl.natOv)hit=pl});
+    main=hit||plans[0]||{nat:pt.nat,ev:pt.ev,val:pt.val};
+  }else{main={nat:pt.nat,ev:pt.ev,val:pt.val};}
+  spdPlanSave(s.id,{nat:main.nat,ev:main.ev,val:main.val,p:__spdSl.p,natOv:__spdSl.natOv});
+  toast('已采用配法：'+main.nat+'性格 +'+main.ev+' EV，实速 '+main.val);
+  spdSliderRender();
+  if(coreSel&&''+coreSel.id===''+s.id)renderCore(coreSel)
+}
+function spdPlanReset(){
+  var s=__spdSl.s;if(!s)return;
+  spdPlanClear(s.id);toast('已恢复默认配速');spdSliderRender();
+  if(coreSel&&''+coreSel.id===''+s.id)renderCore(coreSel)
+}
+function spdAdjustFromCore(id){var s=speciesById(id);if(!s)return;openSp(s)}
+function spdClearFromCore(id){spdPlanClear(id);toast('已恢复默认配速');if(coreSel)renderCore(coreSel)}
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx){var _r=spdSpeedAbiOf(__spdSl.s);m*=(_r&&_r.mul>1)?_r.mul:1.5}if(__spdSl.tailwind)m*=2;return m}
 function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+onclick+'}else if(event.key===\'ArrowLeft\'||event.key===\'ArrowRight\'){event.preventDefault();var g=this.parentNode;var cs=[].slice.call(g.children).filter(function(x){return x.classList&&x.classList.contains(\'chipopt\')});var i=cs.indexOf(this);var d=event.key===\'ArrowLeft\'?-1:1;var n=i+d;if(n>=0&&n<cs.length)cs[n].focus();}">'+label+'</span>'}
 function speedSliderHtml(s){
   try{
     __spdSl.s=s;__spdSl.allocMode='auto';
     var _dV=spdDefaultTarget(s);__spdSl.p=spdSliderValToPos(s,_dV,1);   /* v4.259：默认最大收益目标（角色锚点+最小EV），非极速满投 */
+    __spdSl.natOv='';
+    (function(){var _ov=spdPlanGet(s.id);if(_ov){if(_ov.p!=null)__spdSl.p=_ov.p;if(_ov.natOv)__spdSl.natOv=_ov.natOv}})();
     var h='<div class="ruleline" style="margin-top:6px;padding-bottom:6px">'+
       '<div class="spdInput">'+
         '<div class="spdTip">拖动滑块选目标速度，立刻给出最省努力值的<b style="color:var(--text)">性格、速度投入，以及剩余努力值的最佳分配</b>。</div>'+
@@ -6918,6 +6949,10 @@ function spdSliderRender(){
       '</div>'+
       '<div class="ansNote">'+(__spdSl.bias==='physical'?'按物理端 2:1 分':(__spdSl.bias==='special'?'按特殊端 2:1 分':'均衡：先拉平双防再 2:1:1'))+'　大字=投入 EV，小字=分配后实数</div>';
     }
+    var _adOpt=spdPlanGet(s.id);
+    h+='<div class="spdAdoptRow" style="margin-top:6px">'+(_adOpt
+      ?('<button class="btn-mini" type="button" onclick="spdPlanReset()" title="取消采用，回到流派默认">恢复默认配速</button><span class="dim" style="margin-left:6px">已采用此配法（核心配队/队伍同步）</span>')
+      :('<button class="btn" type="button" style="background:var(--accent);color:#fff;width:100%;margin-top:6px" onclick="spdPlanAdopt()" title="把当前性格/速度EV/实速写入核心配队与队伍，刷新后仍保留">采用此配法（写入核心配队/队伍）</button>'))+'</div>';
     h+='</div>';
   }
   var vb=$('spdPlanBox');if(vb)vb.innerHTML=h;
@@ -12300,7 +12335,7 @@ function mkBuild(s,side,name,spBest,phBest,roleTagEx,itemTagEx,ctx){
       else{_it=[['突击背心','满血红先制：自损道具破坏满血前提 → 换耐久项']].concat(_it.filter(function(x){return x[0]!=='生命宝珠'}))}
     }
   }catch(eE6b){}
-  return {name:name,side:side,roleTag:roleTag,itemTag:itemTagEx||roleTag,mv:mv,nat:buildNature(s,side,roleTag),it:_it,abi:pickAbiFor(s,side,roleTag,{buildName:name}),desc:desc};
+  return {spId:String(s.id),name:name,side:side,roleTag:roleTag,itemTag:itemTagEx||roleTag,mv:mv,nat:buildNature(s,side,roleTag),it:_it,abi:pickAbiFor(s,side,roleTag,{buildName:name}),desc:desc};
 }
 /* ============ v4.3：战术流派动态推导（07 §4.6；取代 v4.2 的 genBuilds 固定枚举） ============
    三条红线（07 §4.6.0）：① 命名不得用物特二分（禁「物攻队/特攻队/双刀队」作流派名）
@@ -15856,9 +15891,23 @@ function evWhyTxt(t){
 }
 function evBarHtml(bd){
   var ev=bd&&bd.ev;if(!ev||!ev.alloc)return '';
-  var a=ev.alloc,tot=0,k;
-  for(k=0;k<6;k++)tot+=(+a[k]||0);
+  var a0=ev.alloc,tot=0,k;
+  for(k=0;k<6;k++)tot+=(+a0[k]||0);
   if(!tot)return '';
+  var sp=bd.spId?speciesById(bd.spId):null;
+  var plan=sp?spdPlanGet(sp.id):null;
+  var a=a0.slice(),diff=0;
+  if(plan){
+    var oldSpd=+a[5]||0,newSpd=+plan.ev||0;diff=oldSpd-newSpd;
+    a[5]=newSpd;
+    if(diff>0){a[0]=(+a[0]||0)+diff;}
+    else if(diff<0){
+      var need=-diff,fromHp=Math.min(need,+a[0]||0);a[0]-=fromHp;need-=fromHp;
+      var fundIdx=[];for(var fi=0;fi<5;fi++)fundIdx.push(fi);
+      fundIdx.sort(function(x,y){return (+a[x])-(+a[y]);});
+      for(var fj=0;fj<fundIdx.length&&need>0;fj++){var take=Math.min(need,+a[fundIdx[fj]]||0);a[fundIdx[fj]]-=take;need-=take;}
+    }
+  }
   var ord=[];for(k=0;k<6;k++){if(+a[k]>0)ord.push(k)}
   ord.sort(function(x,y){return (+a[y])-(+a[x])});
   var rank={};ord.forEach(function(ix,j){rank[ix]=(j===0?1:(j===1?2:0))});
@@ -15869,7 +15918,24 @@ function evBarHtml(bd){
     segs+='<span class="evseg ev'+(rank[k]||0)+'" style="width:'+w+'%;display:inline-flex;align-items:center;justify-content:center" title="'+escq(evName(k)+' '+a[k])+'">'+lbl+'</span>';
   }
   var h='<div class="fld"><div class="fhd"><span class="fno">6</span>努力值分配</div>';
-  h+='<div class="evsum">'+esc(ev.summary)+'　·　数值（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　模板：<b>'+esc(ev.template)+'</b></div>';
+  if(sp){
+    var natName=String(((bd.nat||[])[0]||[])[0]||'');
+    var realSpd=plan?plan.val:dmgStatOf(bstI(sp,5),a[5],31,5,natName);
+    var rkPct=spdRankOfVal(realSpd);
+    h+='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0;padding:6px 8px;background:var(--hover-tint);border-radius:6px">'+
+      '<span style="font-size:14.5px;color:var(--sub)">速度</span><b style="font-size:19px;color:var(--accent)">'+realSpd+'</b>'+
+      '<span class="dim">快过约 '+rkPct+'%</span>'+_spdBadge(rkPct);
+    if(plan){var _tagTxt=(diff>0)?('你的配速 · '+plan.nat+'性格 · 省'+diff+' EV→HP'):(diff<0)?('你的配速 · '+plan.nat+'性格 · 提速抽调'+(-diff)+' EV'):('你的配速 · '+plan.nat+'性格');h+='<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:var(--accent);color:#fff;font-size:13.5px">'+_tagTxt+'</span>';}
+    h+='<button class="btn-mini" type="button" onclick="spdAdjustFromCore('+jsl(String(sp.id))+')" title="打开速度滑块，拖动后可采用">调整速度</button>';
+    if(plan)h+='<button class="btn-mini" type="button" onclick="spdClearFromCore('+jsl(String(sp.id))+')" title="取消采用，恢复流派默认">恢复默认</button>';
+    h+='</div>';
+  }
+  var sumTxt=ev.summary;
+  if(plan){
+    var sumParts=[];for(k=0;k<6;k++){if(+a[k]>0)sumParts.push(a[k]+evName(k));}
+    sumTxt=sumParts.join(' / ');
+  }
+  h+='<div class="evsum">'+esc(sumTxt)+'　·　数值（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　模板：<b>'+esc(ev.template)+'</b></div>';
   h+='<button class="evtap" type="button" aria-expanded="false" onclick="evWhy(this)" title="展开/收起这套努力值的分配依据">';
   h+='<span class="evsegs">'+segs+'</span><span class="evv">分配依据 ▸</span></button>';
   h+='<div class="evwhy" hidden>'+esc(evWhyTxt(ev.template))+'</div></div>';
@@ -16061,7 +16127,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.263';
+var ER_ENGINE_VER='v4.264';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
