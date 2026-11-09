@@ -359,7 +359,7 @@ INJECT_JS = r"""
       });
       return r;
     }
-    var names=['悠游自如','叶绿素','拨雪','飞毛腿','轻装','轻金属'];
+    var names=['悠游自如','叶绿素','拨雪','飞毛腿','轻装','轻金属','热滑','丛林热','厚脂'];
     var o=[];
     names.forEach(function(n){
       var sp=pick(n); if(!sp){o.push(n+':NO');return;}
@@ -788,7 +788,9 @@ def main():
        "F90 状态型进攻增伤：毅力/决心（异常+物理/特殊）与中毒激升（中毒+物理）逐项正确，未选状态时不生效", "%s" % tt.get("stAtk"))
     ck(tt.get("atkKind") == "N=15 无ALLYONLY=OK 活力=1.4 远隔P=1.2 远隔NP=1.2 远隔S=1 猩P=1.5 猩S=1 钳P=1.2 钳S=1 贤S=1.5 贤P=1 技低=1.5 技高=1 胸C=1.3 胸N=1 核SE=1.35 核N=1 狙C=1.5 狙N=1 声S=1.2 声N=1",
        "F89 进攻侧静态条件增伤 10 条：物理/特殊/威力≤60/接触/相性≥2/会心/声音 逐项判定正确，且已剔除 APPLY_ON_ALLY_ONLY", "%s" % tt.get("atkKind"))
-    ck((tt.get("spdAbi") or "").endswith("|N=14"), "F87 SPD_ABI 收录 14 条速度修正特性（源码 .onStat 口径）", "%s" % tt.get("spdAbi"))
+    ck((tt.get("spdAbi") or "").endswith("|N=17"), "F87 SPD_ABI 收录 17 条速度修正特性（源码 .onStat 口径）", "%s" % tt.get("spdAbi"))
+    ck("热滑=1.5:" in (tt.get("spdAbi") or "") and "丛林热=1.5:" in (tt.get("spdAbi") or "") and "厚脂=0.5:" in (tt.get("spdAbi") or ""),
+       "F92 v4.251 补齐三条源码已确认漏项：热滑(晴或雪) / 丛林热(青草场地) ×1.5、厚脂 ×0.5", "%s" % tt.get("spdAbi"))
     ck("悠游自如=1.5:" in (tt.get("spdAbi") or "") and "轻装=2:" in (tt.get("spdAbi") or ""), "F88 天气类 ×1.5 与轻装 ×2 倍率区分正确（18.21 曾误写全线 ×2）", "%s" % tt.get("spdAbi"))
     ck(tt.get("tagPoison") == "毒", "F26 毒吸收补为免疫毒", "%s" % tt.get("tagPoison"))
     ck(tt.get("tagIce") == "冰", "F27 冰露补为免疫冰", "%s" % tt.get("tagIce"))
