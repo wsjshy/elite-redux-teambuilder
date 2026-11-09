@@ -6538,6 +6538,20 @@ function spdSpeedAbiOf(s){
 }
 function spdWeatherOf(s){var r=spdSpeedAbiOf(s);return (r&&r.mul>1)?r.zh:null} /* 保留旧名，语义收窄为「加速特性名」 */
 function spdWeatherVal(s){var r=spdSpeedAbiOf(s);return (r&&r.mul>1)?Math.floor(spdMaxOf(s)*r.mul):null} /* v4.235：按源码倍率（1.5/2）算，不再硬编码 ×2 */
+/* v4.250：配速滑块里「特性×1.5」这一格原来只有倍率、没有名字和条件 —— 和「特性 chip 只有名字」是同一类病的反面。
+   SPD_ABI 每条本就有 {zh,mul,cond,label}，这里把名字与条件摊到 chip 下面。 */
+function spdAbiWhyHtml(s){
+  try{
+    var r=spdSpeedAbiOf(s);if(!r)return '';
+    var up=r.mul>1;
+    return '<div style="font-size:12.5px;color:var(--sub);margin-top:2px;line-height:1.5">'
+      +(up?'提速来自 ':'减速来自 ')+'<b style="color:var(--accent)">'+esc(r.zh)+'</b> ×'+r.mul
+      +'（'+esc(r.label)+'）'
+      +(r.cond==='item'?'<span style="color:var(--warn,#e0a800)"> · 要真的把道具消耗掉才生效，不是常驻</span>':'')
+      +(r.cond==='turn5'?'<span style="color:var(--warn,#e0a800)"> · 只在出场前 5 回合，之后恢复原速</span>':'')
+      +'</div>';
+  }catch(e){return ''}
+}
 var _spdPct=null;
 function speedPctiles(){if(!ERDATA.species||!ERDATA.species.length)return {n:0,P50:0,P75:0,P90:0,P95:0,P99:0};if(_spdPct)return _spdPct;
   var arr=[];ERDATA.species.forEach(function(s){arr.push(spdMaxOf(s))});arr.sort(function(a,b){return a-b});
@@ -6679,7 +6693,7 @@ function speedSliderHtml(s){
       '<div style="font-size:13.5px;margin:4px 0">ER修正乘区（默认开，可关）：<span class="chipgrp">'+
         spdSlChip('围巾×1.5',__spdSl.scarf,'spdTgl(\'scarf\')')+
         spdSlChip('特性×'+((spdSpeedAbiOf(__spdSl.s)||{mul:1.5}).mul),__spdSl.wx,'spdTgl(\'wx\')')+
-        spdSlChip('顺风×2',__spdSl.tailwind,'spdTgl(\'tailwind\')')+'</span></div>'+
+        spdSlChip('顺风×2',__spdSl.tailwind,'spdTgl(\'tailwind\')')+'</span>'+spdAbiWhyHtml(__spdSl.s)+'</div>'+
       '<div style="font-size:13.5px;margin:4px 0;display:flex;align-items:center;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%"><span style="white-space:nowrap;flex:0 0 auto">耐久分配 bias：</span><span class="chipgrp" id="spdBiasG" style="flex:0 0 auto;max-width:none">'+
         spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
         spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
@@ -15924,7 +15938,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.249';
+var ER_ENGINE_VER='v4.250';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
