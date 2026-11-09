@@ -16061,7 +16061,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.262';
+var ER_ENGINE_VER='v4.263';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -17588,20 +17588,6 @@ function loadDefFromSource(src){
     var dl=$('dmgDefList');if(dl)dl.innerHTML=html;
     toast('防守方已载入 '+members.length+' 只，点击选择');
   }catch(e){console.log('loadDef err',e)}
-}
-function evBarHtml(evs){
-  if(!evs)return '';
-  var parts=['hp','atk','def','spa','spd','spe'];
-  var colors=['#e57373','#f5975e','#f4cf45','#5dade2','#7dcea0','#95a5a6'];
-  var total=parts.reduce(function(s,k){return s+(evs[k]||0)},0)||1;
-  var html='<div style="display:flex;gap:2px;height:8px;margin-top:4px;border-radius:4px;overflow:hidden">';
-  parts.forEach(function(k,i){
-    var v=evs[k]||0;
-    var w=Math.max(1,Math.round(v/total*100));
-    html+='<div style="width:'+w+'%;background:'+colors[i]+'" title="'+k+':'+v+'"></div>';
-  });
-  html+='</div>';
-  return html;
 }
 function isFav(id){
   try{return !!JSON.parse(localStorage.getItem('er_favs')||'{}')[id]}
