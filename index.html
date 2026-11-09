@@ -3817,7 +3817,7 @@ function abiDesc(el,id,box){
     /* v4.236：进攻侧增伤（ABI_ATK_MOD 纯属性 / ABI_ATK_COND 条件 / ABI_FLAG_ATK 招 flag / ABI_ATK_KIND 招式分类）
        —— 这批只放大「自己打出去」的伤害，与上面的减伤方向相反，必须分开讲 */
     var _ar=[];
-    var _kindZh={phys:'物理招',spec:'特殊招',pow60:'威力≤60 的招式',contact:'接触招式',se:'效果绝佳时',crit:'会心一击时',sound:'声音招式',fog:'雾天'};
+    var _kindZh={phys:'物理招',spec:'特殊招',pow60:'威力≤60 的招式',contact:'接触招式',se:'效果绝佳时',crit:'会心一击时',sound:'声音招式',fog:'雾天',stPhys:'自身有异常状态时（物理招）',stSpec:'自身有异常状态时（特殊招）',poison:'自身中毒时（物理招）'};
     var _flagZh={jaw:'咬类招式',sound:'声音招式',reckless:'反作用招式',sheer:'强行类招式',field:'场地类招式',dance:'舞蹈招式',bone:'骨类招式',launcher:'波动/弹类招式',keen:'锐利类招式',fist:'拳类招式',striker:'踢类招式'};
     var _pm=ABI_ATK_MOD[name];
     if(_pm)_pm.forEach(function(x){_ar.push('<b>'+glossify(x.t.join(' / '))+'</b> 招式 ×'+x.mul)});
@@ -6616,7 +6616,12 @@ function speedSliderHtml(s){
           spdSlChip('头带',__spdSl.dmgItem==='讲究头带','dmgSet(\'dmgItem\',\'讲究头带\')')+
           spdSlChip('眼镜',__spdSl.dmgItem==='讲究眼镜','dmgSet(\'dmgItem\',\'讲究眼镜\')')+'</span> '+
         spdSlChip('暴击',__spdSl.crit,'dmgTgl(\'crit\')')+'</div>'+
-        '<div id="dmgOut2" style="margin-top:2px"></div>'+
+                 '<div style="font-size:13.5px;margin-top:4px">攻方状态：<span class="chipgrp">'+
+           spdSlChip('无',!__spdSl.stA,'dmgSet(\'stA\',\'\')')+
+           spdSlChip('异常',__spdSl.stA==='any','dmgSet(\'stA\',\'any\')')+
+           spdSlChip('中毒',__spdSl.stA==='poison','dmgSet(\'stA\',\'poison\')')+'</span>'+
+           '<div style="font-size:12px;color:var(--sub)">毅力=异常时物理 ×1.5 ｜ 决心=异常时特殊 ×1.5 ｜ 中毒激升=中毒时物理 ×1.5</div></div>'+
+         '<div id="dmgOut2" style="margin-top:2px"></div>'+
       '</div>'+
     '</div>';
     setTimeout(function(){try{spdSliderRender()}catch(e){}},0);   /* v4.88 修复GAP-C：详情打开瞬间即首渲染一次方案（不等首次交互） */
@@ -6770,6 +6775,11 @@ var ABI_ATK_KIND={
   '脑核之力':{mul:1.35,need:'se',     src:'相性 ≥ 2.0'},
   '狙击手':  {mul:1.5, need:'crit',   src:'会心时，与基础 1.5 叠成 2.25'},
   '湿润之声':{mul:1.2, need:'sound',  src:'声音类招式' },
+  /* v4.237：状态型 —— 源码条件含 HasAnyStatusOrAbility(battler) / status1 & STATUS1_POISON_ANY，
+     需要玩家指定「攻方当前有异常」，故单列为 stPhys/stSpec/poison 三类，ctx.stA 为空时不触发。 */
+  '毅力':    {mul:1.5, need:'stPhys', src:'自身有异常状态时（源码含梦游/血染，此处仅建模异常）'},
+  '决心':    {mul:1.5, need:'stSpec', src:'自身有异常状态时'},
+  '中毒激升':{mul:1.5, need:'poison', src:'自身中毒或剧毒时'},
 };
 /* 返回命中说明文案；未命中返回 null。ctx 缺省时只有「无条件」那两条会命中。 */
 function abiAtkKindOk(need,ctx,mvId){
@@ -6782,6 +6792,9 @@ function abiAtkKindOk(need,ctx,mvId){
   if(need==='se')return (ctx.eff>=2)?('相性×'+ctx.eff):null;
   if(need==='crit')return ctx.crit?'会心一击':null;
   if(need==='sound')return mvHasFlag(mvId,'sound')?'声音招式':null;
+  if(need==='stPhys')return (ctx&&ctx.stA&&ctx.isPhys)?('异常状态+物理招'+(ctx.stA==='poison'?'（中毒）':'')):null;
+  if(need==='stSpec')return (ctx&&ctx.stA&&ctx.spec)?('异常状态+特殊招'+(ctx.stA==='poison'?'（中毒）':'')):null;
+  if(need==='poison')return (ctx&&ctx.stA==='poison'&&ctx.isPhys)?'中毒+物理招':null;
   return null;
 }
 function dmgAtkAbiMul(sA,mType,wx,mvId,ctx){
@@ -6912,7 +6925,7 @@ function dmgCalc(o){
   if(abiMul!==1)mod*=abiMul;
   /* 进攻侧属性增伤（飘浮飞行×1.25 / 水泡水×2 / 电晶体电×1.5 …） */
   var atkMul=1,atkHit=[];
-  try{var _am=dmgAtkAbiMul(sA,mType,(o&&o.weather)||'',(o&&o.moveId)||0,{isPhys:isPhys,spec:(split==='特殊'||split==='特殊(取防御)'),pow:bp,contact:mvIsContact((o&&o.moveId)||0),eff:eff,crit:!!(o&&o.crit)});atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
+  try{var _am=dmgAtkAbiMul(sA,mType,(o&&o.weather)||'',(o&&o.moveId)||0,{isPhys:isPhys,spec:(split==='特殊'||split==='特殊(取防御)'),pow:bp,contact:mvIsContact((o&&o.moveId)||0),eff:eff,crit:!!(o&&o.crit),stA:(o&&o.stA)||''});atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
   if(atkMul!==1)mod*=atkMul;
   if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
   if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
@@ -6959,6 +6972,34 @@ function ohkoSolveEv(o,hpD){
     if(r&&r.lo>=hpD)return ev;
   }
   return -1;
+}
+/* v4.238 修复既有断链：v4.95 A「防守向反推 · 扛 N 下」调用了 surviveSolve(o,N)，
+   但这个函数在全文件里只有调用点、没有定义 —— dmgRender 每次渲染都会抛 ReferenceError，
+   被外层 catch 兜成「渲染错误: surviveSolve is not defined」，整个伤害判定面板一直是坏的。
+   重建方式：在 (HP EV, 防御 EV) 二维网格上搜最小总投入，使「N 次最大伤害」仍打不死守方。
+   注意 dmgCalc 的 evD 只作用于防御一项（aIdx/dIdx 由物理/特殊决定），HP 必须另行按 dmgStatOf 算。
+   返回 {hpEv,defEv,hp,dmgHi}；252/252 仍无解时返回 null。 */
+function surviveSolve(o,N){
+  if(!o||!o.sD)return null;
+  var mv=ERDATA.moves[o.moveId];
+  var isPhys=!!(mv&&mv[4]==='物理');
+  var hpB=bstI(o.sD,0);
+  var best=null;
+  for(var hpEv=0;hpEv<=252;hpEv+=4){
+    var hp=dmgStatOf(hpB,hpEv,31,0,'');
+    for(var defEv=0;defEv<=252;defEv+=4){
+      var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:o.evA,evD:defEv,
+        natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,
+        crit:o.crit,stA:o.stA});
+      if(!r)continue;
+      if(r.hi*N<hp){
+        if(!best)best={hpEv:hpEv,defEv:defEv,hp:hp,dmgHi:r.hi};
+        break;
+      }
+    }
+    if(best)break;   /* hpEv 递增：第一个有解的 hpEv 即最小总投入所在的 HP 档 */
+  }
+  return best;
 }
 /* 伤害判定面板：选择对手(搜索chips，禁下拉)、选择我方招式、天气/暴击/道具 chip、输出 min-max + OHKO 判定 + 反解 */
 function dmgAtkQ(v){
@@ -7084,7 +7125,7 @@ function dmgRender(boxId){
     return;
   }
   var natA=__spdSl.natOv||'';
-  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit};
+  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit,stA:__spdSl.stA||''};
   var r=dmgCalc(o);if(!r){box.innerHTML='<div style="font-size:13px;color:var(--warnred)">该招式无威力</div>';return}
   var hpD=dmgStatOf(bstI(sD,0),0,31,0,'');
   var verdict=r.lo>=hpD?'<span style="color:var(--ok);font-size:14.5px;font-weight:700">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub);font-size:14.5px;font-weight:700">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred);font-size:14.5px;font-weight:700">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
@@ -15715,7 +15756,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.236';
+var ER_ENGINE_VER='v4.237';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
