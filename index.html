@@ -3334,7 +3334,10 @@ function roleCard5Html(s,bd,R){
     var _ab0=bd.abi&&bd.abi[0];
     if(_ab0){var _abN='';
       try{_abN=(_ab0.id!=null&&_ab0.id!==''&&typeof ABI!=='undefined'&&ABI[_ab0.id])?(ABI[_ab0.id][2]||ABI[_ab0.id][1]||('#'+_ab0.id)):((typeof abiNameZh==='function')?abiNameZh(_ab0.n):(_ab0.n||''))}catch(eN){_abN=_ab0.n||''}
-      if(_abN)mechBits.push('特性「'+String(_abN)+'」')}
+      if(_abN){
+        var _br=[];try{_br=abiSrcBrief(_ab0.id)}catch(eBr){_br=[]}
+        mechBits.push('特性「'+String(_abN)+'」'+(_br.length?('<span style="font-size:12.5px;color:var(--sub)">（'+_br.slice(0,2).join('；')+(_br.length>2?' 等 '+_br.length+' 条':'')+'）</span>'):''));
+      }}
     h+='<b>② 核心机制：</b>'+(mechBits.join('、')||'—');
     if(dmgRes&&tgt){
       h+='。<span style="color:var(--sub)">现算：'+esc(s.zh)+' 主攻 → '+esc(tgt.zh)+'（HP '+hpT+'）伤害 <b>'+dmgRes.lo+'–'+dmgRes.hi+'</b>'+
@@ -15886,7 +15889,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.245';
+var ER_ENGINE_VER='v4.246';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
