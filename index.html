@@ -6716,22 +6716,25 @@ function spdNatAdvice(s,p,M){
   if(p>=90)return '加速';
   return '中性';
 }
+function spdSliderBounds(s,M){var b=bstI(s,5);var lo=Math.floor((2*b+36)*0.9);var hi=Math.floor(spdMaxOf(s)*M);return{lo:lo,hi:hi}}
+function spdSliderPosToVal(s,p,M){var B=spdSliderBounds(s,M);if(B.hi<=B.lo)return B.lo;return Math.round(B.lo+(B.hi-B.lo)*(Math.max(0,Math.min(99,+p||0))/99))}
+function spdSliderValToPos(s,T,M){var B=spdSliderBounds(s,M);if(B.hi<=B.lo)return 99;return Math.max(0,Math.min(99,Math.round((T-B.lo)/(B.hi-B.lo)*99)))}
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
 var __spdSl={s:null,p:50,scarf:false,wx:false,tailwind:false,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null,stA:'',tgt:''};
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx){var _r=spdSpeedAbiOf(__spdSl.s);m*=(_r&&_r.mul>1)?_r.mul:1.5}if(__spdSl.tailwind)m*=2;return m}
 function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+onclick+'}else if(event.key===\'ArrowLeft\'||event.key===\'ArrowRight\'){event.preventDefault();var g=this.parentNode;var cs=[].slice.call(g.children).filter(function(x){return x.classList&&x.classList.contains(\'chipopt\')});var i=cs.indexOf(this);var d=event.key===\'ArrowLeft\'?-1:1;var n=i+d;if(n>=0&&n<cs.length)cs[n].focus();}">'+label+'</span>'}
 function speedSliderHtml(s){
   try{
-    var p0=speedPctileRankOf(s);__spdSl.s=s;__spdSl.p=p0;
+    __spdSl.s=s;__spdSl.p=99;   /* v4.258：滑块自适应本只上下限，p=99=极速 */
     var h='<div class="ruleline" style="margin-top:6px;padding-bottom:6px">'+
       '<b style="font-size:18px;font-weight:800;color:var(--text)">目标速度</b><span style="font-size:13px;color:var(--sub)">　拖动设定，下面立刻给性格 + EV + 余量分配</span>'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px">'+
-        '<span style="font-size:24px;font-weight:700;color:var(--accent)" id="spdSlVal">'+spdPctileVal(p0)+'</span>'+
-        '<span style="font-size:13.5px;color:var(--sub)" id="spdSlRank">P'+p0+' · 极速 '+spdMaxOf(s)+'=P'+p0+'</span>'+
+        '<span style="font-size:24px;font-weight:700;color:var(--accent)" id="spdSlVal">'+spdMaxOf(s)+'</span>'+
+        '<span style="font-size:13.5px;color:var(--sub)" id="spdSlRank">P'+spdRankOfVal(spdMaxOf(s))+' · 极速 '+spdMaxOf(s)+'</span>'+
       '</div>'+
-      '<input type="range" min="0" max="99" step="1" value="'+p0+'" id="spdSlRange" style="width:100%;margin:6px 0;min-height:44px;accent-color:var(--accent)" oninput="spdSliderOn(this.value)">'+
+      '<input type="range" min="0" max="99" step="1" value="99" id="spdSlRange" style="width:100%;margin:6px 0;min-height:44px;accent-color:var(--accent)" oninput="spdSliderOn(this.value)">'+
       '<div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:13px;color:var(--sub)">'+
-        ['P50','P75','P90','P95','P99'].map(function(a){var v=+a.slice(1);return '<span style="cursor:pointer" onclick="spdSliderSet('+v+')" title="吸附到 '+a+' 锚点">'+a+' '+spdPctileVal(v)+'</span>'}).join('')+
+        ['P50','P75','P90','P95','P99'].map(function(a){var v=+a.slice(1);var sv=spdPctileVal(v);return '<span style="cursor:pointer" onclick="spdSliderSetVal('+sv+')" title="吸附到 '+a+'（'+sv+'）">'+a+' '+sv+'</span>'}).join('')+
       '</div>'+
       '<div id="spdPlanBox"></div>'+
       '<details class="spdadv">'+
@@ -6800,10 +6803,10 @@ function speedSliderHtml(s){
     return h;
   }catch(e){return ''}
 }
-function spdTgl(k){__spdSl[k]=!__spdSl[k];spdSliderRender()}
+function spdTgl(k){var _oT=spdSliderPosToVal(__spdSl.s,__spdSl.p,spdModMul());__spdSl[k]=!__spdSl[k];var _nM=spdModMul();__spdSl.p=spdSliderValToPos(__spdSl.s,_oT,_nM);spdSliderRender()}
 function spdSet(k,v){__spdSl[k]=v;spdSliderRender()}
 function spdSliderOn(p){__spdSl.p=+p;spdSliderRender()}
-function spdSliderSet(p){var r=$('spdSlRange');if(r)r.value=p;__spdSl.p=p;spdSliderRender()}
+function spdSliderSetVal(v){var nM=spdModMul();var B=spdSliderBounds(__spdSl.s,nM);v=Math.max(B.lo,Math.min(B.hi,+v));__spdSl.p=spdSliderValToPos(__spdSl.s,v,nM);var r=$('spdSlRange');if(r)r.value=__spdSl.p;spdSliderRender()}
 function spdSliderRender(){
   var s=__spdSl.s;if(!s)return;
   /* v4.110 P4：多目标对比表 */
@@ -6813,23 +6816,23 @@ function spdSliderRender(){
     rows.forEach(function(r){var plan=spdPlanForTarget(s,r[1]);h+='<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+(plan.ev||0)+'</td><td>'+(plan.nat||'')+'</td></tr>'});
     h+='</table></div>';box.innerHTML=h;
   }}catch(e){}
-  var b=bstI(s,5),p=__spdSl.p,T=spdPctileVal(p),M=spdModMul(),Te=Math.ceil(T/M);
+  var b=bstI(s,5),p=__spdSl.p,M=spdModMul(),T=spdSliderPosToVal(s,p,M),Te=Math.ceil(T/M);
   var vMax=spdMaxOf(s),vMin=Math.floor((2*b+36)*0.9);
   var plans=spdPlanForTarget(s,Te);
-  var adv=spdNatAdvice(s,p,M),main=null;   /* v4.90 P2-1：主方案须与 adv 决策一致（消除「目标 273 却推减速 230」矛盾） */
+  var adv=spdNatAdvice(s,spdRankOfVal(T),M),main=null;   /* v4.258：adv 用目标速度真实分位 */   /* v4.90 P2-1：主方案须与 adv 决策一致（消除「目标 273 却推减速 230」矛盾） */
   if(__spdSl.natOv){plans.forEach(function(pl){if(pl.nat===__spdSl.natOv)main=pl})}
   if(!main&&plans.length){var advPl=null;plans.forEach(function(pl){if(!advPl&&pl.nat===adv)advPl=pl});main=advPl||plans[0]}
   var h='';
-  if(T<=vMin)h+='<div style="color:var(--sub);font-size:13px">已到本只下限：减速0EV 实速尚有 '+vMin+'（P'+spdRankOfVal(vMin)+'），目标线 '+T+' 低于此无意义</div>';
+  /* v4.258：T 恒在本只 [vMin, 极速×M] 内，下限提示移除 */
   if(!main){
-    var canFix=(M>1)&&(Math.ceil(T/M)<=vMax);   /* v4.90 P2-3：可达性基于原始实速边界 */
-    h+=canFix
-      ?'<div style="color:var(--sub);font-size:13.5px">目标 P'+p+' 原始需 '+Te+' 超出极速 '+vMax+'，但<b style="color:var(--ok)">经当前乘区（×'+M+'）修正可达</b>：原始 '+Math.ceil(T/M)+' 速即可（围巾/天气/顺风生效）</div>'
-      :'<div style="color:var(--warnred);font-size:14.5px">⚠️ 已到本只上限：目标 P'+p+' 需原始速度 '+Te+'，即使加速+252 极速 '+vMax+' 仍差 '+(Te-vMax)+' 点，乘区关闭或修正后仍不可达 → 开启围巾×1.5 / 顺风×2 / 换高速手</div>';
+    /* v4.258：乘区已纳入滑块上限，canFix 不再需要 */
+    h+='';
+    /* v4.258：原乘区修正可达分支移除 */
+    /* v4.258：原红色不可达警告移除 */
   }else{
     var eff=Math.floor(main.val*M);
     h+='<div class="spdmain">'+
-       '<div class="t">目标 P'+p+' · '+T+'　'+main.nat+'性格</div>'+
+       '<div class="t">目标 P'+spdRankOfVal(T)+' · '+T+'　'+main.nat+'性格</div>'+
        '<div class="v">+'+main.ev+' EV → '+main.val+' 速</div>'+
        '<div class="s">'+(main.saved>0?('省 '+main.saved+' EV 挪耐久'):'速度已满投')+(eff!==main.val?('　乘区后有效 '+eff):'')+'</div>'+
        '</div>';
@@ -6866,7 +6869,7 @@ function spdSliderRender(){
   }
   var vb=$('spdPlanBox');if(vb)vb.innerHTML=h;
   var vv=$('spdSlVal');if(vv)vv.textContent=T;   /* v4.255：大字=滑块目标速度（拖动即变化），方案值在结论卡 */   /* v4.88 修复BUG-B：大字值=原始实速（乘区有效速度在方案行另列），不被 M 放大 */
-  var rk=$('spdSlRank');if(rk)rk.textContent='P'+p+' · 极速 '+vMax+'=P'+spdRankOfVal(vMax);   /* 修复BUG-A：实参为极速值而非物种对象 */
+  var rk=$('spdSlRank');if(rk)rk.textContent='P'+spdRankOfVal(T)+' · 极速 '+vMax+'=P'+spdRankOfVal(vMax);var _rg=$('spdSlRange');if(_rg)_rg.value=p;
   var bg=$('spdBiasG');if(bg)bg.innerHTML=   /* v4.90 P2-2：chip 组点击后实时重渲染（radio 互斥语义可见性） */
     spdSlChip('均衡混伤',__spdSl.bias==='balanced','spdSet(\'bias\',\'balanced\')')+
     spdSlChip('物理端',__spdSl.bias==='physical','spdSet(\'bias\',\'physical\')')+
@@ -16001,7 +16004,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.257';
+var ER_ENGINE_VER='v4.258';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
