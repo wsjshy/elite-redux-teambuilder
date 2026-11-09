@@ -2081,9 +2081,95 @@ SPD_ABI.forEach(function(r){
 > 只要表还在用 `TBL[中文名]` 直接索引，这个普查就该在每次新增表时跑一遍。
 
 
+## v4.244（2026-11-09）· AXIS_LIB 8 条别名修正 + IMMUNE_RISK 物种表口径化（并纠正 v4.243 的一条错误结论）
+
+### A. 先纠正 v4.243 写进文档的一条错判
+
+v4.243 手册 §15.5 记过「`SYS_SET` 里「日照」应为「干旱」（25 只持有），未改 —— 需先跑 4680 导出 diff」。**这条是错的，已删改。**
+
+`sysIdMapsInit()` 的写法是：
+```js
+for(n in SYS_SET){i=abiIdC(n);if(i)SET_ID_MAP[i]=SYS_SET[n]}
+```
+即键先经 `abiIdC` 转成 **id**，再以 **id 为键**存表。`abiIdC('日照')=70` → `SET_ID_MAP['70']='晴'`；物种表的「干旱」同样反查 70 ⇒ `abiSetOf('干旱')` 命中。
+CDP 实测：`abiSetOf('日照')`=`abiSetOf('干旱')`=`'晴'`；全库 **23** 只「干旱」物种（不是文档写的 25）`coreSys` **全部**含「晴」。
+
+**方法论（本段最大收获）**：同样是「以中文特性名作键」，**有没有走 id 桥，结论完全相反**：
+
+| 消费模式 | 代码特征 | 别名差是否算缺陷 |
+|---|---|---|
+| A 直接索引 | `TBL[名称]`，名称直接来自 `s.abis`/`s.inns` | **算**（静默永不命中） |
+| B id 桥 | `sysIdMapsInit()` 先经 `abiIdC` 转 id 级映射 | **不算**（两边反查同一 id） |
+
+排查口诀：**看到「某特性写了却不生效」，第一步不是改表，而是先看消费点有没有 `abiIdC`。**
+
+### B. AXIS_LIB 8 条别名修正（零风险，已 diff 验证）
+
+`axisStateOf` 的 `spHasAbiName` 内部是 `names.indexOf(n)>-1`，**严格匹配、不走 `abiSame`** ⇒ `AXIS_LIB` 里 `轴手判定.ability_tags` / `受益者判定.ability_tags` 必须与物种表一致。普查出 15 条 MISS，本轮修 8 条（其余 0 持有或属 `immune_types` 语义）：
+
+| 轴 | 字段 | 原写 | 改为 | id | 持有 |
+|---|---|---|---|---|---|
+| sun | 轴手 | 日照 | 干旱 | 70 | 23 |
+| sand | 轴手 | 沙漠意志 | 沙漠之魂 | 604 | 1 |
+| sand | 受益 | 拨沙 | 挖沙 | 146 | 27 |
+| snow | 受益 | 冰天雪地 | 白茫茫 | 269 | 26 |
+| stall | 轴手 | 洁净之盐 | 净化之盐 | 547 | 3 |
+| pivot | 受益 | 隔空取物 | 念动力 | 511 | 6 |
+| grassy | 受益 | 草之毛皮 | 草之皮毛 | 179 | 27 |
+| psychic | 受益 | 天才思想 | 天赋异禀 | 422 | 6 |
+
+**为什么要先 diff**：`axisStateOf` → `viable` → `axisDetect` → `axisSyncOf`（`needScore` 的 AX 维度加分）→ `deriveBuilds`，改名字会改推荐。用内存模拟（原地改 `AXIS_LIB` 数组后重跑全库）测出：
+- `axisDetect`：**2 / 1905** 变化（仅冷水猴R #2519、冷水猿R #2520 新增 `pivot`）
+- `deriveBuilds` / `coreAbiPick`：**0 / 1905**
+⇒ 可安全落地。落盘后实测与模拟一致。
+
+### C. IMMUNE_RISK：一张表两个口径（本轮最重要的缺陷）
+
+```js
+var IMMUNE_RISK={};
+ERDATA.abilities.forEach(function(a){
+  var g=ERDATA.abiTags[a[0]];
+  if(g&&g.im)g.im.forEach(function(t){(IMMUNE_RISK[t]=IMMUNE_RISK[t]||[]).push(a[2]||a[1])});
+});
+```
+
+**构建用 `a[2]`（数据层 `ERDATA.abilities[id][2]` 中文名），唯一的结构化消费点 `axisStateOf` 却用物种表名严格比对** ⇒ 别名差让「轴联防件」判定静默失效，**同时文案也显示错名**（用户在免疫警示里看到「焦香之躯」，而游戏里叫「好烤的身体」）。
+
+普查 `IMMUNE_RISK` 30 条里 **12 条 MISS**，其中 3 条是此前从未列入任何清单的新发现：`巨翼`→**威严之翼**、`空气动力`→**空气动力学**(282)、`登山`→**登山者**(314)。
+
+修法（`er-ready` 后重映射为物种表口径）：
+```js
+function ___immRiskRemap(){
+  if(!window.ERDATA||!ERDATA.species||!ERDATA.species.length)return false;
+  var id2={};  // abiIds/abis 同索引取物种表真名
+  ERDATA.species.forEach(function(x){ ... });
+  Object.keys(IMMUNE_RISK).forEach(function(t){
+    IMMUNE_RISK[t]=IMMUNE_RISK[t].map(function(nm){var id=abiIdC(nm);return (id&&id2[id])?id2[id]:nm});
+  });
+}
+if(document.addEventListener){document.addEventListener('er-ready',___immRiskRemap);}
+```
+
+修正后：`火=引火/好烤的身体/元素漩涡/灼日/火焰形态`、`地面=飘浮/龙飞/念动力/空中飞人/威严之翼/悬浮/终结烈日/妖精飞行`、`飞行=空气动力学`、`岩石=登山者`。
+影响面（与 v4.243 基线逐项比对）：`builds` **0/1905**、`abi` **0/1905**、`axes` **69/1905**（其中主轴变化 44 只，如凤王 #250 `rain`→`pivot`）。轴排序变化来自 `glue` 加分修正，属**预期修正**而非回归。
+
+### D. 踩坑：`ERDATA.species` 是分片异步，顶层访问会整段中断
+
+第一版把 `AB_ZH_BY_ID` 就地构建（直接 `ERDATA.species.forEach`），结果**语法 0、smoke 32/32 全绿，但 probe 报 `Cannot read properties of undefined (reading '|变色')`、CDP 里 `ER_ENGINE_VER` 变成 `undefined`**。
+
+根因：数据层是 `document.write` 注入的 `data_lite_v498.js`（只带 `abilities`/`moves`），**`species` 由 `__ER_SHARDS` 分片异步补**。4875 行执行时 `ERDATA.species` 尚不存在 → `forEach` 抛错 → **整段顶层脚本中断**，后面所有定义（含 `ER_ENGINE_VER`、各特性表）全没执行。
+
+**识别信号**：`ER_ENGINE_VER === undefined`（而不是旧版本号）。看到这个就先查是不是某处顶层访问了未就绪的分片数据。
+**正确写法**：像 L1120 的 `ERDATA.moves` 那样，`if(数据存在){就地做}else{document.addEventListener('er-ready',…)}`。
+
+### E. 验证
+
+语法 0 / smoke 32-32 / probe 117 ALL PASS。CDP：`VER=v4.244`、`erReady=true`、`species=1906`（过滤后 1905）、`___immRiskRemap()` 可重跑返回 true、免疫警示文案实测 `火（引火/好烤的身体/元素漩涡）`。
+与 v4.243 基线逐项比对：`builds` 0/1905、`abi` 0/1905、`axes` 69/1905。
 ### 版本
 
 | 版本 | 字节 | SHA1 | 状态 |
+| v4.244 | 1,639,431 | `A9313394B21567C3FC34BE5FFA1D0C353AB693FA` | VERIFIED-MATCH |
 |---|---|---|---|
 | v4.232 | 1,620,439 | `379B88940B860FF6E327A888BE0E847DCDEB2E18` | VERIFIED-MATCH |
 | v4.233 | 1,621,893 | `C4BF136C815387BF64A400118F1DDE3FBC7300AA` | VERIFIED-MATCH |
