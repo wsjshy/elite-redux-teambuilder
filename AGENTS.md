@@ -2469,9 +2469,98 @@ v4.246 / v4.247 的审计表把 `dmgRender` 标成「计算表 0 引用」。**�
 
 ---
 
+## v4.249（2026-11-09）· 「Mega形态」开关语义反了 —— 开着却专门保留该滤掉的
+
+### A. 用户报的现象
+
+手机端截图（宝可梦 Tab）：「Mega形态」chip 亮着（蓝色＝已激活），下面照样列出妙蛙花 / 喷火龙 / 水箭龟 —— **这三只全都带 Mega**，用户的原意是「把有 Mega 形态的非 Mega 宝可梦筛掉」。
+
+用户的判定很直接：喷火龙有 Mega，它就不该出现在这个列表里。
+
+### B. 先证伪了最容易想到的那个解释
+
+第一个怀疑是我上一轮反复踩过的**分片异步**：`hasMegaSet()` 懒建 `_HASMEGA` 并缓存，如果首次调用早于 `ERDATA.familyRoot`（分片数据）到位，就会把空集**永久缓存**，`hasMegaForm()` 恒 false，过滤静默失效。
+
+CDP 实测（`diag_mega.py`）：
+
+| 项 | 值 |
+|---|---|
+| `ERDATA.familyRoot` | **534 keys**，样本 `3->3, 6->6, 9->9` |
+| `_HASMEGA` | **247 条**（`3,6,9,12,15,18,24,26,28,31,34,36…`） |
+| `hasMegaForm(喷火龙 #6)` | **true** |
+| `optMegaOnly` | **true** |
+
+**⇒ 缓存没坏、数据没坏、核心配队页的过滤是对的。** 我原本的猜测不成立。
+
+### C. 真正的根因：两套同名开关，语义相反
+
+用户截图那个页面不是核心配队页，是**宝可梦 Tab**，它的过滤走的是另一条线 `spMatch`（L3513）：
+
+```js
+if(fOpt.mega&&!(isMegaForm(s)||hasMegaForm(s)))return false;   // 旧
+```
+
+读法：开关打开时，**保留**「本身是 Mega」**或**「可 Mega 的非 Mega」的 —— 即 `hasMegaForm` 为 true 的**被专门保留**。
+
+而 `hasMegaForm(s)` 的语义恰恰是「**这只自身不是 Mega、但族群有 Mega**」（`_HASMEGA[族群根 id]`）。于是：
+
+| 页面 | 代码 | 对 `hasMegaForm` 的处理 | 结果 |
+|---|---|---|---|
+| 核心配队 | `coreMatch` L16681 | `…&&hasMegaForm(s)&&!_q → return false` | **排除** ✅ 对 |
+| 宝可梦 Tab | `spMatch` L3513 | `!(isMegaForm\|\|hasMegaForm) → return false` | **保留** ❌ 反了 |
+| 招式反查「谁能学」 | `lkKeep` L6320 | `megaOnly&&hasMegaForm(s) → return false` | **排除** ✅ 对 |
+
+**同一个名词，三种消费点，只有宝可梦 Tab 这一个把谓词用反了。** 所以喷火龙 (#6，`isMegaForm=false`、`hasMegaForm=true`) 正好命中旧式里那个「或」的右半边，被留下来。
+
+### D. 修法与验证
+
+```js
+if(fOpt.mega&&hasMegaForm(s))return false;   // 新：与核心配队页同口径
+```
+
+chip 文案 `Mega形态` → `Mega 形态优先`，与核心配队页 `Mega 形态优先（过滤可 Mega 的非 Mega）` 对齐（`tchip(t,on,fn)` 不支持 title，短文案即可）。
+
+实测（`verify_249.py`）：
+
+| 开关 | 列表总数 | 其中「可 Mega 的普通形态」 |
+|---|---|---|
+| 关（`fOpt.mega=0`） | 1906 | 247 |
+| 开（`fOpt.mega=1`） | **1659** | **0** |
+
+`spMatch(喷火龙 #6)`：关 → `true`，开 → `false`。
+
+1906 − 247 = 1659，**数字自洽**。列表实际文本也核了：开启后 `妙蛙种子 / 妙蛙草 / 小火龙`，`妙蛙花 #3` 不出现在前 160 字内。
+
+### E. 顺手补的防御
+
+虽然实测 `_HASMEGA` 是正常的 247 条，但「空集永久缓存」这个风险在结构上是存在的（和 v4.244 的 `IMMUNE_RISK` 同类）。改成：
+
+- `familyRoot` 为空时**不写缓存**（`if(!Object.keys(fr0).length)return {}`）
+- 首次调用时登记一次 `er-ready` 监听，数据齐了把 `_HASMEGA` 置 null 重建
+
+这样即便某个环境里首次调用真的早于分片，也会在数据到位后自愈，而不是永久错下去。
+
+**这是防御性改动，不是本轮故障的原因** —— 别把两件事混成一件。
+
+### F. 验证与版本
+
+| 门禁 | 结果 |
+|---|---|
+| 语法 | **0** |
+| `node tools\smoke.js` | **32/32** |
+| `python -X utf8 tools\probe_sp_abi_detail.py` | **ALL PASS** |
+| CDP `ER_ENGINE_VER` | **v4.249** |
+
+**版本**：`1,647,902 B`
+
+配图 `docs/manual/img/poke_mega_on.png` / `poke_mega_off.png`（手机视口 430 宽对拍）。
+
+---
+
 ### 版本
 
 | 版本 | 字节 | SHA1 | 状态 |
+| v4.249 | 1,647,902 | A045F0FD0FD6707135257D6D9F13C9AB0971C86E | VERIFIED-MATCH |
 | v4.248 | 1,647,140 | `99660D4FC378BF9B31577F6AF21D70A926E5AD1D` | VERIFIED-MATCH |
 | v4.247 | 1,645,148 | `5874E58C2515596D195A1F795DF423223B15F7D8` | VERIFIED-MATCH |
 | v4.246 | 1,643,573 | `0D6BC67C88307CF14F4A9B4D1FD94CBF989BE174` | VERIFIED-MATCH |

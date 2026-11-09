@@ -3475,7 +3475,7 @@ function renderSpFormChips(){
     try{if($('tmGrid'))renderTm(true)}catch(eT){}
     try{if($('anpGrid'))renderAnPickerGrid(true)}catch(eA){}
   }
-  box.appendChild(tchip('Mega形态',!!fOpt.mega,function(){fOpt.mega=!fOpt.mega;renderSpFormChips();_refreshAll()}));
+  box.appendChild(tchip('Mega 形态优先',!!fOpt.mega,function(){fOpt.mega=!fOpt.mega;renderSpFormChips();_refreshAll()}));
   box.appendChild(tchip('仅最终形态',!!fOpt.final,function(){fOpt.final=!fOpt.final;renderSpFormChips();_refreshAll()}));
 }
 function renderSpChips(){
@@ -3510,7 +3510,10 @@ function spMatch(s,q,sel,role,abi){
   if(role&&spRoleTags(s).indexOf(role)<0)return false;
   if(abi&&!fzAny(abi,s.abis.concat(s.inns)))return false;
   /* v4.78 P1：形态开关并入同源过滤链 */
-  if(fOpt.mega&&!(isMegaForm(s)||hasMegaForm(s)))return false;
+  /* v4.249 修：原式 !(isMegaForm||hasMegaForm) 是「只留 Mega 系」，与核心配队页「过滤可 Mega 的非 Mega」正好相反，
+     导致开启后喷火龙这类「有 Mega 但本身不是 Mega」的形态反而被专门保留。
+     hasMegaForm(s) 的语义 = 「这只自身不是 Mega、但族群有 Mega」→ 该被排除的就是它。 */
+  if(fOpt.mega&&hasMegaForm(s))return false;
   if(fOpt.final&&!isFinalForm(s))return false;
   return true;
 }
@@ -8528,11 +8531,16 @@ function pickFuncs(s,role,side,used){
 }
 var optFinalOnly=true; /* 全局开关：推荐与列表是否仅显示最终形态（默认开） */
 var optMegaOnly=true; /* 全局开关：Mega 形态优先（默认开）——推荐/候选中过滤「可 Mega 的非 Mega 形态」（ER 可永久 Mega，玩家直接用 Mega 形态）；取消勾选恢复全部 */
-var _HASMEGA=null;
+var _HASMEGA=null,_HASMEGA_HOOK=false;
 function hasMegaSet(){ /* 可 Mega 的非 Mega 形态集合：由 ERDATA.familyRoot（Mega/道具进化 kd==1 派生）的 root 值派生，排除自映射 */
   if(_HASMEGA)return _HASMEGA;
   _HASMEGA={};
-  var fr=ERDATA.familyRoot||{};
+  var fr0=ERDATA.familyRoot||{};
+  /* v4.249 防污染：familyRoot 属分片数据，若首次调用早于它就绪会把空集永久缓存（v4.244 同类坑）。
+     故空集时不写缓存，并登记 er-ready 后重建。 */
+  if(!_HASMEGA_HOOK&&document.addEventListener){_HASMEGA_HOOK=true;document.addEventListener('er-ready',function(){_HASMEGA=null})}
+  if(!Object.keys(fr0).length)return {};
+  var fr=fr0;
   for(var f in fr){var r=fr[f];if(r&&r!==f)_HASMEGA[''+r]=1}
   return _HASMEGA;
 }
@@ -15916,7 +15924,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.248';
+var ER_ENGINE_VER='v4.249';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
