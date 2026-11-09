@@ -882,7 +882,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <button class="btn-mini" id="favOnlyBtn" onclick="toggleFavOnly()" style="margin-left:4px">★ 已收藏</button>
     <button class="btn-mini" id="recentBtn" onclick="toggleRecentOnly()" style="margin-left:4px">🕘 最近浏览</button>
     <div id="recentChips" style="margin-top:4px;font-size:13.5px;color:var(--sub)"></div>
-    <div class="chips" id="spFormChips" style="margin-top:4px"></div>
+    <div class="chips" id="spFormChips" style="margin-top:4px"></div><div id="spFilterNote" style="font-size:13px;line-height:1.5;color:var(--sub);margin:2px 0 0"></div>
     <div class="chips" id="spTypeChips"></div>
   </div>
   <div class="grid" id="spGrid"></div>
@@ -3495,6 +3495,21 @@ function renderSpFormChips(){
   /* v4.254：文案与核心配队页 #coreMega 对齐 —— 原「Mega 形态优先」没说清是「隐藏」，用户以为是排序 */
   box.appendChild(tchip('Mega 形态优先（隐藏可 Mega 的普通形态）',!!fOpt.mega,function(){fOpt.mega=!fOpt.mega;renderSpFormChips();_refreshAll()}));
   box.appendChild(tchip('仅最终形态',!!fOpt.final,function(){fOpt.final=!fOpt.final;renderSpFormChips();_refreshAll()}));
+  /* v4.256：开关开了却没反应，是因为看不到「过滤掉了什么」。这里把隐去的条数摊到明面上。 */
+  var note=$('spFilterNote');
+  if(note){
+    var msgs=[];
+    var _rdy=(window.ERDATA&&ERDATA.species&&ERDATA.species.length>0);
+    if(_rdy&&fOpt.mega){
+      var nMega=Object.keys(hasMegaSet()).length;
+      msgs.push('已隐藏 <b>'+nMega+'</b> 只「有 Mega 但本身不是 Mega」的普通形态（如喷火龙、超梦只剩超级形态）');
+    }
+    if(_rdy&&fOpt.final){
+      var nNF=Object.keys(nonFinalSet()).length, nAll=ERDATA.species.length;
+      msgs.push('已隐藏 <b>'+nNF+'</b> 只非最终形态（'+(nAll-nNF)+' / '+nAll+' 可见）');
+    }
+    note.innerHTML = msgs.length ? ('<span style="color:var(--accent);font-weight:600">筛选已生效</span>　'+msgs.join('　')) : '';
+  }
 }
 function renderSpChips(){
   var box=$('spTypeChips');box.innerHTML='';
@@ -15982,7 +15997,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.255';
+var ER_ENGINE_VER='v4.256';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
