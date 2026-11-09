@@ -1483,7 +1483,7 @@ function ownWxList(s,learn){
   var out=[],seen={};
   function push(sys,src){if(!sys||seen[sys+src])return;seen[sys+src]=1;out.push({sys:sys,src:src})}
   (s.inns||[]).forEach(function(n){var v=abiSetOf(n);if(v)push(v,'特性')});
-  [[240,'雨'],[241,'晴'],[201,'沙'],[258,'雪'],[604,'电场'],[641,'精神场地'],[580,'青草场地'],[581,'薄雾场地']].forEach(function(p){
+  [[240,'雨'],[241,'晴'],[201,'沙'],[258,'雪'],[604,'电场'],[641,'精神场地'],[580,'青草场地'],[581,'薄雾场地'],[950,'雾']].forEach(function(p){
     if(learn.indexOf(p[0])>-1)push(p[1],'手动');
   });
   var sys=coreSys(s);
@@ -1789,7 +1789,7 @@ function famKey(s){
   return famKeyHeur(s);
 }
 /* --- 体系（天气/场地）辅助 --- */
-var SYS_TXT={雨:'雨',晴:'晴',沙:'沙',冰雹:'雪',雪:'雪',电气场地:'电场',精神场地:'精神场地',青草场地:'青草场地',薄雾场地:'薄雾场地',剧毒场地:'剧毒场地'};
+var SYS_TXT={雨:'雨',晴:'晴',沙:'沙',冰雹:'雪',雪:'雪',雾:'雾',电气场地:'电场',精神场地:'精神场地',青草场地:'青草场地',薄雾场地:'薄雾场地',剧毒场地:'剧毒场地'};
 function spSys(s){return coreSys(s)}
 function isAbilSet(s,sys){var hit=false;s.abis.concat(s.inns).forEach(function(n){if(abiSetOf(n)===sys)hit=true});return hit}
 function isMvSet(s,sys){var hit=false;learnOf(s).forEach(function(id){if(WEATHER_MV[id]===sys)hit=true});return hit}
@@ -4891,7 +4891,7 @@ var ABI_TAG_PATCH={
   '厚脂':{hf:['火','冰'],hfMul:{火:0.25,冰:0.25}},
   '熔岩铠甲':{hf:['水','冰'],hfMul:{水:0.7,冰:0.7}},
   '遇水凝固':{hf:['水'],hfMul:{水:0.5}},
-  '黑暗亲和':{hf:['恶','妖精'],hfMul:{恶:0.75,妖精:0.75}}
+  '夜行':{hf:['恶','妖精'],hfMul:{恶:0.75,妖精:0.75}}
   /* 注：干燥皮肤的火 ×1.25 由 mechRw 机制层（L5118-5125 的 ma.down）负责，不要在这里重复登记，
      否则 opt 会被乘两次（实测 2×1.25×1.25=3.125）。 */
 };
@@ -4971,7 +4971,7 @@ function defMult(types,at){
    「条件型」（效果绝佳才减、满血才减、物理/特殊才减、会心才减等）新目不在这里，见文档第十六章。 */
 var ABI_DMG_MOD={
   '免疫':[{t:["毒"],mul:0.5}],
-  '化石化':[{t:["岩石"],mul:0.5}],
+  '化石':[{t:["岩石"],mul:0.5}],
   '厚脂':[{t:["火","冰"],mul:0.25}],
   '厚脂肪':[{t:["火","冰"],mul:0.5}],
   '原木':[{t:["草"],mul:0.5}],
@@ -4984,7 +4984,7 @@ var ABI_DMG_MOD={
   '超净':[{t:["幽灵"],mul:0.5}],   /* v4.223 修正：源码 ABILITY_PURIFYING_SALT 为 if(moveType==TYPE_GHOST) RESISTANCE(.5) + onStatusImmune，原登记「毒 ×0.5」属性写错 */
   '遇水凝固':[{t:["水"],mul:0.5}],
   '重金属':[{t:["幽灵","恶"],mul:0.5}],
-  '黑暗亲和':[{t:["恶","妖精"],mul:0.75}]
+  '夜行':[{t:["恶","妖精"],mul:0.75}]
 };
 
 /* v4.198：C 类「条件型」减伤 —— 源码里 .onDefensiveMultiplier 前带 if 判定，
@@ -5000,7 +5000,7 @@ var ABI_DMG_COND={
   '合金外壳':[{mul:0.6,when:'特殊招式'}],
   '猎龙者':[{mul:0.5,when:'攻方是龙属性'}],
   '龙首藻':[{mul:0.65,when:'本场还没消耗完（一次性计数未清零）'}],
-  '沙暴恐惧':[{mul:0.65,when:'沙暴天'}],
+  '沙丘恐惧':[{mul:0.65,when:'沙暴天'}],
   '妖精猎者':[{mul:0.5,when:'攻方是妖精属性'}],
   '过滤':[{mul:0.65,when:'效果绝佳时'}],
   '消防员':[{mul:0.5,when:'攻方是火属性'}],
@@ -5040,16 +5040,16 @@ var ABI_ATK_MOD={
   '原木':[{t:['草'],mul:1.2}],             /* RAW_WOOD */
   '燃烧':[{t:['火'],mul:1.5}],             /* COMBUSTION */
   /* 以下 10 条数据层当前无物种携带，登记备查；有物种后自动生效（消费点按持有检查） */
-  '钢之意志':[{t:['钢'],mul:1.3}],         /* STEELY_SPIRIT */
-  '发电细胞':[{t:['电'],mul:1.25}],        /* ELECTROCYTES */
-  '化石化':[{t:['岩石'],mul:1.2}],         /* FOSSILIZED */
-  '黑暗亲和':[{t:['恶'],mul:1.25}],        /* NOCTURNAL */
-  '电力爆发':[{t:['电'],mul:1.35}],        /* ELECTRIC_BURST */
-  '沙暴恐惧':[{t:['地面'],mul:1.2}],       /* DUNE_TERROR */
-  '地狱愤怒':[{t:['火'],mul:1.35}],        /* INFERNAL_RAGE */
-  '飞空助力':[{t:['飞行'],mul:1.3}],       /* AIRBORNE */
-  '水栖栖息者':[{t:['水'],mul:1.5}],       /* AQUATIC_DWELLER */
-  '厄运冲击':[{t:['恶'],mul:1.35}],        /* DOOM_BLAST */
+  '钢魂':[{t:['钢'],mul:1.3}],         /* STEELY_SPIRIT */
+  '电细胞':[{t:['电'],mul:1.25}],        /* ELECTROCYTES */
+  '化石':[{t:['岩石'],mul:1.2}],         /* FOSSILIZED */
+  '夜行':[{t:['恶'],mul:1.25}],        /* NOCTURNAL */
+  '电爆':[{t:['电'],mul:1.35}],        /* ELECTRIC_BURST */
+  '沙丘恐惧':[{t:['地面'],mul:1.2}],       /* DUNE_TERROR */
+  '地狱之怒':[{t:['火'],mul:1.35}],        /* INFERNAL_RAGE */
+  '空中':[{t:['飞行'],mul:1.3}],       /* AIRBORNE */
+  '水栖居民':[{t:['水'],mul:1.5}],       /* AQUATIC_DWELLER */
+  '末日爆裂':[{t:['恶'],mul:1.35}],        /* DOOM_BLAST */
   /* v4.230：三条「有持有者但一直没接」的属性增伤（源码 .onOffensiveMultiplier 纯属性型） */
   '暗黑气场':[{t:['恶'],mul:1.33}],          /* DARK_AURA L2499：恶招 ×1.33；场上出现气场破坏(AURA_BREAK)时改 ×0.75
                                                 —— .onOffensiveMultiplierFor = APPLY_ON_ANY，即场上任何人的恶招都吃，
@@ -5063,7 +5063,7 @@ var ABI_ATK_MOD={
   '恶作剧礼物':[{t:['冰'],mul:1.5}],              /* DEVIOUS_PRESENT */
   '停电':[{t:['电'],mul:2.0}],                    /* POWER_OUTAGE */
   /* 仍无持有者、登记备查 */
-  '搬岩':[{t:['岩石'],mul:1.5}],                  /* ROCKY_PAYLOAD */
+  '岩石载荷':[{t:['岩石'],mul:1.5}],                  /* ROCKY_PAYLOAD */
   '等离子灯':[{t:['电','火'],mul:1.2}]            /* PLASMA_LAMP */
 };
 var ABI_DMG_ALL={
@@ -5091,9 +5091,9 @@ var ABI_DMG_ALL={
    数据层只写了钢能力者的进攻侧「钢招 1.3 倍」，漏了这条防守侧，源码为准。 */
 var ABI_TE_DEF_COND={
   '太晶甲壳':[{mode:'cap',cap:1.0,val:0.5,need:'maxhp',note:'HP 全满时把 ≥1.0 的倍率压到 0.5'}],
-  '占卜大师':[{mode:'cap',cap:1.0,val:0.5,need:'turn4',note:'入场后 4 回合内把 ≥1.0 的倍率压到 0.5'}],
+  '预言家':[{mode:'cap',cap:1.0,val:0.5,need:'turn4',note:'入场后 4 回合内把 ≥1.0 的倍率压到 0.5'}],
   '雾眼':[{mode:'cap',cap:0.5,val:0.5,t:['幽灵'],need:'fog',note:'雾天幽灵招封顶 0.5'}],
-  '钢能力者':[{mode:'mul',val:0.5,t:['恶','幽灵'],need:'selfSteel',note:'自身含钢属性时恶/幽灵 ×0.5'}],
+  '钢能力士':[{mode:'mul',val:0.5,t:['恶','幽灵'],need:'selfSteel',note:'自身含钢属性时恶/幽灵 ×0.5'}],
   '神奇守护':[{mode:'zeroIfNotSE',need:'se',note:'非效果绝佳（<2.0）归零'}]
 };
 /* 返回 {val,whys}；cur===0（已免疫）或负值时不动 */
@@ -6623,7 +6623,8 @@ function speedSliderHtml(s){
           spdSlChip('晴',__spdSl.weather==='晴','dmgSet(\'weather\',\'晴\')')+
           spdSlChip('雨',__spdSl.weather==='雨','dmgSet(\'weather\',\'雨\')')+
           spdSlChip('沙',__spdSl.weather==='沙','dmgSet(\'weather\',\'沙\')')+
-          spdSlChip('雪',__spdSl.weather==='雪','dmgSet(\'weather\',\'雪\')')+'</span> '+
+          spdSlChip('雪',__spdSl.weather==='雪','dmgSet(\'weather\',\'雪\')')+
+          spdSlChip('雾',__spdSl.weather==='雾','dmgSet(\'weather\',\'雾\')')+'</span> '+
           '<span style="color:var(--sub)">场地：</span><span class="chipgrp">'+
           spdSlChip('无',!__spdSl.terrain,'dmgSet(\'terrain\',\'\')')+
           spdSlChip('电气',__spdSl.terrain==='电气','dmgSet(\'terrain\',\'电气\')')+
@@ -6760,7 +6761,20 @@ function dmgAtkAbis(sA){
    雾眼 FOGGY_EYE: if (moveType == TYPE_GHOST && 雾天) MUL(1.5)；同特性的防守侧见 ABI_TE_DEF_COND。
    （其余带条件的增伤依赖 HP/回合/队友/招式 flag，静态算不了，只在详情卡展示。） */
 var ABI_ATK_COND={
-  '雾眼':[{t:['幽灵'],mul:1.5,need:'fog'}]
+  '雾眼':[{t:['幽灵'],mul:1.5,need:'fog'}],
+  /* v4.242：雾天体系补齐。源码 src/abilities.cc 逐条核过：
+     ECTOPLASM  L7897 .onStat  statId==GetHighestAttackingStatId → 最高攻项 ×1.5（等价全招 ×1.5）；
+     ECHOLOCATION L11466 .onOffensiveMultiplier 雾天 MUL(1.2)（另带必定命中，命中不进伤害）；
+     两条都判 IsBattlerWeatherAffected(battler, WEATHER_FOG_ANY)，与雾眼同源条件。 */
+  /* v4.242 别名修正：本表及 ABI_ATK_MOD / ABI_FLAG_ATK / ABI_TE_DEF_COND 等以【中文特性名】作键的表，
+     键名必须用【物种表口径】（ERDATA.species 的 abis/inns 实际值），不能用数据层 ABI[x][2] 口径 ——
+     两处存在别名差，键写错即静默永不命中。本批修正 17 条：流质→灵质 / 钢之意志→钢魂 / 发电细胞→电细胞 /
+     化石化→化石 / 黑暗亲和→夜行 / 电力爆发→电爆 / 沙暴恐惧→沙丘恐惧 / 地狱愤怒→地狱之怒 / 飞空助力→空中 /
+     水栖栖息者→水栖居民 / 厄运冲击→末日爆裂 / 搬岩→岩石载荷 / 锐利之刃→锐利刀刃 / 猛踢→前锋 /
+     大牙狸之佑→旷野探险家 / 占卜大师→预言家 / 钢能力者→钢能力士。
+     未修 2 条：947 回声定位、466 等离子灯（全库 0 只持有，接了也无意义）。 */
+  '灵质':[{mul:1.5,need:'fog'}],
+  '回声定位':[{mul:1.2,need:'fog'}]
 };
 /* v4.232：进攻侧「招 flag 型增伤」—— 前置条件是某个招式 flag，而 flag 能从源码逐招静态提取（MV_FLAG）。
    这批以前被当成「静态算不了」，其实只是没人去提取；接上后 124 只物种的输出第一次被计入。 */
@@ -6771,9 +6785,9 @@ var ABI_FLAG_ATK={
   '强行':[{k:['sheer'],mul:1.3}],          /* SHEER_FORCE L1854：FLAG_SHEER_FORCE_BOOST ×1.3（255 招）*/
   '超级发射器':[{k:['launcher'],mul:1.3}], /* MEGA_LAUNCHER L2417：IsMegaLauncherBoosted ×1.3（78 招）*/
   '铁拳':[{k:['fist'],mul:1.3}],           /* IRON_FIST L1503：IsIronFistBoosted(FLAG_IRON_FIST_BOOST) ×1.3（31 招）*/
-  '锐利之刃':[{k:['keen'],mul:1.3}],       /* KEEN_EDGE L3662：MOVE_FLAG_KEEN_EDGE ×1.3（47 招）*/
-  '猛踢':[{k:['striker'],mul:1.3}],        /* STRIKER L4619：IsStrikerBoosted(FLAG_STRIKER_BOOST) ×1.3（17 招）*/
-  '大牙狸之佑':[{k:['field'],mul:1.5}],    /* FIELD_EXPLORER L4611：FLAG_FIELD_BASED ×1.5（15 招）*/
+  '锐利刀刃':[{k:['keen'],mul:1.3}],       /* KEEN_EDGE L3662：MOVE_FLAG_KEEN_EDGE ×1.3（47 招）*/
+  '前锋':[{k:['striker'],mul:1.3}],        /* STRIKER L4619：IsStrikerBoosted(FLAG_STRIKER_BOOST) ×1.3（17 招）*/
+  '旷野探险家':[{k:['field'],mul:1.5}],    /* FIELD_EXPLORER L4611：FLAG_FIELD_BASED ×1.5（15 招）*/
   /* v4.234：三个「继承他人倍率 + 自己扩类」的特性。源码里都是 .onOffensiveMultiplier 复用 + .onModifyMoveFlags 扩类，
      扩类结果决定「哪些招能吃到倍率」，是纯静态可算的（不含任何人/回合/天气条件）。 */
   '枪手':[{k:['launcher'],mul:1.3}],       /* GUNMAN L9602：= MEGA_LAUNCHER；额外把变化招算波动类（变化招无伤害，实际无影响）*/
@@ -8314,7 +8328,7 @@ function abiSysOf(n){sysIdMapsInit();var id=abiIdC(n),v=id?SYS_ID_MAP[id]:null;r
 function abiSetOf(n){sysIdMapsInit();var id=abiIdC(n),v=id?SET_ID_MAP[id]:null;return v||SYS_SET[n]||null}
 function abiSame(a,b){if(a===b)return true;var ia=abiIdC(a),ib=abiIdC(b);return !!(ia&&ib&&ia===ib)}
 function anyAbiId(s,n){return (s.abis||[]).concat(s.inns||[]).some(function(x){return abiSame(x,n)})}
-var WEATHER_MV={240:'雨',241:'晴',201:'沙',258:'雪',604:'电场',641:'精神场地',580:'青草场地',581:'薄雾场地'};
+var WEATHER_MV={240:'雨',241:'晴',201:'沙',258:'雪',604:'电场',641:'精神场地',580:'青草场地',581:'薄雾场地',950:'雾'};   /* 950 诡异浓雾 Eerie Fog：幽灵/变化/PP10，源码 battle_script_commands.c 与求雨同列（NoTargetPresent）*/
 var FUNC_MV={
   rec:[105,202,234,235,236,303,355,409],
   boost:[14,187,334,339,347,349,417,468,483,504,526],
@@ -15789,7 +15803,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.241';
+var ER_ENGINE_VER='v4.242';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
