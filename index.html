@@ -6726,6 +6726,7 @@ function spdDefaultTarget(s){
 }
 function spdIsOffensive(s){var role=speedRole(s);return role==='fast'||role==='space'||bstI(s,1)>=110||bstI(s,3)>=110}
 function spdMainKind(s){return bstI(s,3)>bstI(s,1)?'特攻':'物攻'}
+function spdIsSingleAttacker(s){var mk=spdMainKind(s),pA=bstI(s,1),pC=bstI(s,3);var mainB=mk==='特攻'?pC:pA,dropB=mk==='特攻'?pA:pC;return mainB>=70&&dropB<mainB-15}
 function spdAtkAlloc(R,s,mainKind){var idx=mainKind==='特攻'?3:1,subIdx=idx===3?1:3;var atkEv=Math.min(R,252);R-=atkEv;var hpEv=Math.min(R,252);R-=hpEv;return{hp:hpEv,atk:atkEv,sub:R,idx:idx,subIdx:subIdx}}
 function spdSliderBounds(s,M){var b=bstI(s,5);var lo=Math.floor((2*b+36)*0.9);var hi=Math.floor(spdMaxOf(s)*M);return{lo:lo,hi:hi}}
 function spdSliderPosToVal(s,p,M){var B=spdSliderBounds(s,M);if(B.hi<=B.lo)return B.lo;return Math.round(B.lo+(B.hi-B.lo)*(Math.max(0,Math.min(99,+p||0))/99))}
@@ -6836,6 +6837,11 @@ function spdSliderRender(){
   var vMax=spdMaxOf(s),vMin=Math.floor((2*b+36)*0.9);
   var plans=spdPlanForTarget(s,Te);
   var adv=spdNatAdvice(s,spdRankOfVal(T),M),main=null;   /* v4.258：adv 用目标速度真实分位 */   /* v4.90 P2-1：主方案须与 adv 决策一致（消除「目标 273 却推减速 230」矛盾） */
+  /* v4.261 单攻手：当前目标下加速更省 EV、降的是可牺牲另一攻 → 加速（手动 natOv/乘区/空间不覆盖） */
+  if(!__spdSl.natOv&&M===1&&speedRole(s)!=='space'&&spdIsSingleAttacker(s)){
+    var _nPl=null,_aPl=null;plans.forEach(function(pl){if(pl.nat==='中性')_nPl=pl;if(pl.nat==='加速')_aPl=pl});
+    if(_aPl&&(!_nPl||_aPl.ev<_nPl.ev))adv='加速';
+  }
   if(__spdSl.natOv){plans.forEach(function(pl){if(pl.nat===__spdSl.natOv)main=pl})}
   if(!main&&plans.length){var advPl=null;plans.forEach(function(pl){if(!advPl&&pl.nat===adv)advPl=pl});main=advPl||plans[0]}
   var h='';
@@ -16041,7 +16047,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.260';
+var ER_ENGINE_VER='v4.261';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
