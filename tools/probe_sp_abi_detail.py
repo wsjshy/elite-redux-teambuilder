@@ -366,6 +366,17 @@ INJECT_JS = r"""
     });
     return o.join('/')+'|N='+SPD_ABI.length;
   })();
+  out.tgtAtk = (function(){                  /* v4.238 目标状态型：蹲守/分析 */
+    function c(abil,tgt){
+      return dmgAtkAbiMul({abis:[abil],inns:[]},'一般','',1,
+        {isPhys:true,spec:false,pow:40,contact:true,eff:1,stA:'',tgt:tgt}).mul;
+    }
+    return [
+      '蹲守N='+c('蹲守',''), '蹲守New='+c('蹲守','new'), '蹲守Mov='+c('蹲守','moved'),
+      '分析N='+c('分析',''), '分析New='+c('分析','new'), '分析Mov='+c('分析','moved')
+    ].join(' ');
+  })();
+
   out.stAtk = (function(){                   /* v4.237 状态型进攻增伤：毅力/决心/中毒激升 */
     function findMv(pred){
       var id=0;
@@ -769,9 +780,11 @@ def main():
     ck(tt.get("flagAtk") == "1.3/1|1.3/1|1.2/1|1.3/1|1.3/1|1.3/1|1.3/1|1.3/1", "F84 八个 flag 型特性 命中 flag 时增伤、无招时不增", "%s" % tt.get("flagAtk"))
     ck(tt.get("punkDef") == "0.5/1", "F85 庞克摇滚 防守侧 声音招 ×0.5", "%s" % tt.get("punkDef"))
     ck(tt.get("inherAtk") == "1.3/1/1.3/1.3", "F86 栗子斧(草招∪锐利)/后街男孩(舞蹈∪踢)/枪手(波动) 扩类后仍 ×1.3，非触发招不增", "%s" % tt.get("inherAtk"))
+    ck(tt.get("tgtAtk") == "蹲守N=1 蹲守New=2 蹲守Mov=1 分析N=1 分析New=1 分析Mov=1.3",
+       "F91 目标状态型增伤：蹲守只对「刚入场」×2、分析只对「已先行动」×1.3，两者互不串台", "%s" % tt.get("tgtAtk"))
     ck(tt.get("stAtk") == "毅力P0=1 毅力P1=1.5 毅力P毒=1.5 毅力S1=1 决心S0=1 决心S1=1.5 决心P1=1 中毒P0=1 中毒P1=1 中毒P毒=1.5 中毒S毒=1",
        "F90 状态型进攻增伤：毅力/决心（异常+物理/特殊）与中毒激升（中毒+物理）逐项正确，未选状态时不生效", "%s" % tt.get("stAtk"))
-    ck(tt.get("atkKind") == "N=13 无ALLYONLY=OK 活力=1.4 远隔P=1.2 远隔NP=1.2 远隔S=1 猩P=1.5 猩S=1 钳P=1.2 钳S=1 贤S=1.5 贤P=1 技低=1.5 技高=1 胸C=1.3 胸N=1 核SE=1.35 核N=1 狙C=1.5 狙N=1 声S=1.2 声N=1",
+    ck(tt.get("atkKind") == "N=15 无ALLYONLY=OK 活力=1.4 远隔P=1.2 远隔NP=1.2 远隔S=1 猩P=1.5 猩S=1 钳P=1.2 钳S=1 贤S=1.5 贤P=1 技低=1.5 技高=1 胸C=1.3 胸N=1 核SE=1.35 核N=1 狙C=1.5 狙N=1 声S=1.2 声N=1",
        "F89 进攻侧静态条件增伤 10 条：物理/特殊/威力≤60/接触/相性≥2/会心/声音 逐项判定正确，且已剔除 APPLY_ON_ALLY_ONLY", "%s" % tt.get("atkKind"))
     ck((tt.get("spdAbi") or "").endswith("|N=14"), "F87 SPD_ABI 收录 14 条速度修正特性（源码 .onStat 口径）", "%s" % tt.get("spdAbi"))
     ck("悠游自如=1.5:" in (tt.get("spdAbi") or "") and "轻装=2:" in (tt.get("spdAbi") or ""), "F88 天气类 ×1.5 与轻装 ×2 倍率区分正确（18.21 曾误写全线 ×2）", "%s" % tt.get("spdAbi"))

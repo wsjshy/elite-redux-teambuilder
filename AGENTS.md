@@ -1909,4 +1909,93 @@ F90: 毅力P0=1 毅力P1=1.5 毅力P毒=1.5 毅力S1=1 决心S0=1 决心S1=1.5 �
 
 ### 版本
 
-`v4.237`，1,632,482 B，`19B43716E8FF0EF828D9625D25B3CEAC8E1C94B8`（VERIFIED-MATCH），commit `e56011b`。
+`v4.237`，1,632,482 B，`19B43716E8FF0EF828D9625D25B3CEAC8E1C94B8`（VERIFIED-MATCH），commit `e56011b`。
+
+
+---
+
+## v4.238：全文件断链扫描 + 目标状态型增伤（蹲守/分析）
+
+### A. 「有调用点、无定义」全量扫描（`surviveSolve` 之后的排查）
+
+`node --check` 查不出这种问题（语法完全合法），`smoke.js` 也未必覆盖到那条路径，
+所以做了一次全文件扫描：
+
+1. `extract_js.py` 取纯 JS。
+2. 正则抓定义（`function X` / `var|let|const X` / `window.X=` / `X = function(`）+ 函数与箭头函数参数。
+3. 正则抓调用 `(?<![\w$.])X\s*\(`，差集 + 剔 JS 内建 → 82 个候选。
+4. **关键：把候选丢进真实浏览器逐个 `typeof eval(X)`** —— 字符串/URL/注释/CSS 里的名字
+   静态看着像调用，运行时都是 undefined 的假阳性，只有运行时判定才准。
+
+**结果**：82 个候选去掉假阳性后只剩 `QRCode`，继续追发现是按需加载 ——
+`assets/qrcode_v498.js` 分片里确实有 `var QRLIB=…` 与 `function QRCode(text)`，
+端到端实测首次 `undefined`（走加载分支）→ 分片加载后 `create=function` / `QRCode=function`，
+canvas 暗像素 7024 / ratio 0.488。**不是断链。**
+
+**结论：`surviveSolve` 是全文件唯一一处真断链，已在 v4.237 修复。**
+
+### B. 顺带修掉「复算点不同步」
+
+`ohkoSolveEv` / `surviveSolve` 构造 `dmgCalc` 参数时是**逐项手抄**的：
+
+```js
+dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,
+         natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
+```
+
+`stA`（v4.237 加）与 `tgt`（v4.238 加）都没抄进去 → 反推时特性增伤不生效，
+出现「已判定确定 OHKO、同时又说即使 +252 攻击也无法 OHKO」的自相矛盾。两处都补齐。
+
+修后实测（探探鼠 #504 → 小拉达，拍击）：
+
+| 目标状态 | 伤害 | 结论 | OHKO 反推 | 耐久反推 |
+|---|---|---|---|---|
+| 站场已久 | 68–81 | 2HKO | 即使 +252 攻击也无法 OHKO | 扛1下 HP+0/物防+0 |
+| 刚入场（蹲守 ×2） | 137–162 | 确定 OHKO | 最低攻端 EV = 0 | 扛1下 HP+40/物防+236；扛2下 252/252 也必死 |
+| 已先行动（分析 ×1.3） | 89–105 | 概率 OHKO(44%) | 最低攻端 EV = 44 | 扛1下 HP+0/物防+44 |
+
+### C. 目标状态型增伤：蹲守 / 分析（35 只物种）
+
+```cpp
+// abilities.cc:2702  STAKEOUT 蹲守
+if (gVolatileStructs[target].isFirstTurn == 2) MUL(2.0);
+
+// abilities.cc:2109  ANALYTIC 分析
+if (GetBattlerTurnOrderNum(target) < gCurrentTurnActionNumber
+    && gBattleMoves[move].effect != EFFECT_FUTURE_SIGHT) MUL(1.3);
+```
+
+**共同点：条件完全在对手侧**（对手的 `isFirstTurn` / 对手本回合行动序号），
+与攻方自身属性、异常都无关。所以做成与「攻方状态」并列的第二组 chip「目标状态」。
+
+**三档互斥**（换上场的回合不会再行动）：`站场已久''` / `刚入场'new'` / `本回合已先行动'moved'`。
+
+`ABI_ATK_KIND` 13 → **15 条**，新增 need 枚举 `tgtNew` / `tgtMoved`；
+`abiAtkKindOk` 加两分支只读 `ctx.tgt`；`dmgCalc` ctx 透传 `tgt`；
+`dmgRender` 的 `o` 带 `tgt:__spdSl.tgt||''`；`__spdSl` 初始化补 `stA:''` / `tgt:''`。
+
+**覆盖**：蹲守 11 只（可选 5 + 天性 6）、分析 24 只（可选 14 + 天性 10）。
+
+### D. 确认「不接」两条
+
+`无精打采` #394（Lethargy）与 `慢启动` #112（Slow Start）源码已读清：
+
+```cpp
+// LETHARGY：onEntry 置 slowStartTimer=5；onOffensiveMultiplier 按 timer 递减
+case 0: case 1: MUL(.2);  case 2: MUL(.4);  case 3: MUL(.6);  case 4: MUL(.8);  /* 5 → ×1 */
+// SLOW_START：onEntry 置 5；onStat 对 ATK/SPATK/SPEED 各 *stat /= 2
+```
+
+但**两者在数据层持有者都是 0**（可选 0 / 天性 0），接进来没有任何物种受影响，故不接。
+
+### 门禁
+
+语法 0 ｜ `smoke.js` 32/32 ｜ `probe_sp_abi_detail.py` **116 项 ALL PASS**（F89 改 N=15，新增 F91）
+
+```
+F91: 蹲守N=1 蹲守New=2 蹲守Mov=1 分析N=1 分析New=1 分析Mov=1.3
+```
+
+### 版本
+
+`v4.238`，1,633,724 B。

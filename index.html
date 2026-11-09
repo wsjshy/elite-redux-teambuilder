@@ -3817,7 +3817,7 @@ function abiDesc(el,id,box){
     /* v4.236：进攻侧增伤（ABI_ATK_MOD 纯属性 / ABI_ATK_COND 条件 / ABI_FLAG_ATK 招 flag / ABI_ATK_KIND 招式分类）
        —— 这批只放大「自己打出去」的伤害，与上面的减伤方向相反，必须分开讲 */
     var _ar=[];
-    var _kindZh={phys:'物理招',spec:'特殊招',pow60:'威力≤60 的招式',contact:'接触招式',se:'效果绝佳时',crit:'会心一击时',sound:'声音招式',fog:'雾天',stPhys:'自身有异常状态时（物理招）',stSpec:'自身有异常状态时（特殊招）',poison:'自身中毒时（物理招）'};
+    var _kindZh={phys:'物理招',spec:'特殊招',pow60:'威力≤60 的招式',contact:'接触招式',se:'效果绝佳时',crit:'会心一击时',sound:'声音招式',fog:'雾天',stPhys:'自身有异常状态时（物理招）',stSpec:'自身有异常状态时（特殊招）',poison:'自身中毒时（物理招）',tgtNew:'对手刚上场时',tgtMoved:'对手已先行动时'};
     var _flagZh={jaw:'咬类招式',sound:'声音招式',reckless:'反作用招式',sheer:'强行类招式',field:'场地类招式',dance:'舞蹈招式',bone:'骨类招式',launcher:'波动/弹类招式',keen:'锐利类招式',fist:'拳类招式',striker:'踢类招式'};
     var _pm=ABI_ATK_MOD[name];
     if(_pm)_pm.forEach(function(x){_ar.push('<b>'+glossify(x.t.join(' / '))+'</b> 招式 ×'+x.mul)});
@@ -6550,7 +6550,7 @@ function spdNatAdvice(s,p,M){
   return '中性';
 }
 /* 滑块交互状态（详情卡单例；openSp 每次重建详情时重置 s/p） */
-var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null};
+var __spdSl={s:null,p:50,scarf:true,wx:true,tailwind:true,bias:'balanced',natOv:'',atkM:0,mult:1.0,bp:0,defId:null,mvId:null,weather:'',terrain:'',crit:false,dmgItem:'',eAtk:null,stA:'',tgt:''};
 function spdModMul(){var m=1;if(__spdSl.scarf)m*=1.5;if(__spdSl.wx){var _r=spdSpeedAbiOf(__spdSl.s);m*=(_r&&_r.mul>1)?_r.mul:1.5}if(__spdSl.tailwind)m*=2;return m}
 function spdSlChip(label,cur,onclick){return '<span class="chipopt'+(cur?' on':'')+'" role="button" tabindex="0" title="'+label+'" onclick="'+onclick+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+onclick+'}else if(event.key===\'ArrowLeft\'||event.key===\'ArrowRight\'){event.preventDefault();var g=this.parentNode;var cs=[].slice.call(g.children).filter(function(x){return x.classList&&x.classList.contains(\'chipopt\')});var i=cs.indexOf(this);var d=event.key===\'ArrowLeft\'?-1:1;var n=i+d;if(n>=0&&n<cs.length)cs[n].focus();}">'+label+'</span>'}
 function speedSliderHtml(s){
@@ -6620,7 +6620,7 @@ function speedSliderHtml(s){
            spdSlChip('无',!__spdSl.stA,'dmgSet(\'stA\',\'\')')+
            spdSlChip('异常',__spdSl.stA==='any','dmgSet(\'stA\',\'any\')')+
            spdSlChip('中毒',__spdSl.stA==='poison','dmgSet(\'stA\',\'poison\')')+'</span>'+
-           '<div style="font-size:12px;color:var(--sub)">毅力=异常时物理 ×1.5 ｜ 决心=异常时特殊 ×1.5 ｜ 中毒激升=中毒时物理 ×1.5</div></div>'+
+           '<div style="font-size:12px;color:var(--sub)">毅力=异常时物理 ×1.5 ｜ 决心=异常时特殊 ×1.5 ｜ 中毒激升=中毒时物理 ×1.5</div></div>'+'<div style="font-size:13.5px;margin-top:2px">目标状态：<span class="chipgrp">'+spdSlChip('站场已久',!__spdSl.tgt,'dmgSet(\'tgt\',\'\')')+spdSlChip('刚入场',__spdSl.tgt==='new','dmgSet(\'tgt\',\'new\')')+spdSlChip('本回合已先行动',__spdSl.tgt==='moved','dmgSet(\'tgt\',\'moved\')')+'</span>'+'<div style="font-size:12px;color:var(--sub)">蹲守=对手换上场的当回合 ×2 ｜ 分析=对手本回合已先行动 ×1.3（这两条看的是对手侧，与上面的攻方状态互不影响）</div></div>'+
          '<div id="dmgOut2" style="margin-top:2px"></div>'+
       '</div>'+
     '</div>';
@@ -6780,6 +6780,10 @@ var ABI_ATK_KIND={
   '毅力':    {mul:1.5, need:'stPhys', src:'自身有异常状态时（源码含梦游/血染，此处仅建模异常）'},
   '决心':    {mul:1.5, need:'stSpec', src:'自身有异常状态时'},
   '中毒激升':{mul:1.5, need:'poison', src:'自身中毒或剧毒时'},
+  /* v4.238：目标状态型 —— 源码只看对手侧 volatile（isFirstTurn / 回合顺序），
+     玩家可用伤害面板的「目标状态」chip 指定，与攻方自身状态是两条独立维度。 */
+  '蹲守':    {mul:2.0, need:'tgtNew',  src:'对手刚替换上场的那个回合'},
+  '分析':    {mul:1.3, need:'tgtMoved',src:'对手本回合已先行动（预知未来类不受益）'},
 };
 /* 返回命中说明文案；未命中返回 null。ctx 缺省时只有「无条件」那两条会命中。 */
 function abiAtkKindOk(need,ctx,mvId){
@@ -6795,6 +6799,8 @@ function abiAtkKindOk(need,ctx,mvId){
   if(need==='stPhys')return (ctx&&ctx.stA&&ctx.isPhys)?('异常状态+物理招'+(ctx.stA==='poison'?'（中毒）':'')):null;
   if(need==='stSpec')return (ctx&&ctx.stA&&ctx.spec)?('异常状态+特殊招'+(ctx.stA==='poison'?'（中毒）':'')):null;
   if(need==='poison')return (ctx&&ctx.stA==='poison'&&ctx.isPhys)?'中毒+物理招':null;
+  if(need==='tgtNew')return (ctx&&ctx.tgt==='new')?'对手刚上场':null;
+  if(need==='tgtMoved')return (ctx&&ctx.tgt==='moved')?'对手已先行动':null;
   return null;
 }
 function dmgAtkAbiMul(sA,mType,wx,mvId,ctx){
@@ -6925,7 +6931,7 @@ function dmgCalc(o){
   if(abiMul!==1)mod*=abiMul;
   /* 进攻侧属性增伤（飘浮飞行×1.25 / 水泡水×2 / 电晶体电×1.5 …） */
   var atkMul=1,atkHit=[];
-  try{var _am=dmgAtkAbiMul(sA,mType,(o&&o.weather)||'',(o&&o.moveId)||0,{isPhys:isPhys,spec:(split==='特殊'||split==='特殊(取防御)'),pow:bp,contact:mvIsContact((o&&o.moveId)||0),eff:eff,crit:!!(o&&o.crit),stA:(o&&o.stA)||''});atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
+  try{var _am=dmgAtkAbiMul(sA,mType,(o&&o.weather)||'',(o&&o.moveId)||0,{isPhys:isPhys,spec:(split==='特殊'||split==='特殊(取防御)'),pow:bp,contact:mvIsContact((o&&o.moveId)||0),eff:eff,crit:!!(o&&o.crit),stA:(o&&o.stA)||'',tgt:(o&&o.tgt)||''});atkMul=_am.mul;atkHit=_am.hits;}catch(e){}
   if(atkMul!==1)mod*=atkMul;
   if(o.weather==='晴'&&mType==='火')mod*=(1+WCONF.boost);   /* 天气单档（WCONF.boost=0.5 → ×1.5） */
   if(o.weather==='雨'&&mType==='水')mod*=(1+WCONF.boost);
@@ -6968,7 +6974,7 @@ function mvHasFlag(id,k){
 
 function ohkoSolveEv(o,hpD){
   for(var ev=0;ev<=252;ev+=4){
-    var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit});
+    var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:ev,evD:o.evD,natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,crit:o.crit,stA:o.stA,tgt:o.tgt});
     if(r&&r.lo>=hpD)return ev;
   }
   return -1;
@@ -6990,7 +6996,7 @@ function surviveSolve(o,N){
     for(var defEv=0;defEv<=252;defEv+=4){
       var r=dmgCalc({sA:o.sA,sD:o.sD,moveId:o.moveId,evA:o.evA,evD:defEv,
         natA:o.natA,natD:o.natD,itemA:o.itemA,weather:o.weather,terrain:o.terrain,
-        crit:o.crit,stA:o.stA});
+        crit:o.crit,stA:o.stA,tgt:o.tgt});
       if(!r)continue;
       if(r.hi*N<hp){
         if(!best)best={hpEv:hpEv,defEv:defEv,hp:hp,dmgHi:r.hi};
@@ -7125,7 +7131,7 @@ function dmgRender(boxId){
     return;
   }
   var natA=__spdSl.natOv||'';
-  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit,stA:__spdSl.stA||''};
+  var o={sA:sA,sD:sD,moveId:__spdSl.mvId,evA:0,evD:0,natA:natA,natD:'',itemA:__spdSl.dmgItem||'',weather:__spdSl.weather||'',terrain:__spdSl.terrain||'',crit:!!__spdSl.crit,stA:__spdSl.stA||'',tgt:__spdSl.tgt||''};
   var r=dmgCalc(o);if(!r){box.innerHTML='<div style="font-size:13px;color:var(--warnred)">该招式无威力</div>';return}
   var hpD=dmgStatOf(bstI(sD,0),0,31,0,'');
   var verdict=r.lo>=hpD?'<span style="color:var(--ok);font-size:14.5px;font-weight:700">确定 OHKO</span>':(r.hi>=hpD?'<span style="color:var(--sub);font-size:14.5px;font-weight:700">概率 OHKO（'+Math.round((hpD-r.lo)/(r.hi-r.lo||1)*100)+'% 档）</span>':'<span style="color:var(--warnred);font-size:14.5px;font-weight:700">2HKO 起（差 '+Math.ceil(hpD/r.hi)+' 发）</span>');
@@ -15756,7 +15762,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.237';
+var ER_ENGINE_VER='v4.238';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
