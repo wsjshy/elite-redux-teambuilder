@@ -1792,6 +1792,84 @@ git diff 显示 719 insertions / 698 deletions。功能没坏但污染了 diff�
 `node --check` 仍返回 0，是 `smoke.js` 掉到 29/32 才暴露。回滚后改用带 `<td class="` 前缀的精确锚点。
 **任何按位置切片的补丁必须先 `if i < 0: raise`，替换前 `print(repr(old))` 核长度。**
 
+## v4.241（2026-11-09）· 角色定位卡「现算击杀线」补 stA/tgt
+
+### 一、缺陷：5 条进攻侧特性在推荐详情里静默失效
+
+**现象**：队伍分析页点任意精灵 → 弹出「推荐详情」→ ② 核心机制里的**现算击杀线**数字偏低。
+不报错、不空白，只是少算了倍率——所以不会有人主动怀疑。
+
+**根因**：`roleCard5Html` 里
+
+```js
+dmgRes=dmgCalc({sA:s,sD:tgt,moveId:mv0,evA:evA,evD:0,natA:natA5,natD:'',itemA:itemA,weather:'',terrain:'',crit:false});
+```
+
+`dmgCalc` 的参数表里有 `stA`（攻方状态）和 `tgt`（目标状态）两个维度，但**这个调用点建得比这两个维度早**，v4.237 / v4.238 把维度加进 `dmgCalc` 时，只回补了伤害面板与 `ohkoSolveEv` / `surviveSolve` 两处复算点，**没人回头改这里**。
+
+后果：毅力（×1.5）/ 决心（×1.5）/ 中毒激升（×1.5）/ 蹲守（×2.0）/ 分析（×1.3）五条**全部不生效**。
+
+**修法**：按该只「推荐特性」自身的 `need` 决定情景，再传进 `dmgCalc`：
+
+```js
+var _stA='',_tgt='',abiNote='';
+var _a0=bd.abi&&bd.abi[0];
+var _nm=(_a0&&_a0.id!=null&&typeof ABI!=='undefined'&&ABI[_a0.id])?(ABI[_a0.id][2]||''):((_a0&&_a0.n)?_a0.n:'');
+var _kd=_nm?ABI_ATK_KIND[_nm]:null;
+if(_kd){
+  if(_kd.need==='poison'){_stA='poison';abiNote='自身中毒'}
+  else if(_kd.need==='stPhys'||_kd.need==='stSpec'){_stA='any';abiNote='自身有异常'}
+  else if(_kd.need==='tgtNew'){_tgt='new';abiNote='对手刚上场'}
+  else if(_kd.need==='tgtMoved'){_tgt='moved';abiNote='对手已先行动'}
+}
+```
+
+**同时补 UI 前提标注**：击杀线后面加 `（按「自身有异常」前提）` 灰字。静态假设必须显式标注为前提，否则用户会把条件值当成无条件值。
+
+### 二、取值口径（与伤害面板 chip 完全一致）
+
+| 维度 | 合法值 |
+|---|---|
+| `stA` | `''` / `'any'`（任意异常） / `'poison'`（中毒·剧毒） |
+| `tgt` | `''` / `'new'`（对手刚上场） / `'moved'`（对手本回合已先行动） |
+
+注意是 `'any'` 不是 `'status'`——手册 §5.5 的注释此前写错，已一并修正。
+
+### 三、验证（CDP 实测，非推断）
+
+| 特性 | 实例 | 旧（不传参数） | 新（传参数） | 倍率 |
+|---|---|---|---|---|
+| 毅力 | 腕力#66 「吸取拳」→ 幸福蛋 | 775–912 | **1163–1368** | ×1.5 |
+| 决心 | 傲骨燕#276 「勇鸟猛攻」 | 130–153 | 前提标注「自身有异常」 | ×1.5 |
+| 中毒激升 | 猫鼬斩#335 | 395–465 | 前提标注「自身中毒」 | ×1.5 |
+| 蹲守 | 狡小狐#827 「欺诈」→ 果然翁 | 226–267 | **453–534** | ×2.0 |
+| 分析 | 小磁怪#81 | 1107–1302 | 前提标注「对手已先行动」 | ×1.3 |
+
+UI 显示值与手算值 `一致=YES`（逐条比对 `roleCard5Html` 输出里的 `<b>lo–hi</b>` 与带参 `dmgCalc` 的返回值）。
+
+### 四、全文件 `dmgCalc(` 调用点普查（本次一并做完）
+
+| 行 | 调用点 | 参数状态 |
+|---|---|---|
+| 7138 | 伤害面板 `dmgRender` | 完整（含 `stA` / `tgt`） |
+| 6981 | `ohkoSolveEv` | 完整（v4.238 补） |
+| 7003 | `surviveSolve` | 完整（v4.238 补） |
+| 3251 | `roleCard5Html` | **缺 `stA` / `tgt` → 本次修** |
+
+**方法论**：给 `dmgCalc` 新增参数后，必须**全文件正则重扫所有 `dmgCalc({` 调用点**逐个人工核对，不能只改当时想到的那几处。手抄参数表是这类静默错误的温床。
+
+另：`tgt` / `stA` **不该扩散到属性克制表、打击面**——那两处是纯类型相性查询，不产生伤害数字。真正需要这两个维度的只有「会产生伤害数字」的地方，现已全部覆盖。
+
+### 五、验证结果
+
+| 门禁 | 结果 |
+|---|---|
+| 语法 | 0 |
+| `node tools\smoke.js` | 32/32 passed |
+| `python -X utf8 tools\probe_sp_abi_detail.py` | 117 项 ALL PASS |
+| 线上 SHA1 | `02FB9539E67D641EC2D2B79DBDE6A07D3709095A` / 1,636,126 B —— **VERIFIED-MATCH**（gh-pages `da5b627..db7eecc`） |
+
+
 ### 版本
 
 | 版本 | 字节 | SHA1 | 状态 |
@@ -1805,6 +1883,7 @@ git diff 显示 719 insertions / 698 deletions。功能没坏但污染了 diff�
 | v4.238 | 1,633,724 | `E0C6F14072B268EE3BE386B690CB343A82EEBA06` | VERIFIED-MATCH |
 | v4.239 | 1,634,630 | `425BAE9519F143C9643AD9592B8271046AA6486A` | VERIFIED-MATCH |
 | v4.240 | 1,634,950 | `7B6F7ACDD5CD68749D4249A3FA89892C4960800A` | VERIFIED-MATCH |
+| v4.241 | 1,636,126 | `02FB9539E67D641EC2D2B79DBDE6A07D3709095A` | VERIFIED-MATCH |
 
 ### 仍是「静态算不了」的
 
