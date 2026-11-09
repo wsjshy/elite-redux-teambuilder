@@ -2166,9 +2166,111 @@ if(document.addEventListener){document.addEventListener('er-ready',___immRiskRem
 
 语法 0 / smoke 32-32 / probe 117 ALL PASS。CDP：`VER=v4.244`、`erReady=true`、`species=1906`（过滤后 1905）、`___immRiskRemap()` 可重跑返回 true、免疫警示文案实测 `火（引火/好烤的身体/元素漩涡）`。
 与 v4.243 基线逐项比对：`builds` 0/1905、`abi` 0/1905、`axes` 69/1905。
+## v4.245（2026-11-09）· 特性反查卡补「计算倍率」区（全量覆盖真正露到 UI）
+
+### A. 发现的缺口：`renderAbi` 根本没用 `abiDesc`
+
+`abi` Tab 的卡片由 `renderAbi()`（L6289）渲染，三块内容：中文描述 / 特性效果（战斗意义） / 持有者两列。
+
+其中「特性效果」调的是 `abiTagLines(id)`（L2157），**只读 `ERDATA.abiTags`** —— 数据层标签表。拿「雾眼 #967」实测：该卡展开后这一块只打印 **「（ABI_TAGS 未登记标签）」**。
+
+而同一个文件里 `abiDesc()`（L3793-3902）是个**很完整**的详情渲染器，会渲染六类内容：
+
+| 区块 | 来源表 | 钩子 |
+|---|---|---|
+| 受到伤害倍率 | `ABI_DMG_MOD` / `ABI_DMG_ALL` / `ABI_DMG_COND` | `.onDefensiveMultiplier` |
+| 相性改写 | `ABI_TE_DEF_COND` | `.onAfterTypeEffectiveness` |
+| 进攻增伤 | `ABI_ATK_MOD` / `ABI_ATK_COND` / `ABI_FLAG_ATK` / `ABI_ATK_KIND` | `.onOffensiveMultiplier` |
+| 关联招式 | `abiCleanMvName` → `MV` | — |
+| 叠加特性 | `abiCompositeBreak` | — |
+| 机制详解 | `ABI_DETAIL` | — |
+
+**结论：`abiDesc` 服务的是「宝可梦详情弹层里的特性块」，`abi` Tab 那条路径完全没接它。** 两个入口，一个满配一个空壳。
+
+`abiTagLines` 返回空时的文案「（ABI_TAGS 未登记标签）」更糟 —— 它让玩家以为「这个特性没有效果数据」，实际上数据一直在，只是这条渲染路径看不见。
+
+### B. 修法：新增 `abiSrcBrief(id)`，8 张计算表折成一行行摘要
+
+不改 `abiDesc`（130 行、多处调用，动它风险大），改为新写一个**只输出文本摘要**的函数，挂在卡片里当独立区块。
+
+两处配套：
+
+1. **`abiZhSp(id)`** —— 特性 id → **物种表口径**中文名。判定表的键一律是物种表名，而 `ABI[id][2]` 是数据层名，两者有别名差。用**懒建全局 `AB_ZH_SP`**：首次调用时才扫 `ERDATA.species`，因为 `species` 是分片异步补的，**不能写在顶层执行**（这正是 v4.244 踩过的坑，见该章 D 节）。
+2. **`abiSrcBrief(id)`** —— 把 `ABI_ATK_MOD` / `ABI_ATK_COND` / `ABI_FLAG_ATK` / `ABI_ATK_KIND` / `ABI_DMG_MOD` / `ABI_DMG_ALL` / `ABI_DMG_COND` / `ABI_TE_DEF_COND` 八张表折成「打出去 · / 承受 · / 改相性 ·」三类前缀的行。
+
+`renderAbi` 卡片插在第 3 块「特性效果（战斗意义）」之后，标题「**计算倍率（工具真正计入伤害的部分）**」；空态文案改成实话：**「不在计算类判定表中：属速度 / 回合 / 命中 / 换场类效果，不产生伤害倍率；速度类见「速度线」页」**。
+
+### C. 踩到的两个坑
+
+**① `esc()` 内部走 `scrubLeak()`，会整段清空。**
+`esc(s) = scrubLeak(mdInline(String(s)))...`，而 `scrubLeak` 的触发集合含 `源码` / `→` / `口径` / `实证` / `定稿` / `本项目` / `【` / 空括号 / `L\d{2,5}` 等，命中即把整串剥掉。
+⇒ `abiSrcBrief` 返回的文本**必须避开这些词**，改用「封顶 ×0.5」「归零（只有效果绝佳才打得进来）」这类说法。区块标题走 HTML 拼接（不过 `esc`），可以写「源码」以外的话。
+
+**② `ABI_ATK_COND` 的元素可以没有 `t` 字段。**
+`{'灵质':[{mul:1.5,need:'fog'}]}` —— 无 `t` 表示**不分属性**。直接 `x.t.join('/')` 抛错，被外层 `try{}catch{}` 吞掉，导致整条返回空数组（第一版实测 `灵质` / `回声定位` 都是 `[]`）。
+⇒ 统一写成 `(x.t ? x.t.join('/')+'招' : '所有招')`。修后实测：`灵质 → ["打出去 · 所有招 ×1.5（雾天）"]`、`回声定位 → ["打出去 · 所有招 ×1.2（雾天）"]`。
+
+### D. 全表普查：8 张计算表只剩 4 处失配，全是 0 持有或占位名
+
+对八张表逐键与全库 `abis`/`inns` 求差集（`audit_245.py`）：
+
+| 表 | 键数 | 失配 | 明细 |
+|---|---|---|---|
+| `ABI_ATK_MOD` | 25 | 1 | 等离子灯 #466（物种表无此 id，持 0 只） |
+| `ABI_ATK_COND` | 3 | 1 | 回声定位 #947（持 0 只） |
+| `ABI_FLAG_ATK` | 12 | **0** | 全命中 |
+| `ABI_ATK_KIND` | 15 | **0** | 全命中 |
+| `ABI_DMG_MOD` | 15 | **0** | 全命中 |
+| `ABI_DMG_ALL` | 11 | 1 | `Rock Armor` #1031（物种表名就是 `#1031` 占位） |
+| `ABI_DMG_COND` | 32 | 3 | 守护者外套 #838 / `INSECTEATER` / `树皮`（均持 0 只） |
+| `ABI_TE_DEF_COND` | 5 | **0** | 全命中 |
+
+⇒ v4.242 / v4.243 两轮 49 条别名修正已经把表键修干净了，**本轮零别名修复**。
+
+**顺带纠正一次自己的误判**：抽查时把「狙击手」当成 `#68`，实测 `abiZhSp(68)` = **虫之预感**、`abiIdC('狙击手')` = **97**。是我用例 id 写错，不是缺陷。`ABI_ATK_KIND` 的 15 键全命中可以印证。
+
+### E. 覆盖率口径：10.5% 是正确答案，不是覆盖不足
+
+`abiSrcBrief` 全库统计：
+
+| 口径 | 条数 | 占比 |
+|---|---|---|
+| 全部特性 | 1033 | 100% |
+| 有「计算倍率」 | 108 | 10.5% |
+| 有持有者（998 条）中有计算倍率 | 105 | 10.5% |
+
+其余约 92% 属**回合类 / 命中类 / 换场类 / 状态类**，源码里没有 `.onOffensiveMultiplier` / `.onDefensiveMultiplier` / `.onAfterTypeEffectiveness` 三个钩子，**本来就不产生伤害倍率**，硬塞进倍率表反而是错的。
+
+⇒ **判断一条特性该不该有计算倍率，看这三个钩子，不看数据层文案是否有数字。**
+
+### F. 验证
+
+| 门禁 | 结果 |
+|---|---|
+| 语法（`extract_js.py` → `node --check`） | 0 |
+| `node tools\smoke.js` | **32/32** |
+| `python -X utf8 tools\probe_sp_abi_detail.py` | **ALL PASS** |
+| CDP `ER_ENGINE_VER` | **v4.245**（不是 `undefined`） |
+| CDP `__erReady` / `species` | `true` / 1906 |
+
+**端到端实测（雾眼卡展开，65px → 501px）**：
+
+```
+计算倍率（工具真正计入伤害的部分）
+• 打出去 · 幽灵招 ×1.5（雾天）
+• 改相性 · 雾天，对 幽灵招 封顶 ×0.5
+```
+
+前一版（v4.244）同一位置只显示「（ABI_TAGS 未登记标签）」。
+
+**版本**：`1,643,331 B` / `A34241DF68C497A9D9025A99A032B2947B21C130`
+
+---
+
 ### 版本
 
 | 版本 | 字节 | SHA1 | 状态 |
+| v4.245 | 1,643,331 | `A34241DF68C497A9D9025A99A032B2947B21C130` | VERIFIED-MATCH |
 | v4.244 | 1,639,431 | `A9313394B21567C3FC34BE5FFA1D0C353AB693FA` | VERIFIED-MATCH |
 |---|---|---|---|
 | v4.232 | 1,620,439 | `379B88940B860FF6E327A888BE0E847DCDEB2E18` | VERIFIED-MATCH |
