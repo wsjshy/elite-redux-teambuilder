@@ -247,6 +247,25 @@ check('nn_data 备份包在位（唯一副本守护）', () => {
   if (sz < 3 * 1024 * 1024) throw new Error('包仅 ' + sz + ' B，疑似截断（应约 4.17 MB）');
   return (sz / 1048576).toFixed(2) + ' MB';
 });
+check('版本号三处同步（index / package.json / AGENTS 版本表）', () => {
+    // 2026-11-09：package.json 曾停在 4.179.0，与实际 v4.255 差 71 个版本号。
+    // 三处各写各的必然漂移，改为一处为源、其余对齐。
+    const idx = read('index.html');
+    // 注意：ER_ENGINE_VER 是两段（v4.255），package.json 是三段（4.255.0）
+    const m = idx.match(/ER_ENGINE_VER\s*=\s*'v([0-9.]+)'/);
+    if (!m) throw new Error('index.html 缺少 ER_ENGINE_VER');
+    const v = m[1];
+    let pkg;
+    try { pkg = JSON.parse(fs.readFileSync(R('package.json'), 'utf8')); }
+    catch (e) { throw new Error('package.json 不是合法 JSON'); }
+    if (pkg.version !== v && pkg.version !== v + '.0')
+      throw new Error('package.json=' + pkg.version + ' ≠ index v' + v);
+    const ag = read('AGENTS.md');
+    if (!new RegExp('\\| v' + v.replace(/\./g, '\\.') + ' \\|').test(ag))
+      throw new Error('AGENTS.md 版本表缺少 | v' + v + ' | 行');
+    return 'v' + v;
+  });
+
 const okN = results.filter(r => r.ok).length;
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ ok: okN, total: results.length, results }, null, 1));

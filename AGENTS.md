@@ -4,7 +4,7 @@
 > 本文档是唯一入口/目录/准则：新接手者先读本文，即可掌握全貌。
 > 开发流程准则：**设计 → 对齐 → 实施 → 测试 → 回归**；改动后先自测再交付。
 
-> **版本真相源（2026-11-07 登记）**：`index.html` 的 `ER_ENGINE_VER` 是唯一版本依据（当前 **v4.179**，与线上逐字节一致）。
+> **版本真相源（2026-11-07 登记）**：`index.html` 的 `ER_ENGINE_VER` 是唯一版本依据（当前 **v4.255**，与线上逐字节一致）。
 > 本文 §6 与历史版本块（已下沉 docs/changelog/VERSIONS.md）均为记录性文字，不作为版本依据；出现不一致以 `index.html` 为准。
 > `build_tool_html.py` **已退役**（2026-11-07 登记）：停在 **v4.136**，v4.137–v4.179 共 43 个版本无脚本源，为直接编辑产物演进，**重建会把线上退回 v4.98**。文件尾有 `ER_BUILD_FORCE_SYNC` 拒绝覆盖守卫（正常运行 SKIP），`tools/smoke.js` 亦断言该守卫存在。
 > 数据改动必须同时同步 **CSV 源 / `data_*_v498.js` 三个分片** 两处——页面实际加载的是分片。
@@ -32,12 +32,13 @@ D:\game\elite-redux\
 ├── box_override.json                ← 可选人工箱号修正（特殊区默认段内顺序标注，此文件可覆盖指定箱号）
 ├── 存档解析v4_20261006.csv/.json    ← v4.1 最新产物（431条，53列）
 ├── 存档解析_20261006.csv/.json      ← v3.1 旧产物（19列，历史对照）
-├── 配招助手_ER.html                 ← 配招配队工具**旧产物（v4.98，1,448,248 B，落后 81 个版本）**；主入口已改为 index.html（v4.179）。此副本与 index.html 的同步方向待定，不要拿它当基准
+├── 配招助手_ER.html                 ← **兼容跳转页（1,673 B）**：`<meta refresh>` 自动跳 index.html，防老链接 404；带 `noindex`，不承载任何功能（详见 docs/dev/仓库与分支说明.md §3）
 ├── ~~data.js~~                       ← **已退役**（v4.179 数据源合一）：与三分片逐键等价（26/27 键 diff=0，唯一多出的 `sprites` 是空对象且页面零引用）后删除，归档于 `archive/data.js.v4.179_full_snapshot`（2,456,845 B）。运行时分片改为 `data_lite_v498.js` / `data_species_v498.js` / `data_adv_v498.js`，**不得回归**
 ├── 配招工具_data.js                 ← **构建链输入（6,884,918 B），浏览器不加载、不部署**；被 `tools\rebuild_source_inputs.py` / `check_rebuild_faithful.py` / `probe_v464.py` / `probe_v49.py` 引用，是三分片能重建的依据，**勿删**
 ├── nn_data\mech_lib_v412.json              ← ★v4.12 机制知识库（52 机制 / 156 combo / 40 词汇，meta version3 / schema v412 / updated 2026-10-10；既有 28 条逐字保留 + 24 新机制 + 32 新 combo，全部带来源 URL）
 ├── nn_data\smogon_prior_2026-09.json       ← ★v4.12 Smogon 标准对战先验（120 物种 / 2335 行，gen3ou×1.0 + gen9nationaldex×0.5，srcMax=0.516601 与既有 usagePrior 锚点逐位一致；引擎 SMOGON_PRIOR_ENABLED 开关消费、置 false 逐字节回退 v4.11）
 ├── nn_data\axis_lib.json                   ← ★15 协同轴知识库（v4.9 七字段逐字不动 + v4.12 每轴新增「体系模板」键：六位完整体系设计 15 轴×6 位=90/90）
+├── docs\dev\仓库与分支说明.md         ← ★**仓库结构内部口径**：master/gh-pages 两条线的关系（「线上正常但首页显示旧提交」的成因）、分支清单与能否删、两个 HTML 入口、运行时文件 vs 本地源料、75 MB 体量构成、版本号三处同步护栏
 ├── docs\research\                    ← ★研究 / 清理 / 验证合辑（2026-11-07 起）
 │   ├── nn_data备份说明_20261107.md    ← nn_data/ 打包入库的理由、包内清单、还原与更新步骤、sha256
 │   ├── B类目录内容抢救合辑_20261107.md ← C:\temp 121 个 `er-*` 目录内容按机制整合（120.5 KB：九章正文 + 121 目录映射表 + 判废清单 + 删前口径）
