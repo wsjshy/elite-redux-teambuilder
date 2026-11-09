@@ -3244,11 +3244,27 @@ function roleCard5Html(s,bd,R){
     var evA=0,isPhysMain=true;
     if(mv0){var mm0=ERDATA.moves[mv0];if(mm0){isPhysMain=(mm0[4]==='物理');evA=(bd.ev&&bd.ev.alloc)?(+bd.ev.alloc[isPhysMain?1:3]||0):0}}
     var tgt=mv0?roleCard5TargetOf(mv0):null;
-    var dmgRes=null,hpT=0;
+    var dmgRes=null,hpT=0,abiNote='';
     if(tgt&&mv0){
       var itemA=(bd.it&&bd.it[0])?String(bd.it[0][0]||''):'';
       var natA5=(bd.nat&&bd.nat[0])?String(bd.nat[0][0]||''):'';
-      dmgRes=dmgCalc({sA:s,sD:tgt,moveId:mv0,evA:evA,evD:0,natA:natA5,natD:'',itemA:itemA,weather:'',terrain:'',crit:false});
+      /* v4.241：补 stA / tgt 两个维度 —— 按该只「推荐特性」自身的 need 决定情景。
+         此前这里只传了空值，导致毅力 / 决心 / 中毒激升 / 蹲守 / 分析 这 5 条
+         在「角色定位·现算击杀线」里全部静默失效（数字偏低且不报错）。
+         取值口径与伤害面板 chip 完全一致：stA ''/any/poison，tgt ''/new/moved。 */
+      var _stA='',_tgt='';
+      try{
+        var _a0=bd.abi&&bd.abi[0];
+        var _nm=(_a0&&_a0.id!=null&&typeof ABI!=='undefined'&&ABI[_a0.id])?(ABI[_a0.id][2]||''):((_a0&&_a0.n)?_a0.n:'');
+        var _kd=_nm?ABI_ATK_KIND[_nm]:null;
+        if(_kd){
+          if(_kd.need==='poison'){_stA='poison';abiNote='自身中毒'}
+          else if(_kd.need==='stPhys'||_kd.need==='stSpec'){_stA='any';abiNote='自身有异常'}
+          else if(_kd.need==='tgtNew'){_tgt='new';abiNote='对手刚上场'}
+          else if(_kd.need==='tgtMoved'){_tgt='moved';abiNote='对手已先行动'}
+        }
+      }catch(eA){}
+      dmgRes=dmgCalc({sA:s,sD:tgt,moveId:mv0,evA:evA,evD:0,natA:natA5,natD:'',itemA:itemA,weather:'',terrain:'',crit:false,stA:_stA,tgt:_tgt});
       hpT=dmgStatOf(bstI(tgt,0),0,31,0,'');
     }
     var wks=[];ERDATA.types.forEach(function(at){var c=defCellTrio(s,at).inn;if(c>1)wks.push(at)});
@@ -3265,6 +3281,7 @@ function roleCard5Html(s,bd,R){
     h+='<b>② 核心机制：</b>'+(mechBits.join('、')||'—');
     if(dmgRes&&tgt){
       h+='。<span style="color:var(--sub)">现算：'+esc(s.zh)+' 主攻 → '+esc(tgt.zh)+'（HP '+hpT+'）伤害 <b>'+dmgRes.lo+'–'+dmgRes.hi+'</b>'+
+        (abiNote?' <span style="font-size:12px">（按「'+esc(abiNote)+'」前提）</span>':'')+
         (dmgRes.lo>=hpT?'，<span style="color:var(--ok)">确定 OHKO</span>':(dmgRes.hi>=hpT?'，概率 OHKO（击杀线边缘）':'，2HKO 起（需更多攻端 EV）'))+'</span>';
     }
     h+='<br>';
@@ -15772,7 +15789,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.240';
+var ER_ENGINE_VER='v4.241';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
