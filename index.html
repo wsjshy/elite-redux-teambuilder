@@ -7264,6 +7264,33 @@ function dmgRender(boxId){
     '<br>'+(solve>=0
       ?'达到 OHKO 最低攻端 EV = <b style="font-size:16px;font-weight:700;color:var(--accent)">'+solve+'</b> <button class="btn-mini" type="button" onclick="dmgApplySolve('+solve+')">应用到滑块方案</button>'
       :'<span style="color:var(--warnred)">即使 +252 攻击也无法 OHKO</span>')+'</div>';
+  /* v4.248：倍率分解 —— 把此前只藏在 title（悬浮提示）里的特性明细提到明面，
+     并把克制/本系/天气/场地/道具/会心一起摊开，让「这个伤害是怎么来的」一眼可读 */
+  (function(){
+    try{
+      var mvA=ERDATA.moves[__spdSl.mvId]||[], tyA=mvA[3], parts=[];
+      parts.push('克制 ×'+r.eff);
+      if(r.stab)parts.push('本系 ×1.5');
+      if(r.atkMul&&r.atkMul!==1)parts.push('特性增伤 ×'+r.atkMul+(r.atkHit&&r.atkHit.length?('［'+r.atkHit.join('、')+'］'):''));
+      if(r.abiMul&&r.abiMul!==1)parts.push('特性减伤 ×'+r.abiMul+(r.abiHit&&r.abiHit.length?('［'+r.abiHit.join('、')+'］'):''));
+      var wxA=__spdSl.weather||'',teA=__spdSl.terrain||'';
+      if(wxA==='晴'&&tyA==='火')parts.push('晴天 ×'+(1+WCONF.boost));
+      if(wxA==='雨'&&tyA==='水')parts.push('雨天 ×'+(1+WCONF.boost));
+      if(teA==='电气'&&tyA==='电')parts.push('电气场地 ×'+WCONF.terrainBoost);
+      if(teA==='青草'&&tyA==='草')parts.push('青草场地 ×'+WCONF.terrainBoost);
+      if(teA==='精神'&&tyA==='超能力')parts.push('精神场地 ×'+WCONF.terrainBoost);
+      if(teA==='薄雾'&&tyA==='龙'&&sD&&(sD.t1==='龙'||sD.t2==='龙'))parts.push('薄雾场地 ×0.5');
+      if(/生命宝珠/.test(__spdSl.dmgItem||''))parts.push('生命宝珠 ×1.3');
+      if(/讲究头带/.test(__spdSl.dmgItem||'')&&ERDATA.moves[__spdSl.mvId][4]==='物理')parts.push('讲究头带 ×1.5');
+      if(/讲究眼镜/.test(__spdSl.dmgItem||'')&&ERDATA.moves[__spdSl.mvId][4]!=='物理')parts.push('讲究眼镜 ×1.5');
+      if(__spdSl.crit)parts.push('会心 ×2');
+      parts.push('随机 0.85–1.00');
+      if(parts.length>2){
+        box.innerHTML+='<div style="font-size:13px;line-height:1.6;color:var(--sub);margin:3px 0 0;padding:5px 8px;background:#f6f7fb;border-radius:4px">'
+          +'<b style="color:#444">倍率分解</b>　'+esc(parts.join('　·　'))+'</div>';
+      }
+    }catch(e0){}
+  })();
   /* v4.110 P2：命中率 chip；v4.117 P2：命中<100 追加期望折算行（仅渲染层，不改 dmgCalc） */
   var acc=(ERDATA.moves[__spdSl.mvId]||[])[6]||100;
   var accHtml='<span style="font-size:13px;color:var(--sub);margin-left:6px">命中 '+acc+'%</span>';
@@ -15889,7 +15916,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.247';
+var ER_ENGINE_VER='v4.248';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
