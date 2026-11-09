@@ -2668,7 +2668,8 @@ GitHub 首页默认显示 master，所以看起来「停滞」。
 ### 版本
 
 | 版本 | 字节 | SHA1 | 状态 |
-| v4.255 | 1,653,314 | C8DB4AC3079238B68FAEBF425723B914E3CEAEC0 | 待部署 |
+| v4.256 | 1,654,256 | 939AC7438828F4BCD85B6528985CADDE239E4D40 | 待部署 |
+| v4.255 | 1,653,314 | C8DB4AC3079238B68FAEBF425723B914E3CEAEC0 | 线上一致 |
 | v4.254 | 1,651,034 | 74D63C242CA6E5AA737A6DE8DE55299FAAF1A162 | 待部署 |
 | v4.253 | 1,650,856 | 6C43F8C1FB531670F7F0328DDEF798C46FD02270 | VERIFIED-MATCH |
 | v4.249 | 1,647,902 | A045F0FD0FD6707135257D6D9F13C9AB0971C86E | VERIFIED-MATCH |
@@ -3294,6 +3295,57 @@ EV 守恒核对：`252 + 112 + 144 + 0 = 508` ✅
 
 ### F. 文档同步
 手册「第 2 屏」整节重写：三步读法、两个真实例子（P90 / P50）、进阶设置分组表、乘区默认关的原因说明；新配图 `docs/manual/img/spd_target.png`（317,489 B）替换过期的 `sp_2.png` 引用。
+
+---
+
+## v4.256 筛选开关「开了看不出效果」→ poke 页加生效回执
+
+### A. 用户报的现象
+「这个按钮开启之后，喷火龙还是有，它有 mega 形态就不应该在这里显示。」
+
+### B. 实测：逻辑本来就是对的
+用 CDP `Input.dispatchTouchEvent` 打**真实触摸**（不是 `el.click()`），430×932 手机视口：
+
+| 状态 | `fOpt` | 喷火龙在列表 |
+|---|---|---|
+| 纯照 | `{"mega":0,"final":0}` | 1 次 |
+| 点「Mega 形态优先」 | `{"mega":true,"final":0}` | **0 次** |
+| 再点「仅最终形态」 | `{"mega":true,"final":true}` | **0 次** |
+
+`spMatch` L3534 `if(fOpt.mega&&hasMegaForm(s))return false;` 语义正确：`hasMegaForm` = 「这只自身不是 Mega、但族群有 Mega」。
+
+**用户截图里的按钮写着「Mega形态」五个字** —— v4.254 已改成「Mega 形态优先（隐藏可 Mega 的普通形态）」。也就是说**截图来自更早的版本**（v4.249 之前 `spMatch` 那条谓词是反的，`!(isMegaForm||hasMegaForm)` 会把「有 Mega 的普通形态」专门保留）。
+
+### C. 真问题：开关没有回执
+点完之后列表只是「变少了」，用户无法判断是这个开关起作用、还是搜索/别的筛选在起作用。所以加一行状态回执：
+
+```
+筛选已生效　已隐藏 247 只「有 Mega 但本身不是 Mega」的普通形态（如喷火龙、超梦只剩超级形态）
+　　　　　　已隐藏 653 只非最终形态（1253 / 1906 可见）
+```
+
+- 关态时这行**完全不显示**（不占版面）。
+- 数字实时算：`Object.keys(hasMegaSet()).length` = 247；`Object.keys(nonFinalSet()).length` = 653。
+
+### D. 踩坑：静默 catch 基线
+首版用了 3 个 `try{}catch(e){}` 兜底，直接把 `tools/smoke.js` 的「静默 catch ≤ 390」顶到 **393 → 门禁红**。
+
+改成**单一就绪守卫**（`window.ERDATA && ERDATA.species.length>0`），不吞异常也不增计数：
+
+```js
+var _rdy=(window.ERDATA&&ERDATA.species&&ERDATA.species.length>0);
+if(_rdy&&fOpt.mega){ ... }
+if(_rdy&&fOpt.final){ ... }
+```
+
+### E. 判定
+`renderSpFormChips()` 在 IIFE 里**立即调用**（L3514），此时数据分片可能还没到 —— 直接访问 `ERDATA.species` 会 TypeError。这就是必须加就绪守卫而不是裸 `try` 的原因。
+
+### F. 验收
+- `node --check` 0
+- `smoke` 33/33（含新增的版本三处同步项）
+- `probe_sp_abi_detail.py` ALL PASS
+- 手机视口实拍：两个 chip 开启后列表首屏为 大嘴雀 / 九尾 / 霸王花，喷火龙/妙蛙花/水箭龟全部消失
 
 ---
 
