@@ -15889,7 +15889,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.246';
+var ER_ENGINE_VER='v4.247';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -16279,6 +16279,26 @@ function renderCore(s){
       }).join('')
     : '<span class="dim">无</span>')+'</div>';
   html+='<span class="abi4rule">四特性体系：'+((abiN&&_abUq)?'主特性（唯一）生效':('主特性 '+abiN+' 选 1 生效'))+'；天性 '+innN+' 个固定全部拥有 —— 配队评估两者并计（免疫/半伤/添属性/联防）</span>';
+  /* v4.247：特性 / 天性的计算倍率汇总（与特性反查卡、推荐卡同一函数，口径不分裂） */
+  var _brBox='';
+  (function(){
+    function one(nm,id,zh,kind){
+      if(!id)return '';
+      var br=[];try{br=abiSrcBrief(id)||[]}catch(e){br=[]}
+      if(!br.length)return '';
+      var head=(br.length>2)?br.slice(0,2).join('；')+'　等 '+br.length+' 条':br.join('；');
+      return '<div style="margin:2px 0"><b>'+esc(zh)+'</b><span class="dim">（'+kind+'）</span>：'+esc(head)+'</div>';
+    }
+    /* 特性 n 选 1：列出全部可选，但必须标明只有选中的那个生效，否则会被读成叠加 */
+    var abiKind=(abiN>1)?('特性，'+abiN+' 选 1 生效'):'特性';
+    var innKind=(innN>1)?('天性，'+innN+' 个固定全部拥有'):'天性，固定拥有';
+    var i,nm,id,t='';
+    if(abiN&&s.abis){for(i=0;i<s.abis.length;i++){nm=s.abis[i];id=(s.abiIds&&s.abiIds[i])||abiIdC(nm);t+=one(nm,id,speciesAbiZh(s,'abis',i),abiKind);}}
+    if(innN&&s.inns){for(i=0;i<s.inns.length;i++){nm=s.inns[i];id=(s.innIds&&s.innIds[i])||abiIdC(nm);t+=one(nm,id,speciesAbiZh(s,'inns',i),innKind);}}
+    if(t)_brBox='<div class="tip" style="margin:6px 0;background:#fffdf0;border-color:#e6d9a8"><b style="font-size:14.5px">⚔ 伤害倍率（工具真正计入伤害的部分）</b>'+t
+      +'<span class="dim" style="display:block;margin-top:3px">只列真正乘进伤害计算的；回合 / 命中 / 换场 / 状态类特性不产生倍率，故不出现。天性固定全部拥有，命中即叠加</span></div>';
+  })();
+  html+=_brBox;
   /* 种族值六维条形图（含总值） */
   var stNames=['HP','攻击','防御','特攻','特防','速度'];
   html+='<div class="statbars">';
