@@ -1827,4 +1827,85 @@ F89: N=10 无ALLYONLY=OK 活力=1.4 远隔P=1.2 远隔NP=1.2 远隔S=1 猩P=1.5 
 
 毅力/决心/中毒激升（需自身异常）｜蹲守（目标首回合）｜幻影（illusion）｜分析（回合顺序）
 ｜复仇者（side timer）｜好胜（双方性别）｜公主的恩赐（目标降能力）｜无精打采（slowStartTimer）
-｜超级狙击手（转调+额外队列）｜武术 `MARTIAL_ARTS`（数据层无中文名）
+｜超级狙击手（转调+额外队列）｜武术 `MARTIAL_ARTS`（数据层无中文名）
+
+
+---
+
+## v4.237：状态型进攻增伤 + 修掉 `surviveSolve` 断链
+
+### A. 状态型进攻增伤（毅力 / 决心 / 中毒激升，47 只物种）
+
+18.29 把这三条归入「静态算不了」，理由是「需自身异常状态，工具无此输入」。查源码后发现只对一半 ——
+条件确实需要状态，但**函数名骗人**：
+
+```cpp
+// src/battle_util.c:9362
+int HasAnyStatusOrAbility(int battler) {
+    if (gBattleMons[battler].status1 && STATUS1_ANY) return TRUE;
+    if (IsComatose(battler)) return TRUE;
+    if (IsBloodStainAffected(battler)) return TRUE;
+    return FALSE;
+}
+```
+
+名字里有 Ability，**实际跟特性毫无关系**：任意异常 / 梦游 / 血染。
+
+| 特性 | 条件 | 倍率 | 持有者 |
+|---|---|---|---|
+| 毅力 GUTS | `HasAnyStatusOrAbility` + 物理 | ×1.5 | 38 |
+| 决心 DETERMINATION | `HasAnyStatusOrAbility` + 特殊 | ×1.5 | 5 |
+| 中毒激升 TOXIC_BOOST | `status1 & STATUS1_POISON_ANY` + 物理 | ×1.5 | 4 |
+
+**输入面**：`dmgCalc` 加 `o.stA`，三档 `''` / `'any'`（任意异常）/ `'poison'`（中毒或剧毒）。
+UI 在伤害面板加 chip 行 `攻方状态：无 / 异常 / 中毒`。
+
+**新增 need 分支**：`stPhys` / `stSpec` / `poison`。前两个只判 `ctx.stA` 非空（中毒也是异常），
+`poison` 才做严格等值。
+
+**最关键的一格**：`中毒激升 × 物理 × 异常 = 1` —— 如果 `poison` 分支也写成「非空即触发」，
+玩家选「异常」就会白拿 1.5，而那实际只是灼伤。
+
+### B. `surviveSolve` 断链（既有 bug，从 v4.95 一直坏到现在）
+
+**现象**：CDP 里调 `dmgRender('dmgOut2')`，拿到 `渲染错误: surviveSolve is not defined`，每次必现。
+
+**定位**：`grep surviveSolve index.html` 只有 **2 处命中，全是调用点**：
+
+```js
+/* v4.95 A：防守向反推（同输入面，反向解「扛 N 下」） */
+var sv1=surviveSolve(o,1),sv2=surviveSolve(o,2);
+```
+
+`function surviveSolve` / `surviveSolve=` 搜索均 0 命中。`dmgRender` 整体包在 `try{}catch{}`，
+`ReferenceError` 被兜成「渲染错误」，**整个伤害判定面板（OHKO 判定 / 命中期望 / 16 段分布 / 耐久反推）全部不显示**。
+
+这就是「🛡 耐久反推 · 扛 N 下」从用户视角从未出现过的真实原因 —— 不是算得不对，是整块渲染挂在最后一步。
+
+**重建**：`ohkoSolveEv` 是攻方向反解（扫 `evA` 到 `r.lo>=hpD`），守方向对称扫 (HP EV, 防御 EV)。
+
+两个必须记住的点：
+
+1. **`dmgCalc` 的 `evD` 是一个数字，只作用于 `dIdx`（由物理/特殊决定物防还是特防），不影响 HP。**
+   HP 必须另按 `dmgStatOf(bstI(sD,0), hpEv, 31, 0, '')` 算。
+2. 外层 `hpEv` 递增 + 内层 `break` + 外层 `break`，拿「第一个 HP 档里最小防御投入」，
+   不要收集全部解再排序（64×64=4096 次 `dmgCalc` 会卡）。
+
+**复核**：波波拍击 → 小拉达（伤害 58–68 / HP 96），扛 1 下 `hpEv0/defEv0` ✓；
+扛 2 下 `hpEv0/defEv196`（max 降到 46，46×2=92<96）✓。
+
+**误判记录**：首轮用「拍击 → 耿鬼」测，返回 `HP+0 / 物防+0` 看着像没算。
+实际拍击对幽灵相性 ×0，伤害恒 0，一行 EV 都不用给 —— 是正确解。换一般系打普通系才看得出门槛。
+
+### 门禁
+
+语法 0 ｜ `smoke.js` 32/32 ｜ `probe_sp_abi_detail.py` **115 项 ALL PASS**（F89 改 N=13，新增 F90）
+
+```
+F90: 毅力P0=1 毅力P1=1.5 毅力P毒=1.5 毅力S1=1 决心S0=1 决心S1=1.5 决心P1=1
+     中毒P0=1 中毒P1=1 中毒P毒=1.5 中毒S毒=1
+```
+
+### 版本
+
+`v4.237`，1,632,482 B。

@@ -366,6 +366,32 @@ INJECT_JS = r"""
     });
     return o.join('/')+'|N='+SPD_ABI.length;
   })();
+  out.stAtk = (function(){                   /* v4.237 状态型进攻增伤：毅力/决心/中毒激升 */
+    function findMv(pred){
+      var id=0;
+      Object.keys(ERDATA.moves).forEach(function(k){
+        var m=ERDATA.moves[k];
+        if(!id && +m[5]>0 && pred(m,+k)) id=+k;
+      });
+      return id;
+    }
+    var phys=findMv(function(m,k){return m[4]==='物理'&&mvIsContact(k)});
+    var spec=findMv(function(m,k){return (m[4]==='特殊'||m[4]==='特殊(取防御)')});
+    function c(abil,mvId,stA){
+      var m=ERDATA.moves[mvId];
+      return dmgAtkAbiMul({abis:[abil],inns:[]},m[3],'',mvId,
+        {isPhys:m[4]==='物理',spec:(m[4]==='特殊'||m[4]==='特殊(取防御)'),pow:+m[5],
+         contact:mvIsContact(mvId),eff:2,crit:false,stA:stA}).mul;
+    }
+    return [
+      '毅力P0='+c('毅力',phys,''), '毅力P1='+c('毅力',phys,'any'), '毅力P毒='+c('毅力',phys,'poison'),
+      '毅力S1='+c('毅力',spec,'any'),
+      '决心S0='+c('决心',spec,''), '决心S1='+c('决心',spec,'any'), '决心P1='+c('决心',phys,'any'),
+      '中毒P0='+c('中毒激升',phys,''), '中毒P1='+c('中毒激升',phys,'any'), '中毒P毒='+c('中毒激升',phys,'poison'),
+      '中毒S毒='+c('中毒激升',spec,'poison')
+    ].join(' ');
+  })();
+
   out.atkKind = (function(){                 /* v4.236 进攻侧条件型增伤 10 条（已剔 ALLY_ONLY） */
     function findMv(pred){
       var id=0;
@@ -743,8 +769,10 @@ def main():
     ck(tt.get("flagAtk") == "1.3/1|1.3/1|1.2/1|1.3/1|1.3/1|1.3/1|1.3/1|1.3/1", "F84 八个 flag 型特性 命中 flag 时增伤、无招时不增", "%s" % tt.get("flagAtk"))
     ck(tt.get("punkDef") == "0.5/1", "F85 庞克摇滚 防守侧 声音招 ×0.5", "%s" % tt.get("punkDef"))
     ck(tt.get("inherAtk") == "1.3/1/1.3/1.3", "F86 栗子斧(草招∪锐利)/后街男孩(舞蹈∪踢)/枪手(波动) 扩类后仍 ×1.3，非触发招不增", "%s" % tt.get("inherAtk"))
-    ck(tt.get("atkKind") == "N=10 无ALLYONLY=OK 活力=1.4 远隔P=1.2 远隔NP=1.2 远隔S=1 猩P=1.5 猩S=1 钳P=1.2 钳S=1 贤S=1.5 贤P=1 技低=1.5 技高=1 胸C=1.3 胸N=1 核SE=1.35 核N=1 狙C=1.5 狙N=1 声S=1.2 声N=1",
-       "F89 进攻侧条件型增伤 10 条：物理/特殊/威力≤60/接触/相性≥2/会心/声音 逐项判定正确，且已剔除 APPLY_ON_ALLY_ONLY", "%s" % tt.get("atkKind"))
+    ck(tt.get("stAtk") == "毅力P0=1 毅力P1=1.5 毅力P毒=1.5 毅力S1=1 决心S0=1 决心S1=1.5 决心P1=1 中毒P0=1 中毒P1=1 中毒P毒=1.5 中毒S毒=1",
+       "F90 状态型进攻增伤：毅力/决心（异常+物理/特殊）与中毒激升（中毒+物理）逐项正确，未选状态时不生效", "%s" % tt.get("stAtk"))
+    ck(tt.get("atkKind") == "N=13 无ALLYONLY=OK 活力=1.4 远隔P=1.2 远隔NP=1.2 远隔S=1 猩P=1.5 猩S=1 钳P=1.2 钳S=1 贤S=1.5 贤P=1 技低=1.5 技高=1 胸C=1.3 胸N=1 核SE=1.35 核N=1 狙C=1.5 狙N=1 声S=1.2 声N=1",
+       "F89 进攻侧静态条件增伤 10 条：物理/特殊/威力≤60/接触/相性≥2/会心/声音 逐项判定正确，且已剔除 APPLY_ON_ALLY_ONLY", "%s" % tt.get("atkKind"))
     ck((tt.get("spdAbi") or "").endswith("|N=14"), "F87 SPD_ABI 收录 14 条速度修正特性（源码 .onStat 口径）", "%s" % tt.get("spdAbi"))
     ck("悠游自如=1.5:" in (tt.get("spdAbi") or "") and "轻装=2:" in (tt.get("spdAbi") or ""), "F88 天气类 ×1.5 与轻装 ×2 倍率区分正确（18.21 曾误写全线 ×2）", "%s" % tt.get("spdAbi"))
     ck(tt.get("tagPoison") == "毒", "F26 毒素吸收补为免疫毒", "%s" % tt.get("tagPoison"))
