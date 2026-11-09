@@ -6726,7 +6726,7 @@ function spdDefaultTarget(s){
 }
 function spdIsOffensive(s){var role=speedRole(s);return role==='fast'||role==='space'||bstI(s,1)>=110||bstI(s,3)>=110}
 function spdMainKind(s){return bstI(s,3)>bstI(s,1)?'特攻':'物攻'}
-function spdAtkAlloc(R,s,mainKind){var idx=mainKind==='特攻'?3:1;var atkEv=Math.min(R,252);return{hp:R-atkEv,atk:atkEv,idx:idx}}
+function spdAtkAlloc(R,s,mainKind){var idx=mainKind==='特攻'?3:1,subIdx=idx===3?1:3;var atkEv=Math.min(R,252);R-=atkEv;var hpEv=Math.min(R,252);R-=hpEv;return{hp:hpEv,atk:atkEv,sub:R,idx:idx,subIdx:subIdx}}
 function spdSliderBounds(s,M){var b=bstI(s,5);var lo=Math.floor((2*b+36)*0.9);var hi=Math.floor(spdMaxOf(s)*M);return{lo:lo,hi:hi}}
 function spdSliderPosToVal(s,p,M){var B=spdSliderBounds(s,M);if(B.hi<=B.lo)return B.lo;return Math.round(B.lo+(B.hi-B.lo)*(Math.max(0,Math.min(99,+p||0))/99))}
 function spdSliderValToPos(s,T,M){var B=spdSliderBounds(s,M);if(B.hi<=B.lo)return 99;return Math.max(0,Math.min(99,Math.round((T-B.lo)/(B.hi-B.lo)*99)))}
@@ -6869,14 +6869,17 @@ function spdSliderRender(){
     if(eAtk>0)h+='<div style="font-size:13.5px;color:var(--sub)">攻击EV '+eAtk+'（击杀线反解 e=252−4((m/倍率)−t0)）</div>';
     if(_useAtk){
       var _mk=spdMainKind(s),_aa=spdAtkAlloc(R,s,_mk);
+      var _subName=_aa.subIdx===3?'特攻':'物攻';
       var _aReal=2*bstI(s,_aa.idx)+31+Math.floor(_aa.atk/4)+5;
       var _hReal=2*bstI(s,0)+31+Math.floor(_aa.hp/4)+110;
+      var _subReal=2*bstI(s,_aa.subIdx)+31+Math.floor(_aa.sub/4)+5;
       h+='<div style="margin-top:10px;font-size:15px;font-weight:700">剩余 '+R+' EV：投'+_mk+'（进攻定位）</div>'+
-        '<div class="ev3" style="grid-template-columns:repeat(2,1fr)">'+
+        '<div class="ev3">'+
           '<div class="c"><div class="n">+'+_aa.atk+'</div><div class="l">'+_mk+'</div><div class="r">'+_aReal+'</div></div>'+
           '<div class="c"><div class="n">+'+_aa.hp+'</div><div class="l">HP</div><div class="r">'+_hReal+'</div></div>'+
+          '<div class="c"><div class="n">+'+_aa.sub+'</div><div class="l">'+_subName+'</div><div class="r">'+_subReal+'</div></div>'+
         '</div>'+
-        '<div style="font-size:13px;color:var(--sub);margin-top:5px">速攻/空间打手：主攻拉满，余 '+_aa.hp+' 点 HP；想改防守可切「耐久」</div>';
+        '<div style="font-size:13px;color:var(--sub);margin-top:5px">主攻拉满、HP 补厚，零头 '+_aa.sub+' 点给另一攻；想改防守可切「耐久」</div>';
     }else{
       var bulk=spdBulkAlloc(R,s,__spdSl.bias);
       if(__spdSl.bp>0){
@@ -16038,7 +16041,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.259';
+var ER_ENGINE_VER='v4.260';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
