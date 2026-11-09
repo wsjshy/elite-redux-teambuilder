@@ -6369,6 +6369,8 @@ function renderAbi(){
     cnt++;
     /* v4.41：持有者列表按本区块开关过滤（标题徽标「可选 N / 天性 N」与两列列表同源，故数字随过滤变化） */
     var _g0=own[a[0]]||{ab:[],inn:[]};
+    /* v4.252：判断「数据层真的没有任何物种拥有」，与「被开关过滤成 0」区分 */
+    var _zeroAll=(_g0.ab.length===0&&_g0.inn.length===0);
     var grp={ab:lkFilter(_g0.ab,optAbiFinal,optAbiMega),inn:lkFilter(_g0.inn,optAbiFinal,optAbiMega)};
     _hidN+=(_g0.ab.length-grp.ab.length)+(_g0.inn.length-grp.inn.length);
     var tl=[];
@@ -6378,6 +6380,7 @@ function renderAbi(){
     /* F⑪ 交互：标题行 + 「点击展开」提示均在 .abihd 内；整卡可点（含留白），详情区/按钮内点击不切换 */
     card.innerHTML='<div class="abihd" style="cursor:pointer"><b>'+esc(zh||en)+'</b> <span style="font-size:13.5px;color:var(--sub)">'+esc(en)+' #'+a[0]+'</span>'+
       '<span class="badge badge-res" style="float:right">可选 '+grp.ab.length+'</span><span class="badge badge-imm" style="float:right;margin-right:4px">天性 '+grp.inn.length+'</span>'+
+      (_zeroAll?'<span class="badge" style="float:right;margin-right:4px;background:#c0392b;color:#fff">本作无人拥有</span>':'')+
       '<div class="mini" style="color:var(--sub);margin-top:4px;clear:both">'+esc(desc.slice(0,120))+(desc.length>120?'…':'')+' <span style="color:var(--accent)">（点击展开详情卡）</span></div></div>'+
       '<div class="abimain" style="display:none">'+
         '<div class="sec" style="margin:8px 0"><h3>中文描述</h3><div style="font-size:14.5px;line-height:1.95">'+glossify(desc||'（无中文描述）')+'</div></div>'+
@@ -6385,7 +6388,7 @@ function renderAbi(){
           (tl.length?tl.map(function(x){return '• '+esc(x)}).join('<br>'):'<span style="color:var(--sub)">（数据层未登记标签，以下方「计算倍率」为准）</span>')+'</div></div>'+
          '<div class="sec" style="margin:8px 0"><h3>计算倍率（工具真正计入伤害的部分）</h3><div style="font-size:14.5px;line-height:1.9">'+
            (_src.length?_src.map(function(x){return '• '+esc(x)}).join('<br>'):'<span style="color:var(--sub)">（不在计算类判定表中：属速度 / 回合 / 命中 / 换场类效果，不产生伤害倍率；速度类见「速度线」页）</span>')+'</div></div>'+
-        '<div class="sec" style="margin:8px 0"><h3>持有者（分两列：可选池 / 天性固定）</h3><div class="abicol">'+
+        '<div class="sec" style="margin:8px 0"><h3>持有者（分两列：可选池 / 天性固定）</h3>'+(_zeroAll?'<div style="font-size:13.5px;line-height:1.75;color:#c0392b;margin:6px 0 8px">本作没有任何宝可梦拥有这个特性。源码里有它的实现，但没有分配给任何物种，所以配队、特性反查、速度线、伤害面板都不会出现它。</div>':'')+'<div class="abicol">'+
           abiOwnerCol('作为特性（可选池）',grp.ab)+abiOwnerCol('作为天性（固定）',grp.inn)+'</div></div>'+
       '</div>';
     card.onclick=function(ev){
@@ -15941,7 +15944,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.251';
+var ER_ENGINE_VER='v4.252';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
