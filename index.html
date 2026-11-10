@@ -334,6 +334,7 @@ details.inline>summary{cursor:pointer; font-size:14.5px; color:var(--sub)}
    注：`.bktabs` 为 sticky 且 z-index 高于 header(50)，滚动时以不透明底覆盖页眉、不遮正文。 */
 .l1hd{display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap}
 .l1sub{font-size:15px; color:var(--sub)}
+.mute15{font-size:15px; color:var(--sub)}   /* v4.272：抽屉标题里的英文名/编号，和内联 15px+--sub 统一走辅助类 */
 .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; align-items:center}
 .chip{display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:8px 14px; border:1px solid var(--line);
   border-radius:999px; background:var(--card); font-size:15px; cursor:pointer; font-family:inherit; color:inherit}
@@ -3680,7 +3681,7 @@ function sprRaw(id,cls){return sprEl('div',id,cls||'mcspr')}
 function openSp(s){
   try{var rb=JSON.parse(localStorage.getItem('er_recent')||'[]');rb=rb.filter(function(x){return x!==s.id});rb.unshift(s.id);if(rb.length>8)rb=rb.slice(0,8);localStorage.setItem('er_recent',JSON.stringify(rb));try{renderRecentChips()}catch(e){}}catch(e){}
   var base=s.base,names=['HP','攻击','防御','特攻','特防','速度'];
-  var html='<h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span style="font-size:15px;color:var(--sub)">'+esc(s.en)+' #'+s.id+'</span></h2>';
+  var html='<h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span class="mute15">'+esc(s.en)+' #'+s.id+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div>';
   /* v4.84 P1-1：组队建议 CTA 从 h2 标题行移出 → 独立醒目块（核心动作前置，非滚动优先；主 CTA 用 --accent 蓝） */
   html+='<div class="sec" style="margin:6px 0"><button class="btn" style="background:var(--accent);color:#fff;width:100%" onclick="gotoCoreFromSp(\''+s.id+'\')" title="进入核心配队 Tab，自动带出完整配队方案（队友/配招/性格）">🤖 以它为核心生成组队建议</button></div>';
@@ -4153,7 +4154,7 @@ function openMvById(id){
   if(m)openMv(m);
 }
 function openMv(m){
-  var html='<h2>'+esc(m[1])+' <span style="font-size:15px;color:var(--sub)">'+esc(m[2])+' #'+m[0]+'</span></h2>';
+  var html='<h2>'+esc(m[1])+' <span class="mute15">'+esc(m[2])+' #'+m[0]+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(m[3])+' '+splitLabel(m[4])+
     ' 威力 <b>'+(m[5]||'-')+'</b> 命中 <b>'+(m[6]||'-')+'</b> PP <b>'+m[7]+'</b> 先制 <b>'+(m[8]||'0')+'</b></div>';
   if(MV_PLACEHOLDER[''+m[0]])html+='<div class="tip tip-warn" style="font-size:14.5px">⚠ <b>本招未实装</b>：源码里它的效果是 EFFECT_PLACEHOLDER，脚本只做「扣 PP → 提示还没做好 → 结束」，<b>不会造成任何伤害或效果</b>。下面的名字、威力和描述来自数据层，不要按描述配招。<br><span style="color:var(--sub)">占位符机制在当前分支仍然存在；这份名单取自 2.65 招式数据表，新版数据表由工具生成、无法逐个核对招名。</span></div>';
@@ -6607,6 +6608,21 @@ var SPD_ABI=[
   {zh:'厚脂',mul:0.5,cond:'always',label:'始终',src:'THICK_BLUBBER L10915'}
 ];
 /* 返回 {zh,mul,label,down}；加速项优先（>1），全无加速才返回减速项。abis 与 inns 都要查。 */
+/* v4.272：SPD_ABI 里可能躺着「本代图鉴谁都没有」的行（例：慢启动 112，全库 0 持有者）。
+   它们永远不会命中，却会让用户照着去挑宝可梦 —— 在速度线页口径里点名。 */
+var _spdAbiNoH=null;
+function spdAbiNoHolders(){
+  if(_spdAbiNoH)return _spdAbiNoH;
+  var has={};
+  try{(ERDATA.species||[]).forEach(function(s){[].concat(s.abis||[],s.inns||[]).forEach(function(a){if(a)has[a]=1})})}catch(eScan){has=has||{}}
+  var out=[];
+  SPD_ABI.forEach(function(r){
+    var hit=false;
+    for(var a in has){var same=false;try{same=abiSame(r.zh,a)}catch(e2){same=(r.zh===a)}if(same){hit=true;break}}
+    if(!hit)out.push(r.zh);
+  });
+  _spdAbiNoH=out;return out;
+}
 function spdSpeedAbiOf(s){
   var pool=[].concat(s&&s.abis||[],s&&s.inns||[]);
   var up=null,dn=null;
@@ -7005,7 +7021,7 @@ function speedSliderHtml(s){
         '<input type="range" min="0" max="99" step="1" value="'+__spdSl.p+'" id="spdSlRange" style="width:100%;margin:4px 0;min-height:44px;accent-color:var(--accent)" oninput="spdSliderOn(this.value)">'+
         '<div class="spdEnds"><span>慢 '+spdSliderBounds(s,1).lo+'</span><span id="spdSlRank"></span><span>快 '+spdMaxOf(s)+'</span></div>'+
         '<div class="spdQuick"><span class="qlab">常用速度：</span>'+
-          ['P50','P75','P90','P95','P99'].map(function(a){var v=spdPctileVal(+a.slice(1)),_mx=spdMaxOf(s),_un=(v>_mx);return '<span class="q" onclick="spdSliderSetVal('+v+')" style="'+(_un?'opacity:.42;':'')+'" title="'+(_un?('这只上限 '+_mx+'，够不到 '+a+'（'+v+'）——点了只会到上限'):('吸附到 '+a+'（'+v+'）'))+'">'+v+'</span>'}).join('')+
+          ['P50','P75','P90','P95','P99'].map(function(a){var v=spdPctileVal(+a.slice(1)),_mx=spdMaxOf(s),_un=(v>_mx);return '<span class="q" onclick="spdSliderSetChip('+v+',\''+a+'\')" style="'+(_un?'opacity:.42;':'')+'" title="'+(_un?('这只上限 '+_mx+'，够不到 '+a+'（'+v+'）——点了只会到上限'):('吸附到 '+a+'（'+v+'）'))+'">'+v+'</span>'}).join('')+
         '</div>'+
         '<div id="spdPrioBox" style="margin-top:2px"></div>'+  /* v4.269：先制结论 */
 '<div id="spdMultiBox"></div>'+
@@ -7089,6 +7105,14 @@ function speedSliderHtml(s){
 function spdTgl(k){var _oT=spdSliderPosToVal(__spdSl.s,__spdSl.p,spdModMul());__spdSl[k]=!__spdSl[k];var _nM=spdModMul();__spdSl.p=spdSliderValToPos(__spdSl.s,_oT,_nM);spdSliderRender()}
 function spdSet(k,v){__spdSl[k]=v;spdSliderRender()}
 function spdSliderOn(p){__spdSl.p=+p;spdSliderRender()}
+/* v4.272：常用速度芯片够不到本只上限时，别只是把滑块推到头的静默钳制——说清「上限多少、想更快靠什么」 */
+function spdSliderSetChip(v,lab){
+  try{
+    var s=__spdSl&&__spdSl.s,mx=s?spdMaxOf(s):0;
+    if(s&&(+v>mx)){spdSliderSetVal(mx);toast('这只速度上限 '+mx+'（252 EV + 速度性格 + 特性全算满），够不到 '+lab+'（'+v+'）—— 想再快只能靠围巾 / 顺风 / 戏法空间');return}
+  }catch(eChip){__spdSl=__spdSl||null}
+  spdSliderSetVal(v);
+}
 function spdSliderSetVal(v){var nM=spdModMul();var B=spdSliderBounds(__spdSl.s,nM);v=Math.max(B.lo,Math.min(B.hi,+v));__spdSl.p=spdSliderValToPos(__spdSl.s,v,nM);var r=$('spdSlRange');if(r)r.value=__spdSl.p;spdSliderRender()}
 /* v4.267：多目标对比取「最省配法」——所需 EV 最小者；平手时优先中性性格（不牺牲其他属性） */
 function spdMultiPick(plans){
@@ -7931,7 +7955,8 @@ function speedRender(){if((!window.__erReady&&!window.__ER_PARTIAL)||!ERDATA.spe
   h+='<span style="font-size:13.5px;color:var(--sub)">属性</span>';
   ['一般','火','水','草','电','冰','格斗','毒','地面','飞行','超能力','虫','岩石','幽灵','龙','钢','恶','妖精'].forEach(function(t){h+=ch('type',t,t)});
   h+='</div></div>';
-  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码逐条实算（共 17 条速度特性）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。</div>';
+  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码逐条实算（共 17 条速度特性）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。'
++((typeof spdAbiNoHolders==='function'&&spdAbiNoHolders().length)?('<br><span style="color:var(--sub)">其中「'+spdAbiNoHolders().join(' / ')+'」在本代图鉴暂无任何持有者（保留只为机制备案，永远不会命中——别按它去挑宝可梦）。</span>'):'')+'</div>';
 
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
   var el=document.getElementById('speedBox');if(el)el.innerHTML=h;
@@ -16371,7 +16396,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.271';
+var ER_ENGINE_VER='v4.272';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
