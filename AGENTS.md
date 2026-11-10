@@ -2692,6 +2692,7 @@ GitHub 首页默认显示 master，所以看起来「停滞」。
 | v4.287 | 1,742,548 | 8EEA1555F1227285404004F23A42B65EEDFA4CE2 | 线上一致（gh-pages `8b52b84`，逐字节核验；commit `1470c27`） |
 | v4.289 | 1755472 | FF4CA4C0438BA564CECC248FA8A3D97FE78B92E0 | 线上一致（gh-pages `3958c85`，逐字节核验） |
 | v4.290 | 1,757,110 | 633E770FDF6C8BB71B24398D858AEA043AD96D3E | 线上一致（gh-pages `5a04fb2`，逐字节核验） |
+| v4.291 | 1758751 | 待回填 | 待部署（空白区滚轮转发 + 弹窗点击背景关闭） |
 | v4.265 | 1,667,029 | E26FC629007C009ECA51ED3F10CC31DCACE2EC73 | 线上一致（gh-pages a7f67f2，逐字节核验） |
 | v4.264 | 1,664,224 | 77A945C686E24B2548792EDA7DBCC6646ABED7BE | 线上一致（gh-pages dd6fb6e，逐字节核验） |
 | v4.263 | 1,659,525 | 1E2AA5454F75BCFDB227BD1B35540FF920CFD929 | 线上一致（gh-pages ab2c072 / master fc089ba） |
@@ -4201,6 +4202,25 @@ if(!natOv && M===1 && role!=='space' && spdIsSingleAttacker(s)){
 - 「已经带」必须写命中的那一招：组级判断只说明「组里有一招在四槽」，直接拿组里第一项当文案会写出「已经带剑舞」而实际带的是龙之舞/诅咒。
 - 建议必须跟已有的 EV 对账：盔甲鸟速 EV 已经 252，还劝「补到 252」是假的；先算 needEV 和 curEV 再决定是「只改性格」还是「补 N 点」。
 - 够不到的分位要说上限：图图犬最快只到 P47，写「先手清钉」会让人以为能抢先手，必须补一句「比它快的撒钉手照样先出手」。
+
+## v4.291（2026-11-10）：空白区也能滚轮，弹窗点背景就关
+
+### A. 动机
+- 用户截图批注两条：「鼠标滚轮滑动的时候只能放在中间，放在左右空白区域的时候滑动不了」；「在弹出的弹窗，我可以在空白的地方点击自动关闭弹窗，而不用再拉上去点击关闭」。
+- 根因是 `main` 被设计成独立滚动容器（`max-width:1200px; margin:0 auto; height:calc(100vh-51px); overflow-y:auto`），宽屏左右空白属于不滚动的 body，滚轮落在空白处没有任何元素可滚；弹窗侧只有 glModal/mvDrawer 接了背景点击，spDrawer 等没有。
+
+### B. 做法
+- 一个 document 级 wheel 监听（passive）：先从事件目标向上找「overflowY 为 auto/scroll 且该方向还有滚动空间」的祖先，找到就交回原生；找不到则把 deltaY 转发给兜底滚动体——有打开的 `.modal` 时转其 `.mbox`，否则转 `main`。不 preventDefault、不新增滚动容器，嵌套横向滚动条（chips-horiz 等）因只看 overflowY 不会被误判。
+- 一个 document 级 click 委托：事件目标本身就是带 `.open` 的 `.modal`（即点在遮罩而非 `.mbox` 内容上）时，按 id 映射调既有关闭函数（spDrawer/anDetail/anPicker/l1Modal/ppModal/glModal/mvDrawer），spDrawer 的兜底分支同时还原 body.overflow。
+- 刻意排除：导入清队确认框 `#impConfirmModal` 不是 `.modal` 类，保持「禁背景点关、仅取消/继续/Esc」的防误触设计；v4.124 对 spDrawer「点背景不误关」的旧决定被本次用户明确指令覆盖。
+
+### C. 实跑
+- 真实浏览器：body 上派发 wheel（±120），main.scrollTop 0→120→0；spDrawer 打开后点 `.mbox` 内部不关，点遮罩关闭且 body 滚动锁还原；弹窗遮罩上滚轮，`.mbox` scrollTop 0→150。
+- 门禁：6 块 node --check 全过，smoke 33/33（第一版用 6 个空 try/catch 使静默 catch 390→396，改 typeof 守卫后零新增），probe ALL PASS。
+
+### D. 教训
+- 「独立滚动容器」模式天然带空白区滚轮盲区，要么让容器铺满宽度（内容再内层收口），要么在文档级做滚轮转发；选后者因为不动 sticky 布局。
+- smoke 的静默 catch 计数会惩罚防御性编程：能用 `typeof fn==='function'` 守卫就别写空 catch，否则基线数字一涨，所有版本都要重新解释。
 
 ## v4.290（2026-11-10）：建议开始考虑游戏进程——等级、教学、Mega 石
 
