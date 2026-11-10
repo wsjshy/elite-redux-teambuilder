@@ -6978,10 +6978,77 @@ function _tlkMvTxt(b){
 function _tlkAbi(s,b){
   try{var info=anRowOf(s,b);return (info&&info.abi)||""}catch(eA){return ""}
 }
+/* v4.282：冲突/缺位到最后一步——从全图鉴里找「同定位替补」。
+   两个条件都要真：① 能学（learnHasName）；② 推荐配置里真带了（deriveBuilds 主推流派的配招）。
+   只做建议，不改队伍；扫描预算给死，避免同步渲染卡顿（v4.68p0 的教训）。 */
+function _tlkFind(groups,capSp,tset,lim){
+  var have={},out=[],scan=0,tt={};
+  (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
+  var okG=function(t){
+    for(var i=0;i<groups.length;i++){
+      var g=groups[i],hit=false;
+      for(var j=0;j<g.length;j++){if(learnHasName(t,g[j])){hit=true;break}}
+      if(!hit)return false;
+    }
+    return true;
+  };
+  var hitSet=function(b,groups){
+    for(var i=0;i<groups.length;i++){
+      var g=groups[i],hit=false,set=_tlkMvSet(b);
+      for(var j=0;j<g.length;j++){if(set[g[j]]){hit=true;break}}
+      if(!hit)return false;
+    }
+    return true;
+  };
+  ERDATA.species.forEach(function(t2){
+    if(out.length>=(lim||3)||scan>=14)return;
+    if(t2.id==null||have[t2.id])return;
+    if(!isFinalSp(t2)||!isValidSp(t2))return;
+    if(capSp&&bstI(t2,5)>capSp)return;
+    if(t2.t1&&tt[t2.t1])return;
+    if(!okG(t2))return;
+    scan++;
+    var b=null;
+    try{b=(deriveBuilds(t2,tset)||[])[0]}catch(eF1){b=null}
+    if(!b||!hitSet(b,groups))return;
+    out.push({zh:t2.zh,mv:_tlkMvTxt(b),v:bstI(t2,5)});
+  });
+  return out;
+}
+/* v4.282b：严格候选（推荐配置里真带）为空时的兜底——只按能学筛，
+   但输出必须写明「默认配招不带，要手动给一个槽」，不许伪装成已配。 */
+function _tlkFindLoose(groups,capSp,tset,lim){
+  var have={},out=[],scan=0,tt={};
+  (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
+  ERDATA.species.forEach(function(t2){
+    if(out.length>=16||scan>=24)return;
+    if(t2.id==null||have[t2.id])return;
+    if(!isFinalSp(t2)||!isValidSp(t2))return;
+    if(capSp&&bstI(t2,5)>capSp)return;
+    if(t2.t1&&tt[t2.t1])return;
+    var ok=true;
+    for(var i=0;i<groups.length;i++){
+      var g=groups[i],hit=false;
+      for(var j=0;j<g.length;j++){if(learnHasName(t2,g[j])){hit=true;break}}
+      if(!hit){ok=false;break}
+    }
+    if(!ok)return;
+    scan++;
+    var b=null,mv="";
+    try{b=(deriveBuilds(t2,tset)||[])[0]}catch(eL1){b=null}
+    mv=b?_tlkMvTxt(b):"";
+    out.push({zh:t2.zh,mv:mv,v:bstI(t2,5),tsp:learnHasName(t2,"高速旋转")?0:1});
+  });
+  out.sort(function(a,b){return (a.tsp-b.tsp)||(b.v-a.v)});
+  return out.slice(0,lim||2);
+}
 function teamSpdLinkHtml(_R){
   try{
     var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
     if(!tm||tm.length<2)return "";
+    var tset=tm.map(function(x){return (x&&x.s)||x});
+    var cand=function(g,cap,lim,loose){try{var c=_tlkFind(g,cap,tset,lim);return (c&&c.length)?c:((loose===false)?[]:(_tlkFindLoose(g,cap,tset,lim)||[]))}catch(eF0){return []}};
+    var candTxt=function(list){return list.map(function(x){return "<b>"+x.zh+"</b><span style='color:var(--sub);font-size:12.5px'>　"+x.mv+"｜速"+x.v+"</span>"}).join("；")};
     var q=speedPctiles();
     var R={space:[],wind:[],spin:[],prio:[],fullhp:[],qf:[],bell:[],setst:[]};
     var ableSpace=[],ableWind=[],ableSpin=[],ableAbi=[];
@@ -7054,6 +7121,7 @@ function teamSpdLinkHtml(_R){
       V.push("<b style='color:var(--warnred)'>空间和顺风不能当同一套主轴</b>："+names(R.wind).join("/")
         +" 的推荐配置里就带顺风（"+w.mv+"）——顺风让全队变快，空间里却越慢越先手，同一局两套互抵。"
         +altHint(w,"顺风")
+        +(function(){if(altOf(w,"顺风"))return "";var c=cand([["戏法空间"]],60,3);return c.length?("　它也没有不带顺风的流派——要么换一个不带顺风的空间手："+candTxt(c)+"。"):""})()
         +"；两只都留着的话，开风只在你**不打算开空间**的那些回合用。");
     }
     if(R.space.length&&fastN.length){
@@ -7063,7 +7131,8 @@ function teamSpdLinkHtml(_R){
     if(R.fullhp.length&&!R.spin.length){
       V.push("<b style='color:var(--warnred)'>满血先制没人清钉</b>："+names(R.fullhp).join("/")
         +" 的先制条件是满血，而队里<b>没有一只实际配了</b>高速旋转 / 清除浓雾——钉子一落地就先制失效。"
-        +(ableSpin.length?("可换配："+ableSpin.join(" / ")+" 能学，只是推荐配置没带，把一个功能槽换成它就能补上。"):"（这只队里没人能学清钉，得从选人改。）"));
+        +(ableSpin.length?("可换配："+ableSpin.join(" / ")+" 能学，只是推荐配置没带，把一个功能槽换成它就能补上。"):"（这只队里没人能学清钉——得从选人改。）"
+          +(function(){var s1=cand([["高速旋转","清除浓雾"]],0,3,false);if(s1.length)return "<div style='margin-top:2px;color:var(--sub)'>换人候选（推荐配置里就带清钉）："+candTxt(s1)+"</div>";var s2=cand([["高速旋转","清除浓雾"]],0,3);return s2.length?("<div style='margin-top:2px;color:var(--sub)'>换人候选（能学清钉，但推荐配置默认不带——选进来之后要手动把一个槽换成它）："+candTxt(s2)+"</div>"):""})()));
     }
     if(R.qf.length&&R.bell.length){
       var both=R.qf.filter(function(x){return R.bell.some(function(y){return y.zh===x.zh})});
@@ -7084,7 +7153,12 @@ function teamSpdLinkHtml(_R){
     if(spans){
       V.push("<b style='color:var(--warnred)'>三种控速一个都没带</b>：既没有一只实际配了戏法空间，也没有一只配了顺风（围巾只算单只 ×1.5），全队最快 "
         +fastest.v+" 低于 P75 "+q.P75+"——这就是「联动差」最常见的样子。"
-        +(ableSpace.length||ableWind.length?("可换配："+(ableSpace.length?("能学空间的 "+ableSpace.join("/")+" "):"")+(ableWind.length?("能学顺风的 "+ableWind.join("/")):"")+"——不是互斥，只是没配。"):""));
+        +(ableSpace.length||ableWind.length?("可换配："+(ableSpace.length?("能学空间的 "+ableSpace.join("/")+" "):"")+(ableWind.length?("能学顺风的 "+ableWind.join("/")):"")+"——不是互斥，只是没配。"):"（这只队里没人能学空间/顺风。）")
+        +(function(){
+          if(ableSpace.length||ableWind.length)return "";
+          var c=cand([["戏法空间"]],60,2).concat(cand([["顺风"]],0,2));
+          return c.length?("<div style='margin-top:2px;color:var(--sub)'>换人候选（推荐配置里就带控速）："+candTxt(c)+"</div>"):"";
+        })());
     }
     var ableLine=(ableSpace.length||ableWind.length)
       ?("<div style='font-size:13px;color:var(--sub);margin-top:3px'>能学但没配（这些不算冲突，只是没选）："
@@ -16734,7 +16808,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.281';
+var ER_ENGINE_VER='v4.282';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
