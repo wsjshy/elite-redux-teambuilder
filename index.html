@@ -5829,7 +5829,7 @@ function buildRowJs(src,pos,off,spec,lv,exp,evs,moves4,item,stats,pp,enc,extra12
   var lup=(sp?(sp.lv||[]):[]).slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1]}).slice(0,8);
   var lv_up=lup.map(function(p){var m=MV[p[1]];return (m?m[1]:p[1])+'@'+p[0]}).join(' ');
   var nUp=(sp?(sp.lv||[]):[]).length,nTut=(sp?(sp.tut||[]):[]).length;
-  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,'主特性(当前生效)':abis[abiSel]||'',可选特性2:abis[1]||'',可选特性3:abis[2]||'',主特性选中索引:abiSel,'天性1(固定)':inns[0]||'','天性2(固定)':inns[1]||'','天性3(固定)':inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,性格:NATURE_ZH[nature]||'',性格画像:nprof,OTID:otidHex||'','+0x12(语言/等级/闪光/特性)':extra12?('0x'+extra12.toString(16).toUpperCase()):'',加密块:enc||''};
+  return {来源:src,位置:pos,偏移:'0x'+off.toString(16).toUpperCase(),图鉴编号:spec,宝可梦:sp?sp.zh:en,英文名:en,等级:lv,EXP:exp,属性1:t1,属性2:t2,种族HP:base[0],种族攻击:base[1],种族防御:base[2],种族特攻:base[3],种族特防:base[4],种族速度:base[5],EV_HP:ev_std[0],EV_攻击:ev_std[1],EV_防御:ev_std[2],EV_特攻:ev_std[3],EV_特防:ev_std[4],EV_速度:ev_std[5],能力_当前HP:cur,能力_最大HP:mx,能力_攻击:atk,能力_防御:dfn,能力_速度:spe,能力_特攻:spa,能力_特防:sdf+cap,'主特性(当前生效)':abis[abiSel]||'',可选特性2:abis[1]||'',可选特性3:abis[2]||'',主特性选中索引:abiSel,'天性1(固定)':inns[0]||'','天性2(固定)':inns[1]||'','天性3(固定)':inns[2]||'',道具:itemOf(item),招式1:mvCell(m1),招式2:mvCell(m2),招式3:mvCell(m3),'招式4':mvCell(m4),PP1:pp?pp[0]:'',PP2:pp?pp[1]:'',PP3:pp?pp[2]:'',PP4:pp?pp[3]:'',可学_升级:nUp,可学_教学:nTut,可学_蛋:0,可学_TMHM:0,'升级招式(前8)':lv_up,性格:NATURE_ZH[nature]||'',性格画像:nprof,OTID:otidHex||'','+0x12(语言/等级/闪光/特性)':extra12?('0x'+extra12.toString(16).toUpperCase()):'',加密块:enc||'',道具id:item};
 }
 function parseSavBytes(d){
   var recs=scanRecords(d);
@@ -7360,6 +7360,30 @@ function _tcSwapOwn(row,want){
   if(!best)return null;
   return {zh:best,want:(want&&want[0])||''};
 }
+function _mvLearnInfo(s,mvId){
+  var need=null;
+  (s.lv||[]).forEach(function(p){if(String(p[1])===String(mvId)&&(need===null||p[0]<need))need=p[0]});
+  if(need!==null)return {kind:'lv',needLv:need};
+  var isTut=(s.tut||[]).some(function(m){return String(m)===String(mvId)});
+  return isTut?{kind:'tut'}:null;
+}
+function _mvAvailNote(s,mvId,row){
+  if(!row)return '';
+  var info=_mvLearnInfo(s,mvId);if(!info)return '';
+  var cur=+(row.等级||0);
+  if(info.kind==='lv'){
+    if(cur<info.needLv)return "<span style='color:var(--warnred);font-weight:700'>这只 Lv"+cur+" 还学不到，要 Lv"+info.needLv+" 才解锁——当前进程换不了，先练级</span>";
+    return '';
+  }
+  return "<span style='color:#b26a00'>教学招式：需找教学 NPC 教学（存档无法确认是否已教）</span>";
+}
+function _megaNeedNote(s,row){
+  if(!isMegaForm(s))return '';
+  var heldId=row?(+(row.道具id)||0):0;
+  if(heldId>=748&&heldId<=969)return "<span style='color:#b26a00'>这只正持有对应进化石，对战还需<b>超级手镯</b>（背包未解析，无法确认是否持有）</span>";
+  if(row)return "<span style='color:#b26a00'>Mega 形态需<b>超级手镯 + 对应进化石</b>（背包未解析，无法确认是否持有）</span>";
+  return "<span style='color:var(--warnred);font-weight:700'>Mega 形态需<b>超级手镯 + 对应进化石</b>，背包未解析无法确认，取得前用不了</span>";
+}
 function _tcSwapFor(b,names){
   var slots=((b&&b.mv&&b.mv.main)||[]).slice();
   if(!slots.length||!names||!names.length)return null;
@@ -7514,6 +7538,7 @@ function _tcFixHtml(kind,tset){
           var swO=_tcSwapOwn(x.own,want);
           noteO=swO?("<span style='color:#b26a00'>改槽：把「"+swO.zh+"」换成「"+swO.want+"」（其余三招照存档）</span>")
             :("<span style='color:#b26a00'>存档这四招全是强化/钉子，腾槽得你自己定砍哪一招</span>");
+          if(swO){var _spO=speciesById(x.own.图鉴编号);noteO+=_mvAvailNote(_spO,mvIdByZhOrEn(swO.want),x.own)}
         }
         if(kind==="clear"){
           try{
@@ -7536,6 +7561,7 @@ function _tcFixHtml(kind,tset){
             }
           }catch(eSpdO){eSpdO.name}
         }
+        noteO+=_megaNeedNote(x.s,x.own);
         conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>存档实配：特性 <b>"+(x.own['主特性(当前生效)']||'—')+"</b>"
           +"　道具 "+(x.own.道具||"—")+"　性格 <b>"+(x.own.性格||"—")+"</b>　EV "+_ownEvAry(x.own).join("/")+"　"+noteO+"</div>";
       }else{
@@ -7564,6 +7590,7 @@ function _tcFixHtml(kind,tset){
             }else note+="<span style='color:var(--sub)'>　速度已经能先手，清钉前不用调</span>";
           }catch(eSpd){eSpd.name}
         }
+        note+=_megaNeedNote(x.s,null);
         conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>特性 <b>"+(info.abi||"—")+"</b>"
           +"　道具 "+(info.item||"—")+"　性格 <b>"+(info.nat||"—")+"</b>　EV "
           +[0,1,2,3,4,5].map(function(i){return (+(evs[i]||0))}).join("/")+"　"+note+"</div>";
@@ -17377,7 +17404,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.289';
+var ER_ENGINE_VER='v4.290';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
