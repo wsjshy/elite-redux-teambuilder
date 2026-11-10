@@ -2722,6 +2722,7 @@ function anRender(R){
   /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
   try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
   try{var _tlk=teamSpdLinkHtml();if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
+  try{var _tck=teamCheckHtml();if(_tck)h+=anCard(_tck)}catch(eTck){eTck.name}
   try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
   try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
@@ -3108,6 +3109,7 @@ function anSnapBlockHtml(R,title,badge){
   try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
   try{var _tsc=teamSpeedCardHtml(R);if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
   try{var _tlk=teamSpdLinkHtml(R);if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
+  try{var _tck=teamCheckHtml(R);if(_tck)h+=anCard(_tck)}catch(eTck){eTck.name}
   try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* 打击面覆盖（同源 anRender ③ 区块口径） */
   try{
@@ -6984,6 +6986,9 @@ function _tlkAbi(s,b){
 function _tlkFind(groups,capSp,tset,lim){
   var have={},out=[],scan=0,tt={};
   (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
+  var wcount={},immm={},xx={};
+  (tset||[]).forEach(function(x){if(!x)return;var _w=_tcWkOf(x),_i=_tcImmOf(x);for(var _k in _w){if(_w.hasOwnProperty(_k))wcount[_k]=(wcount[_k]||0)+1}for(var _k2 in _i){if(_i.hasOwnProperty(_k2))immm[_k2]=1}});
+  var wkBad=function(t2){var _w=_tcWkOf(t2);for(var _k in _w){if(_w.hasOwnProperty(_k)&&(_k in xx===false)&&(wcount[_k]||0)>=2&&!immm[_k])return true}return false};
   var okG=function(t){
     for(var i=0;i<groups.length;i++){
       var g=groups[i],hit=false;
@@ -7006,6 +7011,7 @@ function _tlkFind(groups,capSp,tset,lim){
     if(!isFinalSp(t2)||!isValidSp(t2))return;
     if(capSp&&bstI(t2,5)>capSp)return;
     if(t2.t1&&tt[t2.t1])return;
+    if(wkBad(t2))return;
     if(!okG(t2))return;
     scan++;
     var b=null;
@@ -7020,12 +7026,16 @@ function _tlkFind(groups,capSp,tset,lim){
 function _tlkFindLoose(groups,capSp,tset,lim){
   var have={},out=[],scan=0,tt={};
   (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
+  var wcount={},immm={},xx={};
+  (tset||[]).forEach(function(x){if(!x)return;var _w=_tcWkOf(x),_i=_tcImmOf(x);for(var _k in _w){if(_w.hasOwnProperty(_k))wcount[_k]=(wcount[_k]||0)+1}for(var _k2 in _i){if(_i.hasOwnProperty(_k2))immm[_k2]=1}});
+  var wkBad=function(t2){var _w=_tcWkOf(t2);for(var _k in _w){if(_w.hasOwnProperty(_k)&&(_k in xx===false)&&(wcount[_k]||0)>=2&&!immm[_k])return true}return false};
   ERDATA.species.forEach(function(t2){
     if(out.length>=16||scan>=24)return;
     if(t2.id==null||have[t2.id])return;
     if(!isFinalSp(t2)||!isValidSp(t2))return;
     if(capSp&&bstI(t2,5)>capSp)return;
     if(t2.t1&&tt[t2.t1])return;
+    if(wkBad(t2))return;
     var ok=true;
     for(var i=0;i<groups.length;i++){
       var g=groups[i],hit=false;
@@ -7174,6 +7184,116 @@ function teamSpdLinkHtml(_R){
         :"<div style='margin-top:4px;font-size:14px;color:var(--ok,#2e7d32)'>按配置看没有互相拖的地方：空间 / 顺风 / 先制 / 清钉这几件事彼此不冲突。</div>")
       +"</div>";
   }catch(eTL){return ""}
+}
+/* v4.283：配队体检卡——把网上通用的四条配队口径落成可计算的判定：
+   ① Rule of Two（同一弱点最多 2 只，除非有硬解免疫）② 胜负手（谁强化、谁收尾）
+   ③ 钉子双向（谁撒、谁清）④ 角色压缩（一只扛多种功能时的断点）。
+   全部读主推配置，不读「能不能学」。 */
+var TC_SETUP=["剑舞","龙之舞","蝶舞","冥想","诡计","诅咒","健美","巨大化","破壳","腹鼓","磨爪","铁壁","集气"];
+var TC_HAZ={set:["隐形岩","撒菱","毒菱","黏网","黏黏网"],clr:["高速旋转","清除浓雾"]};
+var TC_WKCAP=2;
+function _tcTypes(){return (ERDATA&&ERDATA.types)?ERDATA.types:[]}
+function _tcWkOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)>1)r[tp]=1}catch(eW){eW.name}});return r}
+function _tcImmOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)===0)r[tp]=1}catch(eI){eI.name}});return r}
+function teamCheckHtml(_R){
+  try{
+    var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
+    if(!tm||tm.length<3)return "";
+    var mem=[],wk={},imm={};
+    tm.forEach(function(s){
+      if(!s)return;
+      var bs=[],b=null,set={},abi="";
+      try{bs=deriveBuilds(s,tm)||[]}catch(eB9){bs=[]}
+      b=bs.length?bs[0]:null;
+      set=_tlkMvSet(b);
+      try{abi=(anRowOf(s,b)||{}).abi||""}catch(eA9){abi=""}
+      var w=_tcWkOf(s),i2=_tcImmOf(s);
+      for(var k in w){if(w.hasOwnProperty(k))wk[k]=(wk[k]||0)+1}
+      for(var k2 in i2){if(i2.hasOwnProperty(k2))imm[k2]=1}
+      mem.push({zh:s.zh,s:s,mv:_tlkMvTxt(b),set:set,abi:abi,w:w,v:spdViewValOf(s)});
+    });
+    var rows="",V=[];
+    var T=_tcTypes();
+    /* ① Rule of Two */
+    var over=[];
+    T.forEach(function(tp){if((wk[tp]||0)>TC_WKCAP)over.push({tp:tp,n:wk[tp],imm:!!imm[tp]})});
+    var lead="";
+    if(over.length){
+      var hard=over.filter(function(x){return !x.imm});
+      if(hard.length){
+        lead=lead+"<b style='color:var(--warnred)'>弱点超标（同一弱点超过 "+TC_WKCAP+" 只）</b>："
+          +hard.map(function(x){return x.tp+"×"+x.n}).join("、")
+          +"——这几种属性只要对手带一个通用招（比如地震、岩崩、冰光）就能连着打穿。"
+          +"要么把它们分散到不同属性，要么补一只免疫 "
+          +hard.map(function(x){return x.tp}).join("/")+" 的队友。";
+      }else{
+        lead=lead+("<span style='color:var(--ok,#2e7d32)'>弱点集中但有硬解</span>："
+          +over.map(function(x){return x.tp+"×"+x.n}).join("、")+"——队里有免疫，可以靠换人接住，不算硬伤。");
+      }
+    }else{
+      lead=lead+("<span style='color:var(--ok,#2e7d32)'>弱点分布过关</span>：没有一种属性被 "+ (TC_WKCAP+1) +" 只以上同时弱。");
+    }
+    /* ② 胜负手 */
+    var boost=mem.filter(function(x){return TC_SETUP.some(function(n){return x.set[n]})});
+    var fast=mem.filter(function(x){return x.v>=speedPctiles().P90});
+    if(boost.length){
+      rows+="<div style='display:flex;gap:6px;font-size:14px;line-height:1.55;margin:3px 0'>"
+        +"<span style='flex:0 0 78px;color:#7e57c2;font-weight:700'>胜负手</span>"
+        +"<span style='flex:1'>"+boost.map(function(x){
+            var st=TC_SETUP.filter(function(n){return x.set[n]}).join("+");
+            return "<b>"+x.zh+"</b><span style='color:var(--sub);font-size:12.5px'>　"+st+"｜"+x.mv+"</span>";
+          }).join("<br>")+"</span></div>";
+      var hasClr=mem.some(function(x){return TC_HAZ.clr.some(function(n){return x.set[n]})});
+      var hasSet=mem.some(function(x){return TC_HAZ.set.some(function(n){return x.set[n]})});
+      V.push("强化套路在 "+boost.map(function(x){return x.zh}).join("/")+" 身上——它要的是「对手已经被磨到强化后能一击带走」，所以 "
+        +(hasSet?"队里有撒钉，方向是对的":"队里<b>没有撒钉</b>，强化前的削血只能靠硬打")
+        +"；"+(hasClr?"清钉也有了，强化那只上场时不会被钉子扣掉关键血线":"但<b>没人清钉</b>，强化那只多吃一次入场伤害就少一档强化空间")
+        +"。");
+    }else{
+      V.push("<b style='color:var(--warnred)'>没有明确的收尾手段</b>：六只的推荐配置里都没有强化招（剑舞/龙舞/蝶舞/冥想这类），"
+        +(fast.length?"只能靠 "+fast.slice(0,3).map(function(x){return x.zh}).join("/")+" 这些快攻手正面压死。":"而全队也没有一只到 P90，"
+          +"残局没人能收——这是「打得动但赢不下」的典型。")
+        +"");
+    }
+    /* ③ 钉子双向 */
+    var setter=mem.filter(function(x){return TC_HAZ.set.some(function(n){return x.set[n]})});
+    var clrer=mem.filter(function(x){return TC_HAZ.clr.some(function(n){return x.set[n]})});
+    rows+="<div style='display:flex;gap:6px;font-size:14px;line-height:1.55;margin:3px 0'>"
+      +"<span style='flex:0 0 78px;color:#2e7d32;font-weight:700'>钉子</span><span style='flex:1'>"
+      +"撒："+(setter.length?setter.map(function(x){return "<b>"+x.zh+"</b><span style='color:var(--sub);font-size:12.5px'>　"+x.mv+"</span>"}).join("；"):"<span style='color:var(--warnred)'>没人配</span>")
+      +"<br>清："+(clrer.length?clrer.map(function(x){return "<b>"+x.zh+"</b><span style='color:var(--sub);font-size:12.5px'>　"+x.mv+"</span>"}).join("；"):"<span style='color:var(--warnred)'>没人配</span>")
+      +"</span></div>";
+    if(!setter.length&&!clrer.length){
+      V.push("<b style='color:var(--warnred)'>钉子是 0:0</b>：既没人撒也没人清——这种队伍在长局里永远吃亏："
+        +"对手撒一次钉，你每次换人都被扣血，而对手换人零成本。至少补一个方向（撒或清），方向不同优先保命就先清。");
+    }else if(!clrer.length){
+      V.push("会撒不会清：对手一旦也撒钉，你会被自己的换人节奏拖死——清钉这一槽最好还是留出来。");
+    }else if(!setter.length){
+      V.push("会清不会撒：长局里少一层「对手换人就要付钱」的压力，强化套路也更难落地。");
+    }
+    /* ④ 角色压缩 */
+    var comp=mem.map(function(x){
+      var jobs=[];
+      if(TC_HAZ.clr.some(function(n){return x.set[n]}))jobs.push("清钉");
+      if(TC_HAZ.set.some(function(n){return x.set[n]}))jobs.push("撒钉");
+      if(x.set["治愈铃声"]||x.set["芳香治疗"])jobs.push("队医");
+      if(x.set["戏法空间"])jobs.push("空间");
+      if(x.set["顺风"])jobs.push("顺风");
+      if(TC_SETUP.some(function(n){return x.set[n]}))jobs.push("强化");
+      return {zh:x.zh,jobs:jobs};
+    }).filter(function(x){return x.jobs.length>=2});
+    if(comp.length){
+      V.push("<span style='color:var(--sub)'>角色集中在少数几只上</span>："
+        +comp.map(function(x){return x.zh+"（"+x.jobs.join("+")+"）"}).join("、")
+        +"——这是好事（一只顶两个位），但也是断点：它倒了这几个功能同时消失。");
+    }
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点分布 · 胜负手 · 钉子 · 角色压缩）</h3>"
+      +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>全部按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表。</div>"
+      +lead
+      +rows
+      +V.map(function(x){return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+x+"</div>"}).join("")
+      +"</div>";
+  }catch(eTC){return ""}
 }
 function teamSpeedStripHtml(){
   var q=speedPctiles();
@@ -16808,7 +16928,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.282';
+var ER_ENGINE_VER='v4.283';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
