@@ -7207,6 +7207,66 @@ function _tcTaxOf(s){
   }catch(eTx){eTx.name}
   return r;
 }
+/* v4.285：把体检卡的每条硬伤接上可执行动作——候选按「它自己顶不顶得住岩钉」排 */
+function _tcScan(groups,tset,lim,strictOnly){
+  var have={},tt={},out=[],scan=0;
+  (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
+  var wcount={},immm={};
+  (tset||[]).forEach(function(x){if(!x)return;var _w=_tcWkOf(x),_i=_tcImmOf(x);
+    for(var _k in _w){if(_w.hasOwnProperty(_k))wcount[_k]=(wcount[_k]||0)+1}
+    for(var _k2 in _i){if(_i.hasOwnProperty(_k2))immm[_k2]=1}});
+  ERDATA.species.forEach(function(t2){
+    if(out.length>=(lim||3)||scan>=16)return;
+    if(t2.id==null||have[t2.id])return;
+    if(!isFinalSp(t2)||!isValidSp(t2))return;
+    if(t2.t1&&tt[t2.t1])return;
+    var _w=_tcWkOf(t2),bad=false;
+    for(var _k in _w){if(_w.hasOwnProperty(_k)&&(wcount[_k]||0)>=2&&!immm[_k]){bad=true;break}}
+    if(bad)return;
+    var ok=true;
+    for(var i=0;i<groups.length;i++){
+      var g=groups[i],hit=false;
+      for(var j=0;j<g.length;j++){if(learnHasName(t2,g[j])){hit=true;break}}
+      if(!hit){ok=false;break}
+    }
+    if(!ok)return;
+    var b=null;
+    try{b=(deriveBuilds(t2,tset)||[])[0]}catch(eS1){b=null}
+    if(strictOnly){
+      var set=b?_tlkMvSet(b):{},h2=false;
+      for(var i2=0;i2<groups.length;i2++){
+        var g2=groups[i2],hit2=false;
+        for(var j2=0;j2<g2.length;j2++){if(set[g2[j2]]){hit2=true;break}}
+        if(!hit2){h2=true;break}
+      }
+      if(h2)return;
+    }
+    scan++;
+    var tx=null;
+    try{tx=_tcTaxOf(t2)}catch(eS2){tx=null}
+    out.push({zh:t2.zh,mv:b?_tlkMvTxt(b):"",v:bstI(t2,5),sr:tx?tx.sr:0,spk:tx?tx.spk:0});
+  });
+  out.sort(function(a,b){return (a.sr-b.sr)||(b.v-a.v)});
+  return out.slice(0,lim||3);
+}
+function _tcFixHtml(kind,tset){
+  var groups,kw,looseKw;
+  if(kind==="clear"){groups=[["高速旋转","清除浓雾"]];kw="队里没人清钉，全库默认配置里<b>已经带清钉</b>的选人：";looseKw="默认配置都没把清钉放进四个槽，但能学——选进来后要手动换一个槽：";}
+  else if(kind==="set"){groups=[["隐形岩","撒菱","毒菱","黏网","黏黏网"]];kw="队里没人撒钉，默认配置里<b>已经带撒钉</b>的：";looseKw="默认配置都没带撒钉，但能学——选进来后要手动换一个槽：";}
+  else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
+  var list=_tcScan(groups,tset,3,true),loose=false;
+  if(!list.length){list=_tcScan(groups,tset,3,false);loose=true}
+  if(!list.length)return "";
+  var rowsTxt=list.map(function(x){
+    var srp=Math.round((x.sr||0)*100);
+    var tone=srp>=50?"color:var(--warnred);font-weight:700":"color:var(--sub)";
+    return "<b>"+x.zh+"</b><span style='font-size:12.5px;color:var(--sub)'>　"+x.mv+"</span>"
+      +"<span style='font-size:12.5px;"+tone+"'>　速"+x.v+" · 岩钉"+(srp?srp+"%":"免")+"</span>";
+  }).join("<br>");
+  return "<div style='margin:5px 0 0;padding:6px 9px;border-left:3px solid #b26a00;background:rgba(178,106,0,.06);font-size:13.5px;line-height:1.65'>"
+    +"<span style='color:#b26a00;font-weight:700'>怎么修</span>　"+(loose?looseKw:kw)+"<br>"+rowsTxt
+    +"</div>";
+}
 function teamCheckHtml(_R){
   try{
     var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
@@ -7224,7 +7284,8 @@ function teamCheckHtml(_R){
       for(var k2 in i2){if(i2.hasOwnProperty(k2))imm[k2]=1}
       mem.push({zh:s.zh,s:s,mv:_tlkMvTxt(b),set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s)});
     });
-    var rows="",V=[];var add=function(sev,txt){V.push({s:sev,h:txt})};
+    var rows="",V=[];var add=function(sev,txt,fix){V.push({s:sev,h:txt,fix:fix||""})};
+    var _fixSeen={},fixOnce=function(kind){if(kind&&_fixSeen[kind])return "";if(kind)_fixSeen[kind]=1;return _tcFixHtml(kind,tm)};
     var T=_tcTypes();
     /* ① Rule of Two */
     var over=[];
@@ -7264,7 +7325,7 @@ function teamCheckHtml(_R){
       add(2,"<b style='color:var(--warnred)'>没有明确的收尾手段</b>：六只的推荐配置里都没有强化招（剑舞/龙舞/蝶舞/冥想这类），"
         +(fast.length?"只能靠 "+fast.slice(0,3).map(function(x){return x.zh}).join("/")+" 这些快攻手正面压死。":"而全队也没有一只到 P90，"
           +"残局没人能收——这是「打得动但赢不下」的典型。")
-        +"");
+        ,"setup");
     }
     /* ③ 钉子双向 */
     var setter=mem.filter(function(x){return TC_HAZ.set.some(function(n){return x.set[n]})});
@@ -7276,11 +7337,14 @@ function teamCheckHtml(_R){
       +"</span></div>";
     if(!setter.length&&!clrer.length){
       add(1,"<b style='color:var(--warnred)'>钉子是 0:0</b>：既没人撒也没人清——这种队伍在长局里永远吃亏："
-        +"对手撒一次钉，你每次换人都被扣血，而对手换人零成本。至少补一个方向（撒或清），方向不同优先保命就先清。");
+        +"对手撒一次钉，你每次换人都被扣血，而对手换人零成本。至少补一个方向（撒或清），方向不同优先保命就先清。"
+        ,"set");
     }else if(!clrer.length){
-      add(1,"会撒不会清：对手一旦也撒钉，你会被自己的换人节奏拖死——清钉这一槽最好还是留出来。");
+      add(1,"会撒不会清：对手一旦也撒钉，你会被自己的换人节奏拖死——清钉这一槽最好还是留出来。"
+        ,"clear");
     }else if(!setter.length){
-      add(1,"会清不会撒：长局里少一层「对手换人就要付钱」的压力，强化套路也更难落地。");
+      add(1,"会清不会撒：长局里少一层「对手换人就要付钱」的压力，强化套路也更难落地。"
+        ,"set");
     }
     /* ③b 入场税 */
     var taxed=mem.filter(function(x){return x.tax&&(x.tax.sr>0||x.tax.spk>0)});
@@ -7296,7 +7360,8 @@ function teamCheckHtml(_R){
       if(heavy.length&&!clrer.length){
         add(2,"<b style='color:var(--warnred)'>"+heavy.map(function(x){return x.zh}).join("/")+" 一次入场就掉一半血</b>："
           +"岩钉对它是 4 倍相性（25%×4），而队里<b>没人清钉</b>——它每次换上来都只剩半血，"
-          +"等于每条命只有一半。要么补清钉，要么别让它频繁换人。");
+          +"等于每条命只有一半。要么补清钉，要么别让它频繁换人。"
+          ,"clear");
       }else if(heavy.length){
         add(1,heavy.map(function(x){return x.zh}).join("/")+" 的岩钉相性是 4 倍（入场掉 50%）——好在队里有清钉，"
           +"但清钉那只倒之前尽量少让它反复进场。");
@@ -7331,7 +7396,7 @@ function teamCheckHtml(_R){
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +"　全部按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。</div>"
       +rows
-      +V.map(function(x){return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+"</div>"}).join("")
+      +V.map(function(x){var fx=x.fix?fixOnce(x.fix):"";return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+fx+"</div>"}).join("")
       +"</div>";
   }catch(eTC){return ""}
 }
@@ -16968,7 +17033,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.284';
+var ER_ENGINE_VER='v4.285';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
