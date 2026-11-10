@@ -3185,9 +3185,11 @@ function renderAnSlots(){
     if(s){
       var role=anRoleCache[String(s.id)]||anSlotRoleOf(s);
       var star=(i===_ci)?'<button type="button" class="x" title="⭐ 核心（点击取消/切换核心）" onclick="event.stopPropagation();erSetCore('+i+')" style="left:2px;right:auto;color:var(--accent);font-weight:700">★</button>':'<button type="button" title="设为核心" onclick="event.stopPropagation();erSetCore('+i+')" style="position:absolute;top:2px;left:2px;background:transparent;border:none;cursor:pointer;font-size:15px;color:var(--sub);opacity:.8" aria-label="设为核心">☆</button>';
+      var _pl=spdPlanOf(s);
       h+='<div class="slot anslot" role="button" tabindex="0" onclick="anSlotPick('+i+')" title="点击替换（打开图鉴级选择器）">'+
         sprImg(s.id,'spslot')+'<span class="nm">'+esc(s.zh)+'</span>'+
         (role?'<span class="roltag">'+esc(role)+'</span>':'')+
+        (_pl?'<span class="roltag" style="background:var(--accent);color:#fff" title="已采用配速：'+_pl.nat+'性格 · 实速 '+(+_pl.val||0)+'（核心配队第 6 段可改）">速'+(+_pl.val||0)+'</span>':'')+
         star+
         '<button class="x" type="button" onclick="event.stopPropagation();anSlotRemove('+i+')" title="移除（后续槽位前移补位）" aria-label="移除">×</button></div>';
     }else{
@@ -4431,6 +4433,7 @@ function renderTm(reset){
       '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+
       '</div><div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+
       '</div><div class="bs">种族值 <b style="font-size:17.5px;color:var(--text);margin-left:4px">'+spBst(s)+'</b></div>'+
+      spdCardSpeedHtml(s)+
       '<div style="margin-top:6px">'+(inTeam?'<span class="badge badge-res">已入队</span>':'<span class="badge badge-neu">＋ 入队</span>')+'</div>';
     c.onclick=function(){
       if(window._multiPickOn){
@@ -4466,6 +4469,15 @@ function loadTeam(){
   try{
     var ids=JSON.parse(localStorage.getItem('er_team')||'[]');
     if(!(ids instanceof Array)||!ids.length)return;
+    /* v4.265：本函数在脚本块末 setTimeout(0) 调用，而物种数据是异步分片加载；
+       数据未就绪时 speciesById 全空 → 队伍被静默清空且无人重试（刷新后「我的队伍 0/6」，配法也失去挂靠）。
+       就绪口径与首屏遮罩一致（ERDATA.species.length>1000），最多重试 40 次 / 约 20 秒。 */
+    var _dataReady=!(typeof ERDATA==='undefined'||!ERDATA.species||ERDATA.species.length<=1000);
+    if(!_dataReady){
+      window.__teamReloadN=(window.__teamReloadN||0)+1;
+      if(window.__teamReloadN<=40){setTimeout(loadTeam,500);return;}
+    }
+    window.__teamReloadN=0;
     var info=JSON.parse(localStorage.getItem('er_teamInfo')||'{}');
     team=[];teamInfo={};
     ids.forEach(function(id){
@@ -4512,7 +4524,9 @@ function renderSlots(){
     var s=team[i];
     if(s){
       var info=teamInfo[s.id]||{fromSave:false};
+      var _plR=spdPlanOf(s);
       html+='<div class="slot">'+sprImg(s.id,'spslot')+'<span class="nm">'+esc(s.zh)+'</span>'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+
+        (_plR?'<span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:13px;margin-left:2px" title="已采用配速：'+_plR.nat+'性格 · 实速 '+(+_plR.val||0)+'（核心配队第 6 段可改）">速'+(+_plR.val||0)+'</span>':'')+
         '<button class="x" onclick="removeFromTeamById('+s.id+')">×</button></div>';
       html+='<div style="padding:0 10px 4px">'+abiBadges(s)+'</div>';
       /* 可选特性点选模拟生效（单选）
@@ -6763,6 +6777,17 @@ function spdPlanWrite(m){try{localStorage.setItem(SPD_PLAN_KEY,JSON.stringify(m)
 function spdPlanGet(id){var m=spdPlanStore();return (id!=null&&m[String(id)])||null}
 function spdPlanSave(id,rec){var m=spdPlanStore();m[String(id)]=rec;spdPlanWrite(m)}
 function spdPlanClear(id){var m=spdPlanStore();if(m[String(id)]){delete m[String(id)];spdPlanWrite(m)}}
+/* v4.265 队伍构建/分析侧同读：采用实速优先，未采用则用极速档（两者都明确标注，不混口径） */
+function spdPlanOf(s){return s?spdPlanGet(s.id):null}
+function spdViewValOf(s){var pl=spdPlanOf(s);if(pl)return +pl.val||0;return spdMaxOf(s)}
+function spdCardSpeedHtml(s){
+  var pl=spdPlanOf(s),v=spdViewValOf(s);
+  if(!v)return '';
+  var p=spdRankOfVal(v);
+  return '<div style="margin-top:2px;font-size:13.5px;color:var(--sub)">'+
+    (pl?'速度 <b style="color:var(--accent);font-size:16px">'+v+'</b>':'极速 <b style="font-size:16px">'+v+'</b>')+
+    ' 快过约'+p+'%'+(pl?' <span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:12.5px" title="已采用核心配队第 6 段的配速">已配速</span>':'')+'</div>';
+}
 function spdPlanAdopt(){
   var s=__spdSl.s;if(!s){toast('先选一只宝可梦');return}
   var M=spdModMul(),pts=spdReachPoints(s);
@@ -7556,23 +7581,31 @@ function teamSpeedCardHtml(_R){
     if(!tm.length&&(typeof team!=='undefined'&&team))tm=team.filter(function(x){return x&&isValidSp(x)});
     if(!tm.length)return '';
     function pos(v){return Math.round((v-mn)*100/span)}
-    var rowsH='',fast=0,mid=0,slow=0,best=null;
+    var rowsH='',fast=0,mid=0,slow=0,best=null,adoptedN=0;
+    /* v4.265：已采用配法的成员按「采用实速」实算（灰线保留该只极速作参照），未采用仍走极速档，
+       两种口径都显式标注，避免同一张卡里悄悄换算法。 */
     tm.forEach(function(s){
-      var v=spdMaxOf(s),p=speedPctileRankOf(s);
+      var pl=spdPlanOf(s);var v=pl?(+pl.val||0):spdMaxOf(s);var p=spdRankOfVal(v);
+      if(pl)adoptedN++;
       if(p>=90)fast++;else if(p>=50)mid++;else slow++;
       if(!best||v>best.v)best={zh:s.zh,v:v,p:p};
+      var mx=pl?spdMaxOf(s):0;
       rowsH+='<div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span style="width:110px;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.zh)+'</span>'+
         '<div style="position:relative;flex:1;height:14px;background:var(--card,#f0f0f0);border-radius:3px">'+
         '<div style="position:absolute;left:0;top:0;bottom:0;width:'+pos(v)+'%;background:var(--acc,#1976d2);border-radius:3px"></div>'+
+        (pl?'<div style="position:absolute;left:'+pos(mx)+'%;top:-2px;bottom:-2px;width:1px;background:#9e9e9e" title="该只极速 '+mx+'（未采用，仅参照）"></div>':'')+
         '<div style="position:absolute;left:'+pos(q.P75)+'%;top:-2px;bottom:-2px;width:1px;background:#f9a825" title="P75"></div>'+
         '<div style="position:absolute;left:'+pos(q.P90)+'%;top:-2px;bottom:-2px;width:1px;background:var(--ok,#2e7d32)" title="P90"></div>'+
-        '</div><span style="font-size:14.5px">'+v+'</span>'+_spdBadge(p)+'</div>';
+        '</div><span style="font-size:14.5px">'+v+'</span>'+
+        (pl?'<span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:13px" title="已采用核心配队第 6 段的配速">配速</span>':'')+
+        _spdBadge(p)+'</div>';
     });
     var warn='';
-    if(best&&best.v<q.P75){warn='<div style="color:var(--warnred);font-size:14.5px;margin-top:4px">⚠ 速度线塌陷：全队最快 '+esc(best.zh)+' 极速 '+best.v+' &lt; P75('+q.P75+')，建议控速/空间/围巾。</div>'}
-    return '<div class="sec" style="margin-top:8px"><h3>队伍速度结构（极速档 · 全库分位）</h3>'+
-      '<div style="font-size:14.5px;margin-bottom:4px">全队最快=<b>'+esc(best.zh)+'</b> 极速 '+best.v+' · P'+best.p+' ｜ ≥P90 超速 '+fast+' 只 / P50-89 '+mid+' 只 / &lt;P50 '+slow+' 只</div>'+
-      rowsH+'<div style="font-size:13px;color:var(--sub);margin-top:2px">竖线：P75(331) 黄 / P90(372) 绿；蓝条=该只极速在全库范围定位。</div>'+warn+'</div>';
+    if(best&&best.v<q.P75){warn='<div style="color:var(--warnred);font-size:14.5px;margin-top:4px">⚠ 速度线塌陷：全队最快 '+esc(best.zh)+' '+best.v+' &lt; P75('+q.P75+')，建议控速/空间/围巾。</div>'}
+    var note=adoptedN?('，其中 '+adoptedN+' 只按已采用配速实算'):'';
+    return '<div class="sec" style="margin-top:8px"><h3>队伍速度结构（全库分位 · 采用配速优先）</h3>'+
+      '<div style="font-size:14.5px;margin-bottom:4px">全队最快=<b>'+esc(best.zh)+'</b> '+best.v+' · P'+best.p+note+' ｜ ≥P90 超速 '+fast+' 只 / P50-89 '+mid+' 只 / &lt;P50 '+slow+' 只</div>'+
+      rowsH+'<div style="font-size:13px;color:var(--sub);margin-top:2px">竖线：P75 黄 / P90 绿；蓝条=该只速度在全库范围定位；灰线=该只极速（仅在已采用配速时出现）。</div>'+warn+'</div>';
   }catch(e){return ''}
 }
 window._spdN=400; window._spdSort='maxdesc';   /* 默认极速降序 */
@@ -16127,7 +16160,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.264';
+var ER_ENGINE_VER='v4.265';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
