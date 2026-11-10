@@ -7319,6 +7319,9 @@ var TC_PHAZE=["吼叫","吹飞","黑雾","清除之烟","龙尾","巴投"];
 var TC_PRIO=[["子弹拳","钢"],["音速拳","格斗"],["冰砾","冰"],["突袭","恶"],["水流喷射","水"],["影子偷袭","幽灵"],["真空波","格斗"]];
 var TC_CLERIC=["治愈铃声","芳香治疗"];
 var TC_STATUS_ABI=["自然回复","自然恢复","魔法防守"];
+var TC_WEATHER_NEED={"雨":["悠游自如","暴风雨","雨盘"],"晴":["叶绿素","太阳之力","花之礼","叶子防守"],"沙":["挖沙","沙之力","沙隐"],"雪":["拨雪","雪隐","冰冻之躯"]};
+var TC_WEATHER_SET_ABI={"雨":["降雨","积雨云"],"晴":["干旱","绯红脉动"],"沙":["扬沙","沙漠之魂"],"雪":["降雪"]};
+var TC_WEATHER_MOVE={"雨":"求雨","晴":"大晴天","沙":"沙暴","雪":"冰雹"};
 function _tcTypes(){return (ERDATA&&ERDATA.types)?ERDATA.types:[]}
 function _tcWkOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)>1)r[tp]=1}catch(eW){eW.name}});return r}
 function _tcImmOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)===0)r[tp]=1}catch(eI){eI.name}});return r}
@@ -7548,6 +7551,7 @@ function _tcFixHtml(kind,tset){
   else if(kind==="phase"){groups=[TC_PHAZE];kw="反强化的人：默认配置里<b>已经带吹飞/黑雾</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind==="prio"){groups=[["子弹拳","音速拳","冰砾","突袭","水流喷射","影子偷袭","真空波"]];kw="自己带先制的队友：默认配置里<b>已经带先制招</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind==="cleric"){groups=[TC_CLERIC];kw="队医：默认配置里<b>已经带治愈铃声/芳香治疗</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
+  else if(kind.indexOf("weather:")===0){var _w=kind.split(":")[1];groups=[[TC_WEATHER_MOVE[_w]]];kw="天气手：特性自动起"+_w+"，或默认配置里<b>已经带"+TC_WEATHER_MOVE[_w]+"</b>的：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
   var own=_ownMap(),ownN=_ownCount();
   var list=_tcScan(groups,tset,3,true),loose=false,outside=false;
@@ -7579,8 +7583,12 @@ function _tcFixHtml(kind,tset){
         var mvz=_ownMvNames(x.own),hitZh2="";
         for(var wi2=0;wi2<want.length;wi2++){if(mvz.indexOf(want[wi2])>=0){hitZh2=want[wi2];break}}
         var noteO="";
-        if(hitZh2)noteO="<span style='color:#2e7d32'>存档里这只已经在用「"+hitZh2+"」，上场不用改</span>";
-        else{
+        if(kind.indexOf("weather:")===0){
+          var _w2=kind.split(":")[1],_sa=TC_WEATHER_SET_ABI[_w2],_oa=String(x.own['主特性(当前生效)']||''),_oi=(x.s.inns||[]);
+          if(_sa.indexOf(_oa)>=0||_sa.some(function(a){return _oi.indexOf(a)>=0})){noteO="<span style='color:#2e7d32'>特性自动起"+_w2+"，出场即触发、不占回合也不用带招——比手动"+TC_WEATHER_MOVE[_w2]+"优</span>"}
+        }
+        if(!noteO&&hitZh2)noteO="<span style='color:#2e7d32'>存档里这只已经在用「"+hitZh2+"」，上场不用改</span>";
+        else if(!noteO){
           var swO=_tcSwapOwn(x.own,want);
           noteO=swO?("<span style='color:#b26a00'>改槽：把「"+swO.zh+"」换成「"+swO.want+"」（其余三招照存档）</span>")
             :("<span style='color:#b26a00'>存档这四招全是强化/钉子，腾槽得你自己定砍哪一招</span>");
@@ -7617,9 +7625,13 @@ function _tcFixHtml(kind,tset){
         var hitZh="";
         for(var wi=0;wi<want.length;wi++){if(slotsZh.indexOf(want[wi])>=0){hitZh=want[wi];break}}
         var sw=hitZh?null:_tcSwapFor(b0,want),note="";
-        if(hitZh)note="<span style='color:#2e7d32'>四个槽里已经带「"+hitZh+"」，配置原样可用</span>";
-        else if(sw)note="<span style='color:#b26a00'>改槽：第"+sw.idx+"槽「"+sw.zh+"」→「"+want[0]+"」</span>";
-        else note="<span style='color:#b26a00'>四个槽都要留给本系，得自己决定砍哪一招</span>";
+        if(kind.indexOf("weather:")===0){
+          var _w3=kind.split(":")[1],_sa3=TC_WEATHER_SET_ABI[_w3],_ii3=(x.s.inns||[]);
+          if(_sa3.indexOf(info.abi)>=0||_sa3.some(function(a){return _ii3.indexOf(a)>=0})){note="<span style='color:#2e7d32'>特性自动起"+_w3+"，出场即触发、不占回合也不用带招——比手动"+TC_WEATHER_MOVE[_w3]+"优</span>"}
+        }
+        if(!note&&hitZh)note="<span style='color:#2e7d32'>四个槽里已经带「"+hitZh+"」，配置原样可用</span>";
+        else if(!note&&sw)note="<span style='color:#b26a00'>改槽：第"+sw.idx+"槽「"+sw.zh+"」→「"+want[0]+"」</span>";
+        else if(!note)note="<span style='color:#b26a00'>四个槽都要留给本系，得自己决定砍哪一招</span>";
         if(kind==="clear"){
           try{
             var Pq=speedPctiles(),maxV=spdMaxOf(x.s),tg=Math.min(Pq.P75,maxV),nowV=+info.raw||0;
@@ -7836,6 +7848,31 @@ if(hasCleric||hasStatusAbi){
 }else{
   add(1,"<b>全队没有状态答案</b>：磷火（灼伤）废掉物理手、剧毒递增磨死盾、催眠直接跳过回合，而六只里没队医、没神秘守护，也没有自然回复/魔法防守这类状态特性——被挂状态只能硬扛。","cleric");
 }
+/* ⑧ 天气依赖 */
+var wxSet={},wxNeedAny=false;
+mem.forEach(function(x){
+  var eff=[x.abi].concat(x.s.inns||[]);
+  for(var w in TC_WEATHER_SET_ABI){if(TC_WEATHER_SET_ABI[w].some(function(a){return eff.indexOf(a)>=0}))wxSet[w]=1}
+  for(var w2 in TC_WEATHER_MOVE){if(x.set[TC_WEATHER_MOVE[w2]])wxSet[w2]=1}
+  for(var wn in TC_WEATHER_NEED){if(TC_WEATHER_NEED[wn].some(function(a){return eff.indexOf(a)>=0}))wxNeedAny=true}
+});
+var wxGap={};
+mem.forEach(function(x){
+  var eff2=[x.abi].concat(x.s.inns||[]);
+  for(var w3 in TC_WEATHER_NEED){
+    if(wxSet[w3])continue;
+    if(TC_WEATHER_NEED[w3].some(function(a){return eff2.indexOf(a)>=0})){if(!wxGap[w3])wxGap[w3]=[];if(wxGap[w3].indexOf(x.zh)<0)wxGap[w3].push(x.zh)}
+  }
+});
+var wxWs=Object.keys(wxGap);
+if(wxWs.length){
+  wxWs.forEach(function(w4){
+    var ah=TC_WEATHER_NEED[w4].filter(function(a){return mem.some(function(x){return [x.abi].concat(x.s.inns||[]).indexOf(a)>=0})});
+    add(1,"<b>"+w4+"天依赖没答案</b>："+wxGap[w4].join("、")+" 的特性（"+ah.join("、")+"）只在"+w4+"天生效（ER 口径 ×1.5），但全队没有自动天气手（"+TC_WEATHER_SET_ABI[w4].join("/")+"），也没人带"+TC_WEATHER_MOVE[w4]+"——这个特性等于白给。","weather:"+w4);
+  });
+}else if(wxNeedAny){
+  add(0,"<span style='color:var(--ok,#2e7d32)'>天气依赖有答案</span>：吃天气的特性都有对应天气手。");
+}
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
@@ -7844,7 +7881,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17487,7 +17524,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.294';
+var ER_ENGINE_VER='v4.295';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
