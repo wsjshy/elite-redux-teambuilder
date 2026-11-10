@@ -7315,6 +7315,7 @@ function teamSpdLinkHtml(_R){
 var TC_SETUP=["剑舞","龙之舞","蝶舞","冥想","诡计","诅咒","健美","巨大化","破壳","腹鼓","磨爪","铁壁","集气"];
 var TC_HAZ={set:["隐形岩","撒菱","毒菱","黏网","黏黏网"],clr:["高速旋转","清除浓雾"]};
 var TC_WKCAP=2;
+var TC_PHAZE=["吼叫","吹飞","黑雾","清除之烟","龙尾","巴投"];
 function _tcTypes(){return (ERDATA&&ERDATA.types)?ERDATA.types:[]}
 function _tcWkOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)>1)r[tp]=1}catch(eW){eW.name}});return r}
 function _tcImmOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)===0)r[tp]=1}catch(eI){eI.name}});return r}
@@ -7541,6 +7542,7 @@ function _tcFixHtml(kind,tset){
   var groups,kw,looseKw;
   if(kind==="clear"){groups=[["高速旋转","清除浓雾"]];kw="队里没人清钉，全库默认配置里<b>已经带清钉</b>的选人：";looseKw="默认配置都没把清钉放进四个槽，但能学——选进来后要手动换一个槽：";}
   else if(kind==="set"){groups=[["隐形岩","撒菱","毒菱","黏网","黏黏网"]];kw="队里没人撒钉，默认配置里<b>已经带撒钉</b>的：";looseKw="默认配置都没带撒钉，但能学——选进来后要手动换一个槽：";}
+  else if(kind==="phase"){groups=[TC_PHAZE];kw="反强化的人：默认配置里<b>已经带吹飞/黑雾</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
   var own=_ownMap(),ownN=_ownCount();
   var list=_tcScan(groups,tset,3,true),loose=false,outside=false;
@@ -7792,7 +7794,19 @@ function teamCheckHtml(_R){
         +comp.map(function(x){return x.zh+"（"+x.jobs.join("+")+"）"}).join("、")
         +"——这是好事（一只顶两个位），但也是断点：它倒了这几个功能同时消失。");
     }
-    V.sort(function(a,b){return (b.s||0)-(a.s||0)});
+    /* ⑤ 反强化答案 */
+var hasPhaze=mem.some(function(x){return TC_PHAZE.some(function(n){return x.set[n]})});
+var hasUnaware=mem.some(function(x){return x.abi==="纯朴"});
+var hasTaunt=mem.some(function(x){return x.set["挑衅"]});
+if(hasPhaze||hasUnaware){
+  var ans=[];if(hasPhaze)ans.push("吹飞/重置强化");if(hasUnaware)ans.push("纯朴");
+  add(0,"<span style='color:var(--ok,#2e7d32)'>反强化有答案</span>："+ans.join("+")+"——对手强化起来也能解，不会被一路推。");
+}else if(hasTaunt){
+  add(1,"挑衅能拦住大部分强化，但对已经强化好的、带替身的没办法——最好再补一个吹飞/黑雾（见下）。","phase");
+}else{
+  add(2,"<b style='color:var(--warnred)'>对手强化起来没人挡得住</b>：六只的配置里没人能吹走/重置强化（吼叫/吹飞/黑雾/清除之烟/龙尾/巴投），也没有纯朴、挑衅——对方剑舞一次就能一路推，你只能硬拼伤害。","phase");
+}
+V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
       if(sv===2)return "<b style='color:var(--warnred)'>硬伤</b>　";
@@ -7800,7 +7814,7 @@ function teamCheckHtml(_R){
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17443,7 +17457,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.291';
+var ER_ENGINE_VER='v4.292';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
