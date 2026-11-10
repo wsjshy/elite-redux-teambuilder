@@ -6610,6 +6610,32 @@ var SPD_ABI=[
 /* 返回 {zh,mul,label,down}；加速项优先（>1），全无加速才返回减速项。abis 与 inns 都要查。 */
 /* v4.272：SPD_ABI 里可能躺着「本代图鉴谁都没有」的行（例：慢启动 112，全库 0 持有者）。
    它们永远不会命中，却会让用户照着去挑宝可梦 —— 在速度线页口径里点名。 */
+/* v4.275：回合累积型增速（加速 Speed Boost #3：每回合结束 +1 级，入场当回合不触发）。
+   它不属于 SPD_ABI 那批「静态倍率」，所以速度表里一直显示「—」——但真实含义是「第 2 回合起自己就超过极速」，
+   配速结论完全不同：不必按 P75 满投，速度点该换成「过桥」（守住/替身/虫返）或先制。 */
+var SPD_RAMP=[{zh:'加速',id:3,lvl:1,note:'每回合结束 +1 级；入场当回合不触发'}];
+function spdRampOf(s){
+  var pool=[].concat(s&&s.abis||[],s&&s.inns||[]),hit=null;
+  pool.forEach(function(a){if(!a||hit)return;SPD_RAMP.forEach(function(r){var same=false;try{same=abiSame(r.zh,a)}catch(eR){same=(r.zh===a)}if(same)hit=r})});
+  return hit;
+}
+var _spdRampLv=[1.5,2,2.5,3,3.5,4];   /* +1…+6 级的等级倍率 */
+function spdRampHtml(s,baseVal){
+  try{
+    var r=spdRampOf(s);if(!r)return '';
+    var b=+baseVal||0;
+    if(!b){var pl=spdPlanOf(s);b=pl?(+pl.val||0):spdDefaultTarget(s)}
+    if(!b)return '';
+    var q=speedPctiles(),parts=[];
+    for(var i=0;i<3;i++){var v=Math.floor(b*_spdRampLv[i]);parts.push('第'+(i+2)+'回合 <b>'+v+'</b>'+(v>q.P99?('（已超出全库极速档 P99 '+q.P99+'）'):('（P'+spdRankOfVal(v)+'）')))}
+    var prio=!!(prioDecisionOf(s,{_r450_subOnly:true})||{}).name;
+    return '<div style="font-size:13.5px;color:var(--sub);margin:3px 0 0 2px;line-height:1.6">'
+      +'<b style="color:var(--accent)">加速</b>：'+esc(r.note)+'　从 <b>'+b+'</b> 起 → '+parts.join(' · ')+'。'
+      +'<br>所以这只的速度投入只需要够到「第一回合别被直接带走」——不必按 P75 拼满（加速会把之后每一回合的差距越拉越大），把点位换成守住 / 替身 / 虫返这类过桥手段'+(prio?'；你还有先制，第一回合本来就能先手':'')+'。'
+      +'<span style="color:var(--warn,#e0a800)">对手同档加速时，比的是谁先站上第 2 回合——同速仍按性格与 EV 决先后。</span>'
+      +'</div>';
+  }catch(eRamp){return ''}
+}
 var _spdAbiNoH=null;
 function spdAbiNoHolders(){
   if(_spdAbiNoH)return _spdAbiNoH;
@@ -7142,7 +7168,7 @@ function speedSliderHtml(s){
   setTimeout(function(){try{
     var box=document.getElementById('spdPrioBox');if(!box)return void 0;
     var bd=null;try{bd=(typeof deriveBuilds==='function')?(deriveBuilds(s)||[])[0]:null}catch(eB){bd=null}
-    box.innerHTML=prioAdviceHtml(s,bd,undefined,'')||'';
+    box.innerHTML=(prioAdviceHtml(s,bd,undefined,'')||'')+spdRampHtml(s,0);
   }catch(eC){box=null}},0);
   return h;
 }catch(e){return ''}
@@ -7946,7 +7972,7 @@ function speedRenderTable(){
     var p=speedPctileRankOf(s);
     var evTip='—';var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:13px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="'+(_showAbiCol?'':'spd-hide-sm')+'">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:13px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+'</div>'):'<span style="color:var(--sub)">—</span><div style="color:var(--sub);font-size:12px;line-height:1.3">无提速特性</div>')+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
+    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="'+(_showAbiCol?'':'spd-hide-sm')+'">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:13px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+'</div>'):(spdRampOf(s)?('<b style="color:var(--acc);font-size:16px">'+Math.floor(mx*1.5)+'</b><div style="color:var(--sub);font-size:13px;line-height:1.35">加速 +1/回合（第2回合起 ×1.5）</div>'):'<span style="color:var(--sub)">—</span><div style="color:var(--sub);font-size:12px;line-height:1.3">无提速特性</div>'))+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
       '<td><span onclick="event.stopPropagation();speedToggleFilter(\'role\',\''+(role==='fast'?'fast':(role==='space'?'space':'clear'))+'\')" '+
         'title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95｜清场：其余。点击按此定位筛选全表" '+
         'style="cursor:pointer;color:var(--accent);border-bottom:1px dashed currentColor;font-weight:600">'+
@@ -8000,7 +8026,7 @@ function speedRender(){if((!window.__erReady&&!window.__ER_PARTIAL)||!ERDATA.spe
   h+='<span style="font-size:13.5px;color:var(--sub)">属性</span>';
   ['一般','火','水','草','电','冰','格斗','毒','地面','飞行','超能力','虫','岩石','幽灵','龙','钢','恶','妖精'].forEach(function(t){h+=ch('type',t,t)});
   h+='</div></div>';
-  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码逐条实算（共 17 条速度特性）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。'
+  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码逐条实算（共 17 条速度特性）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。另有「加速」这类回合累积型（源码 #3：每回合 +1 级、入场当回合不触发），本列按第 2 回合 ×1.5 标注，它不是一个固定倍率。'
 +((typeof spdAbiNoHolders==='function'&&spdAbiNoHolders().length)?('<br><span style="color:var(--sub)">其中「'+spdAbiNoHolders().join(' / ')+'」在本代图鉴暂无任何持有者（保留只为机制备案，永远不会命中——别按它去挑宝可梦）。</span>'):'')+'</div>';
 
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
@@ -16242,7 +16268,8 @@ function evBarHtml(bd){
     /* v4.269：先制在手（满血拳招等）→ 速度要求降档，决策依据排在卡线细节之前；
        先制段已经报了 P50/P75 两条线，就不再重复一条卡线（同一屏里两套同样的数字是噪音） */
     var _pH=prioAdviceHtml(sp,bd,a[5],natName);
-    if(_pH)h+=_pH;else if(!plan)h+=spdCoreLineHint(sp,a[5],natName);   /* 先制段与卡线二选一：同一屏不报两套同样的数字 */ /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
+    if(_pH)h+=_pH;else if(!plan)h+=spdCoreLineHint(sp,a[5],natName);
+    h+=spdRampHtml(sp,realSpd);   /* v4.275：加速这类回合累积型增速，和先制结论并列 */   /* 先制段与卡线二选一：同一屏不报两套同样的数字 */ /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
   }
   var sumTxt=ev.summary;
   if(plan){
@@ -16441,7 +16468,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.274';
+var ER_ENGINE_VER='v4.275';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
