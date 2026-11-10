@@ -7208,6 +7208,26 @@ function _tcTaxOf(s){
   return r;
 }
 /* v4.285：把体检卡的每条硬伤接上可执行动作——候选按「它自己顶不顶得住岩钉」排 */
+/* v4.287：候选带上「照抄就能上场」的配置——特性/道具/性格/EV + 要换的是第几槽 */
+function _tcSwapFor(b,names){
+  var slots=((b&&b.mv&&b.mv.main)||[]).slice();
+  if(!slots.length||!names||!names.length)return null;
+  var keep=function(zh){
+    if(TC_SETUP.indexOf(zh)>=0)return true;
+    if(TC_HAZ.set.indexOf(zh)>=0||TC_HAZ.clr.indexOf(zh)>=0)return true;
+    return false;
+  };
+  var best=-1,bestPow=1e9;
+  for(var i=slots.length-1;i>=0;i--){
+    var zh=_tlkMvZh(slots[i].id);
+    if(keep(zh))continue;
+    var pow=0;
+    try{pow=(MV[slots[i].id]&&+MV[slots[i].id][5])||0}catch(ePw){pow=0}
+    if(pow<bestPow){bestPow=pow;best=i}
+  }
+  if(best<0)return null;
+  return {idx:best+1,zh:_tlkMvZh(slots[best].id)};
+}
 function _tcScan(groups,tset,lim,strictOnly){
   var have={},tt={},out=[],scan=0;
   (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
@@ -7304,6 +7324,38 @@ function _tcFixHtml(kind,tset){
     var tone=srp>=50?"color:var(--warnred);font-weight:700":"color:var(--sub)";
     var head="<b>"+x.zh+"</b><span style='font-size:12.5px;color:var(--sub)'>　"+x.mv+"</span>"
       +"<span style='font-size:12.5px;"+tone+"'>　速"+x.v+" · 岩钉"+(srp?srp+"%":"免")+"</span>";
+    var conf="";
+    try{
+      var b0=(deriveBuilds(x.s,tset)||[])[0],info=anRowOf(x.s,b0),evs=(info.ev||[0,0,0,0,0,0]);
+      var slotsZh=[];
+      ((b0&&b0.mv&&b0.mv.main)||[]).forEach(function(m){slotsZh.push(_tlkMvZh(m.id))});
+      var want=groups[0]?groups[0]:"",hitZh="";
+      for(var wi=0;wi<want.length;wi++){if(slotsZh.indexOf(want[wi])>=0){hitZh=want[wi];break}}
+      var sw=hitZh?null:_tcSwapFor(b0,want),note="";
+      if(hitZh)note="<span style='color:#2e7d32'>四个槽里已经带「"+hitZh+"」，配置原样可用</span>";
+      else if(sw)note="<span style='color:#b26a00'>改槽：第"+sw.idx+"槽「"+sw.zh+"」→「"+want[0]+"」</span>";
+      else note="<span style='color:#b26a00'>四个槽都要留给本系，得自己决定砍哪一招</span>";
+      /* 清钉手要抢在对手撒钉前动手：给一条可算出来的「先手清钉」配置 */
+      if(kind==="clear"){
+        try{
+          var Pq=speedPctiles(),maxV=spdMaxOf(x.s),tg=Math.min(Pq.P75,maxV),nowV=+info.raw||0;
+          if(nowV>=maxV-1){
+            note+="<span style='color:var(--sub)'>　速度已到它的上限 "+maxV+"（P"+spdRankOfVal(maxV)
+              +"），抢不过更快的撒钉手——只能接受后手清钉</span>";
+          }else if(nowV<tg){
+            var evs2=evForSpeed(tg,(x.s.base||[])[5]||0,31,1),vv=speedStat((x.s.base||[])[5]||0,evs2,31,1);
+            var curEv=+(evs[5]||0),how=(curEv>=evs2)
+              ?("速 EV 已经够（现有 "+curEv+"），只把性格换成爽朗")
+              :("性格改爽朗 + 速补到 "+evs2+" EV（比现在多 "+(evs2-curEv)+" 点，从别的项挤）");
+            note+="<span style='color:#b26a00'>　先手清钉："+how+" → "+vv+"（P"+spdRankOfVal(vv)+"）"
+              +(vv>=maxV?"；这已经是它的速度上限，比它更快的撒钉手照样抢在它前面":"" )+"</span>";
+          }else note+="<span style='color:var(--sub)'>　速度已经能先手，清钉前不用调</span>";
+        }catch(eSpd){eSpd.name}
+      }
+      conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>特性 <b>"+(info.abi||"—")+"</b>"
+        +"　道具 "+(info.item||"—")+"　性格 <b>"+(info.nat||"—")+"</b>　EV "
+        +[0,1,2,3,4,5].map(function(i){return (+(evs[i]||0))}).join("/")+"　"+note+"</div>";
+    }catch(eCf){eCf.name}
     var sim="";
     try{
       var r=_tcSim(x.s,tset,dp?dp.drop:null);
@@ -7327,7 +7379,7 @@ function _tcFixHtml(kind,tset){
           +(r.drop?"换掉 "+r.drop+"：":"直接加进来：")+"　"+verdict+"　"+parts.join("　")+"</div>";
       }
     }catch(eSim){eSim.name}
-    return head+sim;
+    return head+conf+sim;
   }).join("<br>");
   return "<div style='margin:5px 0 0;padding:6px 9px;border-left:3px solid #b26a00;background:rgba(178,106,0,.06);font-size:13.5px;line-height:1.65'>"
     +"<span style='color:#b26a00;font-weight:700'>怎么修</span>　"+(loose?looseKw:kw)+baseline+"<br>"+rowsTxt
@@ -7460,7 +7512,7 @@ function teamCheckHtml(_R){
     return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
-      +"　全部按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。</div>"
+      +"　全部按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
       +rows
       +V.map(function(x){var fx=x.fix?fixOnce(x.fix):"";return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+fx+"</div>"}).join("")
       +"</div>";
@@ -17099,7 +17151,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.286';
+var ER_ENGINE_VER='v4.287';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
