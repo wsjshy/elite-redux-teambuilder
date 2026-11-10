@@ -2721,6 +2721,7 @@ function anRender(R){
     '　<b>速度线</b>：原始最高 '+R.speed.top+' · 有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）');
   /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
   try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
+  try{var _tlk=teamSpdLinkHtml();if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
   try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
   try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
@@ -3106,6 +3107,7 @@ function anSnapBlockHtml(R,title,badge){
       '<span class="mini" style="color:var(--sub);margin-left:6px">'+esc(R.label||'')+' · '+R.members.length+' 只</span></div>';
   try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
   try{var _tsc=teamSpeedCardHtml(R);if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
+  try{var _tlk=teamSpdLinkHtml(R);if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
   try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* 打击面覆盖（同源 anRender ③ 区块口径） */
   try{
@@ -6959,6 +6961,64 @@ function teamPrioMark(s){
     var cd=prioCondZh(d.cond);
     return '<span style="background:rgba(255,193,7,.18);color:#f9a825;border:1px solid rgba(255,193,7,.5);border-radius:3px;padding:0 4px;font-size:12px" title="'+esc(d.name+(cd?'（'+cd+'）':'')+'：这只的速度要求可以低于常态线，点开看先制线')+'">先制</span>';
   }catch(e){return ''}
+}
+/* v4.280：队伍速度联动卡——前五个版本把「单只怎么配速」讲清了，这张卡回答「六只怎么互相补速」。
+   判据全走数据层（learnOf / prioDecisionOf / hasFullHpPrio / spdQfOf），不猜配招。 */
+function teamSpdLinkHtml(_R){
+  try{
+    var tm=(_R&&_R.members)?_R.members:((typeof team!=='undefined'&&team)?team:[]);
+    if(!tm||tm.length<2)return '';
+    var q=speedPctiles(),R={space:[],wind:[],spin:[],prio:[],fullhp:[],qf:[],bell:[],setst:[]};
+    var fastest={v:-1,zh:''},fastN=[];
+    tm.forEach(function(s){
+      if(!s)return;
+      var v=spdViewValOf(s),p=spdRankOfVal(v);
+      if(v>fastest.v)fastest={v:v,zh:s.zh,p:p};
+      if(v>=q.P90)fastN.push(s.zh+' '+v);
+      try{if(learnHasName(s,'戏法空间'))R.space.push(s.zh)}catch(eL1){eL1.name}
+      try{if(learnHasName(s,'顺风'))R.wind.push(s.zh)}catch(eL2){eL2.name}
+      try{if(learnHasName(s,'高速旋转')||learnHasName(s,'清除浓雾'))R.spin.push(s.zh)}catch(eL3){eL3.name}
+      try{if(learnHasName(s,'治愈铃声')||learnHasName(s,'芳香治疗'))R.bell.push(s.zh)}catch(eL4){eL4.name}
+      try{if(learnHasName(s,'毒菱')||learnHasName(s,'磷火')||learnHasName(s,'电磁波'))R.setst.push(s.zh)}catch(eL5){eL5.name}
+      try{if(prioDecisionOf(s,{_r450_subOnly:true}).ok)R.prio.push(s.zh)}catch(eL6){eL6.name}
+      try{if(hasFullHpPrio(s))R.fullhp.push(s.zh)}catch(eL7){eL7.name}
+      if(spdQfOf(s))R.qf.push(s.zh);
+    });
+    var rows='',V=[];
+    var row=function(lab,list,col,note){
+      if(!list.length)return '';
+      rows+='<div style="display:flex;gap:6px;align-items:flex-start;margin:2px 0;font-size:14px;line-height:1.55">'
+        +'<span style="flex:0 0 76px;color:'+col+';font-weight:700">'+lab+'</span>'
+        +'<span style="flex:1;color:var(--text)">'+list.join(' / ')+(note?'<span style="color:var(--sub);font-size:13px">　'+note+'</span>':'')+'</span></div>';
+    };
+    row('减速 / 空间',R.space,'#7e57c2','能开戏法空间：越慢越先手，别给它们配速度');
+    row('提速 / 顺风',R.wind,'#1976d2','能开顺风：全队 ×2 只有 '+((WCONF.tailwindTurns)||4)+' 回合；自己先手才开得出来');
+    row('先制',R.prio,'#f9a825','速度要求可以整体下调的角色');
+    row('满血先制',R.fullhp,'#e65100','先制条件是「满血」，被磨一下就没了');
+    row('清钉',R.spin,'#2e7d32','高速旋转 / 清除浓雾：保住别人的满血先制');
+    row('上状态',R.setst,'#6d4c41','毒菱 / 磷火 / 电磁波：能把状态变成队友的提速');
+    row('吃状态提速',R.qf,'#c62828','飞毛腿：自身有异常才 ×1.5');
+    row('队医',R.bell,'#795548','治愈铃声 / 芳香治疗：清掉的可能是队友的提速');
+    if(!rows)return '';
+    /* 三条互相拖的判断（只在真的成立时才说） */
+    if(R.space.length&&R.wind.length)V.push('<b style="color:var(--warnred)">空间和顺风互相拆台</b>：'+R.wind.join('/')+' 开的顺风会让全队变快，而空间里越慢越先手——空间回合内开风等于把自己推到后面，两套控速只能选一套当主轴。');
+    if(R.space.length&&fastN.length)V.push('<b style="color:var(--warnred)">空间手遇上快攻手</b>：'+fastN.slice(0,3).join('、')+(fastN.length>3?' 等':'')+' 这 '+fastN.length+' 只已到 P90+，空间一开它们反而变成最后出手。要么给这几只留一套不靠速度的活儿，要么这只空间手只当备选。');
+    if(R.fullhp.length&&!R.spin.length)V.push('<b style="color:var(--warnred)">满血先制没有清钉</b>：'+R.fullhp.join('/')+' 的先制条件是满血，队里没人会高速旋转 / 清除浓雾，钉子一落地就先制失效——这条比再堆速度重要。');
+    if(R.qf.length&&R.bell.length){
+      var both=R.qf.filter(function(x){return R.bell.indexOf(x)>-1});
+      V.push(both.length
+        ?('<b style="color:var(--warnred)">同一只要吃状态又要清状态</b>：'+both.join('/')+' 自己有飞毛腿（要有异常才 ×1.5），又能用治愈铃声 / 芳香治疗——配招上只能选一边：要么留提速、别带队医招，要么带队医、别指望这条速度线。')
+        :('<b style="color:var(--warnred)">飞毛腿被队友的队医拆</b>：'+R.qf.join('/')+' 吃状态才有 ×1.5，而 '+R.bell.join('/')+' 的治愈铃声 / 芳香治疗会把它清掉——队医上场的时机得和这只错开。'));
+    }
+    if(R.qf.length&&!R.setst.length&&!R.space.length)V.push('<span style="color:var(--warn,#e0a800)">飞毛腿没有状态供给</span>：队里没人会毒菱 / 磷火 / 电磁波，这只只能等对手送状态（多数时候等不到）。');
+    if(R.prio.length>=2&&fastest.v<q.P75)V.push('<span style="color:var(--ok,#2e7d32)">先制够用</span>：全队最快只有 '+fastest.v+'（&lt; P75 '+q.P75+'），但有 '+R.prio.length+' 只先制——不必为了「谁先出手」把 252 全砸在速度上。');
+    if(!R.space.length&&!R.wind.length&&fastest.v<q.P75)V.push('<b style="color:var(--warnred)">三种控速一个都没带</b>：既没有戏法空间、也没有顺风（围巾只是单只 ×1.5），全队最快 '+fastest.v+' 低于 P75 '+q.P75+'——这就是「联动差」最常见的样子。');
+    return '<div class="sec" style="margin-top:8px"><h3>队伍速度联动（谁给谁提速 · 谁拖谁）</h3>'
+      +'<div style="font-size:13.5px;color:var(--sub);margin-bottom:3px">角色全部从数据层判定（能学会的招 + 特性），不是猜配招：</div>'
+      +rows
+      +(V.length?('<div style="margin-top:4px;font-size:14.5px;line-height:1.65">'+V.map(function(x){return '<div style="margin:2px 0">'+x+'</div>'}).join('')+'</div>'):'<div style="margin-top:4px;font-size:14px;color:var(--ok,#2e7d32)">没有互相拖的地方：空间 / 顺风 / 先制 / 清钉这几件事彼此不冲突。</div>')
+      +'</div>';
+  }catch(eTL){return ''}
 }
 function teamSpeedStripHtml(){
   var q=speedPctiles();
@@ -16593,7 +16653,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.279';
+var ER_ENGINE_VER='v4.280';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
