@@ -6699,6 +6699,30 @@ function spdUnbHtml(s,baseVal){
     return h;
   }catch(eUnb){return ''}
 }
+/* v4.278：外部乘区（讲究围巾 ×1.5 / 顺风 ×2）——不是在训练家身上，而是在「队友和道具」身上。
+   围巾：占道具位、×1.5；顺风：全队 ×2、窗口 WCONF.tailwindTurns（4）个回合时段。
+   这两个和轻装是硬冲突：轻装要「消耗掉道具」才 ×2，而围巾本身就是道具——同一个位置只能选一个。 */
+function spdExtHtml(s,baseVal){
+  try{
+    if(!s)return '';
+    if(typeof speedRole==='function'&&speedRole(s)==='space')return '';   /* 空间里顺风/围巾是负收益，交给 spdSpaceHtml */
+    var b=+baseVal||0;if(!b){var pl=null;try{pl=spdPlanOf(s)}catch(eE1){pl=null}b=pl?(+pl.val||0):spdDefaultTarget(s)}
+    if(!b)return '';
+    var q=speedPctiles(),SC=Math.floor(b*1.5),TW=Math.floor(b*2);
+    var canTw=false;try{canTw=learnHasName(s,'顺风')}catch(eE2){canTw=false}
+    var unb=spdUnbOf(s),tw=WCONF.tailwindTurns||4;
+    var h='<div style="font-size:13.5px;color:var(--sub);margin:3px 0 0 2px;line-height:1.6">'
+      +'<b style="color:var(--accent)">外部乘区</b>：这两个不是你的投入，而是道具和队友给的 —— 当前 <b>'+b+'</b> 起：'
+      +'戴<b>讲究围巾</b> ×1.5 → <b>'+SC+'</b>'+(SC>q.P99?('（超 P99 '+q.P99+'）'):('（P'+spdRankOfVal(SC)+'）'))+'；'
+      +'队友开<b>顺风</b> ×2 → <b>'+TW+'</b>'+(TW>q.P99?('（超 P99 '+q.P99+'）'):('（P'+spdRankOfVal(TW)+'）'))+'。'
+      +(unb?'<br><span style="color:var(--warn,#e0a800)">⚠ 你有轻装：那就别再想围巾——围巾本身就是道具，轻装要把它吃掉才 ×2，同一个位置只能选一个。轻装流的提速来自「吃种子/药草/果子」，围巾流的提速来自「带围巾」，别混。</span>':'')
+      +'<br>顺风窗口只有 <b>'+tw+'</b> 个回合时段（源码常量 tailwindTurns='+tw+'），开风的人要能先手开出来：恶作剧之心这类变化招先制最稳；自身速度不够时，开风那回合等于白送。'
+      +(canTw?'<br>你自己就能学顺风：那这只可以当<b>开风手</b>——先开风、下一回合再用 ×2 的速度压线，不必为了速度硬拉 252。':'<br>你自己学不了顺风：这些线要靠队友开，配队时把「谁开风」一起定下来，否则 ×2 永远是纸上数字。')
+      +'<br><span style="color:var(--sub)">围巾与顺风同时在场时是叠乘的（围巾 ×1.5 × 顺风 ×2）；但围巾锁招、顺风只有 '+tw+' 回合——两个都是「窗口」，不是常驻。</span>'
+      +'</div>';
+    return h;
+  }catch(eExt){return ''}
+}
 var _spdAbiNoH=null;
 function spdAbiNoHolders(){
   if(_spdAbiNoH)return _spdAbiNoH;
@@ -7234,7 +7258,7 @@ function speedSliderHtml(s){
   setTimeout(function(){try{
     var box=document.getElementById('spdPrioBox');if(!box)return void 0;
     var bd=null;try{bd=(typeof deriveBuilds==='function')?(deriveBuilds(s)||[])[0]:null}catch(eB){bd=null}
-    box.innerHTML=(prioAdviceHtml(s,bd,undefined,'')||'')+spdRampHtml(s,0)+spdUnbHtml(s,0)+spdSpaceHtml(s);
+    box.innerHTML=(prioAdviceHtml(s,bd,undefined,'')||'')+spdRampHtml(s,0)+spdUnbHtml(s,0)+spdExtHtml(s,0)+spdSpaceHtml(s);
   }catch(eC){box=null}},0);
   return h;
 }catch(e){return ''}
@@ -16336,7 +16360,7 @@ function evBarHtml(bd){
        先制段已经报了 P50/P75 两条线，就不再重复一条卡线（同一屏里两套同样的数字是噪音） */
     var _pH=prioAdviceHtml(sp,bd,a[5],natName);
     if(_pH)h+=_pH;else if(!plan)h+=spdCoreLineHint(sp,a[5],natName);
-    h+=spdRampHtml(sp,realSpd);h+=spdUnbHtml(sp,realSpd);
+    h+=spdRampHtml(sp,realSpd);h+=spdUnbHtml(sp,realSpd);h+=spdExtHtml(sp,realSpd);
     h+=spdSpaceHtml(sp);   /* v4.276：空间口径（投速是负收益） */   /* v4.275：加速这类回合累积型增速，和先制结论并列 */   /* 先制段与卡线二选一：同一屏不报两套同样的数字 */ /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
   }
   var sumTxt=ev.summary;
@@ -16536,7 +16560,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.277';
+var ER_ENGINE_VER='v4.278';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
