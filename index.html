@@ -6824,6 +6824,25 @@ function spdCardSpeedHtml(s){
 /* v4.268：宝可梦页/详情/核心第 6 段同读一套口径 —— 性格类别、卡线成本、详情实速条 */
 function spdNatCatOf(natName){var n=NATURES[String(natName||'')];if(!n||!n.length)return '中性';if(String(n[1]||'').indexOf('速度')>=0)return '减速';if(String(n[0]||'').indexOf('速度')>=0)return '加速';return '中性'}
 function spdCatPick(plans,cat){if(!plans||!plans.length)return null;for(var i=0;i<plans.length;i++){if(plans[i].nat===cat)return plans[i]}return null}
+function spdHintChip(id,val,cat,txt){
+  var a='spdHintAdopt('+jsl(String(id))+','+(+val)+','+jsl(String(cat||''))+')';
+  return '<span class="chipopt" role="button" tabindex="0" style="margin-left:6px;font-size:12.5px" title="按这条线直接配（'+txt+'）"'
+    +' onclick="'+a+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();'+a+'}">'+txt+'</span>';
+}
+/* v4.269：卡线上的「采用」= 直接把这条速度线写进配法（同性格类别优先，够不到就给替代手段） */
+function spdHintAdopt(id,val,cat){
+  var s=speciesById(id);if(!s){toast('找不到这只宝可梦');return}
+  val=+val;if(!val){toast('这条线没有可用目标值');return}
+  var plans=spdPlanForTarget(s,val);
+  if(!plans||!plans.length){toast('这只够不到 '+val+' —— 只能靠围巾 / 顺风 / 戏法空间');return}
+  var pl=(cat?spdCatPick(plans,cat):null)||spdMultiPick(plans)||plans[0];
+  if(!pl){toast('这只够不到 '+val);return}
+  spdPlanSave(s.id,{nat:pl.nat,ev:pl.ev,val:pl.val,p:spdSliderValToPos(s,pl.val,1),natOv:''});
+  toast('已采用配法：'+pl.nat+'性格 +'+pl.ev+' EV，实速 '+pl.val);
+  if(coreSel&&''+coreSel.id===''+s.id)renderCore(coreSel)
+/* v4.269：抽屉里点「采用」时把滑块也推到这条线上，别让「已采用」和「当前目标」两套数字并存 */
+try{if(typeof __spdSl!=='undefined'&&__spdSl&&__spdSl.s&&''+__spdSl.s.id===''+s.id){__spdSl.p=spdSliderValToPos(s,pl.val,spdModMul());if(typeof spdSliderRender==='function')spdSliderRender()}}catch(eR){__spdSl=__spdSl||null}
+}
 function spdCoreLineHint(sp,curEv,natName){
   if(!sp)return '';
   var cat=spdNatCatOf(natName);
@@ -6840,21 +6859,77 @@ function spdCoreLineHint(sp,curEv,natName){
     var hit=spdCatPick(spdPlanForTarget(sp,up[1]),cat);
     if(hit){
       var d=(+hit.ev||0)-(+curEv||0);
-      if(d>0)parts.push('再 <b>+'+d+' EV</b> 到 '+up[0]+'（'+up[1]+'）');
-      else if(d===0)parts.push(up[0]+'（'+up[1]+'）刚好卡住，不必再投');
+      if(d>0)parts.push('再 <b>+'+d+' EV</b> 到 '+up[0]+'（'+up[1]+'）'+spdHintChip(sp.id,up[1],cat,'采用'));
+      else if(d===0)parts.push(up[0]+'（'+up[1]+'）刚好卡住，不必再投'+spdHintChip(sp.id,up[1],cat,'采用'));
       else parts.push('已过 '+up[0]+'（'+up[1]+'），还能省 <b>'+(-d)+' EV</b>');
     }else{
       var any=spdPlanForTarget(sp,up[1]);
-      if(any&&any.length)parts.push('卡 '+up[0]+'（'+up[1]+'）要换 <b>'+any[0].nat+'性格</b> + '+any[0].ev+' EV');
+      if(any&&any.length){var ac=spdNatCatOf(any[0].nat);parts.push('卡 '+up[0]+'（'+up[1]+'）要换 <b>'+any[0].nat+'性格</b> + '+any[0].ev+' EV'+spdHintChip(sp.id,up[1],ac,'换'+any[0].nat+'采用'))}
       else parts.push('这只上限 <b>'+spdMaxOf(sp)+'</b>，够不到 '+up[0]+'（'+up[1]+'）—— 想卡线只能靠围巾 / 顺风 / 戏法空间');
     }
   }
   if(down){
     var hit2=spdCatPick(spdPlanForTarget(sp,down[1]),cat);
-    if(hit2){var d2=(+curEv||0)-(+hit2.ev||0);if(d2>0)parts.push('退到 '+down[0]+'（'+down[1]+'）可省 <b>'+d2+' EV</b> 给 HP')}
+    if(hit2){var d2=(+curEv||0)-(+hit2.ev||0);if(d2>0)parts.push('退到 '+down[0]+'（'+down[1]+'）可省 <b>'+d2+' EV</b> 给 HP'+spdHintChip(sp.id,down[1],cat,'采用'))}
   }
   if(!parts.length)return '';
-  return '<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.55">卡线：'+parts.join('　·　')+' <span class="dim">（点「调整速度」按这条线配）</span></div>';
+  return '<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.6">卡线：'+parts.join('　·　')+'</div>';
+}
+/* ============ v4.269：先制感知——把既有的 prioAbiProfile 判定接到速度决策上 ============
+   先制的真实口径早就在 T-1 PRIO_ABI（cls A/B/C/D/E）+ pvScopeCovers + prioAbiProfile 里判好了，
+   这里只做一件事：把「先制在手 → 速度线要求可以降档」这个结论，落到核心卡与滑块这类用户看得见的地方。
+   A=无条件先制（变化/回复/恒定属性） / B=有前置条件（满血、登场首次…） / C=免疫反先制 / D=先制增伤 / E=概率
+*/
+function prioCondZh(c){
+  return ({fullHp:'满血时',firstTurn:'登场首回合',firstUse:'每次上场首次',oppHpBelowHalf:'对手半血以下时',fog:'雾中'}[(c||'')]||'');
+}
+function prioDecisionOf(s,b){
+  var o={ok:false,cls:'',actual:false,cover:false,name:'',scope:'',cond:'',items:[]};
+  try{
+    var pp=null;
+    try{pp=prioAbiProfile(s,b)}catch(eP){pp=null}
+    /* v4.269：T-1 表里 277/351/560 这批「满血先制」带 sub:1，只在子区路径登记（防止流派评分被带偏）。
+       这里只是取「这只到底有没有先制」给用户看，与评分无关 → 空结果时用 subOnly 副本再问一次，评分路径不受影响。 */
+    if(pp&&!(pp.cls)&&b){try{var _b2={};for(var _k in b)_b2[_k]=b[_k];_b2._r450_subOnly=true;pp=prioAbiProfile(s,_b2)}catch(eP2){pp=(typeof pp==='undefined')?null:pp}}
+    o.cls=String((pp&&pp.cls)||'');o.actual=!!(pp&&pp.actual);o.cover=!!(pp&&pp.coverMain);o.items=(pp&&pp.items)||[];
+    var best=null;
+    o.items.forEach(function(it){if(it.cls==='A'&&(!best||best.cls!=='A'))best=it;else if(it.cls==='B'&&!best)best=it});
+    if(best){o.name=best.n||'';o.scope=best.scope||'';o.cond=best.cond||'';o.ok=(o.cls==='A'||o.cls==='B')}
+  }catch(e){return o}
+  return o;
+}
+/* 先制结论：把「先制在手」翻译成速度线要求——同时检查 4 招里到底哪几招吃得到先制，
+   主攻吃不到时改成「把能吃到的那招顶上来」，而不是含糊地劝降速。 */
+function prioAdviceHtml(s,b,curEv,natName){
+  try{
+    if(!s||!b)return '';
+    var d=prioDecisionOf(s,b);
+    if(!d.ok||!d.name)return '';
+    var head='<b style="color:var(--accent)">先制：'+esc(d.name)+'（'+esc(prioCondZh(d.cond)||'无条件')+(d.scope?' '+esc(d.scope)+'招':'')+'）</b>';
+    if(!d.actual)return '<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.6">'+head+' <span class="dim">—— 当前这套「推荐特性」不是它，拿不到先制，速度按常态算。</span></div>';
+    /* 4 招里谁吃得到先制 */
+    var mv=(b.mv&&b.mv.main)||[],cov=[],noc=[];
+    mv.forEach(function(x){var m=x&&MV[''+(+x.id||0)];if(!m)return;var hit=(d.scope?pvScopeCovers(d.scope,m[1],m[4],m[3]):true);(hit?cov:noc).push({n:m[1],p:+m[5]||0})});
+    cov.sort(function(x,y){return y.p-x.p});
+    var box='<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.6">'+head;
+    if(!d.cover&&!cov.length)return box+' <span class="dim">—— 这套 '+(mv.length||4)+' 招里没有 '+esc(d.scope||'对应')+' 招，先制现在完全用不上，速度要求不降。</span></div>';
+    if(!d.cover&&cov.length){
+      box+=' <span class="dim">—— 主攻「'+esc(((MV[''+(+((mv[0]&&mv[0].id)||0))]||[])[1])||'')+'」吃不到，4 招里只有「'+esc(cov[0].n)+'」（威力 '+cov[0].p+'）能吃到先制。</span>';
+      box+='<br>把它顶成主攻就能按先制配速：';
+    }else{
+      box+='　·　覆盖 '+cov.length+'/'+(mv.length||4)+' 招（最高「'+esc(cov[0].n)+'」威力 '+cov[0].p+'）';
+    }
+    var P=speedPctiles(),cur=(curEv==null)?0:dmgStatOf(bstI(s,5),curEv,31,5,natName||'');
+    var A=spdCatPick(spdPlanForTarget(s,P.P50),'中性');
+    var B=spdCatPick(spdPlanForTarget(s,P.P75),'加速');
+    var _atA=!!(curEv!=null&&A&&+A.ev===+curEv),_atB=!!(curEv!=null&&B&&+B.ev===+curEv);
+    if(A)box+='　·　先制线：'+(A.ev>0?('中性性格 <b>'+A.ev+' EV</b> 到 <b>'+A.val+'</b>（P50），省下 '+(252-A.ev)+' 点转投攻/耐久'):('<b>不投速</b>也到 <b>'+A.val+'</b>（P50）'))+(+_atA?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,A.val,'中性','采用');
+    if(B)box+='　·　常态线：'+esc(B.nat)+'性格速度 <b>'+B.ev+' EV</b> 到 '+B.val+'（P75）'+(+_atB?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,B.val,'加速','采用');
+    if(d.cond==='fullHp')box+='<br><span class="dim">满血全靠轮转保（虫返/换人再上），堆 HP 换不来这个条件；全投耐久只在你需要一个具体承伤基准时才有意义。</span>';
+    box+='<span class="dim">　对手同档先制仍比速度。</span>';
+    if(cur)box+='<span class="dim">　现在实速 '+cur+'。</span>';
+    return box+'</div>';
+  }catch(e){return ''}
 }
 function spdDetailSpeedHtml(s){
   var pl=spdPlanOf(s),v=pl?(+pl.val||0):spdMaxOf(s);
@@ -6906,7 +6981,8 @@ function speedSliderHtml(s){
         '<div class="spdQuick"><span class="qlab">常用速度：</span>'+
           ['P50','P75','P90','P95','P99'].map(function(a){var v=spdPctileVal(+a.slice(1)),_mx=spdMaxOf(s),_un=(v>_mx);return '<span class="q" onclick="spdSliderSetVal('+v+')" style="'+(_un?'opacity:.42;':'')+'" title="'+(_un?('这只上限 '+_mx+'，够不到 '+a+'（'+v+'）——点了只会到上限'):('吸附到 '+a+'（'+v+'）'))+'">'+v+'</span>'}).join('')+
         '</div>'+
-        '<div id="spdMultiBox"></div>'+
+        '<div id="spdPrioBox" style="margin-top:2px"></div>'+  /* v4.269：先制结论 */
+'<div id="spdMultiBox"></div>'+
       '</div>'+
       '<div class="spdAlloc"><span class="lab">剩余努力值：</span><span class="chipgrp" id="spdAllocG">'+
         spdSlChip('自动判断',__spdSl.allocMode==='auto',"spdSet('allocMode','auto')")+
@@ -6975,8 +7051,14 @@ function speedSliderHtml(s){
       '</div>'+
     '</div>';
     setTimeout(function(){try{spdSliderRender()}catch(e){}},0);   /* v4.88 修复GAP-C：详情打开瞬间即首渲染一次方案（不等首次交互） */
-    return h;
-  }catch(e){return ''}
+      /* v4.269：抽屉里也给先制结论——同一只、同一套推荐流派口径，和核心卡第 6 段完全一致 */
+  setTimeout(function(){try{
+    var box=document.getElementById('spdPrioBox');if(!box)return void 0;
+    var bd=null;try{bd=(typeof deriveBuilds==='function')?(deriveBuilds(s)||[])[0]:null}catch(eB){bd=null}
+    box.innerHTML=prioAdviceHtml(s,bd,undefined,'')||'';
+  }catch(eC){box=null}},0);
+  return h;
+}catch(e){return ''}
 }
 function spdTgl(k){var _oT=spdSliderPosToVal(__spdSl.s,__spdSl.p,spdModMul());__spdSl[k]=!__spdSl[k];var _nM=spdModMul();__spdSl.p=spdSliderValToPos(__spdSl.s,_oT,_nM);spdSliderRender()}
 function spdSet(k,v){__spdSl[k]=v;spdSliderRender()}
@@ -16060,7 +16142,10 @@ function evBarHtml(bd){
     h+='<button class="btn-mini" type="button" onclick="spdAdjustFromCore('+jsl(String(sp.id))+')" title="打开速度滑块，拖动后可采用">调整速度</button>';
     if(plan)h+='<button class="btn-mini" type="button" onclick="spdClearFromCore('+jsl(String(sp.id))+')" title="取消采用，恢复流派默认">恢复默认</button>';
     h+='</div>';
-    if(!plan)h+=spdCoreLineHint(sp,a[5],natName); /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
+    /* v4.269：先制在手（满血拳招等）→ 速度要求降档，决策依据排在卡线细节之前；
+       先制段已经报了 P50/P75 两条线，就不再重复一条卡线（同一屏里两套同样的数字是噪音） */
+    var _pH=prioAdviceHtml(sp,bd,a[5],natName);
+    if(_pH)h+=_pH;else if(!plan)h+=spdCoreLineHint(sp,a[5],natName);   /* 先制段与卡线二选一：同一屏不报两套同样的数字 */ /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
   }
   var sumTxt=ev.summary;
   if(plan){
@@ -16259,7 +16344,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.268';
+var ER_ENGINE_VER='v4.269';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
