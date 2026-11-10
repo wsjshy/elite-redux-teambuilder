@@ -6636,6 +6636,40 @@ function spdRampHtml(s,baseVal){
       +'</div>';
   }catch(eRamp){return ''}
 }
+/* v4.276：戏法空间口径——唯一一个「投速是负收益」的机制。
+   源码口径：TRICK_ROOM_DURATION=5 + 施放当回合不递减 ⇒ 实际 6 个回合时段（含施放回合）；戏法空间 prio −7（全场最后发动）。
+   空间内出手顺序反转（越慢越先手），所以：速度 EV=0、性格减速度，围巾/顺风/加速/速度强化全部变负收益。 */
+function spdSpaceNat(s){var mk=(typeof spdMainKind==='function')?spdMainKind(s):'物攻';return (mk==='特攻')?'冷静':'勇敢'}
+function spdSpaceHtml(s){
+  try{
+    if(!s)return '';
+    var role=speedRole(s),b=bstI(s,5);
+    if(!(role==='space'||(b>0&&b<=45)))return '';   /* 空间炮台 或 天生超低速（≤45）才提示 */
+    var nat=spdSpaceNat(s),v0=Math.floor((2*b+36)*0.9),p=spdRankOfVal(v0);
+    var bulk=spdBulkAlloc(252,s,'balanced');
+    var H=2*bstI(s,0)+31+Math.floor(bulk.hp/4)+110,D=2*bstI(s,2)+31+Math.floor(bulk.d/4)+5,S=2*bstI(s,4)+31+Math.floor(bulk.s/4)+5;
+    var _mk=(typeof spdMainKind==='function')?spdMainKind(s):'物攻';var ATK=Math.max(dmgStatOf(bstI(s,_mk==='特攻'?3:1),252,31,_mk==='特攻'?3:1,nat),dmgStatOf(bstI(s,_mk==='特攻'?1:3),0,31,_mk==='特攻'?1:3,nat));
+    var setter=false;try{setter=learnHasName(s,'戏法空间')}catch(eL){setter=false}
+    var h='<div style="font-size:13.5px;color:var(--sub);margin:3px 0 0 2px;line-height:1.6">'
+      +'<b style="color:var(--accent)">戏法空间口径</b>：空间内「越慢越先手」，速度 EV 应该是 <b>0</b>，性格用减速（<b>'+nat+'</b> +'+((nat==='冷静')?'特攻':'攻击')+' −速度）'
+      +'<span class="chipopt" role="button" tabindex="0" style="margin-left:6px;font-size:12.5px" onclick="spdSpaceAdopt(\''+esc(String(s.id))+'\')">存 0 速·减速</span>'
+      +'<br>实算：0 EV + '+nat+' → 实速 <b>'+v0+'</b>；空间内你先行 <b>'+(100-p)+'%</b> 的极速档（同速另按性格/EV 决先后），空间外你只快过 '+p+'%。'
+      +'速度这 252 点不用投——先把主攻拉满（'+nat+' 正好 +'+((nat==='冷静')?'特攻':'攻击')+'，'+((nat==='冷静')?'特攻':'物攻')+'实数 <b>'+ATK+'</b>），余下给耐久；纯盾不需要主攻时，252 全给耐久 = HP <b>'+H+'</b> / 防 <b>'+D+'</b> / 特防 <b>'+S+'</b>（均衡最优）。'
+      +'<br><span style="color:var(--warn,#e0a800)">⚠ 空间里这些全是负收益：讲究围巾 ×1.5 / 顺风 ×2 / 加速 / 速度 +1 级——它们只让你更晚出手；反过来「黏黏网 −1 级 / 电磁波 / 岩石封锁」是给你的加速。</span>'
+      +(setter?'<br>你自己能开戏法空间：优先度 <b>−7</b>（全场最后发动），开空间那一回合基本白挨一次打——满 HP + 主防，别投速。':'')
+      +'<br>窗口只有 '+WCONF.trickroomTurns+' 个回合时段（含施放回合），队里要留一只空间外也能打的人。'
+      +'</div>';
+    return h;
+  }catch(eSpace){return ''}
+}
+function spdSpaceAdopt(id){
+  var s=speciesById(id);if(!s){toast('找不到这只宝可梦');return}
+  var b=bstI(s,5),v=Math.floor((2*b+36)*0.9);
+  spdPlanSave(s.id,{nat:'减速',ev:0,val:v,p:spdSliderValToPos(s,v,1),natOv:''});
+  toast('已按空间口径采用：速度 0 EV + 减速性格，实速 '+v+'（省下的 252 点去耐久/主攻）');
+  if(coreSel&&''+coreSel.id===''+s.id)renderCore(coreSel);
+  try{if(typeof __spdSl!=='undefined'&&__spdSl&&__spdSl.s&&''+__spdSl.s.id===''+s.id){__spdSl.p=spdSliderValToPos(s,v,spdModMul());if(typeof spdSliderRender==='function')spdSliderRender()}}catch(eSp){__spdSl=__spdSl||null}
+}
 var _spdAbiNoH=null;
 function spdAbiNoHolders(){
   if(_spdAbiNoH)return _spdAbiNoH;
@@ -6732,6 +6766,8 @@ function speedDistBarHtml(){
 function spdEvTo(s,target){var b=bstI(s,5);for(var ev=0;ev<=252;ev+=4){var v=Math.floor((2*b+31+ev/4+5)*1.1);if(v>=target)return{ev:ev,val:v,saved:252-ev}}return null}
 /* 定位分层：高速速攻手(超速P90+) / 中速清场(卡P75省EV) / 空间慢速手(反向拉低速) */
 function speedRole(s){var sp=spdOf(s),at=Math.max(bstI(s,1),bstI(s,3));
+  /* v4.276：速≤30 只可能是空间料（不管攻击高低，如煤炭龟 20）——否则会被错标成「清场」，空间口径就落不到它身上 */
+  if(sp<=30)return 'space';
   if(sp<=60&&at>=95)return 'space';
   if(sp>=100&&at>=90)return 'fast';
   return 'mid'}
@@ -6926,6 +6962,7 @@ function spdCoreLineHint(sp,curEv,natName){
     }else{
       var any=spdPlanForTarget(sp,up[1]);
       if(any&&any.length){var ac=spdNatCatOf(any[0].nat);parts.push('卡 '+up[0]+'（'+up[1]+'）要换 <b>'+any[0].nat+'性格</b> + '+any[0].ev+' EV'+spdHintChip(sp.id,up[1],ac,'换'+any[0].nat+'采用'))}
+      else if(speedRole(sp)==='space'){parts.push('这只上限 <b>'+spdMaxOf(sp)+'</b>（252 速）—— 但定位是<b>空间</b>：越慢越先手，不必卡 '+up[0]+'（'+up[1]+'），围巾 / 顺风在这里是负收益')}
       else parts.push('这只上限 <b>'+spdMaxOf(sp)+'</b>，够不到 '+up[0]+'（'+up[1]+'）—— 想卡线只能靠围巾 / 顺风 / 戏法空间');
     }
   }
@@ -7168,7 +7205,7 @@ function speedSliderHtml(s){
   setTimeout(function(){try{
     var box=document.getElementById('spdPrioBox');if(!box)return void 0;
     var bd=null;try{bd=(typeof deriveBuilds==='function')?(deriveBuilds(s)||[])[0]:null}catch(eB){bd=null}
-    box.innerHTML=(prioAdviceHtml(s,bd,undefined,'')||'')+spdRampHtml(s,0);
+    box.innerHTML=(prioAdviceHtml(s,bd,undefined,'')||'')+spdRampHtml(s,0)+spdSpaceHtml(s);
   }catch(eC){box=null}},0);
   return h;
 }catch(e){return ''}
@@ -7208,7 +7245,8 @@ function spdSliderRender(){
       h+='<tr style="cursor:pointer" onclick="spdSliderSetVal('+r[1]+')" title="点这里把滑块目标设到 '+r[1]+'"><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+best.nat+'</td><td>'+best.ev+(best.ev>=252?' <span style="color:var(--warnred)">满</span>':'')+'</td></tr>';
     });
     h+='</table>';
-    if(_un.length)h+='<div style="font-size:12.5px;color:var(--sub);margin-top:2px">这只上限 <b>'+_mx+'</b>，够不到 '+_un.join(' / ')+' —— 想卡线只能靠围巾 / 提速特性 / 顺风，或改用戏法空间。</div>';
+    if(_un.length){if(speedRole(s)==='space')h+='<div style="font-size:12.5px;color:var(--sub);margin-top:2px">这只上限 <b>'+_mx+'</b>，够不到 '+_un.join(' / ')+' —— 它定位是<b>空间</b>：越慢越先手，这些线本来就不该追，围巾/顺风在这里是负收益。</div>';
+      else h+='<div style="font-size:12.5px;color:var(--sub);margin-top:2px">这只上限 <b>'+_mx+'</b>，够不到 '+_un.join(' / ')+' —— 想卡线只能靠围巾 / 提速特性 / 顺风，或改用戏法空间。</div>';}
     h+='</div>';box.innerHTML=h;
   }}catch(e){}
   var b=bstI(s,5),p=__spdSl.p,M=spdModMul();
@@ -7966,15 +8004,15 @@ function speedRenderTable(){
     '<th class="spd-hide-sm" title="速度 +1 级（高速移动 / 龙舞等）×1.5 后的实速；不计入主表">+1级强化</th>'+
     '<th title="全库极速档排名分位（P50 / P90 / P99 切点见本页顶部分位表）">分位</th>'+
     '<th title="只求卡过 P50/P75 线时所需的最小速度 EV，省下的可挪去 HP（不必无脑 252）">省EV建议</th>'+
-    '<th title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95（反向拉低速）｜清场：其余。点击徽标可直接按该定位筛选">定位</th>'+
+    '<th title="速攻：速≥100 且攻≥90｜空间：速≤30，或速≤60 且攻≥95（反向拉低速）｜清场：其余。点击徽标可直接按该定位筛选">定位</th>'+
     '</tr></thead><tbody>';
   capRows.forEach(function(s){var mx=spdMaxOf(s),role=speedRole(s),wa=spdSpeedAbiOf(s),wv=wa?Math.floor(mx*wa.mul):null;
     var p=speedPctileRankOf(s);
-    var evTip='—';var e75=spdEvTo(s,q.P75);
+    var evTip='—';if(role==='space'){evTip='<span style="color:var(--ok)">0EV·减速</span> <span style="color:var(--sub);font-size:13px">空间口径</span>'}    var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:13px">EV'+e75.ev+'</span>'):'已满线';}
     h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="'+(_showAbiCol?'':'spd-hide-sm')+'">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:13px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+'</div>'):(spdRampOf(s)?('<b style="color:var(--acc);font-size:16px">'+Math.floor(mx*1.5)+'</b><div style="color:var(--sub);font-size:13px;line-height:1.35">加速 +1/回合（第2回合起 ×1.5）</div>'):'<span style="color:var(--sub)">—</span><div style="color:var(--sub);font-size:12px;line-height:1.3">无提速特性</div>'))+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
       '<td><span onclick="event.stopPropagation();speedToggleFilter(\'role\',\''+(role==='fast'?'fast':(role==='space'?'space':'clear'))+'\')" '+
-        'title="速攻：速≥100 且攻≥90｜空间：速≤60 且攻≥95｜清场：其余。点击按此定位筛选全表" '+
+        'title="速攻：速≥100 且攻≥90｜空间：速≤30，或速≤60 且攻≥95｜清场：其余。点击按此定位筛选全表" '+
         'style="cursor:pointer;color:var(--accent);border-bottom:1px dashed currentColor;font-weight:600">'+
         (role==='fast'?'速攻':(role==='space'?'空间':'清场'))+'</span></td></tr>';
   });
@@ -8026,7 +8064,7 @@ function speedRender(){if((!window.__erReady&&!window.__ER_PARTIAL)||!ERDATA.spe
   h+='<span style="font-size:13.5px;color:var(--sub)">属性</span>';
   ['一般','火','水','草','电','冰','格斗','毒','地面','飞行','超能力','虫','岩石','幽灵','龙','钢','恶','妖精'].forEach(function(t){h+=ch('type',t,t)});
   h+='</div></div>';
-  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码逐条实算（共 17 条速度特性）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。另有「加速」这类回合累积型（源码 #3：每回合 +1 级、入场当回合不触发），本列按第 2 回合 ×1.5 标注，它不是一个固定倍率。'
+  h+='<div style="margin-top:8px;padding:9px 11px;border-radius:8px;background:rgba(59,130,246,.09);border-left:3px solid var(--accent);font-size:14px;line-height:1.6">💡 <b>点表格任意一行</b> → 打开这只的完整详情（种族值 / 特性 3 选 1 与源码级效果 / 天性 / 配速建议 / 进化链）。<br>「特性加速」列按源码逐条实算（共 17 条速度特性）：命中则显示提速后的实速 + 倍率 + 触发条件，未命中显示 <b>—</b>。想看谁有提速特性，点上面的「只列有提速特性的」。另有「加速」这类回合累积型（源码 #3：每回合 +1 级、入场当回合不触发），本列按第 2 回合 ×1.5 标注，它不是一个固定倍率。定位为「空间」的行（速≤30，或速≤60 且攻≥95）按<b>反向口径</b>读：速度越低越先手，「省EV建议」给的是 0EV·减速，围巾/顺风/加速对它们都是负收益。'
 +((typeof spdAbiNoHolders==='function'&&spdAbiNoHolders().length)?('<br><span style="color:var(--sub)">其中「'+spdAbiNoHolders().join(' / ')+'」在本代图鉴暂无任何持有者（保留只为机制备案，永远不会命中——别按它去挑宝可梦）。</span>'):'')+'</div>';
 
   h+='<div id="spdTableBox" style="margin-top:6px"></div></div>';
@@ -16269,7 +16307,8 @@ function evBarHtml(bd){
        先制段已经报了 P50/P75 两条线，就不再重复一条卡线（同一屏里两套同样的数字是噪音） */
     var _pH=prioAdviceHtml(sp,bd,a[5],natName);
     if(_pH)h+=_pH;else if(!plan)h+=spdCoreLineHint(sp,a[5],natName);
-    h+=spdRampHtml(sp,realSpd);   /* v4.275：加速这类回合累积型增速，和先制结论并列 */   /* 先制段与卡线二选一：同一屏不报两套同样的数字 */ /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
+    h+=spdRampHtml(sp,realSpd);
+    h+=spdSpaceHtml(sp);   /* v4.276：空间口径（投速是负收益） */   /* v4.275：加速这类回合累积型增速，和先制结论并列 */   /* 先制段与卡线二选一：同一屏不报两套同样的数字 */ /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
   }
   var sumTxt=ev.summary;
   if(plan){
@@ -16468,7 +16507,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.275';
+var ER_ENGINE_VER='v4.276';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
