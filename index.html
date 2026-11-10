@@ -7317,6 +7317,8 @@ var TC_HAZ={set:["隐形岩","撒菱","毒菱","黏网","黏黏网"],clr:["高�
 var TC_WKCAP=2;
 var TC_PHAZE=["吼叫","吹飞","黑雾","清除之烟","龙尾","巴投"];
 var TC_PRIO=[["子弹拳","钢"],["音速拳","格斗"],["冰砾","冰"],["突袭","恶"],["水流喷射","水"],["影子偷袭","幽灵"],["真空波","格斗"]];
+var TC_CLERIC=["治愈铃声","芳香治疗"];
+var TC_STATUS_ABI=["自然回复","自然恢复","魔法防守"];
 function _tcTypes(){return (ERDATA&&ERDATA.types)?ERDATA.types:[]}
 function _tcWkOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)>1)r[tp]=1}catch(eW){eW.name}});return r}
 function _tcImmOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)===0)r[tp]=1}catch(eI){eI.name}});return r}
@@ -7545,6 +7547,7 @@ function _tcFixHtml(kind,tset){
   else if(kind==="set"){groups=[["隐形岩","撒菱","毒菱","黏网","黏黏网"]];kw="队里没人撒钉，默认配置里<b>已经带撒钉</b>的：";looseKw="默认配置都没带撒钉，但能学——选进来后要手动换一个槽：";}
   else if(kind==="phase"){groups=[TC_PHAZE];kw="反强化的人：默认配置里<b>已经带吹飞/黑雾</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind==="prio"){groups=[["子弹拳","音速拳","冰砾","突袭","水流喷射","影子偷袭","真空波"]];kw="自己带先制的队友：默认配置里<b>已经带先制招</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
+  else if(kind==="cleric"){groups=[TC_CLERIC];kw="队医：默认配置里<b>已经带治愈铃声/芳香治疗</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
   var own=_ownMap(),ownN=_ownCount();
   var list=_tcScan(groups,tset,3,true),loose=false,outside=false;
@@ -7824,6 +7827,15 @@ setupMems.forEach(function(x){
   else{var sev=hits.some(function(h){return h.m>=4})?2:1;
     add(sev,(sev===2?"<b style='color:var(--warnred)'>":"<b>")+x.zh+" 弱先制招（"+desc+"）</b>：对手不用拼速度，换一只带先制的就能在你出手前收掉残血的你"+(ownPrio?"；你自己也有先制，可对拼先制手":"")+"。","prio");}
 });
+/* ⑦ 状态答案 */
+var hasCleric=mem.some(function(x){return TC_CLERIC.some(function(n){return x.set[n]})||x.set["神秘守护"]});
+var hasStatusAbi=mem.some(function(x){return TC_STATUS_ABI.indexOf(x.abi)>=0});
+if(hasCleric||hasStatusAbi){
+  var ans=[];if(hasCleric)ans.push("队医/神秘守护");if(hasStatusAbi)ans.push("状态特性");
+  add(0,"<span style='color:var(--ok,#2e7d32)'>状态有答案</span>："+ans.join("+")+"——被磷火/剧毒/催眠了能解或不吃状态伤害，不会被一个状态废掉。");
+}else{
+  add(1,"<b>全队没有状态答案</b>：磷火（灼伤）废掉物理手、剧毒递增磨死盾、催眠直接跳过回合，而六只里没队医、没神秘守护，也没有自然回复/魔法防守这类状态特性——被挂状态只能硬扛。","cleric");
+}
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
@@ -7832,7 +7844,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17475,7 +17487,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.293';
+var ER_ENGINE_VER='v4.294';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
