@@ -1047,7 +1047,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 </section>
 <!-- ===== 速度线（v4.68 批4：全库分位锚点+配速建议） ===== -->
 <section id="tab-speed" class="tab">
-  <div class="tip">看 <b>「极速252+性格」</b> 列定目标：速攻手卡过 P90、清场卡过 P75，省下的 EV 挪去 HP。</div>
+  <div class="tip">看 <b>「极速252+性格」</b> 列定目标：速攻手卡过 P90、清场卡过 P75，省下的 EV 挪去 HP。定完目标去下面 <b>「我的队伍 · 速度现状」</b> —— 它会按你自己的配速告诉你队员现在卡在哪条线上。</div>
   <details class="spdadv"><summary>口径与乘区说明</summary><div style="font-size:13px;color:var(--sub);line-height:1.6">全库物种极速档（252 努力 + 速度性格）分位锚点；天气 / 轻装 / 围巾 / 强化乘区为参考列，不自动计入主表；空间慢速手反向拉低速。</div></details>
   <div id="speedBox"></div>
 </section>
@@ -6780,6 +6780,37 @@ function spdPlanClear(id){var m=spdPlanStore();if(m[String(id)]){delete m[String
 /* v4.265 队伍构建/分析侧同读：采用实速优先，未采用则用极速档（两者都明确标注，不混口径） */
 function spdPlanOf(s){return s?spdPlanGet(s.id):null}
 function spdViewValOf(s){var pl=spdPlanOf(s);if(pl)return +pl.val||0;return spdMaxOf(s)}
+/* v4.266：速度线页把「我的队伍」摆到分位锚点上——同读 spdPlanOf 一套口径
+   （已采用=你采用的实速；未采用=252+性格的极速上限），两者都写在行内，不混口径。 */
+function teamSpeedStripHtml(){
+  var q=speedPctiles();
+  var tm=(typeof team!=='undefined'&&team)?team:[];
+  if(!tm.length){
+    return '<div class="sec" style="margin-top:8px"><h3>我的队伍 · 速度现状</h3>'+
+      '<div style="font-size:14px;color:var(--sub)">尚未组队。到「队伍构建」选人后，这里会按同一套配速口径把每只摆到上面那几条分位线上。</div></div>';
+  }
+  var adopted=0,fastest=null,rows='';
+  tm.forEach(function(s){
+    var pl=spdPlanOf(s),v=pl?(+pl.val||0):spdMaxOf(s),p=spdRankOfVal(v);
+    if(pl)adopted++;
+    if(!fastest||v>fastest.v)fastest={zh:s.zh,v:v,p:p};
+    var tone=v>=q.P90?['#2e7d32','超 P90']:v>=q.P75?['#f9a825','过 P75 清场']:v>=q.P50?['#6b7280','中速']:['#9e9e9e','慢速'];
+    rows+='<div style="display:flex;align-items:center;gap:6px;margin:2px 0;cursor:pointer;flex-wrap:wrap" onclick="openSpById('+s.id+')" title="点开这只的详情与配速建议">'+
+      '<span class="spbox" style="width:26px;height:26px;flex:0 0 26px">'+sprEl('span',s.id,'spsp')+'</span>'+
+      '<span style="flex:0 1 96px;min-width:60px;max-width:96px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.zh)+'</span>'+
+      '<span style="font-size:17px;font-weight:700;color:var(--text);width:44px">'+v+'</span>'+
+      '<span style="font-size:13px;color:var(--sub);width:50px">P'+p+'</span>'+
+      (pl?'<span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:12.5px" title="按你在核心配队第 6 段采用的实速">配速</span>':'<span style="font-size:12.5px;color:var(--sub)">极速</span>')+
+      '<span style="font-size:13.5px;color:'+tone[0]+';font-weight:600;margin-left:2px">'+tone[1]+'</span></div>';
+  });
+  var gap=fastest.v-q.P75;
+  var foot=(gap>=0
+    ?'全队最快 <b>'+esc(fastest.zh)+'</b> '+fastest.v+'，比 P75 高 '+gap+' —— 已有清场级先手。'
+    :'⚠ 全队最快 <b>'+esc(fastest.zh)+'</b> '+fastest.v+'，比 P75 低 '+(-gap)+' —— 控速 / 戏法空间 / 讲究围巾先想一遍。');
+  return '<div class="sec" style="margin-top:8px"><h3>我的队伍 · 速度现状（'+tm.length+' 只'+(adopted?'，其中 '+adopted+' 只按采用配速':'')+'）</h3>'+
+    rows+'<div style="font-size:14.5px;margin-top:3px'+(gap<0?';color:var(--warnred)':'')+'">'+foot+'</div>'+
+    '<div style="font-size:12.5px;color:var(--sub);margin-top:2px">标「配速」= 你在核心配队第 6 段采用的实速；标「极速」= 未采用，按 252 努力 + 速度性格的理论上限。点任意一行看详情。</div></div>';
+}
 function spdCardSpeedHtml(s){
   var pl=spdPlanOf(s),v=spdViewValOf(s);
   if(!v)return '';
@@ -7703,6 +7734,7 @@ function speedRender(){if((!window.__erReady&&!window.__ER_PARTIAL)||!ERDATA.spe
   h+='<table class="tbl"><tr><th>分位</th><th>P50</th><th>P75</th><th>P90</th><th>P95</th><th>P99</th></tr>';
   h+='<tr><td>极速值</td>'+'<td style="font-size:16px;font-weight:700;color:var(--text)">'+q.P50+'</td>'+'<td style="font-size:16px;font-weight:700;color:var(--text)">'+q.P75+'</td>'+'<td style="font-size:18px;font-weight:800;color:var(--accent)">'+q.P90+'</td>'+'<td style="font-size:16px;font-weight:700;color:var(--text)">'+q.P95+'</td>'+'<td style="font-size:16px;font-weight:700;color:var(--text)">'+q.P99+'</td></tr></table>';
   h+=speedDistBarHtml(); /* v4.69 P3：全库速度分布条（P50/75/90/95/99 切点静态标注） */
+  h+=teamSpeedStripHtml(); /* v4.266：我的队伍速度现状（同读配法真源，对到分位锚点） */
   h+='<details class="spdadv"><summary>配速目标分层 / 乘区参考列</summary><div class="tip" style="margin-top:2px">配速目标分层：高速速攻手→超速 P90（'+q.P90+'+）；中速清场→过 P75（'+q.P75+'）并卡线省 EV 挪 HP；空间/慢速手→反向拉低速重耐久。乘区参考列：轻装/悠游自如/叶绿素/拨雪 ×2、讲究围巾 ×1.5、高速移动/龙舞 +1级 ×1.5、破壳/蝶舞 +2级 ×2（均<b>不自动计入主表</b>，仅作「若X队」参考列）。<br>ER 场地轴：<b>兆级电压 / 薄雾场地</b>的速度干扰在配队/场地判据中单独标注，本表不自动叠加。</div></details>';
   h+='<div class="bar" style="margin-top:8px;flex-wrap:wrap;gap:6px"><input type="text" id="spdSearch" placeholder="搜索物种/编号，如 皮卡丘 / 25" oninput="speedOnSearch()" style="flex:1;min-width:160px">';
   /* v4.94 A：排序 chip 组（替换旧下拉，禁下拉硬规则；点击切换↑/↓，active 高亮） */
@@ -16160,7 +16192,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.265';
+var ER_ENGINE_VER='v4.266';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
