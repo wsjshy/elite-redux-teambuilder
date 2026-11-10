@@ -6935,6 +6935,48 @@ function prioDecisionOf(s,b){
 }
 /* 先制结论：把「先制在手」翻译成速度线要求——同时检查 4 招里到底哪几招吃得到先制，
    主攻吃不到时改成「把能吃到的那招顶上来」，而不是含糊地劝降速。 */
+/* v4.274：先制省下来的速度 EV 到底买到了什么 —— 用同一套分配器把两案摊成实数。
+   只做对照，不替用户决定：速度降多少百分点、换来多少 HP / 主攻实数。 */
+function prioEvTradeHtml(s,evA,natA,evB,natB){
+  try{
+    if(evA==null||evB==null)return '';
+    if(+evA===+evB)return '';
+    var off=spdIsOffensive(s),mk=spdMainKind(s);
+    function pack(ev,nat){
+      var R=Math.max(0,252-(+ev||0)),o={ev:+ev||0,nat:nat||'中性'};
+      var _nmul=(o.nat==='加速')?1.1:((o.nat==='减速')?0.9:1);
+      o.sp=Math.floor((2*bstI(s,5)+31+Math.floor((o.ev||0)/4)+5)*_nmul);
+      o.pct=spdRankOfVal(o.sp);
+      if(off){
+        var a=spdAtkAlloc(R,s,mk);o.atkEv=a.atk;o.hpEv=a.hp;
+        o.atk=2*bstI(s,a.idx)+31+Math.floor(a.atk/4)+5;
+      }else{
+        var bl=spdBulkAlloc(R,s,'balanced');o.hpEv=bl.hp;o.atkEv=0;
+        o.atk=2*bstI(s,spdMainKind(s)==='特攻'?3:1)+31+5;
+      }
+      o.hp=2*bstI(s,0)+31+Math.floor(o.hpEv/4)+110;
+      return o;
+    }
+    var A=pack(evA,natA),B=pack(evB,natB);
+    var dEv=B.ev-A.ev,dHp=A.hp-B.hp,dAtk=A.atk-B.atk,dPct=B.pct-A.pct;
+    var _w=[];
+    if(A.atkEv-B.atkEv>0)_w.push('主攻 +'+(A.atkEv-B.atkEv)+' EV（实数 '+(dAtk>0?'+':'')+dAtk+'）');
+    if(A.hpEv-B.hpEv>0)_w.push('HP +'+(A.hpEv-B.hpEv)+' EV（实数 '+(dHp>0?'+':'')+dHp+'）');
+    var _where=_w.length?_w.join(' · '):'和常态线一样的分配';
+    if(dEv<=0)return '';
+    var h='<div style="margin:5px 0 0 2px;padding:6px 8px;border-radius:6px;background:var(--hover-tint);font-size:13px;line-height:1.65">'
+      +'<b style="color:var(--text)">降速省下的 '+dEv+' 点努力值，换到了什么</b>'
+      +'<div style="display:flex;gap:12px;margin-top:3px;flex-wrap:wrap">'
+      +'<div style="flex:1;min-width:152px"><b style="color:var(--accent)">先制线</b> <span style="color:var(--sub)">'+esc(A.nat)+' '+A.ev+' EV → '+A.sp+' 速（P'+A.pct+'）</span><br>'
+      +'HP <b>'+A.hp+'</b>（+'+A.hpEv+' EV）· 主攻 <b>'+A.atk+'</b>（+'+A.atkEv+' EV）</div>'
+      +'<div style="flex:1;min-width:152px"><b>常态线</b> <span style="color:var(--sub)">'+esc(B.nat)+' '+B.ev+' EV → '+B.sp+' 速（P'+B.pct+'）</span><br>'
+      +'HP <b>'+B.hp+'</b>（+'+B.hpEv+' EV）· 主攻 <b>'+B.atk+'</b>（+'+B.atkEv+' EV）</div>'
+      +'</div>'
+      +'<div style="color:var(--sub);margin-top:2px">速度让出 '+dPct+' 个百分点（P'+B.pct+'→P'+A.pct+'），多出的 '+dEv+' 点落在：'+_where+'。</div>'
+      +'</div>';
+    return h;
+  }catch(eTrade){return ''}
+}
 function prioAdviceHtml(s,b,curEv,natName){
   try{
     if(!s||!b)return '';
@@ -6966,6 +7008,9 @@ function prioAdviceHtml(s,b,curEv,natName){
       box+='　·　先制线：'+(A.ev>0?('中性性格 <b>'+A.ev+' EV</b> 到 <b>'+A.val+'</b>（P50），省下 '+(252-A.ev)+' 点转投攻/耐久'):('<b>不投速</b>也到 <b>'+A.val+'</b>（P50）'))+(+_atA?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,A.val,'中性','采用');
     }
     if(!noNeed&&B)box+='　·　常态线：'+esc(B.nat)+'性格速度 <b>'+B.ev+' EV</b> 到 '+B.val+'（P75）'+((curEv!=null&&+B.ev===+curEv)?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,B.val,'加速','采用');
+    /* v4.274：把「省下来的速度 EV」摊成实数对照，紧跟在两条线下面 */
+    /* noNeed（A 类变化/回复招）时先制线就是「不投速」，对照卡也得按 0 EV 算，不能拿 P50 的配法冒充 */
+    if(B){try{box+=prioEvTradeHtml(s,(noNeed?0:(A?A.ev:null)),(noNeed?'中性':(A?A.nat:'中性')),B.ev,B.nat)}catch(eTr){box+=''}}
     if(clsA)box+='<br><span class="dim">无条件先制不看满血也不看回合，条件一直成立'+(String(d.name).indexOf('恶作剧')>=0?'（但对恶属性目标会失效）':'')+'；这类手本来就不靠速度，别为了「看起来快」再投 252。</span>';
     else if(d.cond==='fullHp')box+='<br><span class="dim">满血全靠轮转保（虫返/换人再上），堆 HP 换不来这个条件；全投耐久只在你需要一个具体承伤基准时才有意义。</span>';
     box+='<span class="dim">　对手同档先制仍比速度。</span>';
@@ -16396,7 +16441,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.273';
+var ER_ENGINE_VER='v4.274';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
