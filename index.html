@@ -7244,10 +7244,48 @@ function _tcScan(groups,tset,lim,strictOnly){
     scan++;
     var tx=null;
     try{tx=_tcTaxOf(t2)}catch(eS2){tx=null}
-    out.push({zh:t2.zh,mv:b?_tlkMvTxt(b):"",v:bstI(t2,5),sr:tx?tx.sr:0,spk:tx?tx.spk:0});
+    out.push({zh:t2.zh,mv:b?_tlkMvTxt(b):"",v:bstI(t2,5),sr:tx?tx.sr:0,spk:tx?tx.spk:0,s:t2});
   });
   out.sort(function(a,b){return (a.sr-b.sr)||(b.v-a.v)});
   return out.slice(0,lim||3);
+}
+/* v4.286：换人模拟——换进来之后这支队伍到底变好还是变坏 */
+function _tcAgg(tset){
+  var w={},i2={},rowsT=[];
+  (tset||[]).forEach(function(x){
+    if(!x)return;
+    var tw=_tcWkOf(x),ti=_tcImmOf(x),tx=_tcTaxOf(x);
+    for(var k in tw){if(tw.hasOwnProperty(k))w[k]=(w[k]||0)+1}
+    for(var k2 in ti){if(ti.hasOwnProperty(k2))i2[k2]=1}
+    rowsT.push({sr:tx.sr,v:spdViewValOf(x)});
+  });
+  var bad=0;
+  for(var k3 in w){if(w.hasOwnProperty(k3)&&w[k3]>TC_WKCAP&&!i2[k3])bad++}
+  var srSum=0,maxSr=0,maxV=0;
+  rowsT.forEach(function(m){srSum+=m.sr;if(m.sr>maxSr)maxSr=m.sr;if(m.v>maxV)maxV=m.v});
+  var P=speedPctiles().P90;
+  return {bad:bad,sr:rowsT.length?srSum/rowsT.length:0,maxSr:maxSr,
+          fast:rowsT.filter(function(m){return m.v>=P}).length,maxV:maxV,n:rowsT.length};
+}
+function _tcDropOf(tset){
+  var tm=tset||[],best=null;
+  if(tm.length<6)return null;
+  tm.forEach(function(x){
+    if(!x)return;
+    var list=[];
+    tm.forEach(function(y){if(y&&y!==x)list.push(y)});
+    var a=_tcAgg(list);
+    var score=-a.bad*12-a.sr*100+a.fast*2+a.maxV/4;
+    if(!best||score>best.score)best={drop:x,score:score,agg:a};
+  });
+  return best;
+}
+function _tcSim(cand,tset,drop){
+  var tm=tset||[],list=[];
+  tm.forEach(function(x){if(x&&x!==drop)list.push(x)});
+  var base=_tcAgg(tm);      /* 跟「现在的整队」比，而不是跟少一只的样子比 */
+  list.push(cand);
+  return {drop:drop?drop.zh:"",base:base,now:_tcAgg(list)};
 }
 function _tcFixHtml(kind,tset){
   var groups,kw,looseKw;
@@ -7257,14 +7295,42 @@ function _tcFixHtml(kind,tset){
   var list=_tcScan(groups,tset,3,true),loose=false;
   if(!list.length){list=_tcScan(groups,tset,3,false);loose=true}
   if(!list.length)return "";
+  var dp=null;
+  try{dp=_tcDropOf(tset)}catch(eDp){dp=null}
+  var baseline=dp?("<br><span style='color:var(--sub);font-size:12.5px'>换掉的是 <b>"+dp.drop.zh
+    +"</b>（当前整队里最该动的一只）；下面的数字是「换掉它 + 换上前面的候选」对比现在的整队：</span>"):"";
   var rowsTxt=list.map(function(x){
     var srp=Math.round((x.sr||0)*100);
     var tone=srp>=50?"color:var(--warnred);font-weight:700":"color:var(--sub)";
-    return "<b>"+x.zh+"</b><span style='font-size:12.5px;color:var(--sub)'>　"+x.mv+"</span>"
+    var head="<b>"+x.zh+"</b><span style='font-size:12.5px;color:var(--sub)'>　"+x.mv+"</span>"
       +"<span style='font-size:12.5px;"+tone+"'>　速"+x.v+" · 岩钉"+(srp?srp+"%":"免")+"</span>";
+    var sim="";
+    try{
+      var r=_tcSim(x.s,tset,dp?dp.drop:null);
+      if(r){
+        var dWk=r.now.bad-r.base.bad,dTax=Math.round((r.now.sr-r.base.sr)*100),dFast=r.now.fast-r.base.fast;
+        var parts=[];
+        if(dWk<0)parts.push("<span style='color:#2e7d32'>弱点超标 "+r.base.bad+"→"+r.now.bad+"</span>");
+        else if(dWk>0)parts.push("<span style='color:var(--warnred)'>弱点超标 "+r.base.bad+"→"+r.now.bad+"</span>");
+        if(dTax<=-3)parts.push("<span style='color:#2e7d32'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
+        else if(dTax>=3)parts.push("<span style='color:var(--warnred)'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
+        if(dFast>0)parts.push("<span style='color:#2e7d32'>P90 以上 "+r.base.fast+"→"+r.now.fast+"</span>");
+        else if(dFast<0)parts.push("<span style='color:var(--warnred)'>P90 以上 "+r.base.fast+"→"+r.now.fast+"</span>");
+        var dMax=r.now.maxV-r.base.maxV;
+        if(dMax<=-8)parts.push("<span style='color:var(--warnred)'>队内最快 "+r.base.maxV+"→"+r.now.maxV+"</span>");
+        else if(dMax>=8)parts.push("<span style='color:#2e7d32'>队内最快 "+r.base.maxV+"→"+r.now.maxV+"</span>");
+        if(!parts.length)parts.push("<span style='color:var(--sub)'>三项都没变</span>");
+        var good=dWk<0||dTax<=-3||dFast>0,dneg=dWk>0||dTax>=3||dFast<0||dMax<=-8;
+        var verdict=good&&!dneg?"<span style='color:#2e7d32;font-weight:700'>整队变好</span>"
+          :(good?"<span style='color:#b26a00'>有得有失</span>":"<span style='color:var(--sub)'>整队没变好</span>");
+        sim="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"
+          +(r.drop?"换掉 "+r.drop+"：":"直接加进来：")+"　"+verdict+"　"+parts.join("　")+"</div>";
+      }
+    }catch(eSim){eSim.name}
+    return head+sim;
   }).join("<br>");
   return "<div style='margin:5px 0 0;padding:6px 9px;border-left:3px solid #b26a00;background:rgba(178,106,0,.06);font-size:13.5px;line-height:1.65'>"
-    +"<span style='color:#b26a00;font-weight:700'>怎么修</span>　"+(loose?looseKw:kw)+"<br>"+rowsTxt
+    +"<span style='color:#b26a00;font-weight:700'>怎么修</span>　"+(loose?looseKw:kw)+baseline+"<br>"+rowsTxt
     +"</div>";
 }
 function teamCheckHtml(_R){
@@ -17033,7 +17099,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.285';
+var ER_ENGINE_VER='v4.286';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
