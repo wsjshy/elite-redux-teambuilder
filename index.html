@@ -6723,6 +6723,39 @@ function spdExtHtml(s,baseVal){
     return h;
   }catch(eExt){return ''}
 }
+/* v4.279：飞毛腿（Quick Feet #95）——「拿状态换速度」的条件倍率。
+   源码 desc：'Ups Speed by 1.5x if suffering from a status condition.'（只写 ×1.5，**没有**写「忽略麻痹减速」）
+   所以它不能只当一条速度线：吃哪个状态决定这笔交易划不划算，得和毅力62 / 中毒激升137 一起判断。 */
+function spdQfOf(s){
+  var pool=[].concat(s&&s.abis||[],s&&s.inns||[]),hit=false;
+  pool.forEach(function(a){if(!a||hit)return;var same=false;try{same=abiSame('飞毛腿',a)}catch(eQ){same=('飞毛腿'===a)}if(same)hit=true});
+  return hit;
+}
+function spdHasAbiZh(s,zh){
+  var pool=[].concat(s&&s.abis||[],s&&s.inns||[]),hit=false;
+  pool.forEach(function(a){if(!a||hit)return;var same=false;try{same=abiSame(zh,a)}catch(eH){same=(zh===a)}if(same)hit=true});
+  return hit;
+}
+function spdQfHtml(s,baseVal){
+  try{
+    if(!spdQfOf(s))return '';
+    if(typeof speedRole==='function'&&speedRole(s)==='space')return '';   /* 空间里提速是负收益，交给 spdSpaceHtml */
+    var b=+baseVal||0;if(!b){var pl=null;try{pl=spdPlanOf(s)}catch(eQ2){pl=null}b=pl?(+pl.val||0):spdDefaultTarget(s)}
+    if(!b)return '';
+    var q=speedPctiles(),v15=Math.floor(b*1.5),para=Math.floor(b*0.5*1.5);
+    var guts=spdHasAbiZh(s,'毅力'),toxic=spdHasAbiZh(s,'中毒激升');
+    var ATK=0;if(guts||toxic){ATK=Math.floor(dmgStatOf(bstI(s,1),252,31,1,'固执')*1.5)}
+    var h='<div style="font-size:13.5px;color:var(--sub);margin:3px 0 0 2px;line-height:1.6">'
+      +'<b style="color:var(--accent)">飞毛腿</b>：自身陷入异常状态时速度 <b>×1.5</b>（源码 #95）　现在 <b>'+b+'</b> → 吃到状态后 <b>'+v15+'</b>'+(v15>q.P99?('（已超出全库极速档 P99 '+q.P99+'）'):('（P'+spdRankOfVal(v15)+'）'))+'。'
+      +'<br><b>但要看吃哪个状态</b>：中毒 / 剧毒 = 只提速、每回合掉血；灼伤 = 提速但<b>物攻减半</b>；麻痹 = 麻痹本身 ×0.5（源码常量 paraSpeed='+(WCONF.paraSpeed||0.5)+'），与 ×1.5 相抵后只剩 <b>'+para+'</b>；睡眠 / 冰冻 = 根本不能动，不算提速。'
+      +(guts?'<br><b style="color:var(--ok,#2e7d32)">你还有毅力</b>：吃到状态后攻击也 ×1.5——攻击与速度同时吃状态，状态就不再是纯代价'+((ATK)?'（252 EV 物攻实数 '+ATK+'）':'')+'。':(toxic?'<br><b style="color:var(--ok,#2e7d32)">你还有中毒激升</b>：中毒时攻击 ×1.5 且免疫毒伤——主动吃毒是双收益'+((ATK)?'（252 EV 物攻实数 '+ATK+'）':'')+'。':''))
+      +'<br>结论：纯为速度主动吃状态通常<b>不划算</b>——除非这只同时有 毅力（攻 ×1.5）或 中毒激升（免疫毒伤 + 攻 ×1.5），那时状态对你是双收益。'
+      +'<br><span style="color:var(--warn,#e0a800)">⚠ 别照搬主系列的旧口径：ER 的 desc 只写 ×1.5，<b>没有</b>「忽略麻痹减速」这一条，所以麻痹时按 ×0.5 与 ×1.5 同时成立算（净 '+para+'）。</span>'
+      +'<br><span style="color:var(--sub)">对手的毒菱 / 磷火 / 电磁波等于免费送你提速——吃到状态后别用队医（治愈铃声 / 芳香治疗）把它清掉。</span>'
+      +'</div>';
+    return h;
+  }catch(eQf){return ''}
+}
 var _spdAbiNoH=null;
 function spdAbiNoHolders(){
   if(_spdAbiNoH)return _spdAbiNoH;
@@ -7258,7 +7291,7 @@ function speedSliderHtml(s){
   setTimeout(function(){try{
     var box=document.getElementById('spdPrioBox');if(!box)return void 0;
     var bd=null;try{bd=(typeof deriveBuilds==='function')?(deriveBuilds(s)||[])[0]:null}catch(eB){bd=null}
-    box.innerHTML=(prioAdviceHtml(s,bd,undefined,'')||'')+spdRampHtml(s,0)+spdUnbHtml(s,0)+spdExtHtml(s,0)+spdSpaceHtml(s);
+    box.innerHTML=(prioAdviceHtml(s,bd,undefined,'')||'')+spdRampHtml(s,0)+spdUnbHtml(s,0)+spdExtHtml(s,0)+spdQfHtml(s,0)+spdSpaceHtml(s);
   }catch(eC){box=null}},0);
   return h;
 }catch(e){return ''}
@@ -8063,7 +8096,7 @@ function speedRenderTable(){
     var p=speedPctileRankOf(s);
     var evTip='—';if(role==='space'){evTip='<span style="color:var(--ok)">0EV·减速</span> <span style="color:var(--sub);font-size:13px">空间口径</span>'}    var e75=spdEvTo(s,q.P75);
     if(e75&&mx>=q.P75){evTip=(e75.saved>0)?('<span style="color:var(--ok)">省'+e75.saved+'→HP</span> <span style="color:var(--sub);font-size:13px">EV'+e75.ev+'</span>'):'已满线';}
-    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="'+(_showAbiCol?'':'spd-hide-sm')+'">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:13px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+(wa.cond==='item'?'<span style="color:var(--warn,#e0a800)"> · 一次性，换下失效</span>':'')+'</div>'):(spdRampOf(s)?('<b style="color:var(--acc);font-size:16px">'+Math.floor(mx*1.5)+'</b><div style="color:var(--sub);font-size:13px;line-height:1.35">加速 +1/回合（第2回合起 ×1.5）</div>'):'<span style="color:var(--sub)">—</span><div style="color:var(--sub);font-size:12px;line-height:1.3">无提速特性</div>'))+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
+    h+='<tr style="cursor:pointer" onclick="openSpById(\''+s.id+'\')" title="点击查看 '+esc(s.zh)+' 的完整详情（种族值 / 特性 / 天性 / 配速建议 / 进化链）"><td>'+s.id+'</td><td><span style="color:var(--accent);font-weight:700;border-bottom:1px dashed currentColor">'+esc(s.zh)+'</span></td><td class="spd-hide-sm">'+spd0Of(s)+'</td><td>'+spdFullOf(s)+'</td><td><b style="font-size:16px;font-weight:700;color:var(--hi)">'+mx+'</b></td><td class="spd-hide-sm">'+spdScarfOf(s)+'</td><td class="'+(_showAbiCol?'':'spd-hide-sm')+'">'+(wa?('<b style="color:var(--acc);font-size:16px">'+wv+'</b>'+'<div style="color:var(--sub);font-size:13px;line-height:1.35">'+esc(wa.zh)+' ×'+wa.mul+(wa.mul>1?'（'+esc(wa.label)+'）':'')+(wa.cond==='item'?'<span style="color:var(--warn,#e0a800)"> · 一次性，换下失效</span>':'')+(wa.cond==='status'?'<span style="color:var(--warn,#e0a800)"> · 要自己吃状态，睡眠/冰冻不算</span>':'')+'</div>'):(spdRampOf(s)?('<b style="color:var(--acc);font-size:16px">'+Math.floor(mx*1.5)+'</b><div style="color:var(--sub);font-size:13px;line-height:1.35">加速 +1/回合（第2回合起 ×1.5）</div>'):'<span style="color:var(--sub)">—</span><div style="color:var(--sub);font-size:12px;line-height:1.3">无提速特性</div>'))+'</td><td class="spd-hide-sm">'+Math.floor(mx*1.5)+'</td><td title="全库极速档排名：P'+p+'（数值越大越快，P90+ = 顶级速攻线）">'+_spdBadge(p)+'</td><td>'+evTip+'</td>'+
       '<td><span onclick="event.stopPropagation();speedToggleFilter(\'role\',\''+(role==='fast'?'fast':(role==='space'?'space':'clear'))+'\')" '+
         'title="速攻：速≥100 且攻≥90｜空间：速≤30，或速≤60 且攻≥95｜清场：其余。点击按此定位筛选全表" '+
         'style="cursor:pointer;color:var(--accent);border-bottom:1px dashed currentColor;font-weight:600">'+
@@ -16360,7 +16393,7 @@ function evBarHtml(bd){
        先制段已经报了 P50/P75 两条线，就不再重复一条卡线（同一屏里两套同样的数字是噪音） */
     var _pH=prioAdviceHtml(sp,bd,a[5],natName);
     if(_pH)h+=_pH;else if(!plan)h+=spdCoreLineHint(sp,a[5],natName);
-    h+=spdRampHtml(sp,realSpd);h+=spdUnbHtml(sp,realSpd);h+=spdExtHtml(sp,realSpd);
+    h+=spdRampHtml(sp,realSpd);h+=spdUnbHtml(sp,realSpd);h+=spdExtHtml(sp,realSpd);h+=spdQfHtml(sp,realSpd);
     h+=spdSpaceHtml(sp);   /* v4.276：空间口径（投速是负收益） */   /* v4.275：加速这类回合累积型增速，和先制结论并列 */   /* 先制段与卡线二选一：同一屏不报两套同样的数字 */ /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
   }
   var sumTxt=ev.summary;
@@ -16560,7 +16593,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.278';
+var ER_ENGINE_VER='v4.279';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
