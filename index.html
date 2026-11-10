@@ -909,6 +909,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     </select>
     <button class="btn-mini" id="favOnlyBtn" onclick="toggleFavOnly()" style="margin-left:4px">★ 已收藏</button>
     <button class="btn-mini" id="recentBtn" onclick="toggleRecentOnly()" style="margin-left:4px">🕘 最近浏览</button>
+    <button class="btn-mini" id="planOnlyBtn" onclick="togglePlanOnly()" style="margin-left:4px" title="只显示「核心配队第 6 段」里已采用过配速的宝可梦">◎ 已配速</button>
     <div id="recentChips" style="margin-top:4px;font-size:13.5px;color:var(--sub)"></div>
     <div class="chips" id="spFormChips" style="margin-top:4px"></div><div id="spFilterNote" style="font-size:13px;line-height:1.5;color:var(--sub);margin:2px 0 0"></div>
     <div class="chips" id="spTypeChips"></div>
@@ -3605,6 +3606,7 @@ function renderSp(reset){
   var arr=ERDATA.species.filter(function(s){return spMatch(s,q,sel)});
   if(window._favOnly){arr=arr.filter(function(s){return isFav(s.id)})}
   if(window._recentOnly){var rb=JSON.parse(localStorage.getItem('er_recent')||'[]');arr=arr.filter(function(s){return rb.indexOf(s.id)>-1})}
+  if(window._planOnly){arr=arr.filter(function(s){return !!spdPlanOf(s)})}   /* v4.271：只看已配速 */
   arr=sortedSp(arr,$('spSort').value);
   if(reset){spShown=0;$('spGrid').innerHTML=''}
   var take=arr.slice(spShown,spShown+spStep);
@@ -3619,7 +3621,7 @@ function renderSp(reset){
     c.onclick=function(){openSp(s)};
     $('spGrid').appendChild(c);
   });
-  $('spMore').textContent=(spShown<arr.length?('已显示 '+spShown+'/'+arr.length+'，滚动加载更多 · '):'共 '+arr.length+' 只 · ')+spCountLabel();
+  $('spMore').textContent=(spShown<arr.length?('已显示 '+spShown+'/'+arr.length+'，滚动加载更多 · '):'共 '+arr.length+' 只 · ')+spCountLabel()+(window._planOnly?('　仅已配速：'+arr.length+' 只，点卡片看你的配速或去核心配队定一条'):'');
 }
 (function(){function _scPoke(){var m=document.querySelector('main');if(!$('tab-poke').classList.contains('active'))return;if(!m)return;if(m.scrollTop+m.clientHeight>m.scrollHeight-400)renderSp(false);}var _m=document.querySelector('main');if(_m)_m.addEventListener('scroll',_scPoke);window.addEventListener('scroll',_scPoke);})();
 
@@ -7805,7 +7807,8 @@ function teamSpeedCardHtml(_R){
     var warn='';
     if(best&&best.v<q.P75){warn='<div style="color:var(--warnred);font-size:14.5px;margin-top:4px">⚠ 速度线塌陷：全队最快 '+esc(best.zh)+' '+best.v+' &lt; P75('+q.P75+')，建议控速/空间/围巾。</div>'}
     var note=adoptedN?('，其中 '+adoptedN+' 只按已采用配速实算'):'';
-    return '<div class="sec" style="margin-top:8px"><h3>队伍速度结构（全库分位 · 采用配速优先）</h3>'+
+    return '<div class="sec" style="margin-top:8px"><h3>队伍速度结构（全库分位 · 采用配速优先）'
++'<button class="btn-mini" style="margin-left:8px;vertical-align:middle" onclick="switchTab(\'speed\')" title="跳到「速度线」页看全库分位锚点、分布与每只的配速目标">去速度线页 →</button></h3>'+
       '<div style="font-size:14.5px;margin-bottom:4px">全队最快=<b>'+esc(best.zh)+'</b> '+best.v+' · P'+best.p+note+' ｜ ≥P90 超速 '+fast+' 只 / P50-89 '+mid+' 只 / &lt;P50 '+slow+' 只</div>'+
       rowsH+'<div style="font-size:13px;color:var(--sub);margin-top:2px">竖线：P75 黄 / P90 绿；蓝条=该只速度在全库范围定位；灰线=该只极速（仅在已采用配速时出现）。</div>'+warn+'</div>';
   }catch(e){return ''}
@@ -16368,7 +16371,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.270';
+var ER_ENGINE_VER='v4.271';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -17909,6 +17912,13 @@ function toggleRecentOnly(){
   window._recentOnly=!window._recentOnly;
   var b=$('recentBtn');if(b)b.style.background=window._recentOnly?'var(--accent)':'';
   renderSp(true);
+}
+/* v4.271：宝可梦页「只看已配速」——把已经定过速的那几只挑出来（配合卡片上的「已配速」标） */
+function togglePlanOnly(){
+  window._planOnly=!window._planOnly;
+  var b=$('planOnlyBtn');if(b)b.style.background=window._planOnly?'var(--accent)':'';
+  renderSp(true);
+  if(window._planOnly&&$('spMore')&&spShown===0)toast('还没有哪只定过配速——到「核心配队」第 6 段点「采用」就会记在这里');
 }
 /* v4.128：最近浏览 mini chips——点击跳转到对应精灵 */
 function renderRecentChips(){
