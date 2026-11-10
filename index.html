@@ -7322,6 +7322,7 @@ var TC_STATUS_ABI=["自然回复","自然恢复","魔法防守"];
 var TC_WEATHER_NEED={"雨":["悠游自如","暴风雨","雨盘"],"晴":["叶绿素","太阳之力","花之礼","叶子防守"],"沙":["挖沙","沙之力","沙隐"],"雪":["拨雪","雪隐","冰冻之躯"]};
 var TC_WEATHER_SET_ABI={"雨":["降雨","积雨云"],"晴":["干旱","绯红脉动"],"沙":["扬沙","沙漠之魂"],"雪":["降雪"]};
 var TC_WEATHER_MOVE={"雨":"求雨","晴":"大晴天","沙":"沙暴","雪":"冰雹"};
+var TC_PIVOT=["急速折返","伏特替换","快速折返"];
 function _tcTypes(){return (ERDATA&&ERDATA.types)?ERDATA.types:[]}
 function _tcWkOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)>1)r[tp]=1}catch(eW){eW.name}});return r}
 function _tcImmOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)===0)r[tp]=1}catch(eI){eI.name}});return r}
@@ -7552,6 +7553,7 @@ function _tcFixHtml(kind,tset){
   else if(kind==="prio"){groups=[["子弹拳","音速拳","冰砾","突袭","水流喷射","影子偷袭","真空波"]];kw="自己带先制的队友：默认配置里<b>已经带先制招</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind==="cleric"){groups=[TC_CLERIC];kw="队医：默认配置里<b>已经带治愈铃声/芳香治疗</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind.indexOf("weather:")===0){var _w=kind.split(":")[1];groups=[[TC_WEATHER_MOVE[_w]]];kw="天气手：特性自动起"+_w+"，或默认配置里<b>已经带"+TC_WEATHER_MOVE[_w]+"</b>的：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
+  else if(kind==="pivot"){groups=[TC_PIVOT];kw="折返手：默认配置里<b>已经带急速折返/伏特替换/快速折返</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
   var own=_ownMap(),ownN=_ownCount();
   var list=_tcScan(groups,tset,3,true),loose=false,outside=false;
@@ -7873,6 +7875,13 @@ if(wxWs.length){
 }else if(wxNeedAny){
   add(0,"<span style='color:var(--ok,#2e7d32)'>天气依赖有答案</span>：吃天气的特性都有对应天气手。");
 }
+/* ⑨ 轮转节奏 */
+var hasSetupTm=mem.some(function(x){return TC_SETUP.some(function(n){return x.set[n]})});
+var hasPivot=mem.some(function(x){return TC_PIVOT.some(function(n){return x.set[n]})});
+if(hasSetupTm){
+  if(hasPivot){add(0,"<span style='color:var(--ok,#2e7d32)'>轮转有答案</span>：折返手（急速折返/伏特替换/快速折返）能边打边把强化手安全带上场，它不用硬换、半路不吃伤害。");}
+  else{add(1,"<b>强化手没有安全上场通道</b>：全队没有折返招，强化手只能硬换上场——还没开始强化就先吃一次伤害/状态，碰到盾向对手更是白白掉血。","pivot");}
+}
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
@@ -7881,7 +7890,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17524,7 +17533,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.295';
+var ER_ENGINE_VER='v4.296';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
