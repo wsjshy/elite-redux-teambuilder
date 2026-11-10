@@ -6962,63 +6962,144 @@ function teamPrioMark(s){
     return '<span style="background:rgba(255,193,7,.18);color:#f9a825;border:1px solid rgba(255,193,7,.5);border-radius:3px;padding:0 4px;font-size:12px" title="'+esc(d.name+(cd?'（'+cd+'）':'')+'：这只的速度要求可以低于常态线，点开看先制线')+'">先制</span>';
   }catch(e){return ''}
 }
-/* v4.280：队伍速度联动卡——前五个版本把「单只怎么配速」讲清了，这张卡回答「六只怎么互相补速」。
-   判据全走数据层（learnOf / prioDecisionOf / hasFullHpPrio / spdQfOf），不猜配招。 */
+/* v4.281：队伍速度联动卡改成「按配置判」——v4.280 用「能不能学」判角色，会把
+   「能学戏法空间但配招没带」的宝可梦也算成空间手，凭空造出冲突。这版全部走
+   deriveBuilds 主推流派的**实际配招 / 推荐特性**（anRowOf 同一套口径），
+   「能学但没配」只作为可操作建议单列，不再参与冲突判定。 */
+function _tlkMvZh(id){try{return (typeof MV!=="undefined"&&MV[id]&&MV[id][1])||(" #"+id)}catch(eT){return "?"}}
+function _tlkMvSet(b){
+  var o={};((b&&b.mv&&b.mv.main)||[]).forEach(function(x){o[_tlkMvZh(x.id)]=1});
+  return o;
+}
+function _tlkMvTxt(b){
+  var a=[];((b&&b.mv&&b.mv.main)||[]).forEach(function(x){a.push(_tlkMvZh(x.id))});
+  return a.join("·")||"（无配招）";
+}
+function _tlkAbi(s,b){
+  try{var info=anRowOf(s,b);return (info&&info.abi)||""}catch(eA){return ""}
+}
 function teamSpdLinkHtml(_R){
   try{
-    var tm=(_R&&_R.members)?_R.members:((typeof team!=='undefined'&&team)?team:[]);
-    if(!tm||tm.length<2)return '';
-    var q=speedPctiles(),R={space:[],wind:[],spin:[],prio:[],fullhp:[],qf:[],bell:[],setst:[]};
-    var fastest={v:-1,zh:''},fastN=[];
+    var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
+    if(!tm||tm.length<2)return "";
+    var q=speedPctiles();
+    var R={space:[],wind:[],spin:[],prio:[],fullhp:[],qf:[],bell:[],setst:[]};
+    var ableSpace=[],ableWind=[],ableSpin=[],ableAbi=[];
+    var fastest={v:-1,zh:""},fastN=[];
     tm.forEach(function(s){
       if(!s)return;
+      var bs=[];
+      try{bs=deriveBuilds(s,tm)||[]}catch(eB1){bs=[]}
+      var b=bs.length?bs[0]:null;
+      var mvz=_tlkMvSet(b),abi=_tlkAbi(s,b);
       var v=spdViewValOf(s),p=spdRankOfVal(v);
       if(v>fastest.v)fastest={v:v,zh:s.zh,p:p};
-      if(v>=q.P90)fastN.push(s.zh+' '+v);
-      try{if(learnHasName(s,'戏法空间'))R.space.push(s.zh)}catch(eL1){eL1.name}
-      try{if(learnHasName(s,'顺风'))R.wind.push(s.zh)}catch(eL2){eL2.name}
-      try{if(learnHasName(s,'高速旋转')||learnHasName(s,'清除浓雾'))R.spin.push(s.zh)}catch(eL3){eL3.name}
-      try{if(learnHasName(s,'治愈铃声')||learnHasName(s,'芳香治疗'))R.bell.push(s.zh)}catch(eL4){eL4.name}
-      try{if(learnHasName(s,'毒菱')||learnHasName(s,'磷火')||learnHasName(s,'电磁波'))R.setst.push(s.zh)}catch(eL5){eL5.name}
-      try{if(prioDecisionOf(s,{_r450_subOnly:true}).ok)R.prio.push(s.zh)}catch(eL6){eL6.name}
-      try{if(hasFullHpPrio(s))R.fullhp.push(s.zh)}catch(eL7){eL7.name}
-      if(spdQfOf(s))R.qf.push(s.zh);
+      if(v>=q.P90)fastN.push(s.zh+" "+v);
+      var rec={zh:s.zh,s:s,bs:bs,mv:_tlkMvTxt(b),set:mvz,abi:abi,v:v};
+      var has=function(n){return !!mvz[n]};
+      if(has("戏法空间"))R.space.push(rec);
+      if(has("顺风"))R.wind.push(rec);
+      if(has("高速旋转")||has("清除浓雾"))R.spin.push(rec);
+      if(has("治愈铃声")||has("芳香治疗"))R.bell.push(rec);
+      if(has("毒菱")||has("磷火")||has("电磁波"))R.setst.push(rec);
+      try{if(prioDecisionOf(s,{_r450_subOnly:true}).ok)R.prio.push(rec)}catch(eB2){eB2.name}
+      try{if(hasFullHpPrio(s))R.fullhp.push(rec)}catch(eB3){eB3.name}
+      if(abi==="飞毛腿"||abi==="Quick Feet")R.qf.push(rec);   /* 只认推荐配置里选中的特性 */
+      try{
+        if(abi!=="飞毛腿"&&abi!=="Quick Feet"&&spdHasAbiZh(s,"飞毛腿"))ableAbi.push(s.zh+"（飞毛腿）");
+        if(abi!=="轻装"&&abi!=="Unburden"&&spdHasAbiZh(s,"轻装"))ableAbi.push(s.zh+"（轻装）");
+      }catch(eB5){eB5.name}
+      /* 「能学但没配」——只做建议，不参与冲突判定 */
+      try{
+        if(!mvz["戏法空间"]&&learnHasName(s,"戏法空间"))ableSpace.push(s.zh);
+        if(!mvz["顺风"]&&learnHasName(s,"顺风"))ableWind.push(s.zh);
+        if(!mvz["高速旋转"]&&!mvz["清除浓雾"]&&(learnHasName(s,"高速旋转")||learnHasName(s,"清除浓雾")))ableSpin.push(s.zh);
+      }catch(eB4){eB4.name}
     });
-    var rows='',V=[];
+    var rows="",V=[];
+    var names=function(list){return list.map(function(x){return x.zh})};
     var row=function(lab,list,col,note){
-      if(!list.length)return '';
-      rows+='<div style="display:flex;gap:6px;align-items:flex-start;margin:2px 0;font-size:14px;line-height:1.55">'
-        +'<span style="flex:0 0 76px;color:'+col+';font-weight:700">'+lab+'</span>'
-        +'<span style="flex:1;color:var(--text)">'+list.join(' / ')+(note?'<span style="color:var(--sub);font-size:13px">　'+note+'</span>':'')+'</span></div>';
+      if(!list.length)return "";
+      rows+="<div style='display:flex;gap:6px;align-items:flex-start;margin:3px 0;font-size:14px;line-height:1.55'>"
+        +"<span style='flex:0 0 78px;color:"+col+";font-weight:700'>"+lab+"</span>"
+        +"<span style='flex:1;color:var(--text)'>"
+        +list.map(function(x){return "<b>"+x.zh+"</b><span style='color:var(--sub);font-size:12.5px'>　"+x.mv+"</span>"+(x.abi?"<span style='color:var(--sub);font-size:12.5px'>｜"+x.abi+"</span>":"")}).join("<br>")
+        +(note?"<div style='color:var(--sub);font-size:13px'>"+note+"</div>":"")
+        +"</span></div>";
     };
-    row('减速 / 空间',R.space,'#7e57c2','能开戏法空间：越慢越先手，别给它们配速度');
-    row('提速 / 顺风',R.wind,'#1976d2','能开顺风：全队 ×2 只有 '+((WCONF.tailwindTurns)||4)+' 回合；自己先手才开得出来');
-    row('先制',R.prio,'#f9a825','速度要求可以整体下调的角色');
-    row('满血先制',R.fullhp,'#e65100','先制条件是「满血」，被磨一下就没了');
-    row('清钉',R.spin,'#2e7d32','高速旋转 / 清除浓雾：保住别人的满血先制');
-    row('上状态',R.setst,'#6d4c41','毒菱 / 磷火 / 电磁波：能把状态变成队友的提速');
-    row('吃状态提速',R.qf,'#c62828','飞毛腿：自身有异常才 ×1.5');
-    row('队医',R.bell,'#795548','治愈铃声 / 芳香治疗：清掉的可能是队友的提速');
-    if(!rows)return '';
-    /* 三条互相拖的判断（只在真的成立时才说） */
-    if(R.space.length&&R.wind.length)V.push('<b style="color:var(--warnred)">空间和顺风互相拆台</b>：'+R.wind.join('/')+' 开的顺风会让全队变快，而空间里越慢越先手——空间回合内开风等于把自己推到后面，两套控速只能选一套当主轴。');
-    if(R.space.length&&fastN.length)V.push('<b style="color:var(--warnred)">空间手遇上快攻手</b>：'+fastN.slice(0,3).join('、')+(fastN.length>3?' 等':'')+' 这 '+fastN.length+' 只已到 P90+，空间一开它们反而变成最后出手。要么给这几只留一套不靠速度的活儿，要么这只空间手只当备选。');
-    if(R.fullhp.length&&!R.spin.length)V.push('<b style="color:var(--warnred)">满血先制没有清钉</b>：'+R.fullhp.join('/')+' 的先制条件是满血，队里没人会高速旋转 / 清除浓雾，钉子一落地就先制失效——这条比再堆速度重要。');
-    if(R.qf.length&&R.bell.length){
-      var both=R.qf.filter(function(x){return R.bell.indexOf(x)>-1});
-      V.push(both.length
-        ?('<b style="color:var(--warnred)">同一只要吃状态又要清状态</b>：'+both.join('/')+' 自己有飞毛腿（要有异常才 ×1.5），又能用治愈铃声 / 芳香治疗——配招上只能选一边：要么留提速、别带队医招，要么带队医、别指望这条速度线。')
-        :('<b style="color:var(--warnred)">飞毛腿被队友的队医拆</b>：'+R.qf.join('/')+' 吃状态才有 ×1.5，而 '+R.bell.join('/')+' 的治愈铃声 / 芳香治疗会把它清掉——队医上场的时机得和这只错开。'));
+    /* 冲突时给「换一套配置」的出口：同物种另一条流派里不带这个招 */
+    var altOf=function(rec,bad){
+      for(var i=1;i<rec.bs.length;i++){
+        var b2=rec.bs[i],set2=_tlkMvSet(b2);
+        if(!set2[bad])return {name:(b2.name||"备选流派"),mv:_tlkMvTxt(b2),abi:_tlkAbi(rec.s,b2)};
+      }
+      return null;
+    };
+    var altHint=function(rec,bad){
+      var a=altOf(rec,bad);
+      return a?("　→ 换它的另一套「"+a.name+"」：配招 "+a.mv+(a.abi?"｜"+a.abi:"")+"，就不带了"):"";
+    };
+    row("空间（减速）",R.space,"#7e57c2","配招里真带戏法空间：越慢越先手，别给它们配速度");
+    row("顺风（提速）",R.wind,"#1976d2","配招里真带顺风：全队 ×2 只有 "+((WCONF.tailwindTurns)||4)+" 回合，开风那回合自己得先手");
+    row("先制",R.prio,"#f9a825","速度要求可以整体下调的角色");
+    row("满血先制",R.fullhp,"#e65100","先制条件是「满血」，被磨一下就没了");
+    row("清钉",R.spin,"#2e7d32","高速旋转 / 清除浓雾：保住别人的满血先制");
+    row("上状态",R.setst,"#6d4c41","毒菱 / 磷火 / 电磁波：能把状态变成队友的提速");
+    row("吃状态提速",R.qf,"#c62828","飞毛腿：自身有异常才 ×1.5");
+    row("队医",R.bell,"#795548","治愈铃声 / 芳香治疗：清掉的可能是队友的提速");
+    if(!rows)return "";
+    var spans=(!R.space.length&&!R.wind.length&&fastest.v<q.P75);
+    if(R.space.length&&R.wind.length){
+      var w=R.wind[0];
+      V.push("<b style='color:var(--warnred)'>空间和顺风不能当同一套主轴</b>："+names(R.wind).join("/")
+        +" 的推荐配置里就带顺风（"+w.mv+"）——顺风让全队变快，空间里却越慢越先手，同一局两套互抵。"
+        +altHint(w,"顺风")
+        +"；两只都留着的话，开风只在你**不打算开空间**的那些回合用。");
     }
-    if(R.qf.length&&!R.setst.length&&!R.space.length)V.push('<span style="color:var(--warn,#e0a800)">飞毛腿没有状态供给</span>：队里没人会毒菱 / 磷火 / 电磁波，这只只能等对手送状态（多数时候等不到）。');
-    if(R.prio.length>=2&&fastest.v<q.P75)V.push('<span style="color:var(--ok,#2e7d32)">先制够用</span>：全队最快只有 '+fastest.v+'（&lt; P75 '+q.P75+'），但有 '+R.prio.length+' 只先制——不必为了「谁先出手」把 252 全砸在速度上。');
-    if(!R.space.length&&!R.wind.length&&fastest.v<q.P75)V.push('<b style="color:var(--warnred)">三种控速一个都没带</b>：既没有戏法空间、也没有顺风（围巾只是单只 ×1.5），全队最快 '+fastest.v+' 低于 P75 '+q.P75+'——这就是「联动差」最常见的样子。');
-    return '<div class="sec" style="margin-top:8px"><h3>队伍速度联动（谁给谁提速 · 谁拖谁）</h3>'
-      +'<div style="font-size:13.5px;color:var(--sub);margin-bottom:3px">角色全部从数据层判定（能学会的招 + 特性），不是猜配招：</div>'
-      +rows
-      +(V.length?('<div style="margin-top:4px;font-size:14.5px;line-height:1.65">'+V.map(function(x){return '<div style="margin:2px 0">'+x+'</div>'}).join('')+'</div>'):'<div style="margin-top:4px;font-size:14px;color:var(--ok,#2e7d32)">没有互相拖的地方：空间 / 顺风 / 先制 / 清钉这几件事彼此不冲突。</div>')
-      +'</div>';
-  }catch(eTL){return ''}
+    if(R.space.length&&fastN.length){
+      V.push("<b style='color:var(--warnred)'>空间手遇上快攻手</b>："+fastN.slice(0,3).join("、")+(fastN.length>3?" 等":"")
+        +" 这 "+fastN.length+" 只已到 P90+，空间一开它们反而最后出手。它们的速度是按「不开空间」配的——这局要么不开空间，要么这几只在此期间不上场。");
+    }
+    if(R.fullhp.length&&!R.spin.length){
+      V.push("<b style='color:var(--warnred)'>满血先制没人清钉</b>："+names(R.fullhp).join("/")
+        +" 的先制条件是满血，而队里<b>没有一只实际配了</b>高速旋转 / 清除浓雾——钉子一落地就先制失效。"
+        +(ableSpin.length?("可换配："+ableSpin.join(" / ")+" 能学，只是推荐配置没带，把一个功能槽换成它就能补上。"):"（这只队里没人能学清钉，得从选人改。）"));
+    }
+    if(R.qf.length&&R.bell.length){
+      var both=R.qf.filter(function(x){return R.bell.some(function(y){return y.zh===x.zh})});
+      V.push(both.length
+        ?("<b style='color:var(--warnred)'>同一只要吃状态又要清状态</b>："+both.map(function(x){return x.zh}).join("/")
+          +" 的配置同时有飞毛腿（要有异常才 ×1.5）和治愈铃声 / 芳香治疗——一条配招只能选一边：留提速就别带队医招，带队医就别指望这条速度线。")
+        :("<b style='color:var(--warnred)'>飞毛腿被队友的队医拆</b>："+names(R.qf).join("/")+" 吃状态才有 ×1.5，而 "
+          +names(R.bell).join("/")+" 的配置里有治愈铃声 / 芳香治疗——队医上场的时机得和这只错开。"));
+    }
+    if(R.qf.length&&!R.setst.length&&!R.space.length){
+      V.push("<span style='color:var(--warn,#e0a800)'>飞毛腿没有状态供给</span>："+names(R.qf).join("/")
+        +" 的配置里没有能自己造成状态的东西，队里也没人配毒菱 / 磷火 / 电磁波——它只能等对手送状态。");
+    }
+    if(R.prio.length>=2&&fastest.v<q.P75){
+      V.push("<span style='color:var(--ok,#2e7d32)'>先制够用</span>：全队最快 "+fastest.v+"（&lt; P75 "+q.P75+"），但有 "
+        +R.prio.length+" 只配了先制招——不必为了「谁先出手」把 252 全砸在速度上。");
+    }
+    if(spans){
+      V.push("<b style='color:var(--warnred)'>三种控速一个都没带</b>：既没有一只实际配了戏法空间，也没有一只配了顺风（围巾只算单只 ×1.5），全队最快 "
+        +fastest.v+" 低于 P75 "+q.P75+"——这就是「联动差」最常见的样子。"
+        +(ableSpace.length||ableWind.length?("可换配："+(ableSpace.length?("能学空间的 "+ableSpace.join("/")+" "):"")+(ableWind.length?("能学顺风的 "+ableWind.join("/")):"")+"——不是互斥，只是没配。"):""));
+    }
+    var ableLine=(ableSpace.length||ableWind.length)
+      ?("<div style='font-size:13px;color:var(--sub);margin-top:3px'>能学但没配（这些不算冲突，只是没选）："
+        +(ableSpace.length?("戏法空间 → "+ableSpace.join(" / ")+"；"):"")
+        +(ableWind.length?("顺风 → "+ableWind.join(" / ")+"；"):"")
+        +"想要就把它放进配招，不想要就别按「会不会」来判断联动。</div>")
+      :"";
+    return "<div class='sec' style='margin-top:8px'><h3>队伍速度联动（按推荐配置判 · 谁给谁提速 · 谁拖谁）</h3>"
+      +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>角色取自每只的推荐配置（配招 + 推荐特性），不是「能不能学」：</div>"
+      +rows+ableLine
+      +(ableAbi.length?("<div style='font-size:13px;color:var(--sub);margin-top:2px'>特性能用但没选："+ableAbi.join(" / ")+"——选它才有对应的提速，这不影响上面其余判断。</div>"):"")
+      +(V.length?("<div style='margin-top:4px;font-size:14.5px;line-height:1.65'>"+V.map(function(x){return "<div style='margin:3px 0'>"+x+"</div>"}).join("")+"</div>")
+        :"<div style='margin-top:4px;font-size:14px;color:var(--ok,#2e7d32)'>按配置看没有互相拖的地方：空间 / 顺风 / 先制 / 清钉这几件事彼此不冲突。</div>")
+      +"</div>";
+  }catch(eTL){return ""}
 }
 function teamSpeedStripHtml(){
   var q=speedPctiles();
@@ -16653,7 +16734,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.280';
+var ER_ENGINE_VER='v4.281';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
