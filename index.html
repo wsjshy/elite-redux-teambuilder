@@ -6856,8 +6856,9 @@ function speedSliderHtml(s){
         '<input type="range" min="0" max="99" step="1" value="'+__spdSl.p+'" id="spdSlRange" style="width:100%;margin:4px 0;min-height:44px;accent-color:var(--accent)" oninput="spdSliderOn(this.value)">'+
         '<div class="spdEnds"><span>慢 '+spdSliderBounds(s,1).lo+'</span><span id="spdSlRank"></span><span>快 '+spdMaxOf(s)+'</span></div>'+
         '<div class="spdQuick"><span class="qlab">常用速度：</span>'+
-          ['P50','P75','P90','P95','P99'].map(function(a){var v=spdPctileVal(+a.slice(1));return '<span class="q" onclick="spdSliderSetVal('+v+')" title="吸附到 '+a+'（'+v+'）">'+v+'</span>'}).join('')+
+          ['P50','P75','P90','P95','P99'].map(function(a){var v=spdPctileVal(+a.slice(1)),_mx=spdMaxOf(s),_un=(v>_mx);return '<span class="q" onclick="spdSliderSetVal('+v+')" style="'+(_un?'opacity:.42;':'')+'" title="'+(_un?('这只上限 '+_mx+'，够不到 '+a+'（'+v+'）——点了只会到上限'):('吸附到 '+a+'（'+v+'）'))+'">'+v+'</span>'}).join('')+
         '</div>'+
+        '<div id="spdMultiBox"></div>'+
       '</div>'+
       '<div class="spdAlloc"><span class="lab">剩余努力值：</span><span class="chipgrp" id="spdAllocG">'+
         spdSlChip('自动判断',__spdSl.allocMode==='auto',"spdSet('allocMode','auto')")+
@@ -6879,7 +6880,6 @@ function speedSliderHtml(s){
         spdSlChip('+Spe',__spdSl.natOv==='加速','spdSet(\'natOv\',\'加速\')')+
         spdSlChip('中性',__spdSl.natOv==='中性','spdSet(\'natOv\',\'中性\')')+
         spdSlChip('−Spe',__spdSl.natOv==='减速','spdSet(\'natOv\',\'减速\')')+'</span></div>'+
-      '<div id="spdMultiBox"></div>'+ /* v4.111 P4 容器补建 */
       '<div style="font-size:14.5px;margin:4px 0;display:flex;flex-wrap:wrap;align-items:center;gap:4px">击杀线伤害折算 <input type="number" id="spdAtkM" value="'+__spdSl.atkM+'" style="width:64px;font-size:14.5px" placeholder="0" oninput="__spdSl.atkM=+this.value;spdSliderRender()">'+
         '<span class="chipgrp">'+
         spdSlChip('×1.0',__spdSl.mult==1,'spdSet(\'mult\',1)')+
@@ -6934,14 +6934,31 @@ function spdTgl(k){var _oT=spdSliderPosToVal(__spdSl.s,__spdSl.p,spdModMul());__
 function spdSet(k,v){__spdSl[k]=v;spdSliderRender()}
 function spdSliderOn(p){__spdSl.p=+p;spdSliderRender()}
 function spdSliderSetVal(v){var nM=spdModMul();var B=spdSliderBounds(__spdSl.s,nM);v=Math.max(B.lo,Math.min(B.hi,+v));__spdSl.p=spdSliderValToPos(__spdSl.s,v,nM);var r=$('spdSlRange');if(r)r.value=__spdSl.p;spdSliderRender()}
+/* v4.267：多目标对比取「最省配法」——所需 EV 最小者；平手时优先中性性格（不牺牲其他属性） */
+function spdMultiPick(plans){
+  var best=null;
+  (plans||[]).forEach(function(pl){if(!best||pl.ev<best.ev||(pl.ev===best.ev&&pl.nat==='中性'&&best.nat!=='中性'))best=pl});
+  return best;
+}
 function spdSliderRender(){
   var s=__spdSl.s;if(!s)return;
   /* v4.110 P4：多目标对比表 */
+  /* v4.267：多目标对比表真正落地——spdPlanForTarget 返回【方案数组】，原来当对象读导致每行永远 0 EV / 性格空白 */
   try{var p=speedPctiles();var box=$('spdMultiBox');if(box){
     var rows=[['P50',p.P50],['P75',p.P75],['P90',p.P90],['P95',p.P95]];
-    var h='<div style="margin-top:6px;font-size:14.5px"><b>多目标配速对比</b><table style="width:100%;border-collapse:collapse"><tr><th>目标</th><th>速度线</th><th>所需EV</th><th>性格</th></tr>';
-    rows.forEach(function(r){var plan=spdPlanForTarget(s,r[1]);h+='<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+(plan.ev||0)+'</td><td>'+(plan.nat||'')+'</td></tr>'});
-    h+='</table></div>';box.innerHTML=h;
+    var _mx=spdMaxOf(s);
+    var h='<div style="margin-top:6px;font-size:14.5px"><b>多目标配速对比</b><div style="font-size:12.5px;color:var(--sub)">最省配法=够到这条线所需的最小努力值；点一行直接把滑块拉过去</div><table style="width:100%;border-collapse:collapse"><tr><th>目标</th><th>速度线</th><th>性格</th><th>所需EV</th></tr>';
+    var _un=[];
+    rows.forEach(function(r){
+      var best=spdMultiPick(spdPlanForTarget(s,r[1]));
+      if(!best){_un.push(r[0]);
+        h+='<tr style="color:var(--sub)"><td>'+r[0]+'</td><td>'+r[1]+'</td><td colspan="2">够不到</td></tr>';
+        return}
+      h+='<tr style="cursor:pointer" onclick="spdSliderSetVal('+r[1]+')" title="点这里把滑块目标设到 '+r[1]+'"><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+best.nat+'</td><td>'+best.ev+(best.ev>=252?' <span style="color:var(--warnred)">满</span>':'')+'</td></tr>';
+    });
+    h+='</table>';
+    if(_un.length)h+='<div style="font-size:12.5px;color:var(--sub);margin-top:2px">这只上限 <b>'+_mx+'</b>，够不到 '+_un.join(' / ')+' —— 想卡线只能靠围巾 / 提速特性 / 顺风，或改用戏法空间。</div>';
+    h+='</div>';box.innerHTML=h;
   }}catch(e){}
   var b=bstI(s,5),p=__spdSl.p,M=spdModMul();
   var pts=spdReachPoints(s);
@@ -16192,7 +16209,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.266';
+var ER_ENGINE_VER='v4.267';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
