@@ -6784,6 +6784,16 @@ function spdPlanOf(s){return s?spdPlanGet(s.id):null}
 function spdViewValOf(s){var pl=spdPlanOf(s);if(pl)return +pl.val||0;return spdMaxOf(s)}
 /* v4.266：速度线页把「我的队伍」摆到分位锚点上——同读 spdPlanOf 一套口径
    （已采用=你采用的实速；未采用=252+性格的极速上限），两者都写在行内，不混口径。 */
+/* v4.270：队伍速度条上的「先制」小标——只看数据层的天性/特性，不看配招，
+   目的不是下结论，而是把「这只的速度要求可以更松」这件事在速度线页也露出来。 */
+function teamPrioMark(s){
+  try{
+    var d=prioDecisionOf(s,{_r450_subOnly:true});
+    if(!d.ok||!d.name)return '';
+    var cd=prioCondZh(d.cond);
+    return '<span style="background:rgba(255,193,7,.18);color:#f9a825;border:1px solid rgba(255,193,7,.5);border-radius:3px;padding:0 4px;font-size:12px" title="'+esc(d.name+(cd?'（'+cd+'）':'')+'：这只的速度要求可以低于常态线，点开看先制线')+'">先制</span>';
+  }catch(e){return ''}
+}
 function teamSpeedStripHtml(){
   var q=speedPctiles();
   var tm=(typeof team!=='undefined'&&team)?team:[];
@@ -6791,7 +6801,7 @@ function teamSpeedStripHtml(){
     return '<div class="sec" style="margin-top:8px"><h3>我的队伍 · 速度现状</h3>'+
       '<div style="font-size:14px;color:var(--sub)">尚未组队。到「队伍构建」选人后，这里会按同一套配速口径把每只摆到上面那几条分位线上。</div></div>';
   }
-  var adopted=0,fastest=null,rows='';
+  var adopted=0,fastest=null,rows='',prioCnt=0;
   tm.forEach(function(s){
     var pl=spdPlanOf(s),v=pl?(+pl.val||0):spdMaxOf(s),p=spdRankOfVal(v);
     if(pl)adopted++;
@@ -6803,7 +6813,8 @@ function teamSpeedStripHtml(){
       '<span style="font-size:17px;font-weight:700;color:var(--text);width:44px">'+v+'</span>'+
       '<span style="font-size:13px;color:var(--sub);width:50px">P'+p+'</span>'+
       (pl?'<span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:12.5px" title="按你在核心配队第 6 段采用的实速">配速</span>':'<span style="font-size:12.5px;color:var(--sub)">极速</span>')+
-      '<span style="font-size:13.5px;color:'+tone[0]+';font-weight:600;margin-left:2px">'+tone[1]+'</span></div>';
+      '<span style="font-size:13.5px;color:'+tone[0]+';font-weight:600;margin-left:2px">'+tone[1]+'</span>'+teamPrioMark(s)+'</div>';
+if(teamPrioMark(s))prioCnt++;
   });
   var gap=fastest.v-q.P75;
   var foot=(gap>=0
@@ -6811,7 +6822,8 @@ function teamSpeedStripHtml(){
     :'⚠ 全队最快 <b>'+esc(fastest.zh)+'</b> '+fastest.v+'，比 P75 低 '+(-gap)+' —— 控速 / 戏法空间 / 讲究围巾先想一遍。');
   return '<div class="sec" style="margin-top:8px"><h3>我的队伍 · 速度现状（'+tm.length+' 只'+(adopted?'，其中 '+adopted+' 只按采用配速':'')+'）</h3>'+
     rows+'<div style="font-size:14.5px;margin-top:3px'+(gap<0?';color:var(--warnred)':'')+'">'+foot+'</div>'+
-    '<div style="font-size:12.5px;color:var(--sub);margin-top:2px">标「配速」= 你在核心配队第 6 段采用的实速；标「极速」= 未采用，按 252 努力 + 速度性格的理论上限。点任意一行看详情。</div></div>';
+    '<div style="font-size:12.5px;color:var(--sub);margin-top:2px">标「配速」= 你在核心配队第 6 段采用的实速；标「极速」= 未采用，按 252 努力 + 速度性格的理论上限。点任意一行看详情。'
++((prioCnt?'<br>标「先制」的 '+prioCnt+' 只：带条件先制（满血 / 登场首回合 / 每次上场首次等），速度未必需要卡到 P75——点开看第 6 段的先制线。':''))+'</div></div>';
 }
 function spdCardSpeedHtml(s){
   var pl=spdPlanOf(s),v=spdViewValOf(s);
@@ -6832,13 +6844,18 @@ function spdHintChip(id,val,cat,txt){
 /* v4.269：卡线上的「采用」= 直接把这条速度线写进配法（同性格类别优先，够不到就给替代手段） */
 function spdHintAdopt(id,val,cat){
   var s=speciesById(id);if(!s){toast('找不到这只宝可梦');return}
-  val=+val;if(!val){toast('这条线没有可用目标值');return}
-  var plans=spdPlanForTarget(s,val);
-  if(!plans||!plans.length){toast('这只够不到 '+val+' —— 只能靠围巾 / 顺风 / 戏法空间');return}
-  var pl=(cat?spdCatPick(plans,cat):null)||spdMultiPick(plans)||plans[0];
-  if(!pl){toast('这只够不到 '+val);return}
+  val=+val;if(isNaN(val)||val<0){toast('这条线没有可用目标值');return}
+  var pl;
+  if(!val){   /* v4.270：val=0 = 这条线就是「不投速」（先制变化招不看速度） */
+    pl={nat:'中性',ev:0,val:dmgStatOf(bstI(s,5),0,31,5,'')};
+  }else{
+    var plans=spdPlanForTarget(s,val);
+    if(!plans||!plans.length){toast('这只够不到 '+val+' —— 只能靠围巾 / 顺风 / 戏法空间');return}
+    pl=(cat?spdCatPick(plans,cat):null)||spdMultiPick(plans)||plans[0];
+    if(!pl){toast('这只够不到 '+val);return}
+  }
   spdPlanSave(s.id,{nat:pl.nat,ev:pl.ev,val:pl.val,p:spdSliderValToPos(s,pl.val,1),natOv:''});
-  toast('已采用配法：'+pl.nat+'性格 +'+pl.ev+' EV，实速 '+pl.val);
+  toast(pl.ev?('已采用配法：'+pl.nat+'性格 +'+pl.ev+' EV，实速 '+pl.val):('已采用：速度不投（'+pl.nat+'性格），实速 '+pl.val));
   if(coreSel&&''+coreSel.id===''+s.id)renderCore(coreSel)
 /* v4.269：抽屉里点「采用」时把滑块也推到这条线上，别让「已采用」和「当前目标」两套数字并存 */
 try{if(typeof __spdSl!=='undefined'&&__spdSl&&__spdSl.s&&''+__spdSl.s.id===''+s.id){__spdSl.p=spdSliderValToPos(s,pl.val,spdModMul());if(typeof spdSliderRender==='function')spdSliderRender()}}catch(eR){__spdSl=__spdSl||null}
@@ -6905,27 +6922,34 @@ function prioAdviceHtml(s,b,curEv,natName){
     if(!s||!b)return '';
     var d=prioDecisionOf(s,b);
     if(!d.ok||!d.name)return '';
+    var clsA=(d.cls==='A');
     var head='<b style="color:var(--accent)">先制：'+esc(d.name)+'（'+esc(prioCondZh(d.cond)||'无条件')+(d.scope?' '+esc(d.scope)+'招':'')+'）</b>';
-    if(!d.actual)return '<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.6">'+head+' <span class="dim">—— 当前这套「推荐特性」不是它，拿不到先制，速度按常态算。</span></div>';
+    var ret0='<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.6">';
+    if(!d.actual)return ret0+head+' <span class="dim">—— 当前这套「推荐特性」不是它，拿不到先制，速度按常态算。</span></div>';
     /* 4 招里谁吃得到先制 */
-    var mv=(b.mv&&b.mv.main)||[],cov=[],noc=[];
-    mv.forEach(function(x){var m=x&&MV[''+(+x.id||0)];if(!m)return;var hit=(d.scope?pvScopeCovers(d.scope,m[1],m[4],m[3]):true);(hit?cov:noc).push({n:m[1],p:+m[5]||0})});
+    var mv=(b.mv&&b.mv.main)||[],cov=[];
+    mv.forEach(function(x){var m=x&&MV[''+(+x.id||0)];if(!m)return;if(d.scope?pvScopeCovers(d.scope,m[1],m[4],m[3]):true)cov.push({n:m[1],p:+m[5]||0})});
     cov.sort(function(x,y){return y.p-x.p});
-    var box='<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.6">'+head;
-    if(!d.cover&&!cov.length)return box+' <span class="dim">—— 这套 '+(mv.length||4)+' 招里没有 '+esc(d.scope||'对应')+' 招，先制现在完全用不上，速度要求不降。</span></div>';
-    if(!d.cover&&cov.length){
-      box+=' <span class="dim">—— 主攻「'+esc(((MV[''+(+((mv[0]&&mv[0].id)||0))]||[])[1])||'')+'」吃不到，4 招里只有「'+esc(cov[0].n)+'」（威力 '+cov[0].p+'）能吃到先制。</span>';
-      box+='<br>把它顶成主攻就能按先制配速：';
-    }else{
-      box+='　·　覆盖 '+cov.length+'/'+(mv.length||4)+' 招（最高「'+esc(cov[0].n)+'」威力 '+cov[0].p+'）';
-    }
+    var box=ret0+head;
+    var clsA=(d.cls==='A');
+    var noNeed=(clsA&&(d.scope==='变化'||d.scope==='回复'));
+    if(!cov.length)return box+' <span class="dim">—— 这套 '+(mv.length||4)+' 招里没有 '+esc(d.scope||'对应')+' 招，先制现在没被用上，速度不必为它让步。</span></div>';
+    if(noNeed){   /* v4.270：A 类 + 变化/回复招——先制变化招不看速度，也就没有「主攻」这回事 */
+      box+=' <span class="dim">—— 这套里有 '+cov.length+' 个'+esc(d.scope)+'招（「'+esc(cov[0].n)+'」）吃得到先制，而'+esc(d.scope)+'招只看先后手、不看速度。</span>';
+    }else if(!d.cover)box+=' <span class="dim">—— 主攻「'+esc(((MV[''+(+((mv[0]&&mv[0].id)||0))]||[])[1])||'')+'」吃不到，4 招里只有「'+esc(cov[0].n)+'」（威力 '+cov[0].p+'）吃得到先制。</span><br>把它顶成主攻就能按先制配速：';
+    else box+='　·　覆盖 '+cov.length+'/'+(mv.length||4)+' 招（最高「'+esc(cov[0].n)+'」威力 '+cov[0].p+'）';
     var P=speedPctiles(),cur=(curEv==null)?0:dmgStatOf(bstI(s,5),curEv,31,5,natName||'');
     var A=spdCatPick(spdPlanForTarget(s,P.P50),'中性');
     var B=spdCatPick(spdPlanForTarget(s,P.P75),'加速');
-    var _atA=!!(curEv!=null&&A&&+A.ev===+curEv),_atB=!!(curEv!=null&&B&&+B.ev===+curEv);
-    if(A)box+='　·　先制线：'+(A.ev>0?('中性性格 <b>'+A.ev+' EV</b> 到 <b>'+A.val+'</b>（P50），省下 '+(252-A.ev)+' 点转投攻/耐久'):('<b>不投速</b>也到 <b>'+A.val+'</b>（P50）'))+(+_atA?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,A.val,'中性','采用');
-    if(B)box+='　·　常态线：'+esc(B.nat)+'性格速度 <b>'+B.ev+' EV</b> 到 '+B.val+'（P75）'+(+_atB?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,B.val,'加速','采用');
-    if(d.cond==='fullHp')box+='<br><span class="dim">满血全靠轮转保（虫返/换人再上），堆 HP 换不来这个条件；全投耐久只在你需要一个具体承伤基准时才有意义。</span>';
+    var _atA=!!(curEv!=null&&A&&+A.ev===+curEv);
+    if(noNeed){
+      box+='　·　先制线：<b>速度可以不投</b>（这 252 点留给耐久/输出更值）'+((curEv!=null&&+curEv===0)?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,0,'中性','不投速');
+    }else if(A){
+      box+='　·　先制线：'+(A.ev>0?('中性性格 <b>'+A.ev+' EV</b> 到 <b>'+A.val+'</b>（P50），省下 '+(252-A.ev)+' 点转投攻/耐久'):('<b>不投速</b>也到 <b>'+A.val+'</b>（P50）'))+(+_atA?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,A.val,'中性','采用');
+    }
+    if(!noNeed&&B)box+='　·　常态线：'+esc(B.nat)+'性格速度 <b>'+B.ev+' EV</b> 到 '+B.val+'（P75）'+((curEv!=null&&+B.ev===+curEv)?'<b style="color:var(--accent)">← 你现在的配速</b>':'')+spdHintChip(s.id,B.val,'加速','采用');
+    if(clsA)box+='<br><span class="dim">无条件先制不看满血也不看回合，条件一直成立'+(String(d.name).indexOf('恶作剧')>=0?'（但对恶属性目标会失效）':'')+'；这类手本来就不靠速度，别为了「看起来快」再投 252。</span>';
+    else if(d.cond==='fullHp')box+='<br><span class="dim">满血全靠轮转保（虫返/换人再上），堆 HP 换不来这个条件；全投耐久只在你需要一个具体承伤基准时才有意义。</span>';
     box+='<span class="dim">　对手同档先制仍比速度。</span>';
     if(cur)box+='<span class="dim">　现在实速 '+cur+'。</span>';
     return box+'</div>';
@@ -16344,7 +16368,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.269';
+var ER_ENGINE_VER='v4.270';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
