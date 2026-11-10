@@ -7327,6 +7327,7 @@ var TC_TERRAIN_NEED={"电":["冲浪之尾"],"草":["草之皮毛"]};
 var TC_TERRAIN_SEED={"电气种子":"电","精神种子":"精神","青草种子":"草","薄雾种子":"雾"};
 var TC_TERRAIN_SET_ABI={"电":["电气制造者"],"精神":["精神制造者"],"草":["青草制造者"],"雾":["薄雾制造者"]};
 var TC_TERRAIN_MOVE={"电":"电气场地","精神":"精神场地","草":"青草场地","雾":"薄雾场地"};
+var TC_RECOV=["自我再生","羽栖","睡觉","寄生种子","偷懒","喝牛奶","光合作用","月光","晨光","生蛋","回复指令","分担痛楚","祈愿"];
 function _tcTypes(){return (ERDATA&&ERDATA.types)?ERDATA.types:[]}
 function _tcWkOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)>1)r[tp]=1}catch(eW){eW.name}});return r}
 function _tcImmOf(s){var r={},T=_tcTypes(),ts=effTypesOf(s).base;T.forEach(function(tp){try{if(defMult(ts,tp)===0)r[tp]=1}catch(eI){eI.name}});return r}
@@ -7558,6 +7559,7 @@ function _tcFixHtml(kind,tset){
   else if(kind==="cleric"){groups=[TC_CLERIC];kw="队医：默认配置里<b>已经带治愈铃声/芳香治疗</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind.indexOf("weather:")===0){var _w=kind.split(":")[1];groups=[[TC_WEATHER_MOVE[_w]]];kw="天气手：特性自动起"+_w+"，或默认配置里<b>已经带"+TC_WEATHER_MOVE[_w]+"</b>的：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind.indexOf("terrain:")===0){var _tr=kind.split(":")[1];groups=[[TC_TERRAIN_MOVE[_tr]]];kw="场地手：特性自动开"+_tr+"场地，或默认配置里<b>已经带"+TC_TERRAIN_MOVE[_tr]+"</b>的：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
+  else if(kind==="recov"){groups=[TC_RECOV];kw="续航手：默认配置里<b>已经带自我再生/羽栖/寄生种子这类回复招</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind==="pivot"){groups=[TC_PIVOT];kw="折返手：默认配置里<b>已经带急速折返/伏特替换/快速折返</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
   var own=_ownMap(),ownN=_ownCount();
@@ -7713,13 +7715,13 @@ function teamCheckHtml(_R){
       try{bs=deriveBuilds(s,tm)||[]}catch(eB9){bs=[]}
       b=bs.length?bs[0]:null;
       set=_ownSet(s)||_tlkMvSet(b);
-      try{abi=(anRowOf(s,b)||{}).abi||""}catch(eA9){abi=""}
+      var rt="";try{var _rr9=anRowOf(s,b)||{};abi=_rr9.abi||"";rt=_rr9.roleTag||""}catch(eA9){abi="";rt=""}
       var w=_tcWkOf(s),i2=_tcImmOf(s);
       for(var k in w){if(w.hasOwnProperty(k))wk[k]=(wk[k]||0)+1}
       for(var k2 in i2){if(i2.hasOwnProperty(k2))imm[k2]=1}
       var mvTxt=_tlkMvTxt(b),oReal=_ownOf(s);
       if(oReal){var _on2=_ownMvNames(oReal.row);if(_on2.length){mvTxt=_on2.join(" / ");abi=oReal.row['主特性(当前生效)']||abi}}
-      mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal});
+      mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal,rt:rt});
     });
     var rows="",V=[];var add=function(sev,txt,fix){V.push({s:sev,h:txt,fix:fix||""})};
     if(_ownMap()){
@@ -7926,6 +7928,14 @@ if(tnTs.length){
 }else if(tnNeedAny){
   add(0,"<span style='color:var(--ok,#2e7d32)'>场地依赖有答案</span>：吃场地的特性/场地种子都有对应场地手。");
 }
+/* ⑪ 续航 */
+var shields=mem.filter(function(x){return x.rt==='肉盾'});
+if(shields.length>=2){
+  var shRec=shields.filter(function(x){return TC_RECOV.some(function(n){return x.set[n]})});
+  var shNo=shields.filter(function(x){return !TC_RECOV.some(function(n){return x.set[n]})});
+  if(!shNo.length){add(0,"<span style='color:var(--ok,#2e7d32)'>续航有答案</span>："+shields.length+" 只盾位全都带回复招（"+shRec.map(function(x){return x.zh}).join('、')+"），能靠回复轮转把伤害磨回去。");}
+  else{add(1,"<b>盾位没有续航</b>："+shNo.map(function(x){return x.zh}).join('、')+" 是盾/肉盾定位，但四招里没有回复招"+(shRec.length?("（有回复的是 "+shRec.map(function(x){return x.zh}).join('、')+"）"):"")+"——它上去挡几回合就会被磨死，换人频率一高就把节奏让出去。","recov");}
+}
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
@@ -7934,7 +7944,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17577,7 +17587,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.297';
+var ER_ENGINE_VER='v4.298';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
