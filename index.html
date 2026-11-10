@@ -3614,7 +3614,8 @@ function renderSp(reset){
     c.innerHTML=sprImg(s.id)+
       '<div class="nm">'+esc(s.zh)+'</div><div class="en">'+esc(s.en)+' #'+s.id+
       '</div><div style="margin-top:4px">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+
-      '</div><div class="bs">种族值 <b style="font-size:19px;color:var(--text);margin-left:6px;letter-spacing:.3px">'+spBst(s)+'</b></div>';
+      '</div><div class="bs">种族值 <b style="font-size:19px;color:var(--text);margin-left:6px;letter-spacing:.3px">'+spBst(s)+'</b></div>'+
+      spdCardSpeedHtml(s);
     c.onclick=function(){openSp(s)};
     $('spGrid').appendChild(c);
   });
@@ -3688,6 +3689,7 @@ function openSp(s){
     html+='<div class="barstat"><span class="lb">'+n+'</span><div class="tr"><div class="fl" style="width:'+pct+'%;background:hsl('+(210-i*20)+',70%,55%)"></div></div><span class="tk">'+base[i]+'</span></div>';
   });
   html+='</div>';
+  html+=spdDetailSpeedHtml(s); /* v4.268：基础种族值之后立刻给「现在实际跑多少」，避免把 120 看成实速 */
   try{html+='<details class="spdadv" style="margin:4px 0"><summary>配速口径速览（极速/分位/卡线，滑块已含可略过）</summary>'+speedHintHtmlCached(s)+'</details>'}catch(eSp){}  /* v4.68 批4：配招卡一行配速提示（当前速度 vs 目标分位 ✅/⚠️ + 卡线省EV）；黑盒P1-2按id缓存 */
   try{html+=speedSliderHtml(s)}catch(eSl){}   /* v4.88：超速滑块（配速参考区叠加，原 ruleline 零改动） */
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
@@ -6818,6 +6820,52 @@ function spdCardSpeedHtml(s){
   return '<div style="margin-top:2px;font-size:13.5px;color:var(--sub)">'+
     (pl?'速度 <b style="color:var(--accent);font-size:16px">'+v+'</b>':'极速 <b style="font-size:16px">'+v+'</b>')+
     ' 快过约'+p+'%'+(pl?' <span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:12.5px" title="已采用核心配队第 6 段的配速">已配速</span>':'')+'</div>';
+}
+/* v4.268：宝可梦页/详情/核心第 6 段同读一套口径 —— 性格类别、卡线成本、详情实速条 */
+function spdNatCatOf(natName){var n=NATURES[String(natName||'')];if(!n||!n.length)return '中性';if(String(n[1]||'').indexOf('速度')>=0)return '减速';if(String(n[0]||'').indexOf('速度')>=0)return '加速';return '中性'}
+function spdCatPick(plans,cat){if(!plans||!plans.length)return null;for(var i=0;i<plans.length;i++){if(plans[i].nat===cat)return plans[i]}return null}
+function spdCoreLineHint(sp,curEv,natName){
+  if(!sp)return '';
+  var cat=spdNatCatOf(natName);
+  var cur=dmgStatOf(bstI(sp,5),curEv,31,5,natName);
+  var P=speedPctiles(),anchors=[['P50',P.P50],['P75',P.P75],['P90',P.P90],['P95',P.P95]];
+  var up=null,down=null;
+  anchors.forEach(function(a){
+    if(!a[1])return;
+    if(a[1]>cur){if(!up||a[1]<up[1])up=a}
+    if(a[1]<cur){if(!down||a[1]>down[1])down=a}
+  });
+  var parts=[];
+  if(up){
+    var hit=spdCatPick(spdPlanForTarget(sp,up[1]),cat);
+    if(hit){
+      var d=(+hit.ev||0)-(+curEv||0);
+      if(d>0)parts.push('再 <b>+'+d+' EV</b> 到 '+up[0]+'（'+up[1]+'）');
+      else if(d===0)parts.push(up[0]+'（'+up[1]+'）刚好卡住，不必再投');
+      else parts.push('已过 '+up[0]+'（'+up[1]+'），还能省 <b>'+(-d)+' EV</b>');
+    }else{
+      var any=spdPlanForTarget(sp,up[1]);
+      if(any&&any.length)parts.push('卡 '+up[0]+'（'+up[1]+'）要换 <b>'+any[0].nat+'性格</b> + '+any[0].ev+' EV');
+      else parts.push('这只上限 <b>'+spdMaxOf(sp)+'</b>，够不到 '+up[0]+'（'+up[1]+'）—— 想卡线只能靠围巾 / 顺风 / 戏法空间');
+    }
+  }
+  if(down){
+    var hit2=spdCatPick(spdPlanForTarget(sp,down[1]),cat);
+    if(hit2){var d2=(+curEv||0)-(+hit2.ev||0);if(d2>0)parts.push('退到 '+down[0]+'（'+down[1]+'）可省 <b>'+d2+' EV</b> 给 HP')}
+  }
+  if(!parts.length)return '';
+  return '<div class="spdlinehint" style="font-size:13.5px;color:var(--sub);margin:2px 0 0 2px;line-height:1.55">卡线：'+parts.join('　·　')+' <span class="dim">（点「调整速度」按这条线配）</span></div>';
+}
+function spdDetailSpeedHtml(s){
+  var pl=spdPlanOf(s),v=pl?(+pl.val||0):spdMaxOf(s);
+  if(!v)return '';
+  var p=spdRankOfVal(v);
+  return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0 8px;padding:6px 8px;background:var(--hover-tint);border-radius:6px">'
+    +'<span style="font-size:14.5px;color:var(--sub)">'+(pl?'你的配速':'极速')+'</span>'
+    +'<b style="font-size:19px;color:var(--accent)">'+v+'</b>'
+    +'<span class="dim">快过约 '+p+'%</span>'+_spdBadge(p)
+    +'<span class="dim" style="font-size:12.5px">'+(pl?'已采用，下面滑块可继续调':'252 努力 + 速度性格的理论上限；下面滑块可换成实配')+'</span>'
+    +'</div>';
 }
 function spdPlanAdopt(){
   var s=__spdSl.s;if(!s){toast('先选一只宝可梦');return}
@@ -11441,6 +11489,7 @@ function mechBuildsOf(s){
     if(seen[rw])return;seen[rw]=1;
     if((_lowP||_lazyS)&&MECH_OFF[rw])return;
     var b=null;try{b=MECH_BUILD[rw](s,null)}catch(e){b=null}
+    if(b&&!b.spId)b.spId=String(s.id); /* v4.268：机制流派构建不带 spId → 核心卡第 6 段丢速度行/卡线/调整入口（推荐流派首卡必现） */
     /* v4.58 C轮 中央门控复核：mid=横向中位 → 降权非首推（score 降 + warn 注明）；null=硬剔除冠名 */
     if(b){try{var _fit=mechFlowFit(s,rw);if(_fit===null)b=null;else if(_fit==='mid'){b.score=Math.min(b.score||99,50);b.warn=(b.warn?b.warn+'；':'')+'机制流横向中位（种族处中段）——保留但非首推';}}catch(eF){}}
     /* 配招空槽的机制流派不生成（如再生力流但全无 UT/VS/钉子/状态招）——空卡没有可玩性 */
@@ -16011,6 +16060,7 @@ function evBarHtml(bd){
     h+='<button class="btn-mini" type="button" onclick="spdAdjustFromCore('+jsl(String(sp.id))+')" title="打开速度滑块，拖动后可采用">调整速度</button>';
     if(plan)h+='<button class="btn-mini" type="button" onclick="spdClearFromCore('+jsl(String(sp.id))+')" title="取消采用，恢复流派默认">恢复默认</button>';
     h+='</div>';
+    if(!plan)h+=spdCoreLineHint(sp,a[5],natName); /* v4.268：把「离上一条速度线还差多少 EV」直接写在核心卡里 */
   }
   var sumTxt=ev.summary;
   if(plan){
@@ -16209,7 +16259,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.267';
+var ER_ENGINE_VER='v4.268';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
