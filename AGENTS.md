@@ -2700,7 +2700,7 @@ GitHub 首页默认显示 master，所以看起来「停滞」。
 | v4.296 | 1,767,049 | 0060C4D4DBC71F9776D2BE3DBE56E21BE3E97064 | 线上一致（gh-pages `d02b235`，逐字节核验） |
 | v4.297 | 1,770,440 | 694DC8D0703F1172BCF0F022319094C71739876A | 线上一致（gh-pages `3f2bba7`，逐字节核验） |
 | v4.298 | 1,771,788 | BFDF3CDDD166A4E6BB958BF4B6D057FED934DD5C | 线上一致（gh-pages `fda0578`，逐字节核验） |
-| v4.299 | 待回填 | 待回填 | 待部署（配置冲突：讲究/背心 vs 变化招） |
+| v4.299 | 1,774,023 | CE2D9D922E7D3735F0813D6043DD9F936DDFC06E | 线上一致（gh-pages `69ca8c3`，逐字节核验） |
 | v4.265 | 1,667,029 | E26FC629007C009ECA51ED3F10CC31DCACE2EC73 | 线上一致（gh-pages a7f67f2，逐字节核验） |
 | v4.264 | 1,664,224 | 77A945C686E24B2548792EDA7DBCC6646ABED7BE | 线上一致（gh-pages dd6fb6e，逐字节核验） |
 | v4.263 | 1,659,525 | 1E2AA5454F75BCFDB227BD1B35540FF920CFD929 | 线上一致（gh-pages ab2c072 / master fc089ba） |
