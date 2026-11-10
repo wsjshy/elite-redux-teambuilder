@@ -829,6 +829,8 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
   <h1>ER 配招助手</h1>
   <span class="tag">Elite Redux v2.65 · NextDex gameData + 汉化图鉴 · 引擎 <b id="erVerNo">v4.x</b></span>
   <button id="erThemeBtn" class="btn" style="padding:4px 10px;font-size:14.5px" onclick="erToggleTheme()" title="切换深色/浅色（本地记忆）" aria-pressed="false">🌙 深色</button>
+  <!-- v4.289：ER 改版特色总开关（全站所有列表共用一条谓词，本地记忆） -->
+  <label class="btn" id="erFlavorLbl" style="padding:4px 10px;font-size:14.5px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;border:1px solid var(--line)" title="只看 ER 改版特色：所有 Mega 形态（含原版 Mega）+ Redux 专属形态 / ER 原创宝可梦；对图鉴、核心配队、队伍构建与分析选择器、招式/特性反查、速度线全部生效（本地记忆）"><input type="checkbox" id="erFlavorBox" onchange="erFlavorToggle()" style="margin:0;width:auto"> ER 特色<span id="erFlavorCnt" style="color:var(--sub);font-weight:400"></span></label>
   <nav>
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
@@ -3521,6 +3523,59 @@ var spFilter={types:{}},spShown=0,spStep=120;
 /* v4.78 P1：形态筛选开关（Mega / 最终形态）——并入 spMatch 同源链，图鉴/队伍构建/分析选择器三处同结果 */
 var fOpt={mega:0,final:0};
 function isMegaForm(s){return /^(超级|原始|究极)/.test(s.zh||'')}   /* 与形态名清洗同源（行1678 前缀集） */
+/* ===== v4.289：ER 改版特色（全站单一开关） =====
+   用户口径：「筛出 er 改版特色，包括所有 mega 形态（不用管是不是改版新增）和 er 新增形态或者宝可梦」。
+   判定（三条任一命中）：
+     ① 所有 Mega 类形态：中文名以「超级/原始/究极」开头，或含「原始回归」「究极爆发」，或英文名含 Mega
+        —— 原版 Mega 与 ER 自创 Mega 一视同仁，不做「是否改版新增」的二次判断；
+     ② Redux 专属形态：英文名含 Redux（如 Bulbasaur Redux / Mega Garchomp Redux）；
+     ③ ER 原创宝可梦：中文名以 R 结尾（大钢蛇R/Carbonix、盐石巨灵R/Gargablox 这类，官方图鉴里没有）。
+   官方各世代普通形态与地区形态（阿罗拉/洗翠等）**不算**特色。
+   只影响列表呈现，不改任何判定口径与持久状态。 */
+var ER_FLAVOR_KEY='er_flavor_v1';
+function erFlavorOn(){try{return localStorage.getItem(ER_FLAVOR_KEY)==='1'}catch(eFz){return false}}
+function isErFlavorSp(s){
+  if(!s)return false;
+  var zh=String(s.zh||''),en=String(s.en||'');
+  if(/^(超级|原始|究极)/.test(zh))return true;
+  if(/原始回归|究极爆发/.test(zh))return true;
+  if(/\bMega\b/i.test(en))return true;   /* 词边界：避免 Meganium 这类只含「Mega」子串的普通宝可梦误入 */
+  if(/\bRedux\b/i.test(en))return true;
+  if(/R$/.test(zh))return true;
+  return false;
+}
+function erFlavorOk(s){return !erFlavorOn()||isErFlavorSp(s)}
+function flavorCountText(){
+  var n=0;
+  try{ERDATA.species.forEach(function(s){if(isErFlavorSp(s))n++})}catch(eFc){n=0}
+  return n+' 只';
+}
+function erFlavorToggle(){
+  var b=document.getElementById('erFlavorBox');
+  var on=b?!!b.checked:!erFlavorOn();
+  try{localStorage.setItem(ER_FLAVOR_KEY,on?'1':'0')}catch(eFz2){eFz2.name}
+  var tag=document.getElementById('erFlavorCnt');
+  if(tag)tag.textContent=on?('· '+flavorCountText()):'';
+  try{renderSp(true)}catch(eR1){eR1.name}
+  try{if(window.drawCoreList)window.drawCoreList()}catch(eR2){eR2.name}
+  try{speedRender(true)}catch(eR3){eR3.name}
+  try{renderMv()}catch(eR4){eR4.name}
+  try{renderAbi()}catch(eR5){eR5.name}
+  try{renderTm(true)}catch(eR6){eR6.name}
+  try{renderAnalyze()}catch(eR7){eR7.name}
+  try{if(window.renderAnPickerGrid)renderAnPickerGrid(true)}catch(eR8){eR8.name}
+  toast(on?('已筛 ER 特色：只剩 Mega 形态 + Redux/ER 原创（'+flavorCountText()+'）'):'已取消 ER 特色筛选（回到全图鉴）');
+}
+(function(){
+  function init(){
+    var b=document.getElementById('erFlavorBox');
+    if(b)b.checked=erFlavorOn();
+    var tag=document.getElementById('erFlavorCnt');
+    if(tag)tag.textContent=erFlavorOn()?('· '+flavorCountText()):'';
+  }
+  if(typeof ERDATA!=='undefined'&&ERDATA&&ERDATA.species)init();
+  else document.addEventListener('er-ready',init);
+})();
 function renderSpFormChips(){
   var box=$('spFormChips');if(!box)return;box.innerHTML='';
   /* v4.78 fix：fOpt 切换后联动刷新队伍构建网格 + 分析选择器，保证三处 spQuery 结果集即时一致 */
@@ -3570,6 +3625,7 @@ function renderSpChips(){
 if(window.ERDATA&&ERDATA.species){renderSp(true);}else{document.addEventListener('er-ready',function(){renderSp(true);});}
 function spMatch(s,q,sel,role,abi){
   /* v4.x C⑧：全局模糊搜索（中文/英文/编号/种族值子串，多词空格 AND）；E⑩：定位 + 特性筛选 */
+  if(!erFlavorOk(s))return false;
   if(!fzAny(q,[s.id,s.zh,s.en,spBst(s)]))return false;
   if(sel&&sel.length){
     /* 交集：所有选中属性都必须命中（双属性宝可梦，最多选 2） */
@@ -4679,7 +4735,7 @@ function edgeSuggest(){
   if(!team.length){box.innerHTML='<div class="tip">队伍为空 —— 先在「全图鉴组队」加人，再回来评估</div>';return}
   var q=speedPctiles();
   var base=edgeVector(team),bs=edgeScore(base);
-  var pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+  var pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0&&erFlavorOk(s)});
   var rows=[],full=team.length>=6;
   if(!full){
     var need=6-team.length;
@@ -4759,10 +4815,10 @@ function smartSuggest(){
   var pool;
   if((!window._sugPool||window._sugPool==='pc')&&typeof SAV_ROWS!=='undefined'&&SAV_ROWS&&SAV_ROWS.pc&&SAV_ROWS.pc.length){
     pool=SAV_ROWS.pc.map(function(r){return r.sp||r});
-    pool=pool.filter(function(s){return s&&isValidSp(s)&&team.indexOf(s)<0});
-    if(!pool.length)pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+    pool=pool.filter(function(s){return s&&isValidSp(s)&&team.indexOf(s)<0&&erFlavorOk(s)});
+    if(!pool.length)pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0&&erFlavorOk(s)});
   }else{
-    pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0});
+    pool=ERDATA.species.filter(function(s){return isValidSp(s)&&team.indexOf(s)<0&&erFlavorOk(s)});
   }
   /* 候选理由生成：速度缺口优先高速 / 联防缺口优先对该系抗性 */
   var cand=pool.map(function(s){
@@ -6403,6 +6459,7 @@ function teamToHash(){
    · 判定完全复用既有函数，不新增数据口径：过滤只影响列表呈现，不写回任何持久状态。 */
 function lkKeep(s,onlyFinal,megaOnly){
   if(!s)return false;
+  if(!erFlavorOk(s))return false;   /* v4.289：ER 特色总开关（招式反查 / 特性反查共用） */
   if(onlyFinal&&!isFinalForm(s))return false;   /* 非最终进化型 */
   if(megaOnly&&hasMegaForm(s))return false;     /* 可 Mega 的非 Mega 形态 */
   return true;
@@ -6983,12 +7040,12 @@ function _tlkAbi(s,b){
 /* v4.282：冲突/缺位到最后一步——从全图鉴里找「同定位替补」。
    两个条件都要真：① 能学（learnHasName）；② 推荐配置里真带了（deriveBuilds 主推流派的配招）。
    只做建议，不改队伍；扫描预算给死，避免同步渲染卡顿（v4.68p0 的教训）。 */
-function _tlkFind(groups,capSp,tset,lim){
+function _tlkFind(groups,capSp,tset,lim,allowAll){
   var have={},out=[],scan=0,tt={};
   (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
   var wcount={},immm={},xx={};
   (tset||[]).forEach(function(x){if(!x)return;var _w=_tcWkOf(x),_i=_tcImmOf(x);for(var _k in _w){if(_w.hasOwnProperty(_k))wcount[_k]=(wcount[_k]||0)+1}for(var _k2 in _i){if(_i.hasOwnProperty(_k2))immm[_k2]=1}});
-  var wkBad=function(t2){var _w=_tcWkOf(t2);for(var _k in _w){if(_w.hasOwnProperty(_k)&&(_k in xx===false)&&(wcount[_k]||0)>=2&&!immm[_k])return true}return false};
+  var wkBad=function(t2){var _w=_tcWkOf(t2);for(var _k in _w){if(_w.hasOwnProperty(_k)&&(wcount[_k]||0)>=2&&!immm[_k])return true}return false};
   var okG=function(t){
     for(var i=0;i<groups.length;i++){
       var g=groups[i],hit=false;
@@ -6997,16 +7054,18 @@ function _tlkFind(groups,capSp,tset,lim){
     }
     return true;
   };
-  var hitSet=function(b,groups){
-    for(var i=0;i<groups.length;i++){
-      var g=groups[i],hit=false,set=_tlkMvSet(b);
+  var hitSet=function(set,gs){
+    for(var i=0;i<gs.length;i++){
+      var g=gs[i],hit=false;
       for(var j=0;j<g.length;j++){if(set[g[j]]){hit=true;break}}
       if(!hit)return false;
     }
     return true;
   };
-  ERDATA.species.forEach(function(t2){
-    if(out.length>=(lim||3)||scan>=14)return;
+  var own=_ownMap(),pool=(own&&!allowAll)?_ownPoolList():null;
+  var list=pool||ERDATA.species,cap=pool?9999:(lim||3),budget=pool?9999:14;
+  list.forEach(function(t2){
+    if(out.length>=cap||scan>=budget)return;
     if(t2.id==null||have[t2.id])return;
     if(!isFinalSp(t2)||!isValidSp(t2))return;
     if(capSp&&bstI(t2,5)>capSp)return;
@@ -7016,21 +7075,29 @@ function _tlkFind(groups,capSp,tset,lim){
     scan++;
     var b=null;
     try{b=(deriveBuilds(t2,tset)||[])[0]}catch(eF1){b=null}
-    if(!b||!hitSet(b,groups))return;
-    out.push({zh:t2.zh,mv:_tlkMvTxt(b),v:bstI(t2,5)});
+    var realSet=_ownSet(t2);
+    var set=realSet||(b?_tlkMvSet(b):{});
+    if(!hitSet(set,groups))return;
+    var mvTxt=b?_tlkMvTxt(b):"";
+    if(realSet){var _on=_ownMvNames(_ownOf(t2).row);if(_on.length)mvTxt=_on.join(" / ")}
+    out.push({zh:t2.zh,mv:mvTxt,v:bstI(t2,5),own:!!realSet,real:!!realSet});
   });
-  return out;
+  out.sort(function(a,b){return ((b.own?1:0)-(a.own?1:0))||(b.v-a.v)});
+  return out.slice(0,lim||3);
 }
+
 /* v4.282b：严格候选（推荐配置里真带）为空时的兜底——只按能学筛，
    但输出必须写明「默认配招不带，要手动给一个槽」，不许伪装成已配。 */
-function _tlkFindLoose(groups,capSp,tset,lim){
+function _tlkFindLoose(groups,capSp,tset,lim,allowAll){
   var have={},out=[],scan=0,tt={};
   (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
   var wcount={},immm={},xx={};
   (tset||[]).forEach(function(x){if(!x)return;var _w=_tcWkOf(x),_i=_tcImmOf(x);for(var _k in _w){if(_w.hasOwnProperty(_k))wcount[_k]=(wcount[_k]||0)+1}for(var _k2 in _i){if(_i.hasOwnProperty(_k2))immm[_k2]=1}});
-  var wkBad=function(t2){var _w=_tcWkOf(t2);for(var _k in _w){if(_w.hasOwnProperty(_k)&&(_k in xx===false)&&(wcount[_k]||0)>=2&&!immm[_k])return true}return false};
-  ERDATA.species.forEach(function(t2){
-    if(out.length>=16||scan>=24)return;
+  var wkBad=function(t2){var _w=_tcWkOf(t2);for(var _k in _w){if(_w.hasOwnProperty(_k)&&(wcount[_k]||0)>=2&&!immm[_k])return true}return false};
+  var own=_ownMap(),pool=(own&&!allowAll)?_ownPoolList():null;
+  var list=pool||ERDATA.species,cap=pool?9999:16,budget=pool?9999:24;
+  list.forEach(function(t2){
+    if(out.length>=cap||scan>=budget)return;
     if(t2.id==null||have[t2.id])return;
     if(!isFinalSp(t2)||!isValidSp(t2))return;
     if(capSp&&bstI(t2,5)>capSp)return;
@@ -7047,18 +7114,34 @@ function _tlkFindLoose(groups,capSp,tset,lim){
     var b=null,mv="";
     try{b=(deriveBuilds(t2,tset)||[])[0]}catch(eL1){b=null}
     mv=b?_tlkMvTxt(b):"";
-    out.push({zh:t2.zh,mv:mv,v:bstI(t2,5),tsp:learnHasName(t2,"高速旋转")?0:1});
+    var realSet=_ownSet(t2);
+    if(realSet){var _on=_ownMvNames(_ownOf(t2).row);if(_on.length)mv=_on.join(" / ")}
+    out.push({zh:t2.zh,mv:mv,v:bstI(t2,5),own:!!realSet,tsp:learnHasName(t2,"高速旋转")?0:1});
   });
-  out.sort(function(a,b){return (a.tsp-b.tsp)||(b.v-a.v)});
+  out.sort(function(a,b){return ((b.own?1:0)-(a.own?1:0))||(a.tsp-b.tsp)||(b.v-a.v)});
   return out.slice(0,lim||2);
 }
+
 function teamSpdLinkHtml(_R){
   try{
     var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
     if(!tm||tm.length<2)return "";
     var tset=tm.map(function(x){return (x&&x.s)||x});
-    var cand=function(g,cap,lim,loose){try{var c=_tlkFind(g,cap,tset,lim);return (c&&c.length)?c:((loose===false)?[]:(_tlkFindLoose(g,cap,tset,lim)||[]))}catch(eF0){return []}};
-    var candTxt=function(list){return list.map(function(x){return "<b>"+x.zh+"</b><span style='color:var(--sub);font-size:12.5px'>　"+x.mv+"｜速"+x.v+"</span>"}).join("；")};
+    var cand=function(g,cap,lim,loose){
+      try{
+        var c=_tlkFind(g,cap,tset,lim);
+        if(c&&c.length)return c;
+        if(loose===false)return [];
+        var c2=_tlkFindLoose(g,cap,tset,lim);
+        if(c2&&c2.length)return c2;
+        if(_ownMap()){   /* v4.288：持有的里没有 → 才去全图鉴找，并标「未持有」 */
+          var c3=_tlkFind(g,cap,tset,lim,true);
+          if(c3&&c3.length){c3.forEach(function(x){x.outside=true});return c3}
+        }
+        return [];
+      }catch(eF0){return []}
+    };
+    var candTxt=function(list){return list.map(function(x){return "<b>"+x.zh+"</b>"+(x.outside?"<span style='color:var(--warnred);font-size:12px'>·未持有</span>":"")+"<span style='color:var(--sub);font-size:12.5px'>　"+x.mv+"｜速"+x.v+"</span>"}).join("；")};
     var q=speedPctiles();
     var R={space:[],wind:[],spin:[],prio:[],fullhp:[],qf:[],bell:[],setst:[]};
     var ableSpace=[],ableWind=[],ableSpin=[],ableAbi=[];
@@ -7177,7 +7260,8 @@ function teamSpdLinkHtml(_R){
         +"想要就把它放进配招，不想要就别按「会不会」来判断联动。</div>")
       :"";
     return "<div class='sec' style='margin-top:8px'><h3>队伍速度联动（按推荐配置判 · 谁给谁提速 · 谁拖谁）</h3>"
-      +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>角色取自每只的推荐配置（配招 + 推荐特性），不是「能不能学」：</div>"
+      +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>角色取自每只的<b>配置</b>（有存档实配的读实配四招，其余读推荐配招），不是「能不能学」；"
+      +(_ownMap()?("<span style='color:#2e7d32;font-weight:700'>换人候选只在你的存档里挑（"+_ownCount()+" 种）</span>"):"解析存档 .sav 后换人候选只从你持有的里挑")+"：</div>"
       +rows+ableLine
       +(ableAbi.length?("<div style='font-size:13px;color:var(--sub);margin-top:2px'>特性能用但没选："+ableAbi.join(" / ")+"——选它才有对应的提速，这不影响上面其余判断。</div>"):"")
       +(V.length?("<div style='margin-top:4px;font-size:14.5px;line-height:1.65'>"+V.map(function(x){return "<div style='margin:3px 0'>"+x+"</div>"}).join("")+"</div>")
@@ -7209,6 +7293,73 @@ function _tcTaxOf(s){
 }
 /* v4.285：把体检卡的每条硬伤接上可执行动作——候选按「它自己顶不顶得住岩钉」排 */
 /* v4.287：候选带上「照抄就能上场」的配置——特性/道具/性格/EV + 要换的是第几槽 */
+/* ===== v4.288：候选池与「我的宝可梦（存档实配）」联动 =====
+   用户口径：配队候选要在他**已有**的宝可梦里挑；角色/招式判定按**配置**（存档里这只的四招）判，
+   而不是「这只能不能学」。没有解析存档时一切退回全图鉴的老行为。 */
+var _OWN_CACHE={rows:null,map:null};
+function _ownMap(){
+  var rows=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS:[];
+  if(!rows.length)return null;
+  if(_OWN_CACHE.rows===rows&&_OWN_CACHE.map)return _OWN_CACHE.map;
+  var map={};
+  rows.forEach(function(r){
+    if(!r||r.图鉴编号==null||r.图鉴编号==='')return;
+    var k=String(r.图鉴编号),party=(String(r.来源||'').indexOf('队伍')>=0),cur=map[k];
+    if(!cur)map[k]={party:party,row:r};
+    else if(party&&!cur.party)map[k]={party:true,row:r};
+    else if(!party&&!cur.party&&(+(r.等级||0)>+(cur.row.等级||0)))map[k]={party:false,row:r};
+  });
+  _OWN_CACHE={rows:rows,map:map};
+  return map;
+}
+function _ownOf(s){var m=_ownMap();return (m&&s&&s.id!=null)?(m[String(s.id)]||null):null}
+function _ownMvNames(row){
+  if(!row)return [];
+  return [row.招式1,row.招式2,row.招式3,row['招式4']]
+    .map(function(x){return String(x||'').replace(/\(id=\d+\)$/,'').trim()})
+    .filter(function(x){return !!x&&x!=='无'});
+}
+function _ownSet(s){
+  var o=_ownOf(s);if(!o)return null;
+  var ns=_ownMvNames(o.row);if(!ns.length)return null;
+  var set={};ns.forEach(function(n){set[n]=1});return set;
+}
+function _ownEvAry(row){return ['EV_HP','EV_攻击','EV_防御','EV_特攻','EV_特防','EV_速度'].map(function(k){return +(row[k]||0)})}
+function _ownPoolList(){
+  var m=_ownMap();if(!m)return null;
+  var out=[];
+  for(var k in m){
+    if(!m.hasOwnProperty(k))continue;
+    var s=speciesById(k);
+    if(s&&isValidSp(s))out.push(s);
+  }
+  return out;
+}
+function _ownCount(){var l=_ownPoolList();return l?l.length:0}
+/* 存档实配的四个槽里挑一个「最不疼」的换掉（强化招与钉子招不砍） */
+function _tcSwapOwn(row,want){
+  var names=_ownMvNames(row);if(!names.length)return null;
+  var keep=function(zh){
+    return TC_SETUP.indexOf(zh)>=0||TC_HAZ.set.indexOf(zh)>=0||TC_HAZ.clr.indexOf(zh)>=0;
+  };
+  var powOf=function(zh){
+    try{
+      for(var i=0;i<ERDATA.moves.length;i++){
+        var m=ERDATA.moves[i];
+        if(m&&String(m[1])===zh)return (+m[5])||0;
+      }
+    }catch(eP){eP.name}
+    return 0;
+  };
+  var best=null,bestPow=1e9;
+  names.forEach(function(zh){
+    if(keep(zh))return;
+    var p=powOf(zh);
+    if(p<bestPow){bestPow=p;best=zh}
+  });
+  if(!best)return null;
+  return {zh:best,want:(want&&want[0])||''};
+}
 function _tcSwapFor(b,names){
   var slots=((b&&b.mv&&b.mv.main)||[]).slice();
   if(!slots.length||!names||!names.length)return null;
@@ -7228,15 +7379,17 @@ function _tcSwapFor(b,names){
   if(best<0)return null;
   return {idx:best+1,zh:_tlkMvZh(slots[best].id)};
 }
-function _tcScan(groups,tset,lim,strictOnly){
+function _tcScan(groups,tset,lim,strictOnly,allowAll){
   var have={},tt={},out=[],scan=0;
   (tset||[]).forEach(function(x){if(!x)return;if(x.id!=null)have[x.id]=1;if(x.t1)tt[x.t1]=1});
   var wcount={},immm={};
   (tset||[]).forEach(function(x){if(!x)return;var _w=_tcWkOf(x),_i=_tcImmOf(x);
     for(var _k in _w){if(_w.hasOwnProperty(_k))wcount[_k]=(wcount[_k]||0)+1}
     for(var _k2 in _i){if(_i.hasOwnProperty(_k2))immm[_k2]=1}});
-  ERDATA.species.forEach(function(t2){
-    if(out.length>=(lim||3)||scan>=16)return;
+  var own=_ownMap(),pool=(own&&!allowAll)?_ownPoolList():null;
+  var list=pool||ERDATA.species,cap=pool?9999:(lim||3),budget=pool?9999:16;
+  list.forEach(function(t2){
+    if(out.length>=cap||scan>=budget)return;
     if(t2.id==null||have[t2.id])return;
     if(!isFinalSp(t2)||!isValidSp(t2))return;
     if(t2.t1&&tt[t2.t1])return;
@@ -7250,10 +7403,12 @@ function _tcScan(groups,tset,lim,strictOnly){
       if(!hit){ok=false;break}
     }
     if(!ok)return;
+    var ownRow=own?(own[String(t2.id)]||null):null;
+    var realSet=ownRow?_ownSet(t2):null;
     var b=null;
     try{b=(deriveBuilds(t2,tset)||[])[0]}catch(eS1){b=null}
     if(strictOnly){
-      var set=b?_tlkMvSet(b):{},h2=false;
+      var set=realSet||(b?_tlkMvSet(b):{}),h2=false;
       for(var i2=0;i2<groups.length;i2++){
         var g2=groups[i2],hit2=false;
         for(var j2=0;j2<g2.length;j2++){if(set[g2[j2]]){hit2=true;break}}
@@ -7264,11 +7419,23 @@ function _tcScan(groups,tset,lim,strictOnly){
     scan++;
     var tx=null;
     try{tx=_tcTaxOf(t2)}catch(eS2){tx=null}
-    out.push({zh:t2.zh,mv:b?_tlkMvTxt(b):"",v:bstI(t2,5),sr:tx?tx.sr:0,spk:tx?tx.spk:0,s:t2});
+    var realHit="";
+    if(realSet){
+      for(var gi=0;gi<groups.length&&!realHit;gi++){
+        for(var gj=0;gj<groups[gi].length;gj++){if(realSet[groups[gi][gj]]){realHit=groups[gi][gj];break}}
+      }
+    }
+    var mvTxt=b?_tlkMvTxt(b):"";
+    if(ownRow){var _on=_ownMvNames(ownRow.row);if(_on.length)mvTxt=_on.join(" / ")}
+    out.push({zh:t2.zh,mv:mvTxt,v:bstI(t2,5),sr:tx?tx.sr:0,spk:tx?tx.spk:0,s:t2,
+      own:ownRow?ownRow.row:null,real:!!realHit,realHit:realHit});
   });
-  out.sort(function(a,b){return (a.sr-b.sr)||(b.v-a.v)});
+  out.sort(function(a,b){
+    return ((b.real?1:0)-(a.real?1:0))||((b.own?1:0)-(a.own?1:0))||((a.sr||0)-(b.sr||0))||(b.v-a.v);
+  });
   return out.slice(0,lim||3);
 }
+
 /* v4.286：换人模拟——换进来之后这支队伍到底变好还是变坏 */
 function _tcAgg(tset){
   var w={},i2={},rowsT=[];
@@ -7312,49 +7479,95 @@ function _tcFixHtml(kind,tset){
   if(kind==="clear"){groups=[["高速旋转","清除浓雾"]];kw="队里没人清钉，全库默认配置里<b>已经带清钉</b>的选人：";looseKw="默认配置都没把清钉放进四个槽，但能学——选进来后要手动换一个槽：";}
   else if(kind==="set"){groups=[["隐形岩","撒菱","毒菱","黏网","黏黏网"]];kw="队里没人撒钉，默认配置里<b>已经带撒钉</b>的：";looseKw="默认配置都没带撒钉，但能学——选进来后要手动换一个槽：";}
   else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
-  var list=_tcScan(groups,tset,3,true),loose=false;
+  var own=_ownMap(),ownN=_ownCount();
+  var list=_tcScan(groups,tset,3,true),loose=false,outside=false;
   if(!list.length){list=_tcScan(groups,tset,3,false);loose=true}
+  if(!list.length&&own){list=_tcScan(groups,tset,3,false,true);loose=true;outside=true}
   if(!list.length)return "";
   var dp=null;
   try{dp=_tcDropOf(tset)}catch(eDp){dp=null}
+  var scope="";
+  if(own){
+    scope=outside
+      ? "<span style='color:var(--warnred)'>你存档里的 "+ownN+" 种都补不了这一项</span>　下面是全图鉴里合适的（标<b>未持有</b>，要先去抓/换）：<br>"
+      : "<span style='color:var(--sub)'>候选只在你的存档里挑（"+ownN+" 种）</span>：";
+  }
   var baseline=dp?("<br><span style='color:var(--sub);font-size:12.5px'>换掉的是 <b>"+dp.drop.zh
     +"</b>（当前整队里最该动的一只）；下面的数字是「换掉它 + 换上前面的候选」对比现在的整队：</span>"):"";
   var rowsTxt=list.map(function(x){
     var srp=Math.round((x.sr||0)*100);
     var tone=srp>=50?"color:var(--warnred);font-weight:700":"color:var(--sub)";
-    var head="<b>"+x.zh+"</b><span style='font-size:12.5px;color:var(--sub)'>　"+x.mv+"</span>"
-      +"<span style='font-size:12.5px;"+tone+"'>　速"+x.v+" · 岩钉"+(srp?srp+"%":"免")+"</span>";
+    var held=(own&&!x.own)?"<span style='font-size:12.5px;color:var(--warnred)'>　未持有</span>":"";
+    var head="<b>"+x.zh+"</b>"
+      +(x.real?"<span style='font-size:12.5px;color:#2e7d32;font-weight:700'>　已带"+x.realHit+"</span>":"")
+      +"<span style='font-size:12.5px;color:var(--sub)'>　"+x.mv+"</span>"
+      +"<span style='font-size:12.5px;"+tone+"'>　速"+x.v+" · 岩钉"+(srp?srp+"%":"免")+"</span>"+held;
     var conf="";
     try{
-      var b0=(deriveBuilds(x.s,tset)||[])[0],info=anRowOf(x.s,b0),evs=(info.ev||[0,0,0,0,0,0]);
-      var slotsZh=[];
-      ((b0&&b0.mv&&b0.mv.main)||[]).forEach(function(m){slotsZh.push(_tlkMvZh(m.id))});
-      var want=groups[0]?groups[0]:"",hitZh="";
-      for(var wi=0;wi<want.length;wi++){if(slotsZh.indexOf(want[wi])>=0){hitZh=want[wi];break}}
-      var sw=hitZh?null:_tcSwapFor(b0,want),note="";
-      if(hitZh)note="<span style='color:#2e7d32'>四个槽里已经带「"+hitZh+"」，配置原样可用</span>";
-      else if(sw)note="<span style='color:#b26a00'>改槽：第"+sw.idx+"槽「"+sw.zh+"」→「"+want[0]+"」</span>";
-      else note="<span style='color:#b26a00'>四个槽都要留给本系，得自己决定砍哪一招</span>";
-      /* 清钉手要抢在对手撒钉前动手：给一条可算出来的「先手清钉」配置 */
-      if(kind==="clear"){
-        try{
-          var Pq=speedPctiles(),maxV=spdMaxOf(x.s),tg=Math.min(Pq.P75,maxV),nowV=+info.raw||0;
-          if(nowV>=maxV-1){
-            note+="<span style='color:var(--sub)'>　速度已到它的上限 "+maxV+"（P"+spdRankOfVal(maxV)
-              +"），抢不过更快的撒钉手——只能接受后手清钉</span>";
-          }else if(nowV<tg){
-            var evs2=evForSpeed(tg,(x.s.base||[])[5]||0,31,1),vv=speedStat((x.s.base||[])[5]||0,evs2,31,1);
-            var curEv=+(evs[5]||0),how=(curEv>=evs2)
-              ?("速 EV 已经够（现有 "+curEv+"），只把性格换成爽朗")
-              :("性格改爽朗 + 速补到 "+evs2+" EV（比现在多 "+(evs2-curEv)+" 点，从别的项挤）");
-            note+="<span style='color:#b26a00'>　先手清钉："+how+" → "+vv+"（P"+spdRankOfVal(vv)+"）"
-              +(vv>=maxV?"；这已经是它的速度上限，比它更快的撒钉手照样抢在它前面":"" )+"</span>";
-          }else note+="<span style='color:var(--sub)'>　速度已经能先手，清钉前不用调</span>";
-        }catch(eSpd){eSpd.name}
+      var want=groups[0]||[];
+      if(x.own){
+        var mvz=_ownMvNames(x.own),hitZh2="";
+        for(var wi2=0;wi2<want.length;wi2++){if(mvz.indexOf(want[wi2])>=0){hitZh2=want[wi2];break}}
+        var noteO="";
+        if(hitZh2)noteO="<span style='color:#2e7d32'>存档里这只已经在用「"+hitZh2+"」，上场不用改</span>";
+        else{
+          var swO=_tcSwapOwn(x.own,want);
+          noteO=swO?("<span style='color:#b26a00'>改槽：把「"+swO.zh+"」换成「"+swO.want+"」（其余三招照存档）</span>")
+            :("<span style='color:#b26a00'>存档这四招全是强化/钉子，腾槽得你自己定砍哪一招</span>");
+        }
+        if(kind==="clear"){
+          try{
+            var curV=+(x.own['能力_速度']||0),Pq2=speedPctiles(),maxV2=spdMaxOf(x.s),baseSp=(x.s.base||[])[5]||0;
+            var natS=String(x.own.性格||''),curEvO=+(x.own['EV_速度']||0);
+            if(curV&&curV>=maxV2-1){
+              noteO+="<span style='color:var(--sub)'>　存档实配速度 "+curV+" 已经是它的上限（P"+spdRankOfVal(maxV2)+"），抢不过更快的撒钉手——只能接受后手清钉</span>";
+            }else if(curV&&curV>=Pq2.P75){
+              noteO+="<span style='color:#2e7d32'>　存档实配速度 "+curV+"（P"+spdRankOfVal(curV)+"）已经够先手，不用再动速度</span>";
+            }else if(curV){
+              var tg2=Math.min(Pq2.P75,maxV2),ev2=evForSpeed(tg2,baseSp,31,1),vv2=speedStat(baseSp,ev2,31,1);
+              var natOk=/^(爽朗|胆小)$/.test(natS);
+              if(curEvO>=ev2&&natOk){
+                noteO+="<span style='color:var(--sub)'>　存档实配速度 "+curV+" 已经是这套 EV 下的水平——再快只能换一只更快的清钉手</span>";
+              }else if(curEvO>=ev2){
+                noteO+="<span style='color:#b26a00'>　先手清钉：速 EV 已经够（存档现有 "+curEvO+"），只把性格换成爽朗 → "+vv2+"（P"+spdRankOfVal(vv2)+"）</span>";
+              }else{
+                noteO+="<span style='color:#b26a00'>　先手清钉："+(natOk?"":"性格改爽朗 + ")+"速补到 "+ev2+" EV（存档现在 "+curEvO+"，多 "+(ev2-curEvO)+" 点）→ "+vv2+"（P"+spdRankOfVal(vv2)+"）</span>";
+              }
+            }
+          }catch(eSpdO){eSpdO.name}
+        }
+        conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>存档实配：特性 <b>"+(x.own['主特性(当前生效)']||'—')+"</b>"
+          +"　道具 "+(x.own.道具||"—")+"　性格 <b>"+(x.own.性格||"—")+"</b>　EV "+_ownEvAry(x.own).join("/")+"　"+noteO+"</div>";
+      }else{
+        var b0=(deriveBuilds(x.s,tset)||[])[0],info=anRowOf(x.s,b0),evs=(info.ev||[0,0,0,0,0,0]);
+        var slotsZh=[];
+        ((b0&&b0.mv&&b0.mv.main)||[]).forEach(function(m){slotsZh.push(_tlkMvZh(m.id))});
+        var hitZh="";
+        for(var wi=0;wi<want.length;wi++){if(slotsZh.indexOf(want[wi])>=0){hitZh=want[wi];break}}
+        var sw=hitZh?null:_tcSwapFor(b0,want),note="";
+        if(hitZh)note="<span style='color:#2e7d32'>四个槽里已经带「"+hitZh+"」，配置原样可用</span>";
+        else if(sw)note="<span style='color:#b26a00'>改槽：第"+sw.idx+"槽「"+sw.zh+"」→「"+want[0]+"」</span>";
+        else note="<span style='color:#b26a00'>四个槽都要留给本系，得自己决定砍哪一招</span>";
+        if(kind==="clear"){
+          try{
+            var Pq=speedPctiles(),maxV=spdMaxOf(x.s),tg=Math.min(Pq.P75,maxV),nowV=+info.raw||0;
+            if(nowV>=maxV-1){
+              note+="<span style='color:var(--sub)'>　速度已到它的上限 "+maxV+"（P"+spdRankOfVal(maxV)
+                +"），抢不过更快的撒钉手——只能接受后手清钉</span>";
+            }else if(nowV<tg){
+              var evs2=evForSpeed(tg,(x.s.base||[])[5]||0,31,1),vv=speedStat((x.s.base||[])[5]||0,evs2,31,1);
+              var curEv=+(evs[5]||0),how=(curEv>=evs2)
+                ?("速 EV 已经够（现有 "+curEv+"），只把性格换成爽朗")
+                :("性格改爽朗 + 速补到 "+evs2+" EV（比现在多 "+(evs2-curEv)+" 点，从别的项挤）");
+              note+="<span style='color:#b26a00'>　先手清钉："+how+" → "+vv+"（P"+spdRankOfVal(vv)+"）"
+                +(vv>=maxV?"；这已经是它的速度上限，比它更快的撒钉手照样抢在它前面":"" )+"</span>";
+            }else note+="<span style='color:var(--sub)'>　速度已经能先手，清钉前不用调</span>";
+          }catch(eSpd){eSpd.name}
+        }
+        conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>特性 <b>"+(info.abi||"—")+"</b>"
+          +"　道具 "+(info.item||"—")+"　性格 <b>"+(info.nat||"—")+"</b>　EV "
+          +[0,1,2,3,4,5].map(function(i){return (+(evs[i]||0))}).join("/")+"　"+note+"</div>";
       }
-      conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>特性 <b>"+(info.abi||"—")+"</b>"
-        +"　道具 "+(info.item||"—")+"　性格 <b>"+(info.nat||"—")+"</b>　EV "
-        +[0,1,2,3,4,5].map(function(i){return (+(evs[i]||0))}).join("/")+"　"+note+"</div>";
     }catch(eCf){eCf.name}
     var sim="";
     try{
@@ -7381,10 +7594,14 @@ function _tcFixHtml(kind,tset){
     }catch(eSim){eSim.name}
     return head+conf+sim;
   }).join("<br>");
+  var leadKw;
+  if(own&&!outside){leadKw=loose?("你存档里的这几只能学，但实配四个槽里没有——要手动换一槽："):("你存档里<b>实配已经在用</b>这一招的（连槽都不用改）：");}
+  else leadKw=loose?looseKw:kw;
   return "<div style='margin:5px 0 0;padding:6px 9px;border-left:3px solid #b26a00;background:rgba(178,106,0,.06);font-size:13.5px;line-height:1.65'>"
-    +"<span style='color:#b26a00;font-weight:700'>怎么修</span>　"+(loose?looseKw:kw)+baseline+"<br>"+rowsTxt
+    +"<span style='color:#b26a00;font-weight:700'>怎么修</span>　"+leadKw+scope+baseline+"<br>"+rowsTxt
     +"</div>";
 }
+
 function teamCheckHtml(_R){
   try{
     var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
@@ -7395,14 +7612,22 @@ function teamCheckHtml(_R){
       var bs=[],b=null,set={},abi="";
       try{bs=deriveBuilds(s,tm)||[]}catch(eB9){bs=[]}
       b=bs.length?bs[0]:null;
-      set=_tlkMvSet(b);
+      set=_ownSet(s)||_tlkMvSet(b);
       try{abi=(anRowOf(s,b)||{}).abi||""}catch(eA9){abi=""}
       var w=_tcWkOf(s),i2=_tcImmOf(s);
       for(var k in w){if(w.hasOwnProperty(k))wk[k]=(wk[k]||0)+1}
       for(var k2 in i2){if(i2.hasOwnProperty(k2))imm[k2]=1}
-      mem.push({zh:s.zh,s:s,mv:_tlkMvTxt(b),set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s)});
+      var mvTxt=_tlkMvTxt(b),oReal=_ownOf(s);
+      if(oReal){var _on2=_ownMvNames(oReal.row);if(_on2.length){mvTxt=_on2.join(" / ");abi=oReal.row['主特性(当前生效)']||abi}}
+      mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal});
     });
     var rows="",V=[];var add=function(sev,txt,fix){V.push({s:sev,h:txt,fix:fix||""})};
+    if(_ownMap()){
+      var _ownMiss=mem.filter(function(x){return !x.real});
+      if(_ownMiss.length)add(1,"<span style='color:#b26a00'>队伍里有 "+_ownMiss.length+" 只不在你存档里</span>："
+        +_ownMiss.map(function(x){return x.zh}).join("/")
+        +"——可能已经换掉、或还没存进这一档；它们仍按推荐配置参与判定，「怎么修」也不会把它们算进候选。");
+    }
     var _fixSeen={},fixOnce=function(kind){if(kind&&_fixSeen[kind])return "";if(kind)_fixSeen[kind]=1;return _tcFixHtml(kind,tm)};
     var T=_tcTypes();
     /* ① Rule of Two */
@@ -7512,7 +7737,7 @@ function teamCheckHtml(_R){
     return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
-      +"　全部按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
+      +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
       +rows
       +V.map(function(x){var fx=x.fix?fixOnce(x.fix):"";return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+fx+"</div>"}).join("")
       +"</div>";
@@ -8602,6 +8827,7 @@ function speedRenderTable(){
   var qv=(document.getElementById('spdSearch')&&document.getElementById('spdSearch').value||'').trim().toLowerCase();
   var f=window._spdFilter||{};
   var rows=ERDATA.species.filter(function(s){
+    if(!erFlavorOk(s))return false;   /* v4.289：ER 特色总开关 */
     if(!qv)return true;
     return (''+s.zh).toLowerCase().indexOf(qv)>-1||(''+s.en).toLowerCase().indexOf(qv)>-1||(''+s.id).indexOf(qv)>-1;
   }).filter(function(s){
@@ -17151,7 +17377,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.287';
+var ER_ENGINE_VER='v4.289';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -17910,6 +18136,7 @@ function _initCoreList(){
   window.coreClear=coreClear;
   function coreMatch(s,skipForm){
     if(!isValidSp(s))return false; /* B7：占位/无效物种（base 全 0，如 2502）不进核心列表 */
+    if(!erFlavorOk(s))return false; /* v4.289：ER 特色总开关 */
     if(!skipForm&&optFinalOnly&&!isFinalForm(s)&&!evioOk(s))return false; /* v4.3.1：奇石优势形态同样可选为核心 */
     var _q=String($('coreSearch').value||'').trim();
     /* v4.32 P2-2：显式搜索时放宽 Mega 过滤（搜"妙蛙花"应返回普通形态；浏览模式保持 Mega 优先默认） */
