@@ -3191,7 +3191,7 @@ function renderAnSlots(){
       h+='<div class="slot anslot" role="button" tabindex="0" onclick="anSlotPick('+i+')" title="点击替换（打开图鉴级选择器）">'+
         sprImg(s.id,'spslot')+'<span class="nm">'+esc(s.zh)+'</span>'+
         (role?'<span class="roltag">'+esc(role)+'</span>':'')+
-        (_pl?'<span class="roltag" style="background:var(--accent);color:#fff" title="已采用配速：'+_pl.nat+'性格 · 实速 '+(+_pl.val||0)+'（核心配队第 6 段可改）">速'+(+_pl.val||0)+'</span>':'')+
+        (_pl?'<span class="roltag" style="background:var(--accent);color:#fff" title="已采用配速：'+_pl.nat+'性格 · 实速 '+(+_pl.val||0)+'（核心配队第 6 段可改）">速'+(+_pl.val||0)+'</span>':'')+(typeof teamPrioMark==='function'?teamPrioMark(s):'')+
         star+
         '<button class="x" type="button" onclick="event.stopPropagation();anSlotRemove('+i+')" title="移除（后续槽位前移补位）" aria-label="移除">×</button></div>';
     }else{
@@ -4531,7 +4531,7 @@ function renderSlots(){
       var info=teamInfo[s.id]||{fromSave:false};
       var _plR=spdPlanOf(s);
       html+='<div class="slot">'+sprImg(s.id,'spslot')+'<span class="nm">'+esc(s.zh)+'</span>'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+
-        (_plR?'<span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:13px;margin-left:2px" title="已采用配速：'+_plR.nat+'性格 · 实速 '+(+_plR.val||0)+'（核心配队第 6 段可改）">速'+(+_plR.val||0)+'</span>':'')+
+        (_plR?'<span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:13px;margin-left:2px" title="已采用配速：'+_plR.nat+'性格 · 实速 '+(+_plR.val||0)+'（核心配队第 6 段可改）">速'+(+_plR.val||0)+'</span>':'')+(typeof teamPrioMark==='function'?teamPrioMark(s):'')+
         '<button class="x" onclick="removeFromTeamById('+s.id+')">×</button></div>';
       html+='<div style="padding:0 10px 4px">'+abiBadges(s)+'</div>';
       /* 可选特性点选模拟生效（单选）
@@ -16396,7 +16396,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.272';
+var ER_ENGINE_VER='v4.273';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
