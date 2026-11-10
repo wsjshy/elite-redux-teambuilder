@@ -7328,6 +7328,7 @@ var TC_TERRAIN_SEED={"电气种子":"电","精神种子":"精神","青草种子"
 var TC_TERRAIN_SET_ABI={"电":["电气制造者"],"精神":["精神制造者"],"草":["青草制造者"],"雾":["薄雾制造者"]};
 var TC_TERRAIN_MOVE={"电":"电气场地","精神":"精神场地","草":"青草场地","雾":"薄雾场地"};
 var TC_RECOV=["自我再生","羽栖","睡觉","寄生种子","偷懒","喝牛奶","光合作用","月光","晨光","生蛋","回复指令","分担痛楚","祈愿"];
+var TC_BRK={"剧毒":"状态","磷火":"状态","挑衅":"封回复","寄生种子":"吸血","地球上投":"固定伤害","黑夜魔影":"固定伤害","愤怒门牙":"百分比","紧咬不放":"封换人"};
 var TC_TR=["戏法空间"];
 var TC_TW=["顺风"];
 var TC_CHOICE=["讲究头带","讲究围巾","讲究眼镜"];
@@ -7566,6 +7567,7 @@ function _tcFixHtml(kind,tset){
   else if(kind.indexOf("weather:")===0){var _w=kind.split(":")[1];groups=[[TC_WEATHER_MOVE[_w]]];kw="天气手：特性自动起"+_w+"，或默认配置里<b>已经带"+TC_WEATHER_MOVE[_w]+"</b>的：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind.indexOf("terrain:")===0){var _tr=kind.split(":")[1];groups=[[TC_TERRAIN_MOVE[_tr]]];kw="场地手：特性自动开"+_tr+"场地，或默认配置里<b>已经带"+TC_TERRAIN_MOVE[_tr]+"</b>的：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind==="recov"){groups=[TC_RECOV];kw="续航手：默认配置里<b>已经带自我再生/羽栖/寄生种子这类回复招</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
+  else if(kind==="brk"){groups=[["剧毒","磷火","挑衅","地球上投","黑夜魔影","愤怒门牙"]];kw="破受手：默认配置里<b>已经带剧毒/磷火/挑衅/固定伤害</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else if(kind==="pivot"){groups=[TC_PIVOT];kw="折返手：默认配置里<b>已经带急速折返/伏特替换/快速折返</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
   else{groups=[TC_SETUP];kw="能收尾的人：默认配置里<b>已经带强化招</b>的（不用改槽）：";looseKw="默认配置都不带强化招，但能学——选进来后要手动换一个槽：";}
   var own=_ownMap(),ownN=_ownCount();
@@ -7976,6 +7978,24 @@ if(twM.length){
   }
   else{add(0,"<span style='color:var(--ok,#2e7d32)'>顺风有受益者</span>："+twBen.map(function(x){return x.zh}).join('、')+" 速度在 P50–P90（"+pin.P50+"–"+pin.P90+"），顺风翻倍后能越过 P90 线。");}
 }
+/* ⑭ 破受 */
+var brkM=mem.filter(function(x){return Object.keys(TC_BRK).some(function(n){return x.set[n]})});
+var setM=mem.filter(function(x){return TC_SETUP.some(function(n){return x.set[n]})});
+var brkKinds={};brkM.forEach(function(x){Object.keys(TC_BRK).forEach(function(n){if(x.set[n])brkKinds[TC_BRK[n]]=1})});
+var brkN=Object.keys(brkKinds).length;
+if(mem.length>=4){
+  if(!brkM.length&&!setM.length){
+    add(1,'<b>打不穿高耐久</b>：全队既没有剧毒/磷火/挑衅/固定伤害这类不吃面板的手段，也没有强化招——ER 里多鳞、奇迹皮肤配高耐久的墙，纯攻击要打十几次才磨得掉，它回复一次就白打。<br>怎么修：补一只带剧毒或挑衅的队友（挑衅能让对面回不了血），或者把一只改成强化收尾。');
+  }else if(brkN<2&&brkM.length<2){
+    var who=brkM.length?brkM.map(function(x){return x.zh}).join('、'):'（暂无）';
+    var kn=brkN?('（'+Object.keys(brkKinds).join('/')+'）'):'';
+    add(1,'<b>破受手段太单</b>：'+who+' 是队里唯一能越过耐久的点'+kn+'，它一旦被挑衅或被换掉，整队就只剩硬打。<br>怎么修：再补一只不同类别的手段——状态（剧毒/磷火）、封回复（挑衅）、固定伤害（地球上投/黑夜魔影）三者里挑另一种。','brk');
+  }else{
+    var sl=brkM.map(function(x){return x.zh}).join('、');
+    var st2=setM.length?('，另有强化收尾 '+setM.map(function(x){return x.zh}).join('、')):'';
+    add(0,'<span style="color:var(--ok,#2e7d32)">能破受</span>：'+sl+st2+'——状态/封回复/固定伤害分散在不同只身上，对面靠回复拖时间也拖不住。');
+  }
+}
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
@@ -7984,7 +8004,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航 · 配置 · 控速）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航 · 配置 · 控速 · 破受）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17627,7 +17647,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.300';
+var ER_ENGINE_VER='v4.301';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
