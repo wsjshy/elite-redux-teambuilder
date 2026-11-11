@@ -7621,6 +7621,37 @@ function _tcMvFam(mv){
   return f;
 }
 var _TC_FAM_ABI={'强壮之颚':'jaw','铁拳':'punch','锐利之刃':'slash'};
+function _tcSlotCheck(x){
+  var sp=x.s||{};
+  var curAll=[String(x.abi||'')];
+  try{(sp.inns||[]).forEach(function(z){if(z&&curAll.indexOf(z)<0)curAll.push(z)})}catch(eC){eC.name}
+  var curNames=String(x.mv||'').split(' / ').filter(function(z){return z&&z.length>0});
+  var curBest=null,curSc=0;
+  curNames.forEach(function(nm){
+    var mv=_tcMvByName(nm);
+    if(!mv||(mv.cat!=='物理'&&mv.cat!=='特殊'))return;
+    var d=_tcAtkDmg(x,mv);
+    if(d>curSc){curSc=d;curBest=mv}
+  });
+  var pool=_tcBestUnder(x,curAll);
+  if(!pool)return null;
+  var famAbi=null;
+  for(var an in _TC_FAM_ABI){if(_TC_FAM_ABI.hasOwnProperty(an)&&curAll.indexOf(an)>=0){famAbi=_TC_FAM_ABI[an];break}}
+  var sameFam=!famAbi||(_tcMvFam(pool.mv).indexOf(famAbi)>=0);
+  var pmv=pool.mv;
+  var flags=[];
+  var acc=+(pmv.acc||0);
+  if(acc>0&&acc<75)flags.push('命中'+acc+'（期望值已折算，但实战看脸）');
+  var en=String(pmv.en||'').toLowerCase();
+  if(/water spout|eruption|crush grip|wring out/.test(en))flags.push('伤害随自身 HP/对方状态变化，静态值按满状态算');
+  var isCover=curBest&&(pmv.type!==curBest.type)&&(curBest.type===sp.t1||curBest.type===sp.t2)&&(pmv.type!==sp.t1&&pmv.type!==sp.t2);
+  if(isCover)flags.push('这是覆盖招，不是替换你的本系主招，应占另一个槽');
+  if(!curBest)return {swap:1,cur:'',curSc:0,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags};
+  if(pmv.zh!==curBest.zh&&pool.sc>curSc*1.15){
+    return {swap:1,cur:curBest.zh,curSc:curSc,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags,isCover:isCover}
+  }
+  return {swap:0,cur:curBest.zh,curSc:curSc,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags};
+}
 var _TC_FAM_ZH={jaw:'啃咬/颚类',punch:'拳类',slash:'劈砍类',contact:'接触类'};
 var _TC_ABIMUL=null;
 function _tcAbiMulOf(zh){
@@ -8583,6 +8614,31 @@ try{
     add(0,'<b>招式价值随特性变</b>（同一个招在带该特性与换掉该特性后不是一个价：伤害按物攻/特攻各自面板算，再乘特性增伤、命中率与段数）：'+valRows.join('。')+'。这里的平均伤害是对中性基准受击者（双防 90、252 HP）算的，只用于在自家招之间比大小，不等于打穿速度里对 420 血墙的几发。选招先看你这只现在带什么特性；如果某招只在现特性下才划算，就别把它当通用解搬家。')
   }
 }catch(eVal){eVal.name}
+try{
+  var slotRows=[],slotOk=[];
+  mem.forEach(function(x){
+    var r=_tcSlotCheck(x);
+    if(!r)return;
+    if(r.swap){
+      var line='<b>'+x.zh+'</b>：'+(r.cur?('当前实配最强攻击招 '+r.cur+'（平均伤害 '+Math.round(r.curSc)+'），'):'')+'池内更优的是 <b>'+r.pool+'</b>（'+Math.round(r.poolSc)+'）';
+      var hpScaled=r.flags&&r.flags.some(function(f){return /HP/.test(f)});
+      if(r.famAbi&&!r.sameFam)line+='——但它不在你特性吃的族群里，换了会破协同，不建议为了这点伤害动';
+      else if(r.isCover)line+='，注意它是覆盖招，别顶掉本系主招，应占另一个槽';
+      else if(hpScaled)line+='，但这个高数值只在满状态成立，残血会缩水，不建议照抄替换';
+      else line+='，同族群协同不破坏，可在招式表确认后替换';
+      var extra=(r.flags||[]).filter(function(f){return r.isCover?!/覆盖招/.test(f):true}).filter(function(f){return hpScaled?!/HP/.test(f):true});
+      if(extra.length)line+='（'+extra.join('；')+'）';
+      slotRows.push(line);
+    }else if(r.cur){
+      slotOk.push(x.zh+'（实配 '+r.cur+' 已在池内最优 15% 内）');
+    }
+  });
+  if(slotRows.length||slotOk.length){
+    add(0,'<b>槽位优化</b>（只动招式、特性/道具/性格/EV 不变；候选必须在当前等级招池内）：'+
+      (slotRows.length?slotRows.join('；'):'没有需要换的攻击招')+
+      (slotOk.length?(slotRows.length?'。其余：':'')+slotOk.join('、'):'')+'。')
+  }
+}catch(eSlot){eSlot.name}
 try{
   var famRows=[],famWarn=[];
   mem.forEach(function(x){
@@ -18299,7 +18355,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.315';
+var ER_ENGINE_VER='v4.316';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
