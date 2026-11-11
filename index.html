@@ -7588,7 +7588,7 @@ function _tcMvById(id){
   return _TC_MVID[String(id)]||null;
 }
 function _tcPoolCount(s,cap){
-  var blank={nAtk:0,nRec:0,nSet:0,nPrio:0,nTot:0,nOne:0,recBest:0,recS:'',recA:'',setBest:0,setS:'',prioBest:0,prioTxt:'',cover:0,atkBest:0,atkBestTxt:''};
+  var blank={nAtk:0,nRec:0,nSet:0,nPrio:0,nTot:0,nOne:0,recBest:0,recS:'',recA:'',setBest:0,setS:'',prioBest:0,prioTxt:'',cover:0,atkBest:0,atkBestTxt:'',physBest:0,specBest:0};
   if(!s)return blank;
   if(!_TC_POOLC)_TC_POOLC={};
   var key=String(s.id)+'#'+String(cap||100);
@@ -7603,7 +7603,7 @@ function _tcPoolCount(s,cap){
   }
   var tut=(s.tut||[]);
   for(i=0;i<tut.length;i++){t2=String(tut[i]);if(t2&&!seen[t2]){seen[t2]=1;ids.push(t2)}}
-  var r={nAtk:0,nRec:0,nSet:0,nPrio:0,nTot:ids.length,nOne:0,recBest:0,recS:'',recA:'',setBest:0,setS:'',prioBest:0,prioTxt:'',cover:0,atkBest:0,atkBestTxt:''};
+  var r={nAtk:0,nRec:0,nSet:0,nPrio:0,nTot:ids.length,nOne:0,recBest:0,recS:'',recA:'',setBest:0,setS:'',prioBest:0,prioTxt:'',cover:0,atkBest:0,atkBestTxt:'',physBest:0,specBest:0};
   var types={};
   var st1=String((s.t1||'')),st2=String((s.t2||''));
   for(i=0;i<ids.length;i++){
@@ -7625,6 +7625,8 @@ function _tcPoolCount(s,cap){
       eff=bp*(isStab?1.2:1.0);
       if(ty){types[ty]=Math.max(types[ty]||0,bp);if(eff>(types['#'+ty]||0))types['#'+ty]=eff;}
       if(eff>r.atkBest){r.atkBest=eff;r.atkBestTxt=mv.zh+'('+bp+(isStab?' +STAB':'')+')'}
+      if(mv.cat==='物理'&&eff>r.physBest)r.physBest=eff;
+      if(mv.cat==='特殊'&&eff>r.specBest)r.specBest=eff;
       if(mv.prio>0){
         r.nPrio++;
         pq=bp*mv.prio*(isStab?1.2:1.0);
@@ -8191,6 +8193,42 @@ if(mem.length>=4){
     add(0,'<span style="color:var(--ok,#2e7d32)">能破受</span>：'+sl+st2+'——间接（怕魔法防守）与直接（怕减伤）两条路线都有人走，'+'遇到'+TC_WALL_ABI.slice(0,4).join('/')+'这类防守特性也不会被一条路锁死。');
   }
 }
+/* ⑭b 对手侧对策核对（按对手常见防守特性逐类看我们剩什么手段） */
+if(mem.length>=4){
+  var caps={dir:dirM.length>0,ind:indM.length>0,set:setM.length>0,
+    phys:mem.some(function(x){return _tcPoolCount(x.s,x.L||100).physBest>=100}),
+    spec:mem.some(function(x){return _tcPoolCount(x.s,x.L||100).specBest>=100})};
+  var carry=[];
+  if(caps.dir)carry.push('直接（挑衅/固定伤害/封换人）');
+  if(caps.ind)carry.push('间接（状态/吸血）');
+  if(caps.set)carry.push('强化收尾');
+  var hitters=[];
+  if(caps.phys)hitters.push('物理大招');
+  if(caps.spec)hitters.push('特殊大招');
+  if(hitters.length)carry.push(hitters.join('/'));
+  var capName={dir:'固定伤害/挑衅封回复',ind:'先削血（状态/种子）',set:'强化收尾',phys:'物理大招',spec:'特殊大招'};
+  var rowsT=[
+    {n:'魔法防守',req:['dir','set'],why:'免疫一切非直接伤害，状态、吸血、钉子、天气全归零；光靠大威力招式打不死带回复的高耐久'},
+    {n:'毛皮大衣 / 毛茸茸',req:['spec','ind','dir'],why:'物理伤害减半，物理强攻直接砍一半'},
+    {n:'多重鳞片 / 幻影防守',req:['ind','dir'],why:'满血时伤害减半，一发大招只能削掉一半，对面回复一次就回来'},
+    {n:'坚硬岩石 / 过滤',req:['dir','ind'],why:'克制伤害被削，越靠倍率打越吃亏，靠本系大招硬啃也慢'},
+    {n:'纯朴',req:(caps.set?['ind','dir','spec','phys']:['setnone']),why:'无视攻方强化，强化收尾在它面前等于没强化'},
+    {n:'奇迹皮肤',req:['dir','phys','spec'],why:'变化招式命中率减半，状态和挑衅经常直接打空'}
+  ];
+  rowsT.forEach(function(r){
+    if(r.req.length===1&&r.req[0]==='setnone'){r.ok=true;r.mine='我们本来就不靠强化';return}
+    var mine=r.req.filter(function(k){return !!caps[k]});
+    r.ok=mine.length>0;
+    r.mine=mine.map(function(k){return capName[k]}).join('/');
+  });
+  var gapsB=rowsT.filter(function(r){return !r.ok});
+  var okB=rowsT.filter(function(r){return r.ok});
+  var okTxt=okB.map(function(r){return "<b>"+r.n+"</b> <span style='color:var(--ok,#2e7d32)'>✓</span> 靠 "+r.mine}).join('；');
+  if(gapsB.length){
+    add(1,'<b>对手侧：有整类墙我们没有手段</b>　'+gapsB.map(function(r){return "<b>"+r.n+"</b>（"+r.why+"）——队里没有 "+r.req.map(function(k){return capName[k]}).join('/')}).join('；')+'。这类对手不是靠数值能磨过去的：'+(gapsB[0].n==='多重鳞片 / 幻影防守'?'它满血时一发大招只掉一半血，你换招的回合它已经回满。':'手段不对症，打再多也是白打。')+'<br>怎么修：按上面点名的能力补一条——固定伤害（地球上投/黑夜魔影/愤怒门牙）不吃倍率也不吃减伤，状态/种子能持续削血，特殊手能绕开物理减伤。','brk');
+  }
+  add(0,'<b>对手侧对策核对</b>（按对手常见防守特性逐类，看我们手里还有什么：'+(carry.length?carry.join('、'):'什么都不剩')+'）　'+(okTxt||'暂无')+'。这张表的意义是：破受不只靠状态去磨，碰上魔法防守要换真伤害，碰上毛皮大衣要换特殊，碰上多重鳞片要先削血。');
+}
 /* ⑮ 特性托底（先按全量能力集判这只该走哪条路线，再谈特性有没有用在点上） */
 var needM=mem.filter(function(x){return _tcProf(x).defUse});
 var defUseM=mem.filter(function(x){var p=_tcProf(x);return (p.defUse||p.route==='防守'||p.route==='双修')&&_tcDefActive(x).length>0});
@@ -8229,7 +8267,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航 · 配置 · 控速 · 破受 · 特性托底）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航 · 配置 · 控速 · 破受 · 对手侧对策 · 特性托底）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17872,7 +17910,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.307';
+var ER_ENGINE_VER='v4.308';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
