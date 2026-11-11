@@ -7621,6 +7621,28 @@ function _tcMvFam(mv){
   return f;
 }
 var _TC_FAM_ABI={'强壮之颚':'jaw','铁拳':'punch','锐利之刃':'slash'};
+function _tcWallHits(x,mv){
+  if(!x||!x.s||!mv)return 999;
+  var sp=x.s;
+  var phys=(+((sp.base||[])[1]||0))>=(+((sp.base||[])[3]||0));
+  if((mv.cat==='物理')!==phys)return 999;
+  if(mv.tags&&mv.tags.indexOf('自爆·退场')>=0)return 999;
+  if(+mv.pw<20)return 999;
+  if(String(mv.zh).indexOf('奉还')>=0||String(mv.zh).indexOf('镜面反射')>=0)return 999;
+  var q=_tcMvEff(mv),fac=q/(+mv.pw||1);
+  var abiCtx=[String(x.abi||'')];
+  try{(sp.inns||[]).forEach(function(z){if(z&&abiCtx.indexOf(z)<0)abiCtx.push(z)});(sp.abis||[]).slice(0,3).forEach(function(z){if(z&&abiCtx.indexOf(z)<0)abiCtx.push(z)})}catch(eA3){eA3.name}
+  var boost=_tcAbiBoostOf(mv,abiCtx);
+  try{
+    var dm=dmgCalc({sA:sp,sD:_TC_BWALL,moveId:+mv.id,evA:(x.ev?+x.ev[phys?1:3]:0),natA:(''),evD:252,natD:(phys?'淘气':'温和'),itemA:(x.it||'')});
+    if(!dm)return 999;
+    var am=+(dm.atkMul||1);if(!(am>0))am=1;
+    var avg=((dm.lo+dm.hi)/2)*fac*(boost/am);
+    if(avg<=0)return 999;
+    return Math.ceil(_TC_BWALL_HP/avg);
+  }catch(eD2){eD2.name}
+  return 999;
+}
 function _tcSlotCheck(x){
   var sp=x.s||{};
   var curAll=[String(x.abi||'')];
@@ -7646,11 +7668,21 @@ function _tcSlotCheck(x){
   if(/water spout|eruption|crush grip|wring out/.test(en))flags.push('伤害随自身 HP/对方状态变化，静态值按满状态算');
   var isCover=curBest&&(pmv.type!==curBest.type)&&(curBest.type===sp.t1||curBest.type===sp.t2)&&(pmv.type!==sp.t1&&pmv.type!==sp.t2);
   if(isCover)flags.push('这是覆盖招，不是替换你的本系主招，应占另一个槽');
-  if(!curBest)return {swap:1,cur:'',curSc:0,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags};
+  var wallB=999,wallA=999;
+  curNames.forEach(function(nm){
+    var m3=_tcMvByName(nm);
+    if(!m3)return;
+    if(curBest&&m3.zh===curBest.zh)return;
+    var h=_tcWallHits(x,m3);
+    if(h<wallB)wallB=h;
+  });
+  if(curBest){var h0=_tcWallHits(x,curBest);if(h0<wallB)wallB=h0}
+  wallA=Math.min(wallB,_tcWallHits(x,pmv));
+  if(!curBest)return {swap:1,cur:'',curSc:0,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags,wallB:wallB,wallA:wallA};
   if(pmv.zh!==curBest.zh&&pool.sc>curSc*1.15){
-    return {swap:1,cur:curBest.zh,curSc:curSc,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags,isCover:isCover}
+    return {swap:1,cur:curBest.zh,curSc:curSc,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags,isCover:isCover,wallB:wallB,wallA:wallA}
   }
-  return {swap:0,cur:curBest.zh,curSc:curSc,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags};
+  return {swap:0,cur:curBest.zh,curSc:curSc,pool:pmv.zh,poolSc:pool.sc,sameFam:sameFam,famAbi:famAbi,flags:flags,wallB:wallB,wallA:wallA};
 }
 var _TC_FAM_ZH={jaw:'啃咬/颚类',punch:'拳类',slash:'劈砍类',contact:'接触类'};
 var _TC_ABIMUL=null;
@@ -8626,6 +8658,12 @@ try{
       else if(r.isCover)line+='，注意它是覆盖招，别顶掉本系主招，应占另一个槽';
       else if(hpScaled)line+='，但这个高数值只在满状态成立，残血会缩水，不建议照抄替换';
       else line+='，同族群协同不破坏，可在招式表确认后替换';
+      var wallTxt='';
+      if(r.wallA<999&&r.wallB<999){
+        if(r.wallA<r.wallB)wallTxt='换完对 420 血墙从 '+r.wallB+' 发降到 '+r.wallA+' 发';
+        else wallTxt='但换完打墙还是 '+r.wallB+' 发，只抬高单发数字，未必值得动';
+      }
+      if(wallTxt)line+='——'+wallTxt+'';
       var extra=(r.flags||[]).filter(function(f){return r.isCover?!/覆盖招/.test(f):true}).filter(function(f){return hpScaled?!/HP/.test(f):true});
       if(extra.length)line+='（'+extra.join('；')+'）';
       slotRows.push(line);
@@ -18355,7 +18393,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.316';
+var ER_ENGINE_VER='v4.317';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
