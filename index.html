@@ -7819,6 +7819,32 @@ function _tcTtk(tset){
   out.sort(function(a,b){return a.ttk-b.ttk||b.dmg-a.dmg});
   return {list:out,best:out.length?out[0].ttk:0};
 }
+var _TC_PHYS_ATK={id:-11,zh:'物理压制手',t1:'一般',t2:'一般',base:[100,130,90,50,90,80],abis:[],inns:[]};
+var _TC_SPEC_ATK={id:-12,zh:'特殊压制手',t1:'一般',t2:'一般',base:[100,50,90,130,90,80],abis:[],inns:[]};
+function _tcHpOf(sp,ev,lv){
+  lv=lv||100;ev=ev||0;
+  return Math.floor((2*((sp.base||[])[0]||80)+31+Math.floor(ev/4))*lv/100)+lv+10;
+}
+function _tcTaken(tset){
+  var out=[];
+  (tset||[]).forEach(function(x){
+    if(!x||!x.s)return;
+    var sp=x.s,lv=(x.L||100),hp=_tcHpOf(sp,(x.ev?+x.ev[0]:0),lv);
+    var pT=99,sT=99,pB=99,sB=99;
+    try{
+      var dp=dmgCalc({sA:_TC_PHYS_ATK,sD:sp,moveId:462,evA:252,natA:'固执',evD:(x.ev?+x.ev[2]:0),natD:'',itemA:'生命宝珠'});
+      if(dp){var ap=(dp.lo+dp.hi)/2;if(ap>0){pT=Math.ceil(hp/ap);pB=Math.ceil(hp/(ap*1.5))}}
+    }catch(e1){e1.name}
+    try{
+      var ds=dmgCalc({sA:_TC_SPEC_ATK,sD:sp,moveId:253,evA:252,natA:'内敛',evD:(x.ev?+x.ev[5]:0),natD:'',itemA:'生命宝珠'});
+      if(ds){var as=(ds.lo+ds.hi)/2;if(as>0){sT=Math.ceil(hp/as);sB=Math.ceil(hp/(as*1.5))}}
+    }catch(e2){e2.name}
+    var t=Math.min(pT,sT),tb=Math.min(pB,sB);
+    out.push({zh:x.zh,ttk:t,ttkB:tb,hp:hp,phys:pT<=sT});
+  });
+  out.sort(function(a,b){return a.ttk-b.ttk||a.ttkB-b.ttkB});
+  return out;
+}
 function _tcGapFix(need,tset){
   var own=_ownMap(),pool=own?_ownPoolList():null,list=pool||ERDATA.species,have={},out=[];
   (tset||[]).forEach(function(x){if(x&&x.id!=null)have[x.id]=1});
@@ -8417,6 +8443,17 @@ try{
         :('最快 '+_tk.best+' 发，墙带回复时要把这几发压缩在回复间隙里，留好强化或状态的回合。')))
   }
 }catch(eTk){eTk.name}
+try{
+  var _tn=_tcTaken(mem);
+  if(_tn&&_tn.length){
+    var ohko=_tn.filter(function(r){return r.ttk<=1}).length;
+    var two=_tn.filter(function(r){return r.ttk===2}).length;
+    add(0,'<b>最坏情况被击穿速度</b>（对面一只 130 攻/特攻、252 EV、生命宝珠、本系 120 威力、不吃属性克制的顶配压制手，打你这几只分别几发——这是上限口径，真实对战里带克制只会更快）：'+
+      _tn.slice(0,4).map(function(r){return '<b>'+r.zh+'</b> '+r.ttk+' 发'+(r.ttkB<=1?'（对面 +1 强化后 1 发）':'（+1 后 '+r.ttkB+' 发）')}).join('　·　')+
+      '。'+(ohko>=1?('其中 '+ohko+' 只满血就会被一发带走'+(two?('，还有 '+two+' 只两发内倒'):'')+'——这些位置换进场就等于送人头，得靠先制、守住或威吓类特性压节奏。')
+        :(two>=1?('没有一发被带走的，但有 '+two+' 只两发内倒，换招时要先算对面的速度线。'):('最脆的也要 '+_tn[0].ttk+' 发才倒，正面硬吃一两下不致命；注意这里没算属性克制和对手特性加成。'))))
+  }
+}catch(eTn){eTn.name}
 if(mem.length>=4){
   var multiM=mem.filter(function(x){var pc=_tcPoolCount(x.s,x.L||100);return String(pc.atkBestTxt).indexOf('×')>=0});
   if(_TC_QCTX.link||_TC_QCTX.dice){
@@ -18083,7 +18120,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.311';
+var ER_ENGINE_VER='v4.312';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
