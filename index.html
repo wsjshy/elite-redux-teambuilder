@@ -7567,7 +7567,7 @@ function _tcDefAbiOf(s){
   inn.forEach(function(n){if(TC_DEF_ABI.indexOf(n)>=0&&h.indexOf(n)<0)h.push(n)});
   return h;
 }
-var _TC_MVCAT=null;
+var _TC_MVCAT=null,_TC_MVID=null,_TC_POOLC=null;
 function _tcMvCat(zh){
   if(!_TC_MVCAT){
     _TC_MVCAT={};
@@ -7575,22 +7575,62 @@ function _tcMvCat(zh){
   }
   return _TC_MVCAT[String(zh)]||'';
 }
+function _tcMvById(id){
+  if(!_TC_MVID){
+    _TC_MVID={};
+    try{ERDATA.moves.forEach(function(m){if(m&&m[0])_TC_MVID[String(m[0])]={zh:String(m[1]||''),cat:String(m[4]||''),pw:+(m[5]||0),prio:+(m[8]||0)}})}catch(eD){_TC_MVID={}}
+  }
+  return _TC_MVID[String(id)]||null;
+}
+function _tcPoolCount(s,cap){
+  if(!s)return {nAtk:0,nRec:0,nSet:0,nPrio:0,nTot:0,nOne:0};
+  if(!_TC_POOLC)_TC_POOLC={};
+  var key=String(s.id)+'#'+String(cap||100);
+  if(_TC_POOLC[key])return _TC_POOLC[key];
+  var ids=[],seen={},i,mv;
+  var lvs=(s.lv||[]);
+  for(i=0;i<lvs.length;i++){
+    var row=lvs[i];if(!row)continue;
+    var lvl=+row[0]||0;
+    if(cap&&lvl>cap)continue;
+    var mid=String(row[1]);
+    if(!seen[mid]){seen[mid]=1;ids.push(mid)}
+  }
+  var tut=(s.tut||[]);
+  for(i=0;i<tut.length;i++){var t2=String(tut[i]);if(t2&&!seen[t2]){seen[t2]=1;ids.push(t2)}}
+  var r={nAtk:0,nRec:0,nSet:0,nPrio:0,nTot:ids.length,nOne:0};
+  for(i=0;i<ids.length;i++){
+    mv=_tcMvById(ids[i]);
+    if(!mv)continue;
+    if(mv.cat==='变化'){
+      if(TC_RECOV.indexOf(mv.zh)>=0)r.nRec++;
+      else if(TC_SETUP.indexOf(mv.zh)>=0)r.nSet++;
+      else r.nOne++;
+    }else{
+      r.nAtk++;
+      if(mv.prio>0)r.nPrio++;
+    }
+    if(TC_SETUP.indexOf(mv.zh)>=0&&mv.cat!=='变化')r.nSet++;
+  }
+  _TC_POOLC[key]=r;
+  return r;
+}
 function _tcProf(x){
-  var st=x.set||{},nA=0,nS=0,k,c;
-  for(k in st){if(!st.hasOwnProperty(k))continue;c=_tcMvCat(k);if(!c)continue;if(c==='变化')nS++;else nA++;}
+  var st=x.set||{},k,c,nAs=0,nSs=0;
+  for(k in st){if(!st.hasOwnProperty(k))continue;c=_tcMvCat(k);if(!c)continue;if(c==='变化')nSs++;else nAs++;}
   var ev=x.ev||[0,0,0,0,0,0];
   var offP=(+(ev[1]||0))+(+(ev[3]||0)),dfnP=(+(ev[0]||0))+(+(ev[2]||0))+(+(ev[4]||0));
   var b=(x.s&&x.s.base)||[0,0,0,0,0,0];
   var bulk=(+(b[0]||0))+(+(b[2]||0))+(+(b[4]||0)),pow=Math.max((+(b[1]||0)),(+(b[3]||0)));
-  var rt=x.rt||'';
-  var shieldRole=(rt==='肉盾'||rt==='辅助')&&nA<=2;
-  var leanShield=(bulk>=270&&pow<=115&&nA<=3);
-  var atkRole=(rt==='输出'||rt==='强化')&&nA>=3;
-  var tank=!!(shieldRole||leanShield);
-  var atk=(!tank)&&(atkRole||(pow>=115&&nA>=3));
-  var why=tank?('定位'+rt+'、攻击招 '+nA+' 个、耐久 EV '+dfnP+'、种族 攻/特攻 '+pow+'、耐久和 '+bulk)
-              :('定位'+rt+'、攻击招 '+nA+' 个、输出 EV '+offP+'、种族 攻/特攻 '+pow+'、耐久和 '+bulk);
-  return {tank:tank,atk:atk,nA:nA,nS:nS,offP:offP,dfnP:dfnP,bulk:bulk,pow:pow,why:why};
+  var pc=_tcPoolCount(x.s,x.L||100);
+  var defPot=(bulk>=300&&pow<=110)||(bulk>=270&&pow<=90&&pc.nRec>=2)||(bulk>=280&&pc.nRec>=3&&pow<=100);
+  var atkPot=(pow>=115)||(pow>=100&&(pc.nSet>=2||pc.nPrio>=2))||(pc.nAtk>=28&&pc.nSet>=1);
+  var curDef=((dfnP>=252&&dfnP>offP)||(nAs<=2&&dfnP>offP&&dfnP>=100));
+  if(!defPot&&curDef&&bulk>=250)defPot=true;
+  var route=(defPot&&atkPot)?'双修':(defPot?'防守':(atkPot?'进攻':'中庸'));
+  var defUse=(route==='防守')?true:((route==='双修')?curDef:((route==='中庸')?(curDef&&bulk>=270):false));
+  var why='种族 攻/特攻 '+pow+'、耐久和 '+bulk+'；池里（≤Lv'+(x.L||100)+'）攻击招 '+pc.nAtk+' 个、回复招 '+pc.nRec+' 个、强化招 '+pc.nSet+' 个、先制招 '+pc.nPrio+' 个；实配攻击招 '+nAs+' 个、耐久 EV '+dfnP+' vs 输出 EV '+offP;
+  return {route:route,defPot:defPot,atkPot:atkPot,defUse:defUse,nAs:nAs,nSs:nSs,offP:offP,dfnP:dfnP,bulk:bulk,pow:pow,pool:pc,why:why};
 }
 function _tcDefActive(x){
   var h=[];
@@ -7842,7 +7882,7 @@ function teamCheckHtml(_R){
       var evA=[0,0,0,0,0,0];
       try{var _rrE=anRowOf(s,b)||{};evA=(_rrE.ev||[0,0,0,0,0,0]).slice()}catch(eEv){evA=[0,0,0,0,0,0]}
       if(oReal){evA=_ownEvAry(oReal.row)}
-      mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal,rt:rt,it:itm,cf:cf,ev:evA});
+      mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal,rt:rt,it:itm,cf:cf,ev:evA,L:(oReal&&oReal.row&&oReal.row['等级'])?(+oReal.row['等级']||100):100});
     });
     var rows="",V=[];var add=function(sev,txt,fix){V.push({s:sev,h:txt,fix:fix||""})};
     if(_ownMap()){
@@ -8112,21 +8152,29 @@ if(mem.length>=4){
     add(0,'<span style="color:var(--ok,#2e7d32)">能破受</span>：'+sl+st2+'——间接（怕魔法防守）与直接（怕减伤）两条路线都有人走，'+'遇到'+TC_WALL_ABI.slice(0,4).join('/')+'这类防守特性也不会被一条路锁死。');
   }
 }
-/* ⑮ 特性托底（先判这只该不该走防守，再谈特性托底） */
-var tankM=mem.filter(function(x){return _tcProf(x).tank});
-var tankNo=tankM.filter(function(x){return !_tcDefActive(x).length});
-var defOnAtk=mem.filter(function(x){var p=_tcProf(x);return p.atk&&_tcDefActive(x).length>0});
+/* ⑮ 特性托底（先按全量能力集判这只该走哪条路线，再谈特性有没有用在点上） */
+var needM=mem.filter(function(x){return _tcProf(x).defUse});
+var defUseM=mem.filter(function(x){var p=_tcProf(x);return p.defUse||p.route==='防守'||p.route==='双修'});
+var defUseNo=needM.filter(function(x){return !_tcDefActive(x).length});
+var atkOnlyDef=mem.filter(function(x){var p=_tcProf(x);return p.route!=='防守'&&!p.defUse&&p.nAs>=3&&p.offP>=p.dfnP&&_tcDefActive(x).length>0});
+var namedM=defUseM.concat(atkOnlyDef);
+var bothDef=mem.filter(function(x){var p=_tcProf(x);return p.route==='双修'&&_tcDefActive(x).length>0&&namedM.indexOf(x)<0});
 if(mem.length>=4){
-  if(tankNo.length){
-    var swT=_tcAbiSwitchHint(tankNo);
-    add(1,'<b>防守位缺特性托底</b>：'+tankNo.map(function(x){return '<b>'+x.zh+'</b>（'+x.abi+'，'+_tcProf(x).why+'）'}).join('；')+' —— 按它自己的种族值和实配四招，它的活是扛伤，但生效的特性里没有减伤类（多重鳞片/幻影防守/毛皮大衣/坚硬岩石/过滤/魔法防守这类）。ER 的墙一半强度在特性上，只靠面板顶，对面一发强化过的招就能顶穿。'
+  if(defUseNo.length){
+    var swT=_tcAbiSwitchHint(defUseNo);
+    add(1,'<b>防守位缺特性托底</b>：'+defUseNo.map(function(x){return '<b>'+x.zh+'</b>（'+x.abi+'；'+_tcProf(x).why+'）'}).join('；')+' —— 按这只的全量能力集（种族值 + 它这等级能拿到的招），它的活就是扛伤，可生效的特性里没有减伤类（多重鳞片/幻影防守/毛皮大衣/坚硬岩石/过滤/魔法防守这类）。ER 的墙一半强度在特性上，只靠面板顶，对面一发强化过的招就能顶穿。'
       +(swT?('<br><b>队内先看能不能补</b>：'+swT):'')
-      +'<br>两条路选一条：① 真要它扛 → 上面切特性，或换一只同定位自带减伤的前排（下面候选带配置）；② 它其实该打输出 → 把扛伤交给别人，别让它硬顶，把它的招和 EV 改成进攻向。','defabi');
-  }else if(tankM.length){
-    add(0,'<span style="color:var(--ok,#2e7d32)">防守位有特性托底</span>：'+tankM.map(function(x){return x.zh+'（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的减伤特性在生效，扛伤不只靠面板。');
+      +'<br>两条路选一条：① 真要它扛 → 上面切特性，或换一只同定位自带减伤的前排（候选带完整配置）；② 它的池子其实撑得起进攻 → 改成进攻用法，把扛伤交给别人。','defabi');
+  }else if(defUseM.length){
+    add(0,'<span style="color:var(--ok,#2e7d32)">防守位有特性托底</span>：'+defUseM.map(function(x){return x.zh+'（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的减伤特性在生效，扛伤不只靠面板。');
   }
-  if(defOnAtk.length){
-    add(0,'<b>防守特性挂在进攻手身上：算容错，不算路线</b>　'+defOnAtk.map(function(x){var p=_tcProf(x);return '<b>'+x.zh+'</b>（'+_tcDefActive(x).join('/')+'；'+p.why+'）'}).join('；')+'。这几只的活是输出，减伤只让它们少掉一点血、多换一次出手，不需要为此改成防守流。只有当它输出和耐久两头都不够（既打不动也扛不住）时，才考虑把特性让给增伤类。');
+  if(atkOnlyDef.length){
+    add(0,'<b>防守特性挂在进攻型身上：是容错，不是路线</b>　'+atkOnlyDef.map(function(x){var p=_tcProf(x);var alts=((x.s&&x.s.abis)||[]).filter(function(n){return TC_DEF_ABI.indexOf(n)<0});
+      return '<b>'+x.zh+'</b>（'+_tcDefActive(x).join('/')+'；'+p.why+'）'+(alts.length?('，特性池里另有 '+alts.filter(function(n){return n!==x.abi}).slice(0,2).join('/')+' 可选'):'')
+    }).join('；')+'。这些的全量能力集偏进攻，减伤只让它们少掉一点血、多换一次出手，不必为此改成防守流；真要把输出拉满，可以看上面点名的非减伤特性。');
+  }
+  if(bothDef.length){
+    add(0,'<b>两栖型：减伤特性看你怎么用</b>　'+bothDef.map(function(x){return '<b>'+x.zh+'</b>（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的面板和招池既能扛也能打，减伤特性在防守用法里是路线、在进攻用法里是容错——按你给它排的招和 EV 定，不强制改。');
   }
 }
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
@@ -17780,7 +17828,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.304';
+var ER_ENGINE_VER='v4.305';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
