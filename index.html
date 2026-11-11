@@ -3846,6 +3846,7 @@ function openSp(s){
     '<select id="mvTypeSp"><option value="">全部属性</option></select>'+
     '<select id="mvSplitSp"><option value="">全部分类</option><option value="物理">物理</option><option value="特殊">特殊</option><option value="变化">变化</option></select></div>';
   html+='<div class="scroll"><table><thead><tr><th>获得</th><th>招式</th><th>属性</th><th>分类</th><th>威力</th><th>命中</th><th>PP</th><th>先制</th></tr></thead><tbody id="mvBodySp"></tbody></table></div>';
+  html+='<div class="mini" style="color:var(--sub);margin-top:4px">威力这列是账面值。招式名前的小标表示实际比账面更贵或更便宜：<b style="color:#2e7d32">×N段</b>＝连击合计段数（账面是单段）、<b style="color:#b26a00">慢出手</b>＝先制为负（容易被打断/被先手压）、<b>反伤/僵直/自爆</b>＝有代价、<b style="color:#b4423a">命中&lt;75</b>＝期望要打折、<b>HP缩放</b>＝数值随体力缩水。</div>';
   html+='</div>';
   $('spDetail').innerHTML=html;
   var tySel=$('mvTypeSp');
@@ -4130,6 +4131,43 @@ function abiDesc(el,id,box){
   if(tg.length)h+='<div class="ruleline">战斗意义：'+tg.map(function(x){return esc(x)}).join('；')+'</div>';
   d.innerHTML=h;
 }
+/* v4.319：招式质量小标。段数解析是唯一一份，体检卡的 _tcMvById 也调这里，避免两处各算一遍。 */
+var _MVQ_C=null;
+function mvSegOf(m){
+  if(!m)return 2;
+  var tg=(m[11]&&m[11].length)?m[11]:[];
+  var ds=(String(m[9]||'')+' '+String(m[10]||'')).toLowerCase();
+  var ht=2;
+  if(tg.indexOf('连击')>=0){
+    if(/2 to 5|two to five|2-5|2～5|2至5/.test(ds))ht=9;
+    else if(/three times|3 times|3 hits|three hits/.test(ds))ht=3;
+    else if(/four times|4 times|4 hits|four hits/.test(ds))ht=4;
+    else if(/twice|2 times|2 hits|double hit/.test(ds))ht=2;
+  }
+  return ht;
+}
+function _mvQOf(id){
+  if(!_MVQ_C){
+    _MVQ_C={};
+    try{ERDATA.moves.forEach(function(m){if(m&&m[0]!=null)_MVQ_C[''+m[0]]=m})}catch(eQ1){_MVQ_C={}}
+  }
+  return _MVQ_C[''+id]||null;
+}
+function mvQualTags(id){
+  var m=_mvQOf(id);if(!m)return '';
+  var h=[],tg=(m[11]&&m[11].length)?m[11]:[],seg=mvSegOf(m);
+  function bd(txt,bg){return '<span class="badge" style="background:'+bg+';color:#fff">'+txt+'</span>'}
+  if(tg.indexOf('连击')>=0)h.push(seg===9?bd('×2~5段','#2e7d32'):bd('×'+seg+'段','#2e7d32'));
+  var pr=+m[8]||0;
+  if(pr<0)h.push(bd('慢出手'+pr,'#b26a00'));
+  if(tg.indexOf('反伤')>=0)h.push(bd('反伤','#8d6e63'));
+  if(tg.indexOf('僵直')>=0)h.push(bd('僵直','#8d6e63'));
+  if(tg.indexOf('自爆·退场')>=0)h.push(bd('自爆','#b4423a'));
+  var acc=+m[6]||0;
+  if(acc>0&&acc<75)h.push(bd('命中'+acc,'#b4423a'));
+  if(/water spout|eruption|crush grip|wring out/.test(String(m[2]||'').toLowerCase()))h.push(bd('HP缩放','#6a1b9a'));
+  return h.length?(' '+h.join(' ')):'';
+}
 function renderMvSp(s){
   var q=$('mvInSp').value.trim(),ty=$('mvTypeSp').value,sp=$('mvSplitSp').value;
   var rows=[];var _seenMid={};   /* v4.51 C3 P1-6：同一招在升级/教学重复出现时去重（保留先到者） */
@@ -4143,7 +4181,7 @@ function renderMvSp(s){
     if(ty&&m[3]!==ty)return;
     if(sp&&m[4]!==sp)return;
     window._mvById=window._mvById||{};window._mvById[''+m[0]]=m;
-    html+='<tr class="mv" onclick="mvRow(this)"><td>'+r.way+'</td><td><span onclick="event.stopPropagation();openMvById(\''+m[0]+'\')" title="点击查看 '+esc(m[1])+' 的完整详情（威力/命中/PP/先制/中文说明/机制提示/代价标签）" style="cursor:pointer;color:var(--accent);font-weight:600;border-bottom:1px dashed currentColor">'+esc(m[1])+'</span>'+mvPhTag(m[0])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td></tr>';
+    html+='<tr class="mv" onclick="mvRow(this)"><td>'+r.way+'</td><td><span onclick="event.stopPropagation();openMvById(\''+m[0]+'\')" title="点击查看 '+esc(m[1])+' 的完整详情（威力/命中/PP/先制/中文说明/机制提示/代价标签）" style="cursor:pointer;color:var(--accent);font-weight:600;border-bottom:1px dashed currentColor">'+esc(m[1])+'</span>'+mvPhTag(m[0])+mvQualTags(m[0])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td></tr>';
     html+='<tr class="mvdesc"><td colspan="8">'+glossify(mvDescOf(m))+'</td></tr>';
   });
   $('mvBodySp').innerHTML=html||'<tr><td colspan="8" style="color:var(--sub)">无匹配招式</td></tr>';
@@ -4180,7 +4218,7 @@ function renderMv(){
     if(prmin>=0&&m[8]<prmin)return;
     shown++;
     var tr=document.createElement('tr');tr.className='mv';
-    tr.innerHTML='<td>'+m[0]+'</td><td>'+esc(m[1])+mvPhTag(m[0])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td>';
+    tr.innerHTML='<td>'+m[0]+'</td><td>'+esc(m[1])+mvPhTag(m[0])+mvQualTags(m[0])+'</td><td>'+tlabel(m[3])+'</td><td>'+splitLabel(m[4])+'</td><td>'+(m[5]||'-')+'</td><td>'+(m[6]||'-')+'</td><td>'+m[7]+'</td><td>'+(m[8]||'')+'</td>';
     tr.onclick=function(){openMv(m)};
     tb.appendChild(tr);
   });
@@ -7594,14 +7632,7 @@ function _tcMvById(id){
     _TC_MVID={};
     try{ERDATA.moves.forEach(function(m){if(m&&m[0]){
       var _tg=(m[11]&&m[11].length)?m[11]:[];
-      var _ds=(String(m[9]||'')+' '+String(m[10]||'')).toLowerCase();
-      var _ht=2;
-      if(_tg.indexOf('连击')>=0){
-        if(/2 to 5|two to five|2-5|2～5|2至5/.test(_ds))_ht=9;
-        else if(/three times|3 times|3 hits|three hits/.test(_ds))_ht=3;
-        else if(/four times|4 times|4 hits|four hits/.test(_ds))_ht=4;
-        else if(/twice|2 times|2 hits|double hit/.test(_ds))_ht=2;
-      }
+      var _ht=(typeof mvSegOf==='function')?mvSegOf(m):2;
       _TC_MVID[String(m[0])]={id:+m[0],zh:String(m[1]||''),en:String(m[2]||''),cat:String(m[4]||''),pw:+(m[5]||0),prio:+(m[8]||0),type:String(m[3]||''),acc:+(m[6]||0),tags:_tg,hit:_ht};
     }})}catch(eD){_TC_MVID={}}
   }
@@ -18421,7 +18452,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.318';
+var ER_ENGINE_VER='v4.319';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
