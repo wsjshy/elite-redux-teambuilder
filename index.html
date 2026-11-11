@@ -7583,15 +7583,58 @@ function _tcMvCat(zh){
 function _tcMvById(id){
   if(!_TC_MVID){
     _TC_MVID={};
-    try{ERDATA.moves.forEach(function(m){if(m&&m[0])_TC_MVID[String(m[0])]={zh:String(m[1]||''),cat:String(m[4]||''),pw:+(m[5]||0),prio:+(m[8]||0),type:String(m[3]||'')}})}catch(eD){_TC_MVID={}}
+    try{ERDATA.moves.forEach(function(m){if(m&&m[0]){
+      var _tg=(m[11]&&m[11].length)?m[11]:[];
+      var _ds=(String(m[9]||'')+' '+String(m[10]||'')).toLowerCase();
+      var _ht=2;
+      if(_tg.indexOf('连击')>=0){
+        if(/2 to 5|two to five|2-5|2～5|2至5/.test(_ds))_ht=9;
+        else if(/three times|3 times|3 hits|three hits/.test(_ds))_ht=3;
+        else if(/four times|4 times|4 hits|four hits/.test(_ds))_ht=4;
+        else if(/twice|2 times|2 hits|double hit/.test(_ds))_ht=2;
+      }
+      _TC_MVID[String(m[0])]={zh:String(m[1]||''),cat:String(m[4]||''),pw:+(m[5]||0),prio:+(m[8]||0),type:String(m[3]||''),acc:+(m[6]||0),tags:_tg,hit:_ht};
+    }})}catch(eD){_TC_MVID={}}
   }
   return _TC_MVID[String(id)]||null;
+}
+var _TC_QCTX={link:false,dice:false};
+function _tcMvEff(mv){
+  if(!mv)return 0;
+  var p=+(mv.pw||0);
+  var ac=(mv.acc==null?100:mv.acc);if(ac<=0||ac>100)ac=100;
+  p*=Math.min(1,ac/100);
+  if(mv.tags&&mv.tags.indexOf('连击')>=0){
+    var h=(mv.hit||2);
+    if(h===9)h=_TC_QCTX.link?5:(_TC_QCTX.dice?4.5:3.2);
+    p*=h;
+  }
+  if(mv.tags&&mv.tags.indexOf('僵直')>=0)p*=0.5;
+  if(mv.tags&&mv.tags.indexOf('反伤')>=0)p*=0.85;
+  if(mv.tags&&mv.tags.indexOf('自爆·退场')>=0)p*=0.35;
+  if((mv.prio||0)<0)p*=0.8;
+  return p;
+}
+function _tcMvTag(mv){
+  var t=[];
+  if(+(mv.pw||0)>0){
+    if(mv.tags&&mv.tags.indexOf('连击')>=0){
+      var h=(mv.hit||2);
+      t.push(h===9?('×'+(_TC_QCTX.link?'5':(_TC_QCTX.dice?'4.5':'2-5'))+'段'):('×'+h+'段'));
+    }
+    var ac=+(mv.acc||0);if(ac>0&&ac<100)t.push('命中'+ac);
+    if(mv.tags&&mv.tags.indexOf('僵直')>=0)t.push('需蓄力');
+    if(mv.tags&&mv.tags.indexOf('反伤')>=0)t.push('反伤');
+    if(mv.tags&&mv.tags.indexOf('自爆·退场')>=0)t.push('自爆');
+    if((mv.prio||0)<0)t.push('慢出手');
+  }
+  return t.length?('，'+t.join('，')):'';
 }
 function _tcPoolCount(s,cap){
   var blank={nAtk:0,nRec:0,nSet:0,nPrio:0,nTot:0,nOne:0,recBest:0,recS:'',recA:'',setBest:0,setS:'',prioBest:0,prioTxt:'',cover:0,atkBest:0,atkBestTxt:'',physBest:0,specBest:0};
   if(!s)return blank;
   if(!_TC_POOLC)_TC_POOLC={};
-  var key=String(s.id)+'#'+String(cap||100);
+  var key=String(s.id)+'#'+String(cap||100)+'#'+(_TC_QCTX.link?'L':'')+(_TC_QCTX.dice?'D':'');
   if(_TC_POOLC[key])return _TC_POOLC[key];
   var ids=[],seen={},i,mv,row,t2,mid,ty,bp,eff,pq,isStab;
   var lvs=(s.lv||[]);
@@ -7622,9 +7665,9 @@ function _tcPoolCount(s,cap){
     }else{
       r.nAtk++;
       bp=+(mv.pw||0);
-      eff=bp*(isStab?1.2:1.0);
+      eff=_tcMvEff(mv)*(isStab?1.2:1.0);
       if(ty){types[ty]=Math.max(types[ty]||0,bp);if(eff>(types['#'+ty]||0))types['#'+ty]=eff;}
-      if(eff>r.atkBest){r.atkBest=eff;r.atkBestTxt=mv.zh+'('+bp+(isStab?' +STAB':'')+')'}
+      if(eff>r.atkBest){r.atkBest=eff;r.atkBestTxt=mv.zh+'('+bp+(isStab?' +STAB':'')+_tcMvTag(mv)+')'}
       if(mv.cat==='物理'&&eff>r.physBest)r.physBest=eff;
       if(mv.cat==='特殊'&&eff>r.specBest)r.specBest=eff;
       if(mv.prio>0){
@@ -7981,6 +8024,11 @@ function teamCheckHtml(_R){
       try{var _rrE=anRowOf(s,b)||{};evA=(_rrE.ev||[0,0,0,0,0,0]).slice()}catch(eEv){evA=[0,0,0,0,0,0]}
       if(oReal){evA=_ownEvAry(oReal.row)}
       mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal,rt:rt,it:itm,cf:cf,ev:evA,L:(oReal&&oReal.row&&oReal.row['等级'])?(+oReal.row['等级']||100):100});
+      try{
+        var _inA=(s.inns||[]);
+        if(String(abi||'').indexOf('连续攻击')>=0||_inA.indexOf('连续攻击')>=0)_TC_QCTX.link=true;
+        if(String(itm||'').indexOf('骰子')>=0)_TC_QCTX.dice=true;
+      }catch(eQC){eQC.name}
     });
     var rows="",V=[];var add=function(sev,txt,fix){V.push({s:sev,h:txt,fix:fix||""})};
     if(_ownMap()){
@@ -8329,6 +8377,16 @@ if(mem.length>=4){
   }
 }
 if(mem.length>=4){
+  var multiM=mem.filter(function(x){var pc=_tcPoolCount(x.s,x.L||100);return String(pc.atkBestTxt).indexOf('×')>=0});
+  if(_TC_QCTX.link||_TC_QCTX.dice){
+    add(0,'<b>多段招按段数吃伤害</b>：'+
+      (_TC_QCTX.link?'队里有<b>连续攻击</b>（多段招固定打满 5 段）':'')+
+      (_TC_QCTX.link&&_TC_QCTX.dice?'，':'')+
+      (_TC_QCTX.dice?'队里有<b>机变骰子</b>（2–5 段变 4–5 段）':'')+
+      '。这类招的账面威力要按段数乘，不能按单发算：'+
+      (multiM.length?multiM.slice(0,4).map(function(x){var pc=_tcPoolCount(x.s,x.L||100);return '<b>'+x.zh+'</b> 的 '+pc.atkBestTxt}).join('；'):'本队池里暂时没有多段招')+
+      '。多段还有两个隐性收益：每段单独判定会心与附加效果，破气势披带和替身也更稳。')
+  }
   add(0,'<b>定位画像</b>（按种族值 + 这等级能拿到的招池 + 实配与 EV 算的，不是按特性名字）：'
     +mem.map(function(x){var p=_tcProf(x);return '<b>'+x.zh+'</b>→'+p.route+'（'+p.trait+'）'}).join('　·　')
     +'。防守分高于进攻分就是这块料适合扛，反之适合打；差值小时算两栖，按你给它排的招和 EV 定。');
@@ -17984,7 +18042,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.309';
+var ER_ENGINE_VER='v4.310';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
