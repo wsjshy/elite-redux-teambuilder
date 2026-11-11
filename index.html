@@ -41,6 +41,7 @@ nav button.active{background:var(--accent); color:#fff; border-color:var(--accen
 .lcard:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,.12)}
 .lcard b{font-size:17px}
 .lcard span{color:var(--sub);font-size:14.5px;line-height:1.6}
+#tmGrid .card,#coreGrid .card{content-visibility:auto;contain-intrinsic-size:150px 170px}
 main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); overflow-y:auto; box-sizing:border-box} /* v4.68 黑盒P2-1：MAIN 独立滚动容器，使 bktabs sticky(top:51) 真实 engage */
 .tab{display:none}
 .tab.active{display:block}
@@ -2350,6 +2351,7 @@ function switchTab(name){
     if(_gid){var _g=document.getElementById(_gid);if(_g)_g.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">数据加载中…</div>'}
     return;
   }
+  var _tabWork=function(){
   try{
     if(name==='speed'){speedRender(true)}
     else if(name==='core'&&window.drawCoreList){
@@ -2362,6 +2364,9 @@ function switchTab(name){
     else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
     else if(name==='team'&&typeof renderTm==='function'){renderTm(true)}   /* v4.124 修复：队伍构建 Tab 切来时未调 renderTm → 选择池空白 */
   }catch(e){console.warn('tab render fail',name,e)}
+  };
+  /* v4.321：重活让到点击之后，先让 tab 立刻可见可点；弱引擎/慢机器上不再表现为点击卡死 */
+  setTimeout(_tabWork,0);
 }
 document.addEventListener('er-ready',function(){
   window._speedTableBuilt=false;
@@ -5696,7 +5701,10 @@ function rowAbiShort(s){
   return out.length?'<span style="font-size:14px;color:#0d47a1;font-weight:400">'+out.join(' ')+'</span>':'<span style="font-size:13px;color:var(--sub);font-weight:400">—</span>';
 }
 /* 防守剖面：返回 {type:{w,r,i,wo}} 及每只明细（三口径 + pick） */
+var _DP_CACHE={sig:'',val:null};
 function defProfiles(){
+  var _sig=team.map(function(x){return x.id}).join(',')+'#'+team.map(function(x){return (teamInfo[x.id]||{}).pick||''}).join(',');
+  if(_DP_CACHE.sig===_sig&&_DP_CACHE.val)return _DP_CACHE.val;
   var agg={};
   ERDATA.types.forEach(function(t){agg[t]={w:0,r:0,i:0,wo:0}});
   var per=[];
@@ -5715,10 +5723,14 @@ function defProfiles(){
     });
     per.push(row);
   });
-  return {agg:agg,per:per};
+  _DP_CACHE.sig=_sig;_DP_CACHE.val={agg:agg,per:per};
+  return _DP_CACHE.val;
 }
 /* 进攻覆盖：每只招式池对 18 属性的最佳状态 super/neutral/resist/no */
+var _AC_CACHE={sig:'',val:null};
 function atkCovers(){
+  var _sig=team.map(function(x){return x.id}).join(',');
+  if(_AC_CACHE.sig===_sig&&_AC_CACHE.val)return _AC_CACHE.val;
   var agg={};
   ERDATA.types.forEach(function(t){agg[t]={super:0,neutral:0,best:[],has:false}});
   var per=[];
@@ -5744,7 +5756,8 @@ function atkCovers(){
     });
     per.push(row);
   });
-  return {agg:agg,per:per};
+  _AC_CACHE.sig=_sig;_AC_CACHE.val={agg:agg,per:per};
+  return _AC_CACHE.val;
 }
 function renderAnalyze(){
   var box=$('tmAnalyze');
@@ -18519,7 +18532,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.320';
+var ER_ENGINE_VER='v4.321';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
