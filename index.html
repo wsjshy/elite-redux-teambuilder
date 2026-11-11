@@ -7563,7 +7563,16 @@ function _tcSim(cand,tset,drop){
   tm.forEach(function(x){if(x&&x!==drop)list.push(x)});
   var base=_tcAgg(tm);      /* 跟「现在的整队」比，而不是跟少一只的样子比 */
   list.push(cand);
-  return {drop:drop?drop.zh:"",base:base,now:_tcAgg(list)};
+  var end={wallB:0,wallA:0,tkB:99,tkA:99,n2B:0,n2A:0};
+  try{
+    var wB=_tcTtk(tm),wA=_tcTtk(list);
+    end.wallB=wB.best;end.wallA=wA.best;
+    var tB=_tcTaken(tm),tA=_tcTaken(list);
+    end.tkB=tB.length?tB[0].ttk:99;end.tkA=tA.length?tA[0].ttk:99;
+    end.n2B=tB.filter(function(m){return m.ttk<=2}).length;
+    end.n2A=tA.filter(function(m){return m.ttk<=2}).length;
+  }catch(eE){eE.name}
+  return {drop:drop?drop.zh:"",base:base,now:_tcAgg(list),end:end};
 }
 function _tcDefAbiOf(s){
   if(!s)return [];
@@ -7922,7 +7931,13 @@ function _tcDefFix(tset){
         var dTax=Math.round((r.now.sr-r.base.sr)*100);
         if(dTax<=-3)parts.push("<span style='color:#2e7d32'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
         else if(dTax>=3)parts.push("<span style='color:var(--warnred)'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
-        if(!parts.length)parts.push("<span style='color:var(--sub)'>入场税与弱点数没变</span>");
+        if(r.end){
+          if(r.end.wallA<r.end.wallB)parts.push("<span style='color:#2e7d32'>打穿发数 "+r.end.wallB+"→"+r.end.wallA+"</span>");
+          else if(r.end.wallA>r.end.wallB)parts.push("<span style='color:var(--warnred)'>打穿发数 "+r.end.wallB+"→"+r.end.wallA+"</span>");
+          if(r.end.n2A<r.end.n2B)parts.push("<span style='color:#2e7d32'>两发内被压死 "+r.end.n2B+"→"+r.end.n2A+" 只</span>");
+          else if(r.end.n2A>r.end.n2B)parts.push("<span style='color:var(--warnred)'>两发内被压死 "+r.end.n2B+"→"+r.end.n2A+" 只</span>");
+        }
+        if(!parts.length)parts.push("<span style='color:var(--sub)'>入场税、弱点与终局指标没变</span>");
         sim="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"+(r.drop?"换掉 "+r.drop+"：":"直接加进来：")+"　"+parts.join("　")+"</div>";
       }
     }catch(e4){e4.name}
@@ -8064,7 +8079,13 @@ function _tcGapFix(need,tset){
         var dTax=Math.round((r.now.sr-r.base.sr)*100);
         if(dTax<=-3)parts.push("<span style='color:#2e7d32'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
         else if(dTax>=3)parts.push("<span style='color:var(--warnred)'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
-        if(!parts.length)parts.push("<span style='color:var(--sub)'>入场税与弱点数没变</span>");
+        if(r.end){
+          if(r.end.wallA<r.end.wallB)parts.push("<span style='color:#2e7d32'>打穿发数 "+r.end.wallB+"→"+r.end.wallA+"</span>");
+          else if(r.end.wallA>r.end.wallB)parts.push("<span style='color:var(--warnred)'>打穿发数 "+r.end.wallB+"→"+r.end.wallA+"</span>");
+          if(r.end.n2A<r.end.n2B)parts.push("<span style='color:#2e7d32'>两发内被压死 "+r.end.n2B+"→"+r.end.n2A+" 只</span>");
+          else if(r.end.n2A>r.end.n2B)parts.push("<span style='color:var(--warnred)'>两发内被压死 "+r.end.n2B+"→"+r.end.n2A+" 只</span>");
+        }
+        if(!parts.length)parts.push("<span style='color:var(--sub)'>入场税、弱点与终局指标没变</span>");
         sim="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"+(r.drop?"换掉 "+r.drop+"：":"直接加进来：")+"　"+parts.join("　")+"</div>";
       }
     }catch(e4){e4.name}
@@ -8211,8 +8232,15 @@ function _tcFixHtml(kind,tset){
         var dMax=r.now.maxV-r.base.maxV;
         if(dMax<=-8)parts.push("<span style='color:var(--warnred)'>队内最快 "+r.base.maxV+"→"+r.now.maxV+"</span>");
         else if(dMax>=8)parts.push("<span style='color:#2e7d32'>队内最快 "+r.base.maxV+"→"+r.now.maxV+"</span>");
-        if(!parts.length)parts.push("<span style='color:var(--sub)'>三项都没变</span>");
-        var good=dWk<0||dTax<=-3||dFast>0,dneg=dWk>0||dTax>=3||dFast<0||dMax<=-8;
+        if(r.end){
+          if(r.end.wallA<r.end.wallB)parts.push("<span style='color:#2e7d32'>打穿发数 "+r.end.wallB+"→"+r.end.wallA+"</span>");
+          else if(r.end.wallA>r.end.wallB)parts.push("<span style='color:var(--warnred)'>打穿发数 "+r.end.wallB+"→"+r.end.wallA+"</span>");
+          if(r.end.n2A<r.end.n2B)parts.push("<span style='color:#2e7d32'>两发内被压死 "+r.end.n2B+"→"+r.end.n2A+" 只</span>");
+          else if(r.end.n2A>r.end.n2B)parts.push("<span style='color:var(--warnred)'>两发内被压死 "+r.end.n2B+"→"+r.end.n2A+" 只</span>");
+        }
+        if(!parts.length)parts.push("<span style='color:var(--sub)'>各项都没变</span>");
+        var eGood=r.end&&(r.end.wallA<r.end.wallB||r.end.n2A<r.end.n2B),eBad=r.end&&(r.end.wallA>r.end.wallB||r.end.n2A>r.end.n2B);
+        var good=dWk<0||dTax<=-3||dFast>0||eGood,dneg=dWk>0||dTax>=3||dFast<0||dMax<=-8||eBad;
         var verdict=good&&!dneg?"<span style='color:#2e7d32;font-weight:700'>整队变好</span>"
           :(good?"<span style='color:#b26a00'>有得有失</span>":"<span style='color:var(--sub)'>整队没变好</span>");
         sim="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"
@@ -18393,7 +18421,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.317';
+var ER_ENGINE_VER='v4.318';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
