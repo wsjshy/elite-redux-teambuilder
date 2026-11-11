@@ -7659,8 +7659,11 @@ function _tcProf(x){
   var recTxt=pc.recBest>=3?('稳回复 '+pc.recS):(pc.recBest===2?('条件回复 '+pc.recA):(pc.recBest===1?'间接回复':'无稳回复'));
   var setTxt=pc.setBest>=3?('强强化 '+pc.setS):(pc.setBest===2?('轻强化 '+pc.setS):'无强化');
   var prioTxt=pc.prioBest>0?('先制 '+pc.prioTxt):'无先制';
+  var trait=(defScore>=atkScore)
+    ? (pc.recBest>=3?('稳回复 '+pc.recS):(bulk>=300?('耐久和 '+bulk):(pc.nOne>=6?('干扰招多'):'面板型')))
+    : (pc.setBest>=3?('强强化 '+pc.setS):(pc.prioBest>=100?('先制 '+pc.prioTxt):(pc.atkBest>=100?('本系 '+pc.atkBestTxt):'面板型')));
   var why='种族 攻/特攻 '+pow+'、耐久和 '+bulk+'（防分 '+defScore.toFixed(1)+' / 攻分 '+atkScore.toFixed(1)+'）；招池（≤Lv'+(x.L||100)+'）：'+recTxt+'、'+setTxt+'、'+prioTxt+'、覆盖 '+pc.cover+' 属性、最佳 STAB '+pc.atkBestTxt+'；实配攻击招 '+nAs+' 个、耐久 EV '+dfnP+' vs 输出 EV '+offP;
-  return {route:route,defPot:defScore>=4.2,atkPot:atkScore>=4.2,defUse:defUse,nAs:nAs,nSs:nSs,offP:offP,dfnP:dfnP,bulk:bulk,pow:pow,pool:pc,defScore:defScore,atkScore:atkScore,why:why};
+  return {route:route,defPot:defScore>=4.2,atkPot:atkScore>=4.2,defUse:defUse,nAs:nAs,nSs:nSs,offP:offP,dfnP:dfnP,bulk:bulk,pow:pow,pool:pc,defScore:defScore,atkScore:atkScore,why:why,trait:trait};
 }
 function _tcDefActive(x){
   var h=[];
@@ -7692,16 +7695,20 @@ function _tcDefFix(tset){
     scanned++;
     var ownRow=own?(own[String(t.id)]||null):null;
     var evs=(rr.ev||[0,0,0,0,0,0]);
-    out.push({zh:t.zh,s:t,rt:rr.roleTag||'',abi:rr.abi||da[0],da:da,mv:b?_tlkMvTxt(b):'',own:ownRow?ownRow.row:null,
+    var pcq=_tcPoolCount(t,100);
+    var bulkQ=(+(t.base[0]||0))+(+(t.base[2]||0))+(+(t.base[4]||0));
+    var powQ=Math.max((+(t.base[1]||0)),(+(t.base[3]||0)));
+    var qScore=((rr.roleTag==='肉盾')?3:0)+(TC_DEF_ABI.indexOf(rr.abi||da[0])>=0?3:0)+(pcq.recBest>=3?2:(pcq.recBest===2?1:0))+(bulkQ>=300?2:(bulkQ>=270?1:0))+(powQ<=110?1:0)+(rr.roleTag==='辅助'?1:0);
+    out.push({q:qScore,recq:pcq.recBest>=3?pcq.recS:'',bulkq:bulkQ,zh:t.zh,s:t,rt:rr.roleTag||'',abi:rr.abi||da[0],da:da,mv:b?_tlkMvTxt(b):'',own:ownRow?ownRow.row:null,
       cfg:'特性 '+(rr.abi||da[0])+'｜道具 '+(rr.item||'无')+'｜性格 '+(rr.nat||'')+'｜EV '+[0,1,2,3,4,5].map(function(i){return +(evs[i]||0)}).join('/')});
   });
   out.sort(function(a,b){
-    return ((b.rt==='肉盾'?1:0)-(a.rt==='肉盾'?1:0))
-      ||((TC_DEF_ABI.indexOf(b.abi)>=0?1:0)-(TC_DEF_ABI.indexOf(a.abi)>=0?1:0))
+    return ((b.q||0)-(a.q||0))
       ||((b.own?1:0)-(a.own?1:0))
       ||((a.mv||'').length-(b.mv||'').length);
   });
-  var tanks=out.filter(function(x){return x.rt==='肉盾'&&TC_DEF_ABI.indexOf(x.abi)>=0});
+  var tanks=out.filter(function(x){return TC_DEF_ABI.indexOf(x.abi)>=0&&(x.rt==='肉盾'||x.rt==='辅助')});
+  if(!tanks.length)tanks=out.filter(function(x){return TC_DEF_ABI.indexOf(x.abi)>=0});
   if(!tanks.length)tanks=out.filter(function(x){return x.rt==='肉盾'});
   var pick=tanks.length?tanks.slice(0,3):out.slice(0,2);
   if(!pick.length)return '';
@@ -7714,7 +7721,9 @@ function _tcDefFix(tset){
       +(TC_DEF_ABI.indexOf(x.abi)>=0?"<span style='font-size:12.5px;color:#2e7d32;font-weight:700'>　"+x.abi+"（减伤）</span>"
         :"<span style='font-size:12.5px;color:#b26a00'>　可选特性里有 "+x.da.join('/')+"，但要手动切过去</span>")
       +(own&&!x.own?"<span style='font-size:12.5px;color:var(--warnred)'>　未持有</span>":'')
-      +(x.own?"<span style='font-size:12.5px;color:#2e7d32'>　存档已有</span>":'');
+      +(x.own?"<span style='font-size:12.5px;color:#2e7d32'>　存档已有</span>":'')
+      +(x.recq?"<span style='font-size:12.5px;color:#2e7d32'>　自带稳回复 "+x.recq+"</span>":'')
+      +(x.bulkq>=300?"<span style='font-size:12.5px;color:var(--sub)'>　耐久和 "+x.bulkq+"</span>":'');
     var sim='';
     try{
       var r=_tcSim(x.s,tset,dp?dp.drop:null);
@@ -8206,6 +8215,11 @@ if(mem.length>=4){
   if(bothDef.length){
     add(0,'<b>两栖型：减伤特性看你怎么用</b>　'+bothDef.map(function(x){return '<b>'+x.zh+'</b>（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的面板和招池既能扛也能打，减伤特性在防守用法里是路线、在进攻用法里是容错——按你给它排的招和 EV 定，不强制改。');
   }
+}
+if(mem.length>=4){
+  add(0,'<b>定位画像</b>（按种族值 + 这等级能拿到的招池 + 实配与 EV 算的，不是按特性名字）：'
+    +mem.map(function(x){var p=_tcProf(x);return '<b>'+x.zh+'</b>→'+p.route+'（'+p.trait+'）'}).join('　·　')
+    +'。防守分高于进攻分就是这块料适合扛，反之适合打；差值小时算两栖，按你给它排的招和 EV 定。');
 }
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
@@ -17858,7 +17872,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.306';
+var ER_ENGINE_VER='v4.307';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
