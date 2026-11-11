@@ -7331,6 +7331,7 @@ var TC_RECOV=["自我再生","羽栖","睡觉","寄生种子","偷懒","喝牛�
 var TC_BRK={"剧毒":"状态","磷火":"状态","挑衅":"封回复","寄生种子":"吸血","地球上投":"固定伤害","黑夜魔影":"固定伤害","愤怒门牙":"百分比","紧咬不放":"封换人"};
 var TC_BRK_TYP={"剧毒":"间接","磷火":"间接","寄生种子":"间接","挑衅":"直接","地球上投":"直接","黑夜魔影":"直接","愤怒门牙":"直接","紧咬不放":"直接"};
 var TC_WALL_ABI=["魔法防守","多重鳞片","幻影防守","神奇守护","坚硬岩石","过滤","结实","奇迹皮肤"];
+var TC_DEF_ABI=["魔法防守","多重鳞片","幻影防守","神奇守护","坚硬岩石","过滤","结实","水泡","厚脂肪","热交换","免疫","神奇鳞片","棱镜鳞片","彩虹鳞","冰鳞粉","鳞翅目","火鳞","疫病鳞片","叶子防守","友情防守","海洋守护者","守护者","鳞粉","奇迹皮肤","毛皮大衣","最毛茸茸","毛茸茸","坚壁","铁棘","战斗盔甲","防尘","防弹","水幕"];
 var TC_TR=["戏法空间"];
 var TC_TW=["顺风"];
 var TC_CHOICE=["讲究头带","讲究围巾","讲究眼镜"];
@@ -7559,8 +7560,87 @@ function _tcSim(cand,tset,drop){
   list.push(cand);
   return {drop:drop?drop.zh:"",base:base,now:_tcAgg(list)};
 }
+function _tcDefAbiOf(s){
+  if(!s)return [];
+  var h=[],ab=s.abis||[],inn=s.inns||[];
+  ab.forEach(function(n){if(TC_DEF_ABI.indexOf(n)>=0&&h.indexOf(n)<0)h.push(n)});
+  inn.forEach(function(n){if(TC_DEF_ABI.indexOf(n)>=0&&h.indexOf(n)<0)h.push(n)});
+  return h;
+}
+function _tcDefActive(x){
+  var h=[];
+  if(x&&TC_DEF_ABI.indexOf(x.abi)>=0)h.push(x.abi);
+  var inn=(x&&x.s&&x.s.inns)||[];
+  inn.forEach(function(n){if(TC_DEF_ABI.indexOf(n)>=0&&h.indexOf(n)<0)h.push(n)});
+  return h;
+}
+function _tcAbiSwitchHint(tankNo){
+  var out='';
+  (tankNo||[]).forEach(function(x){
+    if(!x||!x.s)return;
+    var alts=(x.s.abis||[]).filter(function(n){return TC_DEF_ABI.indexOf(n)>=0&&n!==x.abi});
+    if(!alts.length)return;
+    out+=('把 <b>'+x.zh+'</b> 的主特性从「'+x.abi+'」切到「'+alts.join('/')+'」——同队就能补，不用换人，代价是失去当前特性的效果；');
+  });
+  return out;
+}
+function _tcDefFix(tset){
+  var own=_ownMap(),pool=own?_ownPoolList():null,list=pool||ERDATA.species,have={},out=[],scanned=0;
+  (tset||[]).forEach(function(x){if(x&&x.id!=null)have[x.id]=1});
+  list.forEach(function(t){
+    if(out.length>=14||scanned>=40)return;
+    if(!t||t.id==null||have[t.id])return;
+    if(!isValidSp(t)||!isFinalSp(t))return;
+    var da=_tcDefAbiOf(t);if(!da.length)return;
+    var b=null;try{b=(deriveBuilds(t,tset)||[])[0]}catch(e1){b=null}
+    var rr={};try{rr=anRowOf(t,b)||{}}catch(e2){rr={}}
+    scanned++;
+    var ownRow=own?(own[String(t.id)]||null):null;
+    var evs=(rr.ev||[0,0,0,0,0,0]);
+    out.push({zh:t.zh,s:t,rt:rr.roleTag||'',abi:rr.abi||da[0],da:da,mv:b?_tlkMvTxt(b):'',own:ownRow?ownRow.row:null,
+      cfg:'特性 '+(rr.abi||da[0])+'｜道具 '+(rr.item||'无')+'｜性格 '+(rr.nat||'')+'｜EV '+[0,1,2,3,4,5].map(function(i){return +(evs[i]||0)}).join('/')});
+  });
+  out.sort(function(a,b){
+    return ((b.rt==='肉盾'?1:0)-(a.rt==='肉盾'?1:0))
+      ||((TC_DEF_ABI.indexOf(b.abi)>=0?1:0)-(TC_DEF_ABI.indexOf(a.abi)>=0?1:0))
+      ||((b.own?1:0)-(a.own?1:0))
+      ||((a.mv||'').length-(b.mv||'').length);
+  });
+  var tanks=out.filter(function(x){return x.rt==='肉盾'&&TC_DEF_ABI.indexOf(x.abi)>=0});
+  if(!tanks.length)tanks=out.filter(function(x){return x.rt==='肉盾'});
+  var pick=tanks.length?tanks.slice(0,3):out.slice(0,2);
+  if(!pick.length)return '';
+  var dp=null;try{dp=_tcDropOf(tset)}catch(e3){dp=null}
+  var scope=own?("<span style='color:var(--sub)'>候选只在你的存档里挑（"+_ownCount()+" 种）</span>："):'';
+  var base=dp?("<br><span style='color:var(--sub);font-size:12.5px'>换掉的是 <b>"+dp.drop.zh+"</b>（当前整队里最该动的一只）</span>"):'';
+  var rowsTxt=pick.map(function(x){
+    var head='<b>'+x.zh+'</b>'
+      +(x.rt?"<span style='font-size:12.5px;color:var(--sub)'>　"+x.rt+"</span>":'')
+      +(TC_DEF_ABI.indexOf(x.abi)>=0?"<span style='font-size:12.5px;color:#2e7d32;font-weight:700'>　"+x.abi+"（减伤）</span>"
+        :"<span style='font-size:12.5px;color:#b26a00'>　可选特性里有 "+x.da.join('/')+"，但要手动切过去</span>")
+      +(own&&!x.own?"<span style='font-size:12.5px;color:var(--warnred)'>　未持有</span>":'')
+      +(x.own?"<span style='font-size:12.5px;color:#2e7d32'>　存档已有</span>":'');
+    var sim='';
+    try{
+      var r=_tcSim(x.s,tset,dp?dp.drop:null);
+      if(r){
+        var dWk=r.now.bad-r.base.bad,parts=[];
+        if(dWk<0)parts.push("<span style='color:#2e7d32'>弱点超标 "+r.base.bad+"→"+r.now.bad+"</span>");
+        else if(dWk>0)parts.push("<span style='color:var(--warnred)'>弱点超标 "+r.base.bad+"→"+r.now.bad+"</span>");
+        var dTax=Math.round((r.now.sr-r.base.sr)*100);
+        if(dTax<=-3)parts.push("<span style='color:#2e7d32'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
+        else if(dTax>=3)parts.push("<span style='color:var(--warnred)'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
+        if(!parts.length)parts.push("<span style='color:var(--sub)'>入场税与弱点数没变</span>");
+        sim="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"+(r.drop?"换掉 "+r.drop+"：":"直接加进来：")+"　"+parts.join("　")+"</div>";
+      }
+    }catch(e4){e4.name}
+    return "<div style='margin:4px 0'>"+head+"</div><div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"+x.cfg+"</div>"+sim;
+  }).join("");
+  return scope+base+rowsTxt;
+}
 function _tcFixHtml(kind,tset){
   var groups,kw,looseKw;
+  if(kind==="defabi")return _tcDefFix(tset);
   if(kind==="clear"){groups=[["高速旋转","清除浓雾"]];kw="队里没人清钉，全库默认配置里<b>已经带清钉</b>的选人：";looseKw="默认配置都没把清钉放进四个槽，但能学——选进来后要手动换一个槽：";}
   else if(kind==="set"){groups=[["隐形岩","撒菱","毒菱","黏网","黏黏网"]];kw="队里没人撒钉，默认配置里<b>已经带撒钉</b>的：";looseKw="默认配置都没带撒钉，但能学——选进来后要手动换一个槽：";}
   else if(kind==="phase"){groups=[TC_PHAZE];kw="反强化的人：默认配置里<b>已经带吹飞/黑雾</b>的（不用改槽）：";looseKw="默认配置没带，但能学——选进来后要手动换一个槽：";}
@@ -8004,6 +8084,19 @@ if(mem.length>=4){
     add(0,'<span style="color:var(--ok,#2e7d32)">能破受</span>：'+sl+st2+'——间接（怕魔法防守）与直接（怕减伤）两条路线都有人走，'+'遇到'+TC_WALL_ABI.slice(0,4).join('/')+'这类防守特性也不会被一条路锁死。');
   }
 }
+/* ⑮ 特性托底（肉盾有没有减伤特性） */
+var tankM=mem.filter(function(x){return x.rt==='肉盾'});
+var tankNo=tankM.filter(function(x){return !_tcDefActive(x).length});
+if(mem.length>=4){
+  if(tankNo.length){
+    var swT=_tcAbiSwitchHint(tankNo);
+    add(1,'<b>前排没有减伤特性托底</b>：'+tankNo.map(function(x){return '<b>'+x.zh+'</b>（'+x.abi+'）'}).join('、')+' 是肉盾定位，但主特性加天性里没有任何减伤类特性（多重鳞片/幻影防守/坚硬岩石/过滤/魔法防守这类）。ER 的墙有一半强度在特性上，只靠面板顶，对面一发强化过的招就能顶穿。'
+      +(swT?('<br><b>队内先看能不能补</b>：'+swT):'')
+      +'<br>怎么修：换一只同定位、自带减伤特性的前排；临时补丁是把它道具换成凸凸头盔/吃剩的东西。','defabi');
+  }else if(tankM.length){
+    add(0,'<span style="color:var(--ok,#2e7d32)">前排有特性托底</span>：'+tankM.map(function(x){return x.zh+'（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的减伤类特性都在生效，面板之外还有一层。');
+  }
+}
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
@@ -8012,7 +8105,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航 · 配置 · 控速 · 破受）</h3>"
+    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航 · 配置 · 控速 · 破受 · 特性托底）</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
@@ -17655,7 +17748,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.302';
+var ER_ENGINE_VER='v4.303';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
