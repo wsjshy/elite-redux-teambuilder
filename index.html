@@ -7787,6 +7787,38 @@ function _tcDefFix(tset){
   }).join("");
   return scope+base+rowsTxt;
 }
+var _TC_BWALL={id:-7,zh:'通用高耐久墙',t1:'一般',t2:'一般',base:[108,70,130,70,130,50],abis:[],inns:[]};
+var _TC_BWALL_HP=420;
+function _tcTtk(tset){
+  var out=[];
+  (tset||[]).forEach(function(x){
+    if(!x||!x.s)return;
+    var sp=x.s,phys=(+((sp.base||[])[1]||0))>=(+((sp.base||[])[3]||0));
+    var pc=_tcPoolCount(sp,x.L||100);
+    var ids=[],seen={},lvArr=(sp.lv||[]),tut=(sp.tut||[]),lim=(x.L||100);
+    for(var i=0;i<lvArr.length;i++){if(+lvArr[i][0]<=lim){var m1=String(lvArr[i][1]);if(!seen[m1]){seen[m1]=1;ids.push(m1)}}}
+    for(var j=0;j<tut.length;j++){var m2=String(tut[j]);if(!seen[m2]){seen[m2]=1;ids.push(m2)}}
+    var best=null;
+    for(var k=0;k<ids.length;k++){
+      var mv=_tcMvById(ids[k]);
+      if(!mv||!(+mv.pw>0))continue;
+      if(mv.cat!=='物理'&&mv.cat!=='特殊')continue;
+      if(mv.cat==='物理'!==phys)continue;
+      if(mv.tags&&mv.tags.indexOf('自爆·退场')>=0)continue;
+      if(+mv.pw<20)continue;
+      if(String(mv.zh).indexOf('奉还')>=0||String(mv.zh).indexOf('镜面反射')>=0)continue;
+      var q=_tcMvEff(mv),fac=q/(+mv.pw||1);
+      try{var dm=dmgCalc({sA:sp,sD:_TC_BWALL,moveId:+ids[k],evA:(x.ev?+x.ev[phys?1:3]:0),natA:(''),evD:252,natD:(phys?'淘气':'温和'),itemA:(x.it||'')});if(!dm)continue;
+        var avg=((dm.lo+dm.hi)/2)*fac;if(avg<=0)continue;
+        var ttk=Math.ceil(_TC_BWALL_HP/avg);
+        if(!best||ttk<best.ttk)best={ttk:ttk,mv:mv.zh,dmg:Math.round(avg),q:q};
+      }catch(eD){eD.name}
+    }
+    if(best)out.push({zh:x.zh,mv:best.mv,ttk:best.ttk,dmg:best.dmg});
+  });
+  out.sort(function(a,b){return a.ttk-b.ttk||b.dmg-a.dmg});
+  return {list:out,best:out.length?out[0].ttk:0};
+}
 function _tcGapFix(need,tset){
   var own=_ownMap(),pool=own?_ownPoolList():null,list=pool||ERDATA.species,have={},out=[];
   (tset||[]).forEach(function(x){if(x&&x.id!=null)have[x.id]=1});
@@ -8376,6 +8408,15 @@ if(mem.length>=4){
     add(0,'<b>两栖型：减伤特性看你怎么用</b>　'+bothDef.map(function(x){return '<b>'+x.zh+'</b>（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的面板和招池既能扛也能打，减伤特性在防守用法里是路线、在进攻用法里是容错——按你给它排的招和 EV 定，不强制改。');
   }
 }
+try{
+  var _tk=_tcTtk(mem);
+  if(_tk&&_tk.list.length){
+    add(0,'<b>打穿速度</b>（对 420 HP / 252 单防 的通用高耐久墙，按有效威力＋克制＋STAB＋道具粗估，不含对手回复）：'+
+      _tk.list.slice(0,4).map(function(r){return '<b>'+r.zh+'</b> 的 '+r.mv+' <b>'+r.ttk+' 发</b>（约 '+r.dmg+'/420）'}).join('　·　')+
+      '。'+(_tk.best>=4?('最快也要 '+_tk.best+' 发才打得死——带回复的墙等于打不死，得靠挑衅、固定伤害、状态这些不吃面板的手段；或者换一只真能压血线的输出。')
+        :('最快 '+_tk.best+' 发，墙带回复时要把这几发压缩在回复间隙里，留好强化或状态的回合。')))
+  }
+}catch(eTk){eTk.name}
 if(mem.length>=4){
   var multiM=mem.filter(function(x){var pc=_tcPoolCount(x.s,x.L||100);return String(pc.atkBestTxt).indexOf('×')>=0});
   if(_TC_QCTX.link||_TC_QCTX.dice){
@@ -18042,7 +18083,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.310';
+var ER_ENGINE_VER='v4.311';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
