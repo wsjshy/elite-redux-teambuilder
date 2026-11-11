@@ -7567,6 +7567,31 @@ function _tcDefAbiOf(s){
   inn.forEach(function(n){if(TC_DEF_ABI.indexOf(n)>=0&&h.indexOf(n)<0)h.push(n)});
   return h;
 }
+var _TC_MVCAT=null;
+function _tcMvCat(zh){
+  if(!_TC_MVCAT){
+    _TC_MVCAT={};
+    try{ERDATA.moves.forEach(function(m){if(m&&m[1])_TC_MVCAT[String(m[1])]=String(m[4]||'')})}catch(eC){_TC_MVCAT={}}
+  }
+  return _TC_MVCAT[String(zh)]||'';
+}
+function _tcProf(x){
+  var st=x.set||{},nA=0,nS=0,k,c;
+  for(k in st){if(!st.hasOwnProperty(k))continue;c=_tcMvCat(k);if(!c)continue;if(c==='变化')nS++;else nA++;}
+  var ev=x.ev||[0,0,0,0,0,0];
+  var offP=(+(ev[1]||0))+(+(ev[3]||0)),dfnP=(+(ev[0]||0))+(+(ev[2]||0))+(+(ev[4]||0));
+  var b=(x.s&&x.s.base)||[0,0,0,0,0,0];
+  var bulk=(+(b[0]||0))+(+(b[2]||0))+(+(b[4]||0)),pow=Math.max((+(b[1]||0)),(+(b[3]||0)));
+  var rt=x.rt||'';
+  var shieldRole=(rt==='肉盾'||rt==='辅助')&&nA<=2;
+  var leanShield=(bulk>=270&&pow<=115&&nA<=3);
+  var atkRole=(rt==='输出'||rt==='强化')&&nA>=3;
+  var tank=!!(shieldRole||leanShield);
+  var atk=(!tank)&&(atkRole||(pow>=115&&nA>=3));
+  var why=tank?('定位'+rt+'、攻击招 '+nA+' 个、耐久 EV '+dfnP+'、种族 攻/特攻 '+pow+'、耐久和 '+bulk)
+              :('定位'+rt+'、攻击招 '+nA+' 个、输出 EV '+offP+'、种族 攻/特攻 '+pow+'、耐久和 '+bulk);
+  return {tank:tank,atk:atk,nA:nA,nS:nS,offP:offP,dfnP:dfnP,bulk:bulk,pow:pow,why:why};
+}
 function _tcDefActive(x){
   var h=[];
   if(x&&TC_DEF_ABI.indexOf(x.abi)>=0)h.push(x.abi);
@@ -7814,7 +7839,10 @@ function teamCheckHtml(_R){
         itm=String(oReal.row['道具']||itm);
         cf=(oReal.row['主特性(当前生效)']||abi||'')+"｜性格 "+(oReal.row['性格']||'')+"｜EV "+[oReal.row['EV_HP'],oReal.row['EV_攻击'],oReal.row['EV_防御'],oReal.row['EV_特攻'],oReal.row['EV_特防'],oReal.row['EV_速度']].join('/');}
       if(!cf)cf=cfB;
-      mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal,rt:rt,it:itm,cf:cf});
+      var evA=[0,0,0,0,0,0];
+      try{var _rrE=anRowOf(s,b)||{};evA=(_rrE.ev||[0,0,0,0,0,0]).slice()}catch(eEv){evA=[0,0,0,0,0,0]}
+      if(oReal){evA=_ownEvAry(oReal.row)}
+      mem.push({zh:s.zh,s:s,mv:mvTxt,set:set,abi:abi,w:w,v:spdViewValOf(s),tax:_tcTaxOf(s),real:!!oReal,rt:rt,it:itm,cf:cf,ev:evA});
     });
     var rows="",V=[];var add=function(sev,txt,fix){V.push({s:sev,h:txt,fix:fix||""})};
     if(_ownMap()){
@@ -8084,17 +8112,21 @@ if(mem.length>=4){
     add(0,'<span style="color:var(--ok,#2e7d32)">能破受</span>：'+sl+st2+'——间接（怕魔法防守）与直接（怕减伤）两条路线都有人走，'+'遇到'+TC_WALL_ABI.slice(0,4).join('/')+'这类防守特性也不会被一条路锁死。');
   }
 }
-/* ⑮ 特性托底（肉盾有没有减伤特性） */
-var tankM=mem.filter(function(x){return x.rt==='肉盾'});
+/* ⑮ 特性托底（先判这只该不该走防守，再谈特性托底） */
+var tankM=mem.filter(function(x){return _tcProf(x).tank});
 var tankNo=tankM.filter(function(x){return !_tcDefActive(x).length});
+var defOnAtk=mem.filter(function(x){var p=_tcProf(x);return p.atk&&_tcDefActive(x).length>0});
 if(mem.length>=4){
   if(tankNo.length){
     var swT=_tcAbiSwitchHint(tankNo);
-    add(1,'<b>前排没有减伤特性托底</b>：'+tankNo.map(function(x){return '<b>'+x.zh+'</b>（'+x.abi+'）'}).join('、')+' 是肉盾定位，但主特性加天性里没有任何减伤类特性（多重鳞片/幻影防守/坚硬岩石/过滤/魔法防守这类）。ER 的墙有一半强度在特性上，只靠面板顶，对面一发强化过的招就能顶穿。'
+    add(1,'<b>防守位缺特性托底</b>：'+tankNo.map(function(x){return '<b>'+x.zh+'</b>（'+x.abi+'，'+_tcProf(x).why+'）'}).join('；')+' —— 按它自己的种族值和实配四招，它的活是扛伤，但生效的特性里没有减伤类（多重鳞片/幻影防守/毛皮大衣/坚硬岩石/过滤/魔法防守这类）。ER 的墙一半强度在特性上，只靠面板顶，对面一发强化过的招就能顶穿。'
       +(swT?('<br><b>队内先看能不能补</b>：'+swT):'')
-      +'<br>怎么修：换一只同定位、自带减伤特性的前排；临时补丁是把它道具换成凸凸头盔/吃剩的东西。','defabi');
+      +'<br>两条路选一条：① 真要它扛 → 上面切特性，或换一只同定位自带减伤的前排（下面候选带配置）；② 它其实该打输出 → 把扛伤交给别人，别让它硬顶，把它的招和 EV 改成进攻向。','defabi');
   }else if(tankM.length){
-    add(0,'<span style="color:var(--ok,#2e7d32)">前排有特性托底</span>：'+tankM.map(function(x){return x.zh+'（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的减伤类特性都在生效，面板之外还有一层。');
+    add(0,'<span style="color:var(--ok,#2e7d32)">防守位有特性托底</span>：'+tankM.map(function(x){return x.zh+'（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的减伤特性在生效，扛伤不只靠面板。');
+  }
+  if(defOnAtk.length){
+    add(0,'<b>防守特性挂在进攻手身上：算容错，不算路线</b>　'+defOnAtk.map(function(x){var p=_tcProf(x);return '<b>'+x.zh+'</b>（'+_tcDefActive(x).join('/')+'；'+p.why+'）'}).join('；')+'。这几只的活是输出，减伤只让它们少掉一点血、多换一次出手，不需要为此改成防守流。只有当它输出和耐久两头都不够（既打不动也扛不住）时，才考虑把特性让给增伤类。');
   }
 }
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
@@ -17748,7 +17780,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.303';
+var ER_ENGINE_VER='v4.304';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
