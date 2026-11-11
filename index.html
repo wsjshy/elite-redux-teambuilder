@@ -7744,7 +7744,64 @@ function _tcDefFix(tset){
   }).join("");
   return scope+base+rowsTxt;
 }
+function _tcGapFix(need,tset){
+  var own=_ownMap(),pool=own?_ownPoolList():null,list=pool||ERDATA.species,have={},out=[];
+  (tset||[]).forEach(function(x){if(x&&x.id!=null)have[x.id]=1});
+  var directMv=Object.keys(TC_BRK).filter(function(n){return TC_BRK_TYP[n]==='直接'});
+  var indMv=Object.keys(TC_BRK).filter(function(n){return TC_BRK_TYP[n]==='间接'});
+  list.forEach(function(t){
+    if(out.length>=30)return;
+    if(!t||t.id==null||have[t.id])return;
+    if(!isValidSp(t)||!isFinalSp(t))return;
+    var pc=_tcPoolCount(t,100),hit='';
+    if(need==='dir'){for(var i=0;i<directMv.length;i++){if(learnHasName(t,directMv[i])){hit=directMv[i];break}}}
+    else if(need==='ind'){for(var j=0;j<indMv.length;j++){if(learnHasName(t,indMv[j])){hit=indMv[j];break}}}
+    else if(need==='spec'){if(pc.specBest>=110)hit='特殊 '+pc.specBest.toFixed(0)+' 威力'}
+    else if(need==='phys'){if(pc.physBest>=110)hit='物理 '+pc.physBest.toFixed(0)+' 威力'}
+    if(!hit)return;
+    var b=null;try{b=(deriveBuilds(t,tset)||[])[0]}catch(e1){b=null}
+    var rr={};try{rr=anRowOf(t,b)||{}}catch(e2){rr={}}
+    var ownRow=own?(own[String(t.id)]||null):null;
+    var evs=(rr.ev||[0,0,0,0,0,0]);
+    out.push({zh:t.zh,s:t,hit:hit,rt:rr.roleTag||'',mv:b?_tlkMvTxt(b):'',own:ownRow?ownRow.row:null,
+      hasIt:ownRow?(_ownMvNames(ownRow.row).indexOf(hit)>=0):false,
+      cfg:'特性 '+(rr.abi||'')+'｜道具 '+(rr.item||'无')+'｜性格 '+(rr.nat||'')+'｜EV '+[0,1,2,3,4,5].map(function(i){return +(evs[i]||0)}).join('/')});
+  });
+  out.sort(function(a,b){
+    return ((b.hasIt?1:0)-(a.hasIt?1:0))||((b.own?1:0)-(a.own?1:0))||((a.mv||'').length-(b.mv||'').length);
+  });
+  var pick=out.slice(0,3);
+  if(!pick.length)return '';
+  var dp=null;try{dp=_tcDropOf(tset)}catch(e3){dp=null}
+  var scope=own?("<span style='color:var(--sub)'>候选只在你的存档里挑（"+_ownCount()+" 种）</span>："):'';
+  var base=dp?("<br><span style='color:var(--sub);font-size:12.5px'>换掉的是 <b>"+dp.drop.zh+"</b>（当前整队里最该动的一只）</span>"):'';
+  var rowsTxt=pick.map(function(x){
+    var head='<b>'+x.zh+'</b>'
+      +(x.rt?"<span style='font-size:12.5px;color:var(--sub)'>　"+x.rt+"</span>":"")
+      +"<span style='font-size:12.5px;color:#2e7d32;font-weight:700'>　池里有 "+x.hit+"</span>"
+      +(x.hasIt?"<span style='font-size:12.5px;color:#2e7d32'>　存档里已经在用</span>":'')
+      +(own&&!x.own?"<span style='font-size:12.5px;color:var(--warnred)'>　未持有</span>":'')
+      +(x.own?"<span style='font-size:12.5px;color:#2e7d32'>　存档已有</span>":'');
+    var sim='';
+    try{
+      var r=_tcSim(x.s,tset,dp?dp.drop:null);
+      if(r){
+        var dWk=r.now.bad-r.base.bad,parts=[];
+        if(dWk<0)parts.push("<span style='color:#2e7d32'>弱点超标 "+r.base.bad+"→"+r.now.bad+"</span>");
+        else if(dWk>0)parts.push("<span style='color:var(--warnred)'>弱点超标 "+r.base.bad+"→"+r.now.bad+"</span>");
+        var dTax=Math.round((r.now.sr-r.base.sr)*100);
+        if(dTax<=-3)parts.push("<span style='color:#2e7d32'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
+        else if(dTax>=3)parts.push("<span style='color:var(--warnred)'>平均入场税 "+Math.round(r.base.sr*100)+"%→"+Math.round(r.now.sr*100)+"%</span>");
+        if(!parts.length)parts.push("<span style='color:var(--sub)'>入场税与弱点数没变</span>");
+        sim="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"+(r.drop?"换掉 "+r.drop+"：":"直接加进来：")+"　"+parts.join("　")+"</div>";
+      }
+    }catch(e4){e4.name}
+    return "<div style='margin:4px 0'>"+head+"</div><div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>"+x.cfg+"</div>"+sim;
+  }).join("");
+  return scope+base+rowsTxt;
+}
 function _tcFixHtml(kind,tset){
+  if(kind.indexOf("gap:")===0)return _tcGapFix(kind.split(":")[1],tset);
   var groups,kw,looseKw;
   if(kind==="defabi")return _tcDefFix(tset);
   if(kind==="clear"){groups=[["高速旋转","清除浓雾"]];kw="队里没人清钉，全库默认配置里<b>已经带清钉</b>的选人：";looseKw="默认配置都没把清钉放进四个槽，但能学——选进来后要手动换一个槽：";}
@@ -8225,7 +8282,24 @@ if(mem.length>=4){
   var okB=rowsT.filter(function(r){return r.ok});
   var okTxt=okB.map(function(r){return "<b>"+r.n+"</b> <span style='color:var(--ok,#2e7d32)'>✓</span> 靠 "+r.mine}).join('；');
   if(gapsB.length){
-    add(1,'<b>对手侧：有整类墙我们没有手段</b>　'+gapsB.map(function(r){return "<b>"+r.n+"</b>（"+r.why+"）——队里没有 "+r.req.map(function(k){return capName[k]}).join('/')}).join('；')+'。这类对手不是靠数值能磨过去的：'+(gapsB[0].n==='多重鳞片 / 幻影防守'?'它满血时一发大招只掉一半血，你换招的回合它已经回满。':'手段不对症，打再多也是白打。')+'<br>怎么修：按上面点名的能力补一条——固定伤害（地球上投/黑夜魔影/愤怒门牙）不吃倍率也不吃减伤，状态/种子能持续削血，特殊手能绕开物理减伤。','brk');
+    var needOf=function(r){
+      if(r.n==='多重鳞片 / 幻影防守')return 'ind';
+      if(r.n==='毛皮大衣 / 毛茸茸')return 'spec';
+      if(r.n==='魔法防守')return 'dir';
+      if(r.n==='坚硬岩石 / 过滤')return 'dir';
+      if(r.n==='奇迹皮肤')return 'dir';
+      return 'dir';
+    };
+    var whyTxt=function(r){
+      if(r.n==='多重鳞片 / 幻影防守')return '它满血时一发大招只掉一半血，你换招的回合它已经回满';
+      if(r.n==='魔法防守')return '状态、吸血、钉子、天气对它全归零，只剩硬打，而硬打打不死带回复的墙';
+      if(r.n==='坚硬岩石 / 过滤')return '克制伤害被削，本系大招硬啃也慢';
+      if(r.n==='毛皮大衣 / 毛茸茸')return '物理伤害减半，队里没有能绕开物理面板的手段';
+      return '手段不对症，打再多也是白打';
+    };
+    gapsB.forEach(function(r){
+      add(1,'<b>对手侧：'+r.n+' 这类墙我们没有手段</b>（'+r.why+'）——'+whyTxt(r)+'。<br>怎么修：补一条 '+capName[needOf(r)]+' 的能力，下面按「谁能补这一类」排的候选都带完整配置。','gap:'+needOf(r));
+    });
   }
   add(0,'<b>对手侧对策核对</b>（按对手常见防守特性逐类，看我们手里还有什么：'+(carry.length?carry.join('、'):'什么都不剩')+'）　'+(okTxt||'暂无')+'。这张表的意义是：破受不只靠状态去磨，碰上魔法防守要换真伤害，碰上毛皮大衣要换特殊，碰上多重鳞片要先削血。');
 }
@@ -17910,7 +17984,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.308';
+var ER_ENGINE_VER='v4.309';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
