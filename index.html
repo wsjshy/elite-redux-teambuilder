@@ -7661,17 +7661,6 @@ function _tcAbiBoostOf(mv,abils){
   });
   return mul;
 }
-function _tcMvScore(mv,abils,sp,ev){
-  if(!mv)return 0;
-  var sc=_tcMvEff(mv)*_tcAbiBoostOf(mv,abils);
-  try{
-    var isP=(mv.cat==='物理'),idx=isP?1:3;
-    var st=dmgStatOf(bstI(sp||{},idx),(ev?+((ev||[])[idx]||0):0),31,idx,'');
-    sc*=st/100;
-    if(mv.type===sp.t1||mv.type===sp.t2)sc*=1.5;
-  }catch(eS){eS.name}
-  return sc;
-}
 function _tcBestUnder(x,abils){
   var best=null,bestSc=0,seen={},sp=x.s||{};
   function take(mid){
@@ -7680,7 +7669,8 @@ function _tcBestUnder(x,abils){
     var mv=_tcMvById(mid);
     if(!mv||(+mv.pw||0)<=0)return;
     if(mv.tags&&mv.tags.indexOf('自爆·退场')>=0)return;
-    var sc=_tcMvScore(mv,abils,x.s,x.ev);
+    if(mv.cat!=='物理'&&mv.cat!=='特殊')return;
+    var sc=_tcAtkDmg(x,mv);
     if(sc>bestSc){bestSc=sc;best=mv}
   }
   try{
@@ -7911,6 +7901,31 @@ function _tcTtk(tset){
   });
   out.sort(function(a,b){return a.ttk-b.ttk||b.dmg-a.dmg});
   return {list:out,best:out.length?out[0].ttk:0};
+}
+var _TC_REFDEF={id:-13,zh:'基准受击者',t1:'一般',t2:'一般',base:[90,90,90,90,90,90],abis:[],inns:[]};
+function _tcStatLv(base,ev,lv,idx,nat){
+  var v=Math.floor((2*(+base||0)+31+Math.floor((ev||0)/4))*(lv||100)/100);
+  v+=(idx===0?((lv||100)+10):5);
+  try{v=Math.floor(v*dmgNatMul(nat||'',idx))}catch(eN){eN.name}
+  return v;
+}
+function _tcAtkDmg(x,mv){
+  if(!mv||!(+mv.pw>0))return 0;
+  var sp=x.s||{},isp=(mv.cat==='物理'),idx=isp?1:3;
+  var ev=(x.ev||[])[idx]||0;
+  var fac=_tcMvEff(mv)/(+mv.pw||1);
+  var out=0;
+  try{
+    var dm=dmgCalc({sA:sp,sD:_TC_REFDEF,moveId:+mv.id,evA:ev,natA:'',itemA:(x.it||''),evD:252,natD:'',L:(x.L||100)});
+    if(dm&&dm.hi>0){
+      var avg=(dm.lo+dm.hi)/2;
+      var abiCtx=[String(x.abi||'')];
+      try{(sp.inns||[]).forEach(function(z){if(z&&abiCtx.indexOf(z)<0)abiCtx.push(z)})}catch(eI){eI.name}
+      var boost=_tcAbiBoostOf(mv,abiCtx),am=+(dm.atkMul||1);if(!(am>0))am=1;
+      out=avg*fac*(boost/am);
+    }
+  }catch(eD2){eD2.name}
+  return out;
 }
 var _TC_PHYS_ATK={id:-11,zh:'物理压制手',t1:'一般',t2:'一般',base:[100,130,90,50,90,80],abis:[],inns:[]};
 var _TC_SPEC_ATK={id:-12,zh:'特殊压制手',t1:'一般',t2:'一般',base:[100,50,90,130,90,80],abis:[],inns:[]};
@@ -8549,10 +8564,15 @@ try{
     });
     if(!alts.length)return;
     var diff=alts.filter(function(a){return a.best.mv.zh!==b0.mv.zh});
-    var line='<b>'+x.zh+'</b>：当前（'+curAll.join('+')+'）最优 <b>'+b0.mv.zh+'</b> 有效威力 '+b0.sc.toFixed(0);
+    var _stAtk=0,_stSpa=0;
+    try{
+      _stAtk=_tcStatLv((x.s.base||[])[1],(x.ev||[])[1],x.L||100,1,'');
+      _stSpa=_tcStatLv((x.s.base||[])[3],(x.ev||[])[3],x.L||100,3,'');
+    }catch(eSt){eSt.name}
+    var line='<b>'+x.zh+'</b>（物攻 '+_stAtk+' / 特攻 '+_stSpa+'，按实配 EV 与 Lv'+(x.L||100)+' 算）：当前（'+curAll.join('+')+'）最优 <b>'+b0.mv.zh+'</b>，平均伤害 '+b0.sc.toFixed(0)+'（'+(b0.mv.cat==='物理'?'吃物攻':'吃特攻')+'）';
     if(diff.length){
       alts.forEach(function(a){
-        line+='；换主特性为 '+a.abi+'（天性不变）→ 最优 '+(a.best.mv.zh===b0.mv.zh?'仍是 '+b0.mv.zh:'<b>'+a.best.mv.zh+'</b>')+'('+a.best.sc.toFixed(0)+')';
+        line+='；换主特性为 '+a.abi+'（天性不变）→ 最优 '+(a.best.mv.zh===b0.mv.zh?'仍是 '+b0.mv.zh:'<b>'+a.best.mv.zh+'</b>')+'，平均伤害 '+a.best.sc.toFixed(0)+'（'+(a.best.mv.cat==='物理'?'物攻':'特攻')+'路）';
       });
     }else{
       line+='；换成 '+alts.map(function(a){return a.abi}).join('/')+' 最优招还是它，特性只影响数值不改选招';
@@ -8560,7 +8580,7 @@ try{
     valRows.push(line);
   });
   if(valRows.length){
-    add(0,'<b>招式价值随特性变</b>（同一个招在带该特性与换掉该特性后不是一个价，含咬/拳/劈砍/接触、属性增益与低威力增益）：'+valRows.join('。')+'。选招先看你这只现在带什么特性；如果某招只在现特性下才划算，就别把它当通用解搬家。')
+    add(0,'<b>招式价值随特性变</b>（同一个招在带该特性与换掉该特性后不是一个价：伤害按物攻/特攻各自面板算，再乘特性增伤、命中率与段数）：'+valRows.join('。')+'。这里的平均伤害是对中性基准受击者（双防 90、252 HP）算的，只用于在自家招之间比大小，不等于打穿速度里对 420 血墙的几发。选招先看你这只现在带什么特性；如果某招只在现特性下才划算，就别把它当通用解搬家。')
   }
 }catch(eVal){eVal.name}
 try{
@@ -18279,7 +18299,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.314';
+var ER_ENGINE_VER='v4.315';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
