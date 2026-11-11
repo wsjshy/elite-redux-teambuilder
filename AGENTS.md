@@ -2705,7 +2705,7 @@ GitHub 首页默认显示 master，所以看起来「停滞」。
 | v4.301 | 1,778,516 | B2B0A4C739E448CA8F492E0630B959D46E451354 | 线上一致（gh-pages `fcc17a1`，逐字节核验） |
 | v4.302 | 1,780,554 | 45491B34AA988EF2C5711D483904E51D6EE5D7A8 | 线上一致（gh-pages `273ba0f`，逐字节核验） |
 | v4.303 | 1,786,635 | D5D37ACF5CEC786B5D72F10AE0FB2DD1432CA7CE | 线上一致（gh-pages `3aff89d`，逐字节核验） |
-| v4.304 | 待回填 | 待回填 | 待部署（托底改为先判定位：容错 vs 路线） |
+| v4.304 | 1,788,834 | FE93D406FD4735F79B8E147DFE7034BBD60997B5 | 线上一致（gh-pages `0340382`，逐字节核验） |
 | v4.265 | 1,667,029 | E26FC629007C009ECA51ED3F10CC31DCACE2EC73 | 线上一致（gh-pages a7f67f2，逐字节核验） |
 | v4.264 | 1,664,224 | 77A945C686E24B2548792EDA7DBCC6646ABED7BE | 线上一致（gh-pages dd6fb6e，逐字节核验） |
 | v4.263 | 1,659,525 | 1E2AA5454F75BCFDB227BD1B35540FF920CFD929 | 线上一致（gh-pages ab2c072 / master fc089ba） |
