@@ -7593,12 +7593,35 @@ function _tcMvById(id){
         else if(/four times|4 times|4 hits|four hits/.test(_ds))_ht=4;
         else if(/twice|2 times|2 hits|double hit/.test(_ds))_ht=2;
       }
-      _TC_MVID[String(m[0])]={zh:String(m[1]||''),cat:String(m[4]||''),pw:+(m[5]||0),prio:+(m[8]||0),type:String(m[3]||''),acc:+(m[6]||0),tags:_tg,hit:_ht};
+      _TC_MVID[String(m[0])]={id:+m[0],zh:String(m[1]||''),en:String(m[2]||''),cat:String(m[4]||''),pw:+(m[5]||0),prio:+(m[8]||0),type:String(m[3]||''),acc:+(m[6]||0),tags:_tg,hit:_ht};
     }})}catch(eD){_TC_MVID={}}
   }
   return _TC_MVID[String(id)]||null;
 }
 var _TC_QCTX={link:false,dice:false};
+var _TC_MVNM=null;
+function _tcMvByName(zh){
+  if(!_TC_MVNM){
+    _TC_MVNM={};
+    try{
+      for(var k in _TC_MVID){if(_TC_MVID.hasOwnProperty(k)){var v=_TC_MVID[k];if(v&&v.zh)_TC_MVNM[v.zh]=v}}
+    }catch(e0){_TC_MVNM={}}
+  }
+  return _TC_MVNM[String(zh)]||null;
+}
+function _tcMvFam(mv){
+  var f=[];
+  if(!mv)return f;
+  var zh=String(mv.zh||''),en=String(mv.en||mv.zh||'').toLowerCase();
+  var _en=(mv.en===undefined?'':String(mv.en)).toLowerCase();
+  if(/咬|牙/.test(zh)||/bite|fang|jaw/.test(_en))f.push('jaw');
+  if(/拳/.test(zh)||/punch/.test(_en))f.push('punch');
+  if(/劈|斩|刃|刀/.test(zh)||/slash|blade|edge/.test(_en))f.push('slash');
+  try{if(mvIsContact&&mvIsContact(+mv.id))f.push('contact')}catch(e1){e1.name}
+  return f;
+}
+var _TC_FAM_ABI={'强壮之颚':'jaw','铁拳':'punch','锐利之刃':'slash'};
+var _TC_FAM_ZH={jaw:'啃咬/颚类',punch:'拳类',slash:'劈砍类',contact:'接触类'};
 function _tcMvEff(mv){
   if(!mv)return 0;
   var p=+(mv.pw||0);
@@ -8434,6 +8457,36 @@ if(mem.length>=4){
     add(0,'<b>两栖型：减伤特性看你怎么用</b>　'+bothDef.map(function(x){return '<b>'+x.zh+'</b>（'+_tcDefActive(x).join('/')+'）'}).join('、')+' 的面板和招池既能扛也能打，减伤特性在防守用法里是路线、在进攻用法里是容错——按你给它排的招和 EV 定，不强制改。');
   }
 }
+try{
+  var famRows=[],famWarn=[];
+  mem.forEach(function(x){
+    var abisAll=[];try{abisAll=(x.s.inns||[]).slice()}catch(e2){abisAll=[]}
+    if(x.abi)abisAll.push(String(x.abi));
+    var famAbi=[];
+    for(var nm in _TC_FAM_ABI){if(_TC_FAM_ABI.hasOwnProperty(nm)){
+      if(abisAll.indexOf(nm)>=0)famAbi.push({name:nm,fam:_TC_FAM_ABI[nm]});
+    }}
+    if(String(x.abi||'').indexOf('硬爪')>=0)famAbi.push({name:'硬爪',fam:'contact'});
+    if(!famAbi.length)return;
+    var names=String(x.mv||'').split(' / ').filter(function(z){return z&&z.length>0}),hit={};
+    if(names.length<2)return;
+    names.forEach(function(nz){
+      var mv=_tcMvByName(nz);
+      if(!mv)return;
+      _tcMvFam(mv).forEach(function(f){hit[f]=(hit[f]||0)+1});
+    });
+    famAbi.forEach(function(a){
+      var c=hit[a.fam]||0;
+      if(c>=2)famRows.push('<b>'+x.zh+'</b> 带 <b>'+a.name+'</b>，四招里 '+c+' 条 '+_TC_FAM_ZH[a.fam]+'——特性吃满，同族集中不是冗余，是这只的正解');
+      else if(c===0)famWarn.push('<b>'+x.zh+'</b> 有 <b>'+a.name+'</b> 但四招里没有 '+_TC_FAM_ZH[a.fam]+'招（特性等于白给，换一条该族招进来就能白拿 30%）');
+    });
+  });
+  if(famRows.length||famWarn.length){
+    add(0,'<b>招式族群与特性协同</b>：'+(famRows.length?famRows.join('；'):'——')+
+      (famWarn.length?(famRows.length?'。需要留意：':'')+famWarn.join('；'):'')+
+      '。判断一只宝可梦的配招重复时，先看它的特性吃哪一族：吃同一族的多条招不是浪费槽位，而是把特性倍率乘满。')
+  }
+}catch(eFam){eFam.name}
 try{
   var _tk=_tcTtk(mem);
   if(_tk&&_tk.list.length){
@@ -18120,7 +18173,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.312';
+var ER_ENGINE_VER='v4.313';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
