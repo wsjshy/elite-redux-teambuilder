@@ -976,14 +976,16 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
     <div id="savSlotsBox" style="display:inline-block;margin-left:6px;font-size:14.5px"></div> <!-- v4.111 档位选择UI -->
-    <button class="btn" onclick="toggleCsvPanel()" title="CSV 名单导入队伍（前6只），不填充下方全图鉴组队池">📥 粘贴 CSV</button>
-    <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="v4.96：随机生成 6 只队伍">🎲 随机队</button>
+    <button class="btn" onclick="toggleCsvPanel()" title="CSV 名单导入队伍（前6只），不填充下方全图鉴组队池" id="csvBtn">📥 粘贴 CSV</button>
+    <button class="btn" style="background:#7b1fa2;color:#fff" onclick="randomTeamGen()" title="随机生成 6 只队伍" id="randTeamBtn">🎲 随机队</button>
     <button class="btn-mini" onclick="window._randLegends=!window._randLegends;toast(window._randLegends?'随机队：允许传说档':'随机队：排除传说档')" id="randLegBtn" style="font-size:14.5px">传说档:关</button>
     <button class="btn-mini" onclick="window._randMode=(window._randMode==='template'?'pure':'template');toast(window._randMode==='template'?'随机队：官方模板模式':'随机队：纯随机模式')" id="randModeBtn" style="font-size:14.5px">模板:开</button>
-    <button class="btn" style="background:#455a64;color:#fff" onclick="edgeSuggest()" title="v4.185：多目标边际评估（无解系/共弱/4倍系/进攻盲区/速度线/属性重复）；满队时给出「换谁」建议，理由逐条可核对">📊 边际评估</button>
-      <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="v4.97：基于速度线/联防/体系缺口推荐补位">🧠 智能补位</button>
+    <button class="btn" style="background:#455a64;color:#fff" onclick="edgeSuggest()" title="多目标边际评估：无解系 / 共同弱点 / 4倍系 / 进攻盲区 / 速度线 / 属性重复。满队时直接告诉你换掉谁，理由逐条可核对">📊 换谁更好</button>
+      <button class="btn" style="background:#00897b;color:#fff" onclick="smartSuggest()" title="按速度线 / 联防 / 体系缺口，告诉你缺的是一只什么样的宝可梦">🧠 补哪只</button>
     <button class="btn-mini" onclick="window._sugPool=(window._sugPool==='pc'?'dex':'pc');toast('补位候选池：'+(window._sugPool==='pc'?'存档电脑区':'全图鉴'))" id="sugPoolBtn" style="font-size:14.5px">候选:存档区</button>
     <button class="btn-mini" onclick="toggleMultiPick()" id="multiPickBtn" style="font-size:14.5px" title="v4.129：勾选多只精灵后一键入队">☑ 多选入队</button>
+    <button class="btn-mini" type="button" onclick="toggleTmMore()" id="tmMoreBtn" style="font-size:14.5px" title="CSV 导入 / 随机队 / 传说档 / 模板 / 候选池 / 多选入队">更多工具 ▾</button>
+    <div id="tmMoreRow" style="display:none;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px;padding:6px;border:1px dashed var(--line);border-radius:8px"></div>
     <div id="multiPickBar" style="display:none;margin-top:6px;padding:6px;background:var(--guide-bg);border-radius:8px;font-size:14.5px">已选 <b id="multiPickCount">0</b> 只 <button class="btn-mini" onclick="multiPickEnqueue()">确认入队</button> <button class="btn-mini" onclick="toggleMultiPick()">取消</button></div>
   </div>
   <div class="sec" style="margin:6px 0">
@@ -4601,6 +4603,25 @@ function tmFilterReset(){
   setTimeout(function(){try{loadTeam()}catch(e){}},0);
 })();
 /* v4.130：筛选区折叠（375px 首屏释放） */
+/* v4.322：工具条分层——低频按钮搬进「更多工具」，首屏只留搜索/存档/换谁更好/补哪只 */
+function toggleTmMore(){
+  var r=document.getElementById('tmMoreRow');if(!r)return;
+  var on=r.style.display==='none';
+  r.style.display=on?'flex':'none';
+  var b=document.getElementById('tmMoreBtn');
+  if(b)b.textContent=on?'更多工具 ▴':'更多工具 ▾';
+}
+(function(){
+  function mv(){
+    var r=document.getElementById('tmMoreRow');
+    if(!r||r.getAttribute('data-mv'))return;
+    r.setAttribute('data-mv','1');
+    ['csvBtn','randTeamBtn','randLegBtn','randModeBtn','sugPoolBtn','multiPickBtn'].forEach(function(id){
+      var e=document.getElementById(id);if(e)r.appendChild(e);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mv);else mv();
+})();
 function toggleTmFilter(){
   var box=document.getElementById('tmFilterBox');
   var btn=document.getElementById('tmFilterToggle');
@@ -6232,6 +6253,15 @@ function loadSavSlot(i){
   /* v4.124 P1-3：历史档仅存前6只队伍摘要，无特殊区计数——提示用户如需一键入队设施队请重新解析 .sav */
   toast('已载入历史档 '+(i+1)+'；如需一键入队设施队，请重新解析存档 .sav');
 }
+/* v4.322：解析完存档 → 一键切到队伍分析（配置来源自动切 sav，吃真实配置） */
+function savJumpAnalyze(){
+  try{
+    anCfgSrc='sav';
+    switchTab('analyze');
+    setTimeout(function(){try{renderAnTab()}catch(eAn){eAn.name}},0);
+    toast('已切到队伍分析：按存档里的真实配置判');
+  }catch(eSj){toast('切换失败: '+eSj.message)}
+}
 function parseSavFile(input){
   var f=input.files&&input.files[0];if(!f)return;
   var rd=new FileReader();
@@ -6287,7 +6317,7 @@ function parseSavFile(input){
         _typeRow+
         '<div id="savPcList" style="max-height:300px;overflow-y:auto"></div></div>';
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
-        '<div style="font-size:15px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+
+        '<div style="font-size:15px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+'<div style="margin-top:8px"><button class="btn" style="background:var(--accent);color:#fff;width:100%" onclick="savJumpAnalyze()" title="切到队伍分析：按你存档里的真实配招 / 道具 / 性格 / EV 做全队体检">👉 用这份存档做全队体检</button></div>'+
         /* v4.121 P0：一键入队按钮常驻在解析结果区（不再藏在电脑区清单内） */
         (res.summary.special>0?'<div style="margin-top:4px;padding:4px 6px;background:#fff3e0;border-radius:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:13.5px;color:var(--sub)">特殊区·设施预设 '+res.summary.special+' 条：</span><button class="btn-mini" onclick="savPcEnqueueAllSpc()" style="background:var(--accent);color:#fff">一键入队前 6</button></div>':'')+
         '<div style="margin-top:6px"><button class="btn-mini" onclick="copySavCsv()">📋 复制 CSV</button> <button class="btn-mini" onclick="downloadSavCsv()">⬇ 下载 CSV</button>'+
@@ -8368,6 +8398,23 @@ function _tcFixHtml(kind,tset){
     +"</div>";
 }
 
+/* v4.322：体检结论按严重度排好后只摊前 3 条，其余折叠——首屏不再一屏几十行 */
+function _tcVList(V,sevTag,fixOnce){
+  if(!V||!V.length)return "";
+  var line=function(x){var fx=x.fix?fixOnce(x.fix):"";return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+fx+"</div>"};
+  if(V.length<=3)return V.map(line).join("");
+  var n=V.length-3;
+  return V.slice(0,3).map(line).join("")
+    +"<div class='tcMore' data-n='"+n+"' style='display:none'>"+V.slice(3).map(line).join("")+"</div>"
+    +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>展开其余 "+n+" 条</button>";
+}
+function tcToggleMore(btn){
+  var box=btn&&btn.previousElementSibling;
+  if(!box||String(box.className).indexOf('tcMore')<0)return;
+  var open=box.style.display!=='none';
+  box.style.display=open?'none':'';
+  btn.textContent=open?('展开其余 '+box.getAttribute('data-n')+' 条'):'收起';
+}
 function teamCheckHtml(_R){
   try{
     var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
@@ -8811,7 +8858,7 @@ try{
     }
   });
   if(slotRows.length||slotOk.length){
-    add(0,'<b>槽位优化</b>（只动招式、特性/道具/性格/EV 不变；候选必须在当前等级招池内）：'+
+    add(0,'<b>换哪招</b>（只动招式、特性/道具/性格/EV 不变；候选必须在当前等级招池内）：'+
       (slotRows.length?slotRows.join('；'):'没有需要换的攻击招')+
       (slotOk.length?(slotRows.length?'。其余：':'')+slotOk.join('、'):'')+'。')
   }
@@ -8894,7 +8941,7 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,#2e7d32)")+";font-weight:700'>"+cntTxt+"</span>"
       +(_ownMap()?("　<b style='color:#2e7d32'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
       +rows
-      +V.map(function(x){var fx=x.fix?fixOnce(x.fix):"";return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+fx+"</div>"}).join("")
+      +_tcVList(V,sevTag,fixOnce)
       +"</div>";
   }catch(eTC){return ""}
 }
@@ -18532,7 +18579,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.321';
+var ER_ENGINE_VER='v4.322';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
