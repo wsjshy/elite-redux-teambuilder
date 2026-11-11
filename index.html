@@ -35,6 +35,12 @@ header .tag{font-size:14.5px; color:var(--sub)}
 nav{display:flex; gap:4px; margin-left:auto; flex-wrap:wrap}
 nav button{border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:15px}
 nav button.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+#navRefRow{flex-basis:100%; gap:4px}
+.landing-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+.lcard{display:flex;flex-direction:column;gap:8px;padding:22px 18px;border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;text-align:left}
+.lcard:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.lcard b{font-size:17px}
+.lcard span{color:var(--sub);font-size:14.5px;line-height:1.6}
 main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); overflow-y:auto; box-sizing:border-box} /* v4.68 黑盒P2-1：MAIN 独立滚动容器，使 bktabs sticky(top:51) 真实 engage */
 .tab{display:none}
 .tab.active{display:block}
@@ -835,12 +841,15 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <button data-tab="core" class="active">核心配队</button>
     <button data-tab="team">队伍构建</button>
     <button data-tab="analyze">队伍分析</button>
-    <button data-tab="poke">宝可梦</button>
-    <button data-tab="move">招式反查</button>
-    <button data-tab="type">属性克制</button>
-    <button data-tab="abi">特性反查</button>
-    <button data-tab="tpl">战术模板</button>
-    <button data-tab="speed">速度线</button>
+    <button id="navRefBtn" type="button" aria-expanded="false">图鉴资料 ▾</button>
+    <span id="navRefRow" style="display:none;flex-basis:100%;gap:4px">
+      <button data-tab="poke">宝可梦</button>
+      <button data-tab="move">招式反查</button>
+      <button data-tab="type">属性克制</button>
+      <button data-tab="abi">特性反查</button>
+      <button data-tab="tpl">战术模板</button>
+      <button data-tab="speed">速度线</button>
+    </span>
   </nav>
 </header>
 <main>
@@ -1057,6 +1066,15 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
+  <div id="erLanding" style="display:none">
+    <h2 style="margin:8px 0 2px">你想做什么？</h2>
+    <div class="mini" style="color:var(--sub)">选一条路，剩下的工具替你做。</div>
+    <div class="landing-cards">
+      <button class="lcard" type="button" onclick="erLandingGo('core')"><b>我有喜欢的宝可梦</b><span>搜一只，给我一套能直接用的完整配队（每只带特性、道具、性格、EV）</span></button>
+      <button class="lcard" type="button" onclick="erLandingGo('sav')"><b>我有存档</b><span>导入 .sav 自动体检，只告诉我最该修的几件事和带配置的修法</span></button>
+      <button class="lcard" type="button" onclick="erLandingGo('rand')"><b>随便看看</b><span>随机来一队，看中了再细看</span></button>
+    </div>
+  </div>
   <div id="erGuideBar" style="display:none;background:var(--guide-bg);border:1px solid var(--guide-edge);border-radius:8px;padding:8px 12px;margin:4px 0;font-size:14.5px;color:#0d47a1;animation:erPulse 2s ease-in-out infinite">
     <style>@keyframes erPulse{0%,100%{box-shadow:0 0 0 0 rgba(144,202,249,.4)}50%{box-shadow:0 0 0 6px rgba(144,202,249,0)}}@media(prefers-reduced-motion:reduce){#erGuideBar{animation:none}}</style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
@@ -1065,6 +1083,10 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
   <div id="corePickWrap" class="phasefade">
   <div class="bar">
     <input type="text" id="coreSearch" placeholder="搜索中文 / 英文 / 编号">
+    <button class="btn-mini" type="button" id="coreAdvBtn" onclick="coreAdvToggle()">高级筛选 ▾</button>
+    <button class="btn-mini" onclick="coreClear()">清空筛选</button>
+    <button class="btn-mini" type="button" onclick="erLandingBack()" title="回到三入口首页">返回入口</button>
+    <span id="coreAdvWrap" style="display:none;gap:4px;align-items:center;flex-wrap:wrap">
     <select id="coreSort">
       <option value="id">编号</option><option value="bst">种族值（总值）</option><option value="spe">速度</option>
     </select>
@@ -1081,9 +1103,9 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     </select>
     <input type="text" id="coreMv" placeholder="可学招式名" style="width:150px">
     <input type="text" id="coreAbi" placeholder="特性名" style="width:130px">
-    <button class="btn-mini" onclick="coreClear()">清空筛选</button>
     <label style="font-size:14.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:2px"><input type="checkbox" id="coreFinal" checked onchange="coreFinalToggle()"> 仅最终形态 + 奇石优势</label>
     <label style="font-size:14.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:2px"><input type="checkbox" id="coreMega" checked onchange="coreMegaToggle()"> Mega 形态优先（过滤可 Mega 的非 Mega）</label>
+    </span>
   </div>
   <div class="chips" id="coreTypes"></div>
   <div class="grid" id="coreGrid"><div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div></div>
@@ -2316,6 +2338,7 @@ function switchTab(name){
   _currentTab=name;
   document.querySelectorAll('nav button').forEach(function(b){b.classList.toggle('active',b.dataset.tab===name);if(b.dataset.tab===name)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('active',x.id==='tab-'+name)});
+  var _rr=document.getElementById('navRefRow');if(_rr&&_rr.style.display==='inline-flex'){_rr.style.display='none';var _rb=document.getElementById('navRefBtn');if(_rb){_rb.textContent='图鉴资料 ▾';_rb.setAttribute('aria-expanded','false')}}
   try{var _m=document.querySelector('main');if(_m){var _rs=0;try{_rs=parseInt(localStorage.getItem('er_scroll_'+name))||0}catch(e){}_m.scrollTop=_rs;}else window.scrollTo(0,0);}catch(e){}
   /* v4.157 Q2：队伍分析页顶部流派摘要条 */
   try{if(name==='analyze'){var _as=document.getElementById('anPlanSummary');var _la=erLastPlanAxis();if(_as)_as.textContent=_la?('最近推荐流派：'+_la+'（刷新保留）'):'';erRenderCoreSummary();}}catch(e){}
@@ -2348,8 +2371,52 @@ document.addEventListener('er-ready',function(){
   setTimeout(function(){try{speedRender(true)}catch(e){};try{if(window._initCoreList)window._initCoreList()}catch(e){};try{if(typeof renderRecentChips==='function')renderRecentChips()}catch(e){};switchTab(_currentTab)},100);
 });
 document.querySelectorAll('nav button').forEach(function(b){
+  if(!b.dataset.tab)return;
   b.onclick=function(){switchTab(b.dataset.tab)};
 });
+function navRefToggle(){
+  var row=document.getElementById('navRefRow'),btn=document.getElementById('navRefBtn');
+  var open=row.style.display!=='none';
+  row.style.display=open?'none':'inline-flex';
+  btn.setAttribute('aria-expanded',open?'false':'true');
+  btn.textContent=open?'图鉴资料 ▾':'图鉴资料 ▴';
+}
+(function(){var b=document.getElementById('navRefBtn');if(b)b.onclick=navRefToggle})();
+function coreAdvToggle(){
+  var w=document.getElementById('coreAdvWrap'),b=document.getElementById('coreAdvBtn');
+  var open=w.style.display!=='none';
+  w.style.display=open?'none':'inline-flex';
+  b.textContent=open?'高级筛选 ▾':'高级筛选 ▴';
+}
+function _ls(k,v){
+  try{
+    if(v===null){localStorage.removeItem(k);return true}
+    if(typeof v==='undefined')return localStorage.getItem(k);
+    localStorage.setItem(k,v);return true;
+  }catch(e){return null}
+}
+function erLandingGo(mode){
+  _ls('er_landing_done','1');
+  var L=document.getElementById('erLanding');if(L)L.style.display='none';
+  var P=document.getElementById('corePickWrap');if(P)P.style.display='';
+  var G=document.getElementById('erGuideBar');if(G)G.style.display='';
+  if(mode==='core'){var q=document.getElementById('coreSearch');if(q)q.focus()}
+  else if(mode==='sav'){switchTab('team');var f=document.getElementById('savFile');if(f)f.click()}
+  else if(mode==='rand'){switchTab('team');if(typeof randomTeamGen==='function')randomTeamGen()}
+}
+function erLandingBack(){
+  _ls('er_landing_done',null);
+  var L=document.getElementById('erLanding');if(L)L.style.display='';
+  var P=document.getElementById('corePickWrap');if(P)P.style.display='none';
+  var G=document.getElementById('erGuideBar');if(G)G.style.display='none';
+}
+(function(){
+  if(_ls('er_landing_done')!=='1'){
+    var L=document.getElementById('erLanding');if(L)L.style.display='';
+    var P=document.getElementById('corePickWrap');if(P)P.style.display='none';
+    var G=document.getElementById('erGuideBar');if(G)G.style.display='none';
+  }
+})();
 
 /* ==================== v4.38 C 线：第八 tab「队伍分析」（自组队伍分析器）====================
    规格：ER配招助手_v4.38_自组队伍分析器设计书.md（六区块 §1.2 / 六维 §3 / EV 队伍级 §4.2 / NA-01~12 §5.2 / DIAG-01~10 §6.1）
@@ -18452,7 +18519,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.319';
+var ER_ENGINE_VER='v4.320';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -20022,7 +20089,7 @@ document.addEventListener('toggle',function(e){
 function _restoreFolds(){try{var m=JSON.parse(localStorage.getItem('er_planFold')||'{}');
   document.querySelectorAll('details').forEach(function(d){var k=(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40);if(k&&m[k]!==undefined)d.open=m[k]})}catch(eR){}}
 /* v4.158 ②：新玩家首次打开显示引导条 */
-try{if(!localStorage.getItem('er_guide_v2')){var _gb=document.getElementById('erGuideBar');if(_gb)_gb.style.display='block';var _gc=document.getElementById('erGuideClose');if(_gc)_gc.addEventListener('click',function(){if(_gb)_gb.style.display='none';try{localStorage.setItem('er_guide_v2','1')}catch(e){}});}}catch(eG){}
+try{if(!localStorage.getItem('er_guide_v2')){var _gb=document.getElementById('erGuideBar');var _gLd=document.getElementById('erLanding');var _landingOn=!!(_gLd&&_gLd.style.display!=='none');if(_gb&&!_landingOn)_gb.style.display='block';var _gc=document.getElementById('erGuideClose');if(_gc)_gc.addEventListener('click',function(){if(_gb)_gb.style.display='none';try{localStorage.setItem('er_guide_v2','1')}catch(e){}});}}catch(eG){}
 /* v4.156 Part B：二级页（poke/move/type/abi/tpl/speed）空白区点击返回 core */
 document.addEventListener('click',function(ev){
   if(ev.target!==ev.currentTarget)return;
