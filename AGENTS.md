@@ -2726,6 +2726,7 @@ GitHub 首页默认显示 master，所以看起来「停滞」。
 | v4.322 | 1,835,887 | 663E1D4BA44B0E4DB421DCE1BD97C52B85DECCED | 线上一致（gh-pages `7ad8095`，逐字节核验） |
 | v4.323 | 1,840,609 | D9BF1DE3CA003D0F7D9EFD646BD0355B641194B3 | 线上一致（gh-pages `942434c`，逐字节核验） |
 | v4.324 | 1,842,527 | 7CE4D65497CE3BE1B694ED8DEA07D4DF6342D075 | 线上一致（gh-pages `69cba82`，逐字节核验） |
+| v4.325 | __SIZE325__ | __HASH325__ | 待线上核验（gh-pages 部署后回填） |
 | v4.265 | 1,667,029 | E26FC629007C009ECA51ED3F10CC31DCACE2EC73 | 线上一致（gh-pages a7f67f2，逐字节核验） |
 | v4.264 | 1,664,224 | 77A945C686E24B2548792EDA7DBCC6646ABED7BE | 线上一致（gh-pages dd6fb6e，逐字节核验） |
 | v4.263 | 1,659,525 | 1E2AA5454F75BCFDB227BD1B35540FF920CFD929 | 线上一致（gh-pages ab2c072 / master fc089ba） |
@@ -4235,6 +4236,34 @@ if(!natOv && M===1 && role!=='space' && spdIsSingleAttacker(s)){
 - 「已经带」必须写命中的那一招：组级判断只说明「组里有一招在四槽」，直接拿组里第一项当文案会写出「已经带剑舞」而实际带的是龙之舞/诅咒。
 - 建议必须跟已有的 EV 对账：盔甲鸟速 EV 已经 252，还劝「补到 252」是假的；先算 needEV 和 curEV 再决定是「只改性格」还是「补 N 点」。
 - 够不到的分位要说上限：图图犬最快只到 P47，写「先手清钉」会让人以为能抢先手，必须补一句「比它快的撒钉手照样先出手」。
+
+## v4.325（2026-11-12）：分析页开页即出结论 + 体检卡从 4.6 秒降到 0.3 秒
+
+### A. 问题
+- 「点队伍分析」后页面几乎空白：`#anOut` 与 `#anSlots` 长度都是 0，只剩一句提示语和伤害判定区。根因是 `switchTab` 的 analyze 分支只调 `renderAnalyze()` + `dmgRender()`，**从来没有调 `renderAnTab()`**——真正渲染这两个区域的是 `renderAnTab`，而它只在切配置源、载入存档队、清快照、切视图、手动选人时才被调。功能写好了，但正常入口走不到。
+- 修好入口后立刻撞上真实性能瓶颈：体检卡（配队体检）单次 3519–3535ms，把「空白 25ms」变成「白屏 4.6 秒」，比原来更差。
+- 剖面（浏览器注入包装逐个全局函数）定位：`_tcFixHtml` 占 3535ms/6 次（每条结论为「照抄就能上场的配置」预先生成候选），内部 `deriveBuilds` 527 次、`pickAttacks` 5910 次、`fillMvSlots` 2500 次。其余所有函数（`_tcSlotCheck` 2ms、`_tcTtk` 1ms、`_tcTaken` 0ms、`_tcSim` 2ms、`_tcAgg` 3ms 等）加起来不到 20ms。
+
+### B. 实现
+1. `switchTab` 的 analyze 分支补 `renderAnTab()`（`typeof` 守卫 + catch 只记 name）。
+2. 新增全局 `anRuleTipSync()`（定义在 `renderAnTab` 前，由 `renderAnTab` 开头调用）：按 `team.length` 与 `anCfgSrc` 改写 `#anRuleTip`——空队引导去「队伍构建」或点「就用这套」、不足 6 只给口径、满队给看点顺序。
+3. `_teamCheckHtmlCore` 记忆化：wrapper `teamCheckHtml(_R)`，键由 `_tcKeyOf()` 生成（队伍 id + `teamInfo.pick` 签名 / `_ownCount()` / `SAV_ROWS.length`），命中直接返回上次字符串。
+4. `tcAsyncCard()`：`anRender` 两处 `teamCheckHtml(...)` 改为占位 `⚙️ 正在生成判定…` + `setTimeout 0` 补挂，主体先出。
+5. `er-ready` 回调里预热一次 `teamCheckHtml()`。
+6. **`pickAttacks` / `deriveBuilds` 记忆化**：改名 `_pickAttacksCore` / `_deriveBuildsCore`，新 wrapper 按 `s.id + 参数 + _tcKeyOf()` 缓存（上限 420 / 260 条，超限整体清空）。实测 5910→4057 次、527 次不复用（每个候选队伍不同，命中有限），仍从 3743 降到 2964ms。
+7. **「怎么修」按需生成（关键一步）**：`fixOnce(kind)` 不再立刻 `_tcFixHtml(kind,tm)`，改为输出按钮 `▸ 看怎么修` + 一个隐藏容器，把 `{kind, mem}` 存进 `window._TC_FIXQ`；点开时 `tcFixOpen(btn)` 才计算并填充（计算期按钮文案为「计算中…」，完成变「▾ 收起怎么修」，再点收起）。结论文字照旧直接可见，配置候选按需生成。
+
+### C. 验证
+- 门禁：6 块 `node --check`、smoke 33/33、probe ALL PASS。
+- 冷/热实测（注入脚本直接调 `_teamCheckHtmlCore` 绕缓存）：3743ms → **100ms**（冷）、4ms（热）；输出仍 9327 字符、6 个「看怎么修」按钮。
+- 端到端（reload 后立刻 `switchTab('analyze')`）：主体 **327ms** 出现，体检卡结论约 330ms 填充（817 字符）；点「看怎么修」→ **874ms** 生成 2230 字符配置候选，有「计算中…」反馈。
+- `switchTab('team')` 46ms（网格 60 项）；切回分析 400ms 内（含测量等待）。
+
+### D. 教训
+- **「功能写好了但入口不调」比性能问题更致命**：先确认正常路径能跑到渲染函数，再谈快慢。
+- 剖面要用「包装全局函数 + 写 DOM 读回」的方式逐个量化；一次性泛型包装会得到 `wrapped=0`（不可靠），逐个显式赋值才稳。`bu.js` 是隔离世界，读 `window.__x` 读不到，结果必须落到 DOM。
+- 优化分两层：能立刻减少**重复计算**的（记忆化）只省 20%；能减少**根本不需要的计算**的（按需生成）才把 3.7s 降到 0.1s。判断标准是「用户此刻是否真的要看」。给建议加一道「点开才生成」，比把它算快更有效。
+- 缓存键必须含队伍上下文（`_tcKeyOf()`），否则换队后给出上一队的配置。
 
 ## v4.324（2026-11-12）：体检结论按严重度分组 + 存档记住上次文件名
 
