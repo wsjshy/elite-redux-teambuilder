@@ -1114,6 +1114,12 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 .ansp{display:inline-block;background:#fff;border:1px solid #cfd9ea;border-radius:7px;padding:1px 9px;margin:2px 6px 2px 0}
 .ansp em{font-style:normal;color:#78849f;margin-left:5px;font-size:12.5px}
 .ansbtns{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:9px}
+/* v4.333 整队一句话结论 */
+.tmverdict{background:#fff7ed;border:1px solid #f0c9a0;border-radius:10px;padding:10px 12px;margin:0 0 10px;font-size:15px;line-height:1.6}
+.tmverdict.ok{background:#eef7ee;border-color:#a9d3a9}
+.tmverdict .btn-mini{margin-top:7px}
+.tmvlines{margin-top:5px}
+.tmvline{font-size:14.5px;line-height:1.7;margin:2px 0}
 </style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
@@ -4867,9 +4873,37 @@ function removeFromTeam(s){
   if(i>-1){team.splice(i,1);delete teamInfo[s.id]}
   renderTm(true);renderSlots();renderAnalyze();saveTeam();
 }
+/* v4.333：整队一句话结论——同源体检的 V（window._TC_V），只取最要紧的 1~2 条，
+   不用再切到分析页才知道这队行不行。首次未算完时给占位，异步补。 */
+function _tmVerdictInner(){
+  var V=window._TC_V||[];
+  var bad=V.filter(function(x){return (x.s||0)>=1});
+  if(!bad.length){
+    return '<div class="tmverdict ok"><b>体检全过</b>：这队没有硬伤和提示项，可以直接用。'+
+      '<button class="btn-mini" type="button" onclick="gotoAnalyzeNow()">看分析明细 →</button></div>';
+  }
+  var label=bad.some(function(x){return x.s===2})
+    ? '<b style="color:var(--warnred)">这队有硬伤</b>'
+    : '<b style="color:#b26a00">这队有要注意的点</b>';
+  return '<div class="tmverdict">'+label+'<div class="tmvlines">'+bad.slice(0,2).map(function(x){
+    return '<div class="tmvline">'+x.h+'</div>';
+  }).join('')+'</div>'+
+    '<button class="btn-mini" type="button" onclick="gotoAnalyzeNow()">看完整分析与怎么修 →</button></div>';
+}
+function tmVerdictBar(){
+  if(window._TC_V&&window._TC_V.length)return _tmVerdictInner();
+  if(!team||team.length<3)return '<div class="tmverdict"><span class="dim">队伍不足 3 只，先凑齐再做整队体检</span></div>';
+  setTimeout(function(){
+    try{teamCheckHtml()}catch(eV){eV.name}
+    var box=document.getElementById('tmVerdictBox');
+    if(box)box.outerHTML=_tmVerdictInner();
+  },0);
+  return '<div id="tmVerdictBox"><div class="tmverdict"><span class="dim">正在生成整队判定…（不影响你看下面每只的推荐）</span></div></div>';
+}
 function renderSlots(){
   var html='';
   html+=tmAnswerBar();
+  html+=tmVerdictBar();
   for(var i=0;i<6;i++){
     var s=team[i];
     if(s){
@@ -9185,6 +9219,7 @@ if(mem.length>=4){
     +'。防守分高于进攻分就是这块料适合扛，反之适合打；差值小时算两栖，按你给它排的招和 EV 定。');
 }
 V.sort(function(a,b){return (b.s||0)-(a.s||0)});
+    window._TC_V=V;
     var hardN=V.filter(function(x){return x.s===2}).length,tipN=V.filter(function(x){return x.s===1}).length;
     var sevTag=function(sv){
       if(sv===2)return "<b style='color:var(--warnred)'>硬伤</b>　";
@@ -19051,7 +19086,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.332';
+var ER_ENGINE_VER='v4.333';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
