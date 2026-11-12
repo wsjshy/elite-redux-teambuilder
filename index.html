@@ -19035,7 +19035,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.330';
+var ER_ENGINE_VER='v4.331';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -19708,7 +19708,10 @@ function renderCore(s){
   });
   html+='</div></div>';
 
-  /* ==================== L3 引擎细节层（默认折叠「引擎视角 ▸」，就地展开） ==================== */
+  /* ==================== L3 引擎细节层（v4.331：默认折叠 → 改为「展开时才计算」） ====================
+     这一层内部对每个流派又调一次 ftC（=扫全库一次）。它平时是收起的，算完没人看。
+     改成闭包存起来、用户展开「引擎视角 ▸」时再算，首屏方案少付这部分成本。 */
+  var _engFn=function(){
   var eng='';
   eng+='<div class="sec"><h3>定位判断</h3><div class="dim" style="font-size:14.5px"><b>'+esc(prof.role)+'</b> —— '+esc(prof.desc)+'；种族 物攻'+s.base[1]+'/特攻'+s.base[3]+'/速度'+s.base[5]+'</div></div>';
   eng+='<div class="sec"><h3>种族 / 强度概要</h3><div style="font-size:14.5px;line-height:1.9">种族 物攻'+s.base[1]+'/特攻'+s.base[3]+'/物防'+s.base[2]+'/特防'+s.base[4]+'/速度'+s.base[5]+'（总值 '+spBst(s)+'）<br>'+
@@ -19805,9 +19808,26 @@ function renderCore(s){
   }else eng+='<div class="tip">暂无高匹配队友（试试换核心）</div>';
   eng+='<div class="ruleline">队友口径（正向体系构建）：按流派侧向分流（物理侧→物防/威吓联防；特殊侧→特防联防；受队→剧毒/钉子/回复）+ 体系维度分（同一张维度权重表，逐维度列分可解释）+ 家族去重（同族只留最高形态，标注「+N形态」）+ 免疫/抵抗弱点 + 补盲。排序键：<b>体系契合优先</b>（同体系受益/设置手 → 中立/联防补盲 → 自带另一套天气者），对立天气体系只排序靠后、仍可见（候选池 '+((recs&&recs.pool)||'—')+' 只，全部参与打分）。</div>';
   eng+='</details>';
-  html+='<details class="acc eng" id="engView_'+SID+'"><summary>引擎视角 ▸（口径 / 依据 / 溯源；默认收起，点开就地查看，不遮挡上方内容）</summary><div class="engbd">'+eng+'</div></details>';
+  return eng;
+  };
+  window._ER_ENG_FN={};window._ER_ENG_FN[SID]=_engFn;
+  html+='<details class="acc eng" id="engView_'+SID+'" ontoggle="_erEngFill('+SID+')"><summary>引擎视角 ▸（口径 / 依据 / 溯源；默认收起，展开时才计算）</summary><div class="engbd" id="engBd_'+SID+'"><div class="dim" style="padding:8px">展开即计算（约 0.2 秒），算完就地显示，不遮挡上方内容</div></div></details>';
   /* 注：机制口径完整折叠块由独立容器 #ruleBoxCore 渲染 —— 不在此重复追加，避免出现两遍 */
   $('coreOut').innerHTML=html;
+}
+/* v4.331：引擎层展开时补算（默认收起，算完没人看 → 挪到用户真的要看的时刻） */
+function _erEngFill(sid){
+  var d=document.getElementById('engView_'+sid);if(!d||!d.open)return;
+  var b=document.getElementById('engBd_'+sid);if(!b)return;
+  if(b.getAttribute('data-f')==='1')return;
+  var f=(window._ER_ENG_FN||{})[sid];if(!f)return;
+  b.setAttribute('data-f','1');
+  setTimeout(function(){
+    var h='';
+    try{h=f()}catch(eE){eE.name}
+    var b2=document.getElementById('engBd_'+sid);if(b2)b2.innerHTML=h;
+    var nf=window._ER_ENG_FN;if(nf)delete nf[sid];
+  },0);
 }
 function coreFinalToggle(){optFinalOnly=$('coreFinal').checked;if(window.drawCoreList)window.drawCoreList();if(coreSel)renderCore(coreSel)}
 function coreMegaToggle(){optMegaOnly=$('coreMega').checked;if(window.drawCoreList)window.drawCoreList();if(coreSel)renderCore(coreSel)}
