@@ -1120,6 +1120,15 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 .tmverdict .btn-mini{margin-top:7px}
 .tmvlines{margin-top:5px}
 .tmvline{font-size:14.5px;line-height:1.7;margin:2px 0}
+/* v4.334 图鉴定位概要卡 */
+.spans{background:#eef3ff;border:1px solid #b9c8f0;border-radius:12px;padding:12px 14px;margin:6px 0}
+.spanshd{font-size:16.5px;font-weight:700;color:#16234f;line-height:1.5}
+.spansrow{font-size:15px;line-height:1.9;color:#1d2540;margin-top:2px}
+.spansrow b{color:#27448f}
+.spfamsum{cursor:pointer;font-size:16px;font-weight:700;padding:10px 4px;list-style:none}
+.spfamsum::-webkit-details-marker{display:none}
+.spdslfold{margin-top:6px}
+.spdslfold>summary{cursor:pointer;font-size:15.5px;font-weight:700;padding:8px 4px}
 </style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
@@ -2145,7 +2154,7 @@ function famChainHtml(s){
     html+='<div class="evoroute"><span class="famlab">'+esc(rg)+'形态</span>'+lineHtml+'</div>';
   });
   if(!html)return '';
-  return '<div class="sec"><h3>进化链 / 相关形态 <span style="font-weight:400;font-size:14.5px">（点击任意形态跳转 · 当前形态高亮）</span></h3>'+html+'</div>';
+  return '<details class="sec acc"><summary class="spfamsum">🧬 进化链 / 相关形态（点击任意形态跳转 · 当前形态高亮）</summary>'+html+'</details>';
 }
 /* 进攻视角面板：按实际承受倍率分组（×1 默认折叠） */
 function mxPanelAtk(at,showNeutral,all){
@@ -3970,8 +3979,31 @@ function openSp(s){
   var base=s.base,names=['HP','攻击','防御','特攻','特防','速度'];
   var html='<h2>'+sprImg(s.id,'spinl')+esc(s.zh)+' <span class="mute15">'+esc(s.en)+' #'+s.id+'</span></h2>';
   html+='<div style="margin:6px 0">'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+'</div>';
-  /* v4.84 P1-1：组队建议 CTA 从 h2 标题行移出 → 独立醒目块（核心动作前置，非滚动优先；主 CTA 用 --accent 蓝） */
-  html+='<div class="sec" style="margin:6px 0"><button class="btn" style="background:var(--accent);color:#fff;width:100%" onclick="gotoCoreFromSp(\''+s.id+'\')" title="进入核心配队 Tab，自动带出完整配队方案（队友/配招/性格）">🤖 以它为核心生成组队建议</button></div>';
+  /* v4.334 减负：顶部「定位概要卡」——结论先行，复用引擎 deriveBuilds[0]（与核心配队同源），
+     把原 CTA 并入，不重复。 */
+  (function(){
+    var bd0=null;try{bd0=deriveBuilds(s)[0]||null}catch(eBd){bd0=null}
+    var abi0='—',it0='—',nat0='—';
+    if(bd0){
+      try{
+        var _a0=(bd0.abi&&bd0.abi[0])?bd0.abi[0]:null;
+        if(_a0){
+          if(_a0.id!=null&&_a0.id!==''&&ABI[_a0.id]){var _ar=ABI[_a0.id];abi0=_ar[2]||_ar[1]||('#'+_a0.id)}
+          else{abi0=abiChipName(_a0.n)}
+        }
+      }catch(eA){abi0='—'}
+      try{it0=(bd0.it&&bd0.it[0])?bd0.it[0][0]:'—'}catch(eI){it0='—'}
+      try{nat0=(bd0.nat&&bd0.nat[0])?bd0.nat[0][0]:'—'}catch(eN){nat0='—'}
+    }
+    var spd0=0;try{spd0=spdViewValOf(s)}catch(eS){spd0=0}
+    html+='<div class="spans">'+
+      '<div class="spanshd">这只主打：'+(bd0?esc(bd0.side+'向 · '+bd0.name):'—')+'</div>'+
+      '<div class="spansrow">推荐 <b>'+esc(abi0)+'</b> · 道具 <b>'+esc(it0)+'</b> · 性格 <b>'+esc(nat0)+'</b></div>'+
+      '<div class="spansrow">实速 <b>'+(spd0||'—')+'</b>（速度档满投；下面可拖滑块自定义）</div>'+
+      '<button class="btn" style="background:var(--accent);color:#fff;width:100%;margin-top:7px" onclick="gotoCoreFromSp(\''+s.id+'\')" title="进入核心配队，自动带出队友和四招">🤖 以它为核心生成组队建议（含队友和四招）</button>'+
+      '<div class="dim" style="margin-top:6px">下面是完整资料（种族 / 特性 / 弱点 / 招式），按需再看 · <a href="javascript:void(0)" onclick="var e=document.getElementById(\'spMvAnchor\');if(e)e.scrollIntoView()">跳到可学招式表 ↓</a></div>'+
+    '</div>';
+  })();
   html+='<div class="sec"><h3>种族值（总值 '+spBst(s)+'）</h3>';
   var maxv=Math.max.apply(null,base.concat([1]));
   names.forEach(function(n,i){
@@ -3981,7 +4013,8 @@ function openSp(s){
   html+='</div>';
   html+=spdDetailSpeedHtml(s); /* v4.268：基础种族值之后立刻给「现在实际跑多少」，避免把 120 看成实速 */
   try{html+='<details class="spdadv" style="margin:4px 0"><summary>配速口径速览（极速/分位/卡线，滑块已含可略过）</summary>'+speedHintHtmlCached(s)+'</details>'}catch(eSp){}  /* v4.68 批4：配招卡一行配速提示（当前速度 vs 目标分位 ✅/⚠️ + 卡线省EV）；黑盒P1-2按id缓存 */
-  try{html+=speedSliderHtml(s)}catch(eSl){}   /* v4.88：超速滑块（配速参考区叠加，原 ruleline 零改动） */
+  /* v4.334：速度滑块是高级自定义工具，默认折叠 */
+  try{html+='<details class="spdslfold"><summary>🎚 自定义配速（拖滑块选目标速度，默认不用动）</summary>'+speedSliderHtml(s)+'</details>'}catch(eSl){eSl.name}
   html+=famChainHtml(s); /* v4.13：进化链 / 相关形态（退化/进化/Mega/原始回归/招式形态/地区型） */
   /* v4.186 UI：同名特性去重 —— 数据真值(s.abis)一个字不动，只在显示层出唯一徽标；
      去重后只剩 1 个时不再写「N 选 1」（此前三项同名会渲染成三个一模一样的按钮） */
@@ -4029,7 +4062,7 @@ function openSp(s){
       }
     }
   }catch(eE){}
-  html+='<div class="sec"><h3>可学招式 <span style="font-weight:400">'+s.lv.length+' 升级 + '+s.tut.length+' 教学</span></h3>';
+  html+='<div class="sec" id="spMvAnchor"><h3>可学招式 <span style="font-weight:400">'+s.lv.length+' 升级 + '+s.tut.length+' 教学</span></h3>';
   html+='<div class="bar"><input type="text" id="mvInSp" placeholder="筛招式名">'+
     '<select id="mvTypeSp"><option value="">全部属性</option></select>'+
     '<select id="mvSplitSp"><option value="">全部分类</option><option value="物理">物理</option><option value="特殊">特殊</option><option value="变化">变化</option></select></div>';
@@ -19086,7 +19119,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.333';
+var ER_ENGINE_VER='v4.334';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
