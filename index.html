@@ -1129,6 +1129,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <label style="font-size:14.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:2px"><input type="checkbox" id="coreMega" checked onchange="coreMegaToggle()"> Mega 形态优先（过滤可 Mega 的非 Mega）</label>
     </span>
   </div>
+  <div id="coreEmpty"></div>
   <div class="chips" id="coreTypes"></div>
   <div class="grid" id="coreGrid"><div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div></div>
   <div id="coreMore" style="text-align:center;color:var(--sub);padding:10px"></div>
@@ -4968,6 +4969,10 @@ function tmRecoLine(s){
                                 :'<button class="btn-mini" type="button" onclick="tmRecoApply('+s.id+')">✓ 用这套</button>'))+
     '</div></div>';
   return h;
+}
+function gotoAnalyzeNow(){
+  try{switchTab('analyze')}catch(e1){e1.name}
+  try{renderAnTab()}catch(e2){e2.name}
 }
 function tmAnswerBar(){
   if(!team||!team.length)return '';
@@ -19007,7 +19012,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.328';
+var ER_ENGINE_VER='v4.329';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -19406,9 +19411,30 @@ function coreApplyAll(){
   toast('已配齐 '+ok+' 只（核心 + 队友），切到「队伍构建」可直接看体检');
 }
 function renderCore(s){
+  var _ce0=document.getElementById('coreEmpty');if(_ce0)_ce0.innerHTML='';
   if(!window.__erReady){var _co=document.getElementById('coreOut');if(_co)_co.innerHTML='<div class="tip">数据加载中…</div>';return}
   if(window.__ER_PARTIAL){var _co2=document.getElementById('coreOut');if(_co2)_co2.innerHTML='<div class="tip">部分数据缺失（'+(Object.keys(window.__ER_SHARDS.fail||{}).join('/')||'未知')+'），请点右下角「重试」</div>';return}
-  if(!s){$('coreOut').innerHTML='<div class="tip">先在上方搜索并选定一只核心宝可梦</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
+  if(!s){
+    /* v4.329：空态直接给下一步动作——已有队伍就别再让用户「先选一只核心」 */
+    var _emp='';
+    try{
+      if(team&&team.length){
+        _emp='<div class="tmans" style="margin:8px 0"><b>你这 '+team.length+' 只已经在队伍里，不用再选核心</b>：'+
+          '<div style="margin-top:7px;display:flex;gap:8px;flex-wrap:wrap">'+
+          '<button class="btn-mini" type="button" onclick="gotoAnalyzeNow()">看这队有什么问题 →</button>'+
+          '<button class="btn-mini" type="button" onclick="switchTab(\'team\')">让引擎直接把这 6 只配好 →</button>'+
+          '</div><div style="margin-top:6px;color:var(--sub);font-size:13.5px">只有想重新组队时，才需要在上面搜索一只核心。</div></div>';
+      }else{
+        _emp='<div class="tmans" style="margin:8px 0"><b>先弄一支队伍，再谈配法</b>：'+
+          '<div style="margin-top:7px;display:flex;gap:8px;flex-wrap:wrap">'+
+          '<button class="btn-mini" type="button" onclick="erLandingGo(\'sav\')">载入存档（最快）</button>'+
+          '<button class="btn-mini" type="button" onclick="erLandingGo(\'rand\')">随便先来一队看看</button>'+
+          '</div></div>';
+      }
+    }catch(eE){eE.name}
+    if(!_emp)_emp='<div class="tip">先在上方搜索并选定一只核心宝可梦</div>';
+    $('coreEmpty').innerHTML=_emp;$('ruleBoxCore').innerHTML=wxRuleHtml();return;
+  }
   if(!isValidSp(s)){$('coreOut').innerHTML='<div class="tip">该编号为占位/无效物种（种族值六项为 0），已过滤、不参与配队推荐。</div>';$('ruleBoxCore').innerHTML=wxRuleHtml();return}
   var _ftC={};
   function ftC(s,side,rt){var k=side+'|'+rt;return _ftC[k]||(_ftC[k]=findTeammates(s,side,rt))}
