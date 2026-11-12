@@ -15193,6 +15193,14 @@ function buildItem(s,side,roleTag,ctx){
   }catch(eLoOrb){}
   return list
 }
+function isHighCritMove(mvId){
+  var o=MV[mvId];
+  if(!o)return false;
+  if(o[4]!=='物理'&&o[4]!=='特殊')return false;
+  var d=String(o[9]||'')+' '+String(o[10]||'');
+  if(/HP is low/i.test(d))return false;
+  return /critical/i.test(d);
+}
 function pickAbiFor(s,side,roleTag,ctx){
   var names=s.abis,out=[];
   /* v4.35 P0-2：可选 ctx={allowSys,own} —— 队伍层复用时传入「队伍实际可开体系」，
@@ -15231,7 +15239,7 @@ function pickAbiFor(s,side,roleTag,ctx){
       if(tag.nt){sc+=1;why.push('关键耐性')}
     }
     /* v4.68 P1-1：会心流特性语境判定——无会心来源（高会心招）则降权，不主推 */
-    try{var _CRIT_ABI=['狙击手','超幸运','锋锐','怒气冲天','连胜'];if(_CRIT_ABI.indexOf(n)>-1){var _tl=learnOf(s);var _hasCrit=_tl.some(function(m){var o=MV[m];var z=o?(o[2]||o[1]||''):'';return /叶刃|石刃|暗袭要害|十字剪|连环巴掌|劈瓦|百万吨重拳/.test(z)});if(!_hasCrit){sc-=4;why.push('会心流特性但无高会心招/焦点镜支撑 → 降权，主推换稳定输出特性')}}else{}}catch(eCri){}
+    try{var _CRIT_ABI=['狙击手','超幸运','锋锐','怒气冲天','连胜'];if(_CRIT_ABI.indexOf(n)>-1){var _tl=learnOf(s);var _hasCrit=_tl.some(function(m){var o=MV[m];return isHighCritMove(m)});if(!_hasCrit){sc-=4;why.push('会心流特性但无高会心招/焦点镜支撑 → 降权，主推换稳定输出特性')}}else{}}catch(eCri){}
     if(sc===0&&names.length===1){sc=0;why.push('唯一可选')}
     /* v4.54 项6 三维覆盖第二批（gameData 原文溯源，中文以 data.js ABI 实读为准）：
        · 压迫感(Pressure,id46)：未在 abiTags 标签体系 → 补识别：被对方击中时对方该招多耗 1 PP → 长站场消耗锚点；
@@ -15251,11 +15259,15 @@ function pickAbiFor(s,side,roleTag,ctx){
     else if(n==='狙击手'){sc+=1;
       var _bn=(ctx&&ctx.buildName)||'';
       var _isTank=(roleTag==='肉盾'||roleTag==='受队');
-      if(_bn.indexOf('硬撑')>-1)why.push('狙击手：会心伤害 ×1.5——硬撑异常增幅下，会心一击收尾兑现满威')
-      else if(_bn.indexOf('杂技')>-1)why.push('狙击手：会心伤害 ×1.5——杂技道具保血/回血后打出会心爆发')
-      else if(_isTank)why.push('狙击手：会心伤害 ×1.5——受站场：站场叠防后会心补刀/残血收割')
-      else if(_bn.indexOf('顺风')>-1)why.push('狙击手：会心伤害 ×1.5——顺风先制抢到速度权后会心收割爆发')
-      else why.push('狙击手：会心伤害 ×1.5——高威力招会心收割/爆发收尾的会心锚点')}
+      var _critMvs=learnOf(s).filter(function(m){return isHighCritMove(m)}).map(function(m){return MV[m][1]});
+      var _critStr=_critMvs.slice(0,3).join('、');
+      if(_bn.indexOf('硬撑')>-1)why.push('狙击手：暴击伤害 2.25 倍——异常增幅下，'+(_critStr||'高威力招')+'暴击收尾兑现满威')
+      else if(_critMvs.length)why.push('狙击手：暴击伤害 2.25 倍——自带高暴击招「'+_critStr+'」，叠加暴击率加成后，暴击打出 2.25 倍爆发')
+      else if(_isTank)why.push('狙击手：暴击伤害 2.25 倍——站场叠防后高威力招暴击补刀/残血收割')
+      else if(_bn.indexOf('顺风')>-1)why.push('狙击手：暴击伤害 2.25 倍——顺风抢到速度权后高威力招暴击收割')
+      else why.push('狙击手：暴击伤害 2.25 倍——高威力招暴击收割/爆发收尾的会心锚点')}
+    else if(n==='蜕皮'){why.push('蜕皮：每回合 30% 概率自愈异常——纯容错特性，不提升输出；携带替身时异常多由替身挡下，收益有限')}
+    else if(n==='授粉'){why.push('授粉：一般系招变为虫系并 ×1.1——仅在携带一般系攻击招时增伤，否则不生效')}
     out.push({n:n,id:id,sc:sc,why:why});
   });
   out.sort(function(a,b){return b.sc-a.sc});
@@ -19142,7 +19154,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.336';
+var ER_ENGINE_VER='v4.337';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
