@@ -1098,6 +1098,22 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 .tmmore{margin:0 10px 6px}
 .tmmore>summary{cursor:pointer;font-size:13.5px;color:var(--sub);padding:3px 0}
 .tmmore>summary:hover{color:var(--accent)}
+/* v4.332 一眼答案卡 */
+.anscard{background:#eef3ff;border:1px solid #b9c8f0;border-radius:12px;padding:12px 14px 10px;margin:0 0 10px}
+.anshd{font-size:17.5px;font-weight:700;color:#16234f;line-height:1.5}
+.anssub{font-size:13.5px;font-weight:400;color:#54648f;margin-left:8px}
+.ansrow{font-size:15.5px;line-height:2;margin-top:3px;color:#1d2540}
+.ansrow b{color:#27448f;margin-right:5px}
+.ansrow b+b{margin-left:16px}
+.ansmv{margin-top:5px;font-size:15.5px;color:#1d2540}
+.ansmv b{color:#27448f;margin-right:6px}
+.ansm{display:inline-block;background:#fff;border:1px solid #c7d3ee;border-radius:7px;padding:1px 9px;margin:2px 6px 2px 0;font-size:15.5px}
+.ansm i{font-style:normal;color:#8a97b8;margin-right:5px;font-size:13px}
+.ansmate{margin-top:6px;font-size:15.5px;color:#1d2540}
+.ansmate b{color:#27448f;margin-right:6px}
+.ansp{display:inline-block;background:#fff;border:1px solid #cfd9ea;border-radius:7px;padding:1px 9px;margin:2px 6px 2px 0}
+.ansp em{font-style:normal;color:#78849f;margin-left:5px;font-size:12.5px}
+.ansbtns{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:9px}
 </style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
@@ -19035,7 +19051,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.331';
+var ER_ENGINE_VER='v4.332';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -19478,6 +19494,33 @@ function renderCore(s){
   var wId='bkw'+SID;
   var html='';
 
+  /* v4.332 减负：一屏答案卡 —— 点进来第一眼就能拿到「这只怎么配、和谁一起上」，
+     细节与「为什么」留在下面的流派卡里，按需再看。 */
+  (function(){
+    try{
+      var bd0=builds[0];if(!bd0)return;
+      var tms0=ftC(s,bd0.side,bd0.roleTag);
+      var mm0=tms0?((tms0.main&&tms0.main.length)?tms0.main.slice(0,5):tms0.slice(0,5)):[];
+      var abi0=(bd0.abi&&bd0.abi[0])?((bd0.abi[0].id!=null&&bd0.abi[0].id!==''&&ABI[bd0.abi[0].id])?(ABI[bd0.abi[0].id][2]||ABI[bd0.abi[0].id][1]||('#'+bd0.abi[0].id)):abiChipName(bd0.abi[0].n)):'—';
+      var it0=(bd0.it&&bd0.it[0])?bd0.it[0][0]:'—';
+      var nat0=(bd0.nat&&bd0.nat[0])?bd0.nat[0][0]:'—';
+      var ev0=(bd0.ev&&bd0.ev.summary)?bd0.ev.summary:(function(){
+        var a=(bd0.ev&&bd0.ev.alloc)||[],nm=['HP','攻','防','速','特攻','特防'],r=[],i;
+        for(i=0;i<6;i++){if(a[i])r.push(nm[i]+' '+a[i])}
+        return r.length?r.join(' / '):'—';
+      })();
+      var mv0=(bd0.mv&&bd0.mv.main)?bd0.mv.main.map(function(x){return MV[x.id]?MV[x.id][1]:''}).filter(Boolean):[];
+      html+='<div class="anscard">'+
+        '<div class="anshd">这只就这么配<span class="anssub">另 5 只围绕它来配 · '+esc(bd0.side)+'向 · '+esc(bd0.name||'')+'</span></div>'+
+        '<div class="ansrow"><b>特性</b>'+esc(abi0)+'<b>道具</b>'+esc(it0)+'<b>性格</b>'+esc(nat0)+'</div>'+
+        '<div class="ansrow"><b>努力值</b>'+esc(ev0)+'</div>'+
+        '<div class="ansmv"><b>四招</b>'+(mv0.length?mv0.map(function(x,i){return '<span class="ansm"><i>'+(i+1)+'</i>'+esc(x)+'</span>'}).join(''):'—')+'</div>'+
+        (mm0.length?('<div class="ansmate"><b>带这 5 只</b>'+mm0.map(function(r){return '<span class="ansp">'+esc((r&&r.s&&r.s.zh)||'')+'<em>'+esc((r&&r.priRole)||'')+'</em></span>'}).join('')+'</div>'):'')+
+        '<div class="ansbtns"><button class="btn-mini" type="button" onclick="coreApplyAll()">🧩 就用这套（6 只一键配齐）</button><span class="dim">细节和「为什么」在下面的流派卡里，按需再看</span></div>'+
+      '</div>';
+    }catch(eAns){eAns.name}
+  })();
+
   /* ==================== L1 基础信息层（默认展开） ==================== */
   html+='<div class="sec l1card"><h2 class="l1hd">'+sprImg(SID,'spinl')+esc(s.zh)+' <span class="l1sub">'+esc(s.en)+' #'+s.id+'</span>'+(_mpB?(' '+_mpB):'')+
     ' <button class="btn-mini tap44" onclick="addToTeam(coreSel,null);renderCore(coreSel)" title="加入队伍构建">➕ 入队</button></h2>';
@@ -19524,10 +19567,13 @@ function renderCore(s){
     var i,nm,id,t='';
     if(abiN&&s.abis){for(i=0;i<s.abis.length;i++){nm=s.abis[i];id=(s.abiIds&&s.abiIds[i])||abiIdC(nm);t+=one(nm,id,speciesAbiZh(s,'abis',i),abiKind);}}
     if(innN&&s.inns){for(i=0;i<s.inns.length;i++){nm=s.inns[i];id=(s.innIds&&s.innIds[i])||abiIdC(nm);t+=one(nm,id,speciesAbiZh(s,'inns',i),innKind);}}
-    if(t)_brBox='<div class="tip" style="margin:6px 0;background:#fffdf0;border-color:#e6d9a8"><b style="font-size:14.5px">⚔ 伤害倍率（工具真正计入伤害的部分）</b>'+t
-      +'<span class="dim" style="display:block;margin-top:3px">只列真正乘进伤害计算的；回合 / 命中 / 换场 / 状态类特性不产生倍率，故不出现。天性固定全部拥有，命中即叠加</span></div>';
+    if(t)_brBox='<details class="acc"><summary>⚔ 伤害倍率（工具真正计入伤害的部分）</summary><div class="accbd" style="background:#fffdf0;border-radius:8px;padding:8px 10px">'+t
+      +'<span class="dim" style="display:block;margin-top:3px">只列真正乘进伤害计算的；回合 / 命中 / 换场 / 状态类特性不产生倍率，故不出现。天性固定全部拥有，命中即叠加</span></div></details>';
   })();
   html+=_brBox;
+  html+='<div class="hlbox"><b>'+esc(prof.role)+'</b> —— '+esc(prof.desc)+'</div>';
+  /* v4.332 减负：种族值 / 弱点 / 细分定位收进折叠——首屏只留一句结论 */
+  html+='<details class="acc l1more"><summary>📊 种族值 / 弱点 / 细分定位（想深挖时展开）</summary><div class="accbd">';
   /* 种族值六维条形图（含总值） */
   var stNames=['HP','攻击','防御','特攻','特防','速度'];
   html+='<div class="statbars">';
@@ -19535,11 +19581,10 @@ function renderCore(s){
     html+='<div class="barstat"><span class="lb">'+stNames[si]+'</span><div class="tr"><div class="fl" style="width:'+Math.round(s.base[si]/255*100)+'%;background:hsl('+(210-si*20)+',70%,55%)"></div></div><span class="tk">'+s.base[si]+'</span></div>';
   }
   html+='<div class="stattot">种族值（总值 <b>'+spBst(s)+'</b>）（条形图按单项上限 255 归一）</div></div>';
-  /* 概要：定位 / 弱点（天性口径）/ 细分定位 */
-  html+='<div class="hlbox"><b>'+esc(prof.role)+'</b> —— '+esc(prof.desc)+'</div>';
   html+='<div style="margin:4px 0"><b style="font-size:15px">弱点（天性口径，含倍率）</b>：'+(weak.length?weak.map(function(t){var m=defCellTrio(s,t).inn;return tlabel(t)+(m>1?'×'+m:'')}).join(' '):'<span style="color:var(--ok)">无弱点</span>')+
     ' <span class="dim">找队友时优先补这些</span></div>';
   if(tags.length)html+='<div class="chiprow"><span class="dim">细分定位：</span>'+tags.map(function(t){return '<span class="abi">'+esc(t)+'</span>'}).join(' ')+'</div>';
+  html+='</div></details>';
   /* 人工分析（用户 分类.xlsx 命中）—— 原样保留，折叠入内 */
   if(note){
     html+='<details class="acc"><summary>📌 你的人工分析（分类.xlsx）</summary><div class="accbd">';
@@ -19657,7 +19702,7 @@ function renderCore(s){
       '<div class="dim">核心（'+esc(bd.side)+'向 / '+esc(bd.roleTag||'')+'）＋5 名队友；每名队友标<u>定位</u>，定位下方给出同定位候选，可混搭替换；全部按综合分+体系+联防动态权衡</div>';
     /* v4.33 N1：6 人队=核心+5 名队友——主推最多 5 只（原 tms.main 可 6 只→正文"核心以外 6 只"=7 人超限矛盾） */
     var mainMates=(tms.main&&tms.main.length)?tms.main.slice(0,5):tms.slice(0,5),seenId={},altMates=[];
-    try{window._CORE_PLAN={cid:s.id,mates:mainMates.map(function(r){return {id:(r&&r.s)?r.s.id:null,pri:(r&&r.priRole)||''}}).filter(function(m){return m.id!=null})}}catch(ePlan){ePlan.name}
+    if(i===0)try{window._CORE_PLAN={cid:s.id,mates:mainMates.map(function(r){return {id:(r&&r.s)?r.s.id:null,pri:(r&&r.priRole)||''}}).filter(function(m){return m.id!=null})}}catch(ePlan){ePlan.name}
     mainMates.forEach(function(r){if(r&&r.s)seenId[String(r.s.id)]=1});
     tms.slice(5).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     recs.forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
