@@ -857,6 +857,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 <!-- ===== 队伍分析（v4.39 UI 增强 · 第八 tab：六槽位 + 图鉴级选择器 + 带图结果 + 详情） ===== -->
 <section id="tab-analyze" class="tab">
   <div class="tip" id="anRuleTip">💡 队伍分析：点下方槽位从图鉴级选择器挑 6 只（与「队伍构建」共享同一队伍）；结果只展示引擎推荐，点任意精灵看推荐详情</div>
+
   <div id="anPlanSummary" style="font-size:13.5px;color:var(--sub);margin:4px 0"></div>
   <div id="anCoreSummary" style="font-size:14.5px;color:var(--accent);margin:2px 0;font-weight:600"></div>
   <div class="anslots" id="anSlots"></div>
@@ -2362,7 +2363,13 @@ function switchTab(name){
       if(_g)_g.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div>';
       setTimeout(function(){try{drawCoreList()}catch(e){console.warn('core render fail',e)}},200);
     }
-    else if(name==='analyze'){renderAnalyze();if(typeof dmgRender==='function'){try{dmgRender()}catch(e){}}}
+    else if(name==='analyze'){
+      /* v4.325：此前只跑 renderAnalyze/dmgRender，#anOut 与 #anSlots 从来没人填充——
+         用户点「队伍分析」看到的是一句提示 + 伤害计算器，结论区永久空白（联动断点）。
+         现在切页即出结论；重活已在 setTimeout 里，不挡点击。 */
+      renderAnalyze();if(typeof dmgRender==='function'){try{dmgRender()}catch(e){}};
+      if(typeof renderAnTab==='function'){try{renderAnTab()}catch(eA){eA.name}}
+    }
     else if(name==='dex'&&typeof renderSp==='function'){renderSp(true)}
     else if(name==='team'&&typeof renderTm==='function'){renderTm(true)}   /* v4.124 修复：队伍构建 Tab 切来时未调 renderTm → 选择池空白 */
   }catch(e){console.warn('tab render fail',name,e)}
@@ -2372,6 +2379,8 @@ function switchTab(name){
 }
 document.addEventListener('er-ready',function(){
   window._speedTableBuilt=false;
+  /* v4.325：体检卡首算 3~4 秒，首屏稳定后空闲预热一次，用户点「队伍分析」时直接命中缓存 */
+  setTimeout(function(){try{var _w=teamCheckHtml();if(_w&&_w.length)void 0}catch(eW){eW.name}},3400);
   /* v4.134 S1：首屏默认渲染路径同样先 paint loading（仅写 grid 容器——作用域收敛硬规则） */
   /* v4.134 S1 hotfix：coreGrid 单独写 loading（黑盒实测首屏 core 路径未生效——_currentTab='build' 时 _gMap 命中不到 core） */
   var _cg=document.getElementById('coreGrid');if(_cg)_cg.innerHTML='<div style="padding:40px 10px;text-align:center;color:var(--sub)">⚙️ 引擎计算中…</div>';
@@ -2798,7 +2807,7 @@ function anRender(R){
   /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
   try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
   try{var _tlk=teamSpdLinkHtml();if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
-  try{var _tck=teamCheckHtml();if(_tck)h+=anCard(_tck)}catch(eTck){eTck.name}
+  try{h+=anCard(tcAsyncCard())}catch(eTck){eTck.name}
   try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
   try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
@@ -3185,7 +3194,7 @@ function anSnapBlockHtml(R,title,badge){
   try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
   try{var _tsc=teamSpeedCardHtml(R);if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
   try{var _tlk=teamSpdLinkHtml(R);if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
-  try{var _tck=teamCheckHtml(R);if(_tck)h+=anCard(_tck)}catch(eTck){eTck.name}
+  try{h+=anCard(tcAsyncCard())}catch(eTck){eTck.name}
   try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* 打击面覆盖（同源 anRender ③ 区块口径） */
   try{
@@ -3197,8 +3206,20 @@ function anSnapBlockHtml(R,title,badge){
   h+='</div>';
   return h;
 }
+function anRuleTipSync(){
+  /* v4.325：分析页顶部提示按状态说人话（空队给入口、不足 6 只给口径、满队给看点顺序） */
+  var t=document.getElementById('anRuleTip');if(!t)return;
+  var n=((typeof team!=='undefined')&&team)?team.length:0;
+  var src=(typeof anCfgSrc!=='undefined')?anCfgSrc:'team';
+  if(src==='sav'){t.innerHTML='💡 队伍分析（存档实配）：下面直接用你存档里的 6 只真实配置做判定'}
+  else if(src==='manual'){t.innerHTML='💡 队伍分析（手动挑选）：下面用临时挑的 6 只，不动你的正式队伍'}
+  else if(!n){t.innerHTML='💡 队伍分析：队伍还是空的。先回「队伍构建」加人，或去「核心配队」点「就用这套」一键配齐'}
+  else if(n<6){t.innerHTML='💡 队伍分析：当前队伍 '+n+'/6 只，结论按现有成员算；补齐 6 只再看会更准'}
+  else{t.innerHTML='💡 队伍分析：下面是这 6 只的完整判定——先看硬伤，再看提示；点任意精灵看推荐详情'}
+}
 function renderAnTab(){
   var box=$('anOut');if(!box)return;
+  try{if(typeof anRuleTipSync==='function')anRuleTipSync()}catch(eT){eT.name}
   var _bar=$('anCfgBar');if(_bar)_bar.innerHTML=anCfgBarHtml();   /* v4.87: 配置来源 chip 栏（三路互斥） */
   /* v4.39 R-6：输入统一 —— 槽位（= 全局 team[]）为唯一输入路径（原 #anSearch 文本框 / #anRun 按钮已移除） */
   var ids=(typeof team!=='undefined'&&team?team.map(function(s){return s.id}):[]);
@@ -8445,7 +8466,7 @@ function tcToggleMore(btn){
   var n=box.getAttribute('data-n');
   btn.textContent=open?(lb?('展开其余 '+n+' 条 '+lb):('展开 '+n+' 条')):'收起';
 }
-function teamCheckHtml(_R){
+function _teamCheckHtmlCore(_R){
   try{
     var tm=(_R&&_R.members)?_R.members:((typeof team!=="undefined"&&team)?team:[]);
     if(!tm||tm.length<3)return "";
@@ -8482,7 +8503,18 @@ function teamCheckHtml(_R){
         +_ownMiss.map(function(x){return x.zh}).join("/")
         +"——可能已经换掉、或还没存进这一档；它们仍按推荐配置参与判定，「怎么修」也不会把它们算进候选。");
     }
-    var _fixSeen={},fixOnce=function(kind){if(kind&&_fixSeen[kind])return "";if(kind)_fixSeen[kind]=1;return _tcFixHtml(kind,tm)};
+    /* v4.325：结论先出，「怎么修」的候选配置改为点开才生成。
+       原先 6 条结论各预先算一整套候选（每次约 590ms，合计 3.5 秒），是体检卡卡顿的唯一来源。 */
+    var _fixSeen={},fixOnce=function(kind){
+      if(kind&&_fixSeen[kind])return "";
+      if(kind)_fixSeen[kind]=1;
+      var fid="fx"+(_tcFixSeq++);
+      if(!window._TC_FIXQ)window._TC_FIXQ={};
+      if(_tcFixSeq>500){window._TC_FIXQ={};_tcFixSeq=0;fid="fx"+(_tcFixSeq++)}
+      window._TC_FIXQ[fid]={k:kind,t:tm};
+      return " <button class='btn-mini' type='button' data-fx='"+fid+"' onclick='tcFixOpen(this)'>▸ 看怎么修</button>"
+        +"<div id='"+fid+"' style='display:none;margin:4px 0 2px 10px'></div>";
+    };
     var T=_tcTypes();
     /* ① Rule of Two */
     var over=[];
@@ -8974,6 +9006,58 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       +_tcVList(V,sevTag,fixOnce)
       +"</div>";
   }catch(eTC){return ""}
+}
+var _TCHC=null;
+function _tcKeyOf(){
+  /* 缓存键：队伍 id+勾选特性序列 / 已读存档种数 / 存档行数——任一变化就重算 */
+  var o='0',n=0;
+  try{o=String(_ownCount())}catch(eK1){o='0'}
+  try{n=(typeof SAV_ROWS!=='undefined'&&SAV_ROWS)?SAV_ROWS.length:0}catch(eK2){n=0}
+  var tm=((typeof team!=='undefined')&&team)?team:[];
+  var sig=tm.map(function(sp){
+    var pk='';try{pk=(teamInfo&&teamInfo[sp.id]&&teamInfo[sp.id].pick)||''}catch(eK3){pk=''}
+    return sp.id+'|'+pk;
+  }).join(',');
+  return sig+'#'+o+'#'+n;
+}
+function teamCheckHtml(_R){
+  var k=_tcKeyOf();
+  if(_TCHC&&_TCHC.k===k)return _TCHC.v;
+  var t0=performance.now();
+  var v=_teamCheckHtmlCore(_R);
+  _TCHC={k:k,v:v,ms:Math.round(performance.now()-t0)};
+  return v;
+}
+var _tcSlotSeq=0;
+function tcAsyncCard(){
+  /* v4.325：体检卡单次 3~4 秒（引擎全量重算，同队第二次命中缓存）。先给占位再补挂，别让整页等它 */
+  var id='tcAS'+(_tcSlotSeq++);
+  setTimeout(function(){
+    var el=document.getElementById(id);if(!el)return;
+    try{
+      var tck=teamCheckHtml()||"";
+      el.innerHTML=tck||"<div class='tip'>本队暂无需要提示的隐患。</div>";
+    }catch(eAS){el.innerHTML='<div class="tip">判定失败：'+esc(String(eAS&&eAS.message||eAS))+'</div>'}
+  },0);
+  return "<div id='"+id+"'><div style='font-size:14px;color:var(--sub);padding:6px 0'>⚙️ 正在生成判定…（首次约 3 秒，同一队伍之后秒开）</div></div>";
+}
+/* v4.325：展开某条结论的「怎么修」时才真正计算候选配置 */
+var _tcFixSeq=0;
+window._TC_FIXQ=window._TC_FIXQ||{};
+function tcFixOpen(btn){
+  if(!btn)return;
+  var fid=btn.getAttribute('data-fx'),box=fid?document.getElementById(fid):null,q=fid?window._TC_FIXQ[fid]:null;
+  if(!box||!q)return;
+  if(box.style.display!=="none"){box.style.display="none";btn.textContent="▸ 看怎么修";return}
+  if(box.innerHTML){box.style.display="";btn.textContent="▾ 收起怎么修";return}
+  btn.textContent="计算中…";box.style.display="";
+  setTimeout(function(){
+    var h="";
+    try{h=_tcFixHtml(q.k,q.t)||"<div class='tip'>这一类暂时没有更优配置</div>"}
+    catch(eFX){h="<div class='tip'>配置生成失败，可先按上面的结论手调</div>"}
+    box.innerHTML=h;
+    btn.textContent="▾ 收起怎么修";
+  },0);
 }
 function teamSpeedStripHtml(){
   var q=speedPctiles();
@@ -14000,7 +14084,7 @@ function mvWhyStd(kind,tag,ex){
   var cost=ex.cost||MV_COST[kind]||'占招式位';
   return '克制 '+beat+'；代价 '+cost+'｜原则 '+ps.list.join('/')+'（职责 '+tag+'：'+(AX_NAME[q.lead]||q.lead)+' 主导，权重 '+q.w+'）';
 }
-function pickAttacks(s,side,n,role){
+function _pickAttacksCore(s,side,n,role){
   var learn=learnOf(s),holes=coverHoles(s),conv=convOf(s),names=(s.abis||[]).concat(s.inns||[]);
   var hasRec=hasAny(learn,FUNC_MV.rec),cand=[];
   /* v4.x 体系化：配招打分同样接体系维度表（archOfSp）——空间队偏好陀螺球/重磅冲撞等低速受益招，
@@ -15014,7 +15098,32 @@ function comboBuildsOf(s){
   });
   return res;
 }
+/* v4.325：配招与整套推导的记忆化——体检卡单次 3.7s 里 5910 次 pickAttacks、527 次 deriveBuilds
+   都是同参数重复调用（每条「怎么修」候选都要把同一只重算一遍）。命中缓存后只算真正新增的组合。
+   缓存键含 _tcKeyOf()（队伍 id + 勾选特性 + 已读存档种数），队伍一变即失效。 */
+var _PA_C=null,_PA_N=0,_DB_C=null,_DB_N=0;
+function _cacheKeyOf(parts){
+  var k=parts.join('|');
+  try{k+='#'+_tcKeyOf()}catch(eCK){k+='#'}
+  return k;
+}
+function pickAttacks(s,side,n,role){
+  var key=_cacheKeyOf([String(s&&s.id),String(side||''),String(n||0),String(role||'')]);
+  if(_PA_C&&_PA_C[key])return _PA_C[key];
+  var v=_pickAttacksCore(s,side,n,role);
+  if(!_PA_C||_PA_N>420){_PA_C={};_PA_N=0}
+  _PA_C[key]=v;_PA_N++;
+  return v;
+}
 function deriveBuilds(s,team){
+  var key=_cacheKeyOf([String(s&&s.id),((team||[]).map(function(x){return x&&x.id}).join(','))]);
+  if(_DB_C&&_DB_C[key])return _DB_C[key];
+  var v=_deriveBuildsCore(s,team);
+  if(!_DB_C||_DB_N>260){_DB_C={};_DB_N=0}
+  _DB_C[key]=v;_DB_N++;
+  return v;
+}
+function _deriveBuildsCore(s,team){
   var p=profileOf(s),arr=[],teamArr=[];
   (team||[]).forEach(function(x){var t=x&&x.s?x.s:x;if(t&&''+t.id!==''+s.id)teamArr.push(t)});
   var qs=[];teamArr.forEach(function(t){qs.push(profileOf(t))});
@@ -18619,7 +18728,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.324';
+var ER_ENGINE_VER='v4.325';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
