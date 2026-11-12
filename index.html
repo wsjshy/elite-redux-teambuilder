@@ -4011,10 +4011,11 @@ function openSp(s){
     }
     var spd0=0;try{spd0=spdViewValOf(s)}catch(eS){spd0=0}
     html+='<div class="spans">'+
-      '<div class="spanshd">这只主打：'+(bd0?esc(bd0.side+'向 · '+bd0.name):'—')+'</div>'+
+      '<div class="spanshd">通用配法（不依赖当前队伍）：'+(bd0?esc(bd0.side+'向 · '+bd0.name):'—')+'</div>'+
       '<div class="spansrow">推荐 <b>'+esc(abi0)+'</b> · 道具 <b>'+esc(it0)+'</b> · 性格 <b>'+esc(nat0)+'</b></div>'+
       '<div class="spansrow">实速 <b>'+(spd0||'—')+'</b>（速度档满投；下面可拖滑块自定义）</div>'+
       '<button class="btn" style="background:var(--accent);color:#fff;width:100%;margin-top:7px" onclick="gotoCoreFromSp(\''+s.id+'\')" title="进入核心配队，自动带出队友和四招">🤖 以它为核心生成组队建议（含队友和四招）</button>'+
+      '<div class="dim" style="margin-top:5px">进入核心配队后，首推会结合你当前队伍的缺口调整（与队伍构建页一致）</div>'+
       '<div class="dim" style="margin-top:6px">下面是完整资料（种族 / 特性 / 弱点 / 招式），按需再看 · <a href="javascript:void(0)" onclick="var e=document.getElementById(\'spMvAnchor\');if(e)e.scrollIntoView()">跳到可学招式表 ↓</a></div>'+
     '</div>';
   })();
@@ -19185,7 +19186,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.338';
+var ER_ENGINE_VER='v4.339';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -19619,7 +19620,7 @@ function renderCore(s){
   if(mechOn()){var _mpp=mechSpProfile(s),_mw=mechAbiWhy(s);
     if(_mpp.mechs.length)_mpB=mechBadgeHtml([_mpp.mechs[0]]);
     else if(_mw.length)_mpB=mechBadgeHtml([{rewrite:_mw[0].zh,why:_mw[0].why||_mw[0].zh}]);}
-  var builds=deriveBuilds(s);
+  var builds=deriveBuilds(s,(typeof team!=='undefined'&&team&&team.length)?team:null);
   var _cls=classifyBuilds(s,builds);
   var _mainReps=[],_foldReps=[],_mergeFroms=[];
   _cls.groups.forEach(function(g,gi){
