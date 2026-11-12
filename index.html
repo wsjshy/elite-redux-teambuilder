@@ -1129,6 +1129,15 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 .spfamsum::-webkit-details-marker{display:none}
 .spdslfold{margin-top:6px}
 .spdslfold>summary{cursor:pointer;font-size:15.5px;font-weight:700;padding:8px 4px}
+
+.bkhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:6px 0 8px}
+.bkhead b{font-size:16px}
+.bkprime{font-weight:700;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.bkmorefold{margin:10px 0 4px;border:1px dashed var(--line);border-radius:12px;padding:8px 12px}
+.bkmorefold summary{cursor:pointer;font-size:14.5px;color:var(--sub);font-weight:600}
+.bkfoldtabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.bkfoldtab{height:38px;min-height:38px;font-size:13.5px;padding:0 11px;opacity:.78;border-style:dashed}
+.bkfoldtab:hover{opacity:1}
 </style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
@@ -15607,7 +15616,7 @@ function _deriveBuildsCore(s,team){
     if(route&&c.key!=='mix')basis.push({k:'route',txt:'破盾路线择优 = '+route});
     if(p.atk.prio&&(c.key==='speed'||c.key==='main'))basis.push({k:'prio',txt:'自带先制招'});
     while(basis.length<2)basis.push({k:'role',txt:'定位：'+p.role+'（速度 '+p.du.spd+' / 耐久 '+p.du.bulk+'）'});
-    b.basis=basis.slice(0,5);b.drivenBy=c.drivenBy||[];b.score=c.sc;b.prio=i+1;b.id='P'+(i+1);b.prof=p;
+    b.basis=basis.slice(0,5);b.drivenBy=c.drivenBy||[];b.score=c.sc;b.prio=i+1;b.id='P'+(i+1);b.prof=p;b._candKey=c.key;
     /* v4.5：流派 why = 同一原则层格式（克制 X；代价 Y｜原则 P…） */
     var _pw=PLAY_WHY[c.key]||PLAY_WHY[(c.key==='wx'?'wx':(c.key==='mix'?'mix':'main'))];
     b.why=mvWhyStd(PLAY_KIND[c.key]||'attack',roleTag,{beat:_pw.beat,cost:_pw.cost,prin:_pw.prin});
@@ -15754,6 +15763,34 @@ function _deriveBuildsCore(s,team){
   try{var _nmSeen={},_out2=[];out.forEach(function(b){var nm=String(b.name||'');if(!nm)_out2.push(b);else if(!_nmSeen[nm]){_nmSeen[nm]=1;_out2.push(b)}else{_nmSeen[nm]++;b.name=nm+'·变体'+_nmSeen[nm];_out2.push(b)}});out=_out2}catch(eDn){}
   try{out.forEach(function(b){(b.abi||[]).forEach(function(a){if(a&&a.why&&a.why.length&&!a._ctxV){a.why=a.why.map(function(w){return String(w).replace(/（.*流派语境）$/,'')+'（'+(b.name||b.roleTag||'通用')+'语境）'});a._ctxV=1}})})}catch(eCtx){}
   return out;
+}
+function classifyBuilds(s,bs){
+  var list=(bs||[]).slice().sort(function(a,b){
+    var d=(b.score||0)-(a.score||0);
+    if(d)return d;
+    return (a.prio||0)-(b.prio||0);
+  });
+  function mvSet(b){var m={};(b.mv&&b.mv.main||[]).forEach(function(x){m[x.id]=1});
+    return Object.keys(m).map(Number).sort(function(a,b){return a-b})}
+  function jac(a,b){var A={},B={};a.forEach(function(x){A[x]=1});b.forEach(function(x){B[x]=1});
+    var inter=0;for(var k in A)if(B[k])inter++;var u={};a.concat(b).forEach(function(x){u[x]=1});
+    var uni=Object.keys(u).length;return uni?inter/uni:0}
+  var TH=0.6,groups=[];
+  list.forEach(function(b){
+    var ms=mvSet(b),placed=false;
+    for(var i=0;i<groups.length;i++){
+      if(jac(ms,groups[i].sig)>=TH){groups[i].members.push(b);placed=true;break}
+    }
+    if(!placed)groups.push({rep:b,sig:ms,members:[b]});
+  });
+  function isFold(b){return b._candKey==='main'||b._candKey==='def'}
+  var top=groups.length?groups[0].rep:null,highlights=[],folded=[],merged=[];
+  groups.forEach(function(g,i){
+    if(g.members.length>1)g.members.slice(1).forEach(function(m){merged.push({into:g.rep,from:m})});
+    if(i===0)return;
+    if(isFold(g.rep))folded.push(g.rep);else highlights.push(g.rep);
+  });
+  return {top:top,highlights:highlights,folded:folded,merged:merged,groups:groups};
 }
 function coreWeak(s){
   return _spCacheS(s,function(){
@@ -19119,7 +19156,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.334';
+var ER_ENGINE_VER='v4.335';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -19554,6 +19591,15 @@ function renderCore(s){
     if(_mpp.mechs.length)_mpB=mechBadgeHtml([_mpp.mechs[0]]);
     else if(_mw.length)_mpB=mechBadgeHtml([{rewrite:_mw[0].zh,why:_mw[0].why||_mw[0].zh}]);}
   var builds=deriveBuilds(s);
+  var _cls=classifyBuilds(s,builds);
+  var _mainReps=[],_foldReps=[],_mergeFroms=[];
+  _cls.groups.forEach(function(g,gi){
+    for(var mi=1;mi<g.members.length;mi++)_mergeFroms.push(g.members[mi]);
+    if(gi===0){_mainReps.push(g.rep);return}
+    var fk=(g.rep._candKey==='main'||g.rep._candKey==='def');
+    if(fk)_foldReps.push(g.rep);else _mainReps.push(g.rep);
+  });
+  var showList=_mainReps.concat(_foldReps).concat(_mergeFroms);
   var in0c=coreIntensity(s);
   var tags=coreTags(s);
   var SID=s.id;
@@ -19668,22 +19714,32 @@ function renderCore(s){
   html+='</div>';
 
   /* ==================== L2 流派玩法层（tab 一次一卡，每卡固定 8 字段） ==================== */
-  html+='<div class="sec"><h3>玩法流派（'+builds.length+' 条 · 点 tab 切换，一次一卡）</h3>';
-  html+='<div class="bktabs" role="tablist" aria-label="玩法流派" id="'+wId+'-tabs">';
-  builds.forEach(function(bd,i){
-    html+='<button type="button" class="bktab" role="tab" id="'+wId+'t'+i+'" aria-selected="'+(i===0?'true':'false')+'" aria-controls="'+wId+'c'+i+'" tabindex="'+(i===0?'0':'-1')+
-      '" onclick="bkSel(this,'+jsl(wId)+','+i+')" onkeydown="bkTabKey(event,'+jsl(wId)+','+i+')">'+((i===0?'⭐ 推荐流派 ':'流派 ')+(i+1)+'：'+esc(bd.name))+'</button>';
-  });
-  html+='</div><div id="'+wId+'">';
-  builds.forEach(function(bd,i){
+  html+='<div class="sec"><h3>玩法流派</h3>';
+  html+='<div class="bkhead"><b>首条就是确定答案，其余是可换的玩法亮点</b><span class="dim">不想选就直接用首条；想换口味再点下面</span></div>';
+  html+='<div class="bktabs" role="tablist" aria-label="玩法流派" id="'+wId+'-tabs">';
+  _mainReps.forEach(function(bd,k){
+    html+='<button type="button" class="bktab'+(k===0?' bkprime':'')+'" role="tab" id="'+wId+'t'+k+'" aria-selected="'+(k===0?'true':'false')+'" aria-controls="'+wId+'c'+k+'" tabindex="'+(k===0?'0':'-1')+
+      '" onclick="bkSel(this,'+jsl(wId)+','+k+')" onkeydown="bkTabKey(event,'+jsl(wId)+','+k+')">'+((k===0?'⭐ 就这么配 ':'换玩法 ')+esc(bd.name))+'</button>';
+  });
+  html+='</div>';
+  if(_foldReps.length||_mergeFroms.length){
+    var _fcnt=_foldReps.length+_mergeFroms.length;
+    html+='<details class="bkmorefold"><summary>其他兜底/微调玩法（'+_fcnt+' 条 · 非推荐，想看再展开）</summary><div class="bktabs bkfoldtabs" role="group">';
+    var _fk=_mainReps.length;
+    _foldReps.forEach(function(bd){html+='<button type="button" class="bktab bkfoldtab" role="tab" id="'+wId+'t'+_fk+'" aria-selected="false" tabindex="-1" onclick="bkSel(this,'+jsl(wId)+','+_fk+')">'+esc(bd.name)+'</button>';_fk++});
+    _mergeFroms.forEach(function(bd){html+='<button type="button" class="bktab bkfoldtab" role="tab" id="'+wId+'t'+_fk+'" aria-selected="false" tabindex="-1" onclick="bkSel(this,'+jsl(wId)+','+_fk+')">'+esc(bd.name)+'</button>';_fk++});
+    html+='</div></details>';
+  }
+  html+='<div id="'+wId+'">';
+  showList.forEach(function(bd,k){
     var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?((bd.abi[0].id!=null&&bd.abi[0].id!==''&&ABI[bd.abi[0].id])?(ABI[bd.abi[0].id][2]||ABI[bd.abi[0].id][1]||('#'+bd.abi[0].id)):abiChipName(bd.abi[0].n)):'—';   /* v4.50 P0：推荐特性名优先平行 id 反查 ABI 规范中文 */
     var tms=ftC(s,bd.side,bd.roleTag);
     /* v4.11：tabpanel 容器包裹流派卡 —— 首卡 details 的 class 固定为字面量 "big rec"（verify_v4 B④ 断言），
        切换只切外层 .bkp 的 .bkoff，不重建页面（展开态 / 滚动位置保留） */
-    html+='<div class="bkp'+(i===0?'':' bkoff')+'" id="'+wId+'c'+i+'" role="tabpanel" aria-labelledby="'+wId+'t'+i+'">';
-    html+=i===0?'<details class="big rec" open>':'<details class="big">';
+    html+='<div class="bkp'+(k===0?'':' bkoff')+'" id="'+wId+'c'+k+'" role="tabpanel" aria-labelledby="'+wId+'t'+k+'">';
+    html+=k===0?'<details class="big rec" open>':'<details class="big">';
     /* ① 玩法一句话（玩家话术；不含百分比 / 倍率式子） */
-    html+='<summary>'+((i===0?'⭐ 推荐流派 ':'流派 ')+(i+1)+'：'+esc(bd.name))+
+    html+='<summary>'+((k===0?'⭐ 推荐流派 ':'流派 ')+(k+1)+'：'+esc(bd.name))+
       ' <span class="bigsub">'+esc(bd.side)+'向 · 推荐特性 '+esc(bSet)+'</span>'+
       '<span class="oltext">'+esc(oneLiner(bd))+'</span>'+
       ((bd&&bd.warn)?' <span class="badge badge-warnimm">注意 '+esc(bd.warn)+'</span>':'')+'</summary>';
@@ -19770,7 +19826,7 @@ function renderCore(s){
       '<div class="dim">核心（'+esc(bd.side)+'向 / '+esc(bd.roleTag||'')+'）＋5 名队友；每名队友标<u>定位</u>，定位下方给出同定位候选，可混搭替换；全部按综合分+体系+联防动态权衡</div>';
     /* v4.33 N1：6 人队=核心+5 名队友——主推最多 5 只（原 tms.main 可 6 只→正文"核心以外 6 只"=7 人超限矛盾） */
     var mainMates=(tms.main&&tms.main.length)?tms.main.slice(0,5):tms.slice(0,5),seenId={},altMates=[];
-    if(i===0)try{window._CORE_PLAN={cid:s.id,mates:mainMates.map(function(r){return {id:(r&&r.s)?r.s.id:null,pri:(r&&r.priRole)||''}}).filter(function(m){return m.id!=null})}}catch(ePlan){ePlan.name}
+    if(k===0)try{window._CORE_PLAN={cid:s.id,mates:mainMates.map(function(r){return {id:(r&&r.s)?r.s.id:null,pri:(r&&r.priRole)||''}}).filter(function(m){return m.id!=null})}}catch(ePlan){ePlan.name}
     mainMates.forEach(function(r){if(r&&r.s)seenId[String(r.s.id)]=1});
     tms.slice(5).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     recs.forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
