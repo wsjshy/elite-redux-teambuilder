@@ -1080,7 +1080,14 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     </div>
   </div>
   <div id="erGuideBar" style="display:none;background:var(--guide-bg);border:1px solid var(--guide-edge);border-radius:8px;padding:8px 12px;margin:4px 0;font-size:14.5px;color:#0d47a1;animation:erPulse 2s ease-in-out infinite">
-    <style>@keyframes erPulse{0%,100%{box-shadow:0 0 0 0 rgba(144,202,249,.4)}50%{box-shadow:0 0 0 6px rgba(144,202,249,0)}}@media(prefers-reduced-motion:reduce){#erGuideBar{animation:none}}</style>
+    <style>@keyframes erPulse{0%,100%{box-shadow:0 0 0 0 rgba(144,202,249,.4)}50%{box-shadow:0 0 0 6px rgba(144,202,249,0)}}@media(prefers-reduced-motion:reduce){#erGuideBar{animation:none}}/* v4.327 分析页折叠条：默认只留结论，细节点开才看 */
+.anfold{margin:8px 0}
+.anfoldbtn{display:block;width:100%;text-align:left;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;line-height:1.35}
+.anfoldbtn:hover{border-color:#9dc3c3;background:var(--hover-tint,#eef2ff)}
+.anfoldbtn:active{transform:translateY(1px)}
+.anfoldbtn .dim{font-size:12.5px;font-weight:400;color:var(--sub)}
+.anfoldbody{padding-top:2px}
+</style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
   </div>
@@ -2769,6 +2776,8 @@ function anRender(R){
   anLastR=R;   /* v4.87 BUG-1 修复：分析卡读取当前配置来源 R（teamSpeedCardHtml 等卡随 R 重渲染） */
   if(!R||!R.n)return '<div class="tip">未选择成员：点上方槽位「点击选择」，从图鉴级选择器挑 1~6 只（与「队伍构建」共享同一队伍）</div>';
   var h='';
+  /* v4.327：结论先行——体检卡是本页最该第一眼看到的东西，其余细节一律折叠 */
+  try{h+=anCard(tcAsyncCard())}catch(eTck){eTck.name}
   h+=anHead('① 队伍构成画像');
   var sysList=Object.keys(R.sys.counts).map(function(k){return k+'×'+R.sys.counts[k]});
   h+=anCard('<b>原型</b>：'+esc(R.sys.archetype)+'　<b>体系识别</b>：'+anChips(sysList.length?sysList:['无体系'])+
@@ -2800,16 +2809,6 @@ function anRender(R){
     if((R.roles['强化']||0)>=2&&_topSp>=300)_sb+='<span class="badge">强化推队</span>';
     if(_sb)h+=anCard('<b>细化体系</b>：'+_sb+' <span class="tip">（受队=钉+回复≥2+盾≥2；强化推队=强化≥2+极速清场）</span>');
   }catch(eSb){}
-  h+=anCard('<b>角色分布（可兼任）</b>：'+anChips(Object.keys(R.roles).map(function(k){return k+'×'+R.roles[k]}))+
-    '<div class="tip">角色可兼任，不视为硬性配方</div>');
-  h+=anCard('<b>物理/特殊配比</b>：物理 '+R.side.phys+' ／ 特殊 '+R.side.spec+' ／ 双刀 '+R.side.mixed+
-    '　<b>速度线</b>：原始最高 '+R.speed.top+' · 有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）');
-  /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
-  try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
-  try{var _tlk=teamSpdLinkHtml();if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
-  try{h+=anCard(tcAsyncCard())}catch(eTck){eTck.name}
-  try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
-  try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
   if(R.members&&R.members.length){
     h+=anCard('<b>成员一览</b>（点图看该只推荐详情）<div class="anmemline">'+R.members.map(function(m){
@@ -2818,6 +2817,17 @@ function anRender(R){
                 :('<span class="anmem"><span class="anmemnm">'+esc(m.zh)+'</span></span>');
     }).join('')+'</div>');
   }
+  h+=anSecMark('d1','画像细节','角色分布 · 物特配比 · 速度线 · 能力图 · 属性热力');
+  h+=anCard('<b>角色分布（可兼任）</b>：'+anChips(Object.keys(R.roles).map(function(k){return k+'×'+R.roles[k]}))+
+    '<div class="tip">角色可兼任，不视为硬性配方</div>');
+  h+=anCard('<b>物理/特殊配比</b>：物理 '+R.side.phys+' ／ 特殊 '+R.side.spec+' ／ 双刀 '+R.side.mixed+
+    '　<b>速度线</b>：原始最高 '+R.speed.top+' · 有效 '+R.speed.effTop+'（中速档满投 '+R.speed.tier+'）');
+  /* v4.74 修复：队伍速度结构卡注入队伍分析 Tab（v4.66 体系徽章同区块） */
+  try{var _tsc=teamSpeedCardHtml();if(_tsc)h+=anCard(_tsc)}catch(eTsc){}
+  try{var _tlk=teamSpdLinkHtml();if(_tlk)h+=anCard(_tlk)}catch(eTlk){eTlk.name}
+  try{var _sc=teamStatsChartHtml(R);if(_sc)h+=anCard(_sc)}catch(eSc){}
+  try{var _dh=teamDefHeatHtml(R);if(_dh)h+=anCard(_dh)}catch(eDh){}
+  h+=anSecMark('d2','② 联防与打击面','共性弱点 · 免疫轴 · 覆盖与盲区');
   h+=anHead('② 联防 / 弱点矩阵');
   h+=anCard('<b>共性弱点（≥2 只同弱）</b>：'+(R.weak.coWeak.length?anChips(R.weak.coWeak.map(function(x){return x.type+'×'+x.n})):'无')+
     '<div class="tip">免疫轴'+(R.weak.immuneAxis.length?('（共 '+R.weak.immuneAxis.length+' 条，列出前 10 条）'):'：空')+'</div>'+
@@ -2830,6 +2840,7 @@ function anRender(R){
   h+=anHead('③ 打击面覆盖');
   h+=anCard('覆盖 <b>'+R.cover.covN+'/'+(R.cover.nTot||18)+'</b>：'+anChips(R.cover.types)+
     (R.cover.blind.length?'<div class="tip">整队盲区（全员有免疫/抵抗）：'+esc(R.cover.blind.join('、'))+'</div>':'<div class="tip">无整队盲区</div>'));
+  h+=anSecMark('d3','③ 每只完整配置','6 只的推荐特性/道具/EV/四招与理由');
   h+=anHead('④ 每只精灵推荐（引擎 deriveBuilds 主推流派，逐字段展示）');
   R.builds.forEach(function(b){
     /* v4.39 R-3④：卡首 sprite + 整卡可点（点击 = 该只推荐详情）。注意：只在精灵主体挂 onclick，
@@ -2841,6 +2852,7 @@ function anRender(R){
       '<div>EV：'+esc(b.ev?b.ev.join('/'):'—')+'（'+esc(b.evTpl||'')+'）　性格：'+esc(b.nat||'—')+'</div>'+
       (b.why?'<div class="tip">'+esc(b.why)+'</div>':'')+'</div>');
   });
+  h+=anSecMark('d4','④ 联动叙事','成对因果与可判定字段');
   h+=anHead('⑤ 联动叙事（成对因果 · 可判定字段）');
   /* v4.39 R-3⑤：叙事两端各配 sprite（A/B 同 id、B={zh:'全队'}、A/B=null 三种形态由 anSprOfNarr 容错：不渲染图） */
   /* v4.47 A2：叙事条目代号（NA-0x）改经 esc→scrubLeak（规则 7 剥内部代号）；剥离后为空则不渲染徽标。
@@ -2848,6 +2860,7 @@ function anRender(R){
   h+=R.narr.length?R.narr.map(function(x){var _nid=esc(x.id);return anCard((_nid?'<span class="badge">'+_nid+'</span> ':'')+
     ((anSprOfNarr(x.A)||anSprOfNarr(x.B))?('<span class="ansprpair">'+anSprOfNarr(x.A)+'<span class="anarrow">→</span>'+anSprOfNarr(x.B)+'</span>'):'')+
     esc(x.txt)+'<div class="tip">可判定字段：'+esc(x.field)+'</div>')}).join(''):'<div class="tip">未触发叙事模板</div>';
+  h+=anSecMark('d5','⑤ 结构诊断','与上方体检同源，含逐条细项');
   h+=anHead('⑥ 诊断与优化（只建议不剔除）');
   if(!R.diag.length)h+='<div class="tip">未命中结构性问题</div>';
   R.diag.forEach(function(d){
@@ -2863,6 +2876,7 @@ function anRender(R){
         }).join('')+'</div>':''));
   });
   if(R.ev.notes.length)h+=anCard('<b>队伍级 EV 微调建议（不覆盖引擎结论）</b>'+R.ev.notes.map(function(x){return '<div>'+x.id+'：'+esc(x.txt)+'</div>'}).join(''));
+  h+=anSecMark('d6','⑥ 深度维度','机制语境 · 配装体检 · 有效速度轴 · 联防配对');
   /* v4.87 六队分析器追加深度维度卡（只增不删：①~⑥ 既有区块渲染链逐字不动，行为与 v4.86 一致） */
   try{h+=anHead('⑦ 机制语境审查');h+=anCard(mechCtxCardHtml(R))}catch(eMch){}
   try{h+=anHead('⑧ 道具/性格/EV 体检');h+=anCard(buildVetCardHtml(R))}catch(eVet){}
@@ -3239,7 +3253,7 @@ function renderAnTab(){
   var _sb=$('anSnapBar');if(_sb)_sb.innerHTML=anSnapChipHtml();
   if(anSnapView==='snap'||anSnapView==='both'){
     var snap=anSnapLoad();
-    if(!snap){box.innerHTML=anRender(R);return}
+    if(!snap){box.innerHTML=anRender(R);anFoldDom(box);return}
     var h='';
     if(anSnapView==='both'){
       h+=anHead('当前队（现配置）');
@@ -3255,7 +3269,52 @@ function renderAnTab(){
     box.innerHTML=h;
     return;
   }
-  box.innerHTML=anRender(R);
+  box.innerHTML=anRender(R);anFoldDom(box);
+}
+/* ==================== v4.327 分析页信息分层 ====================
+   问题：一页十来个区块、几十张卡平铺，用户要先自己找哪条是结论。
+   做法：结论（体检卡）与画像摘要、成员一览留在首屏；其余按区块折叠成一条标题，
+   默认收起，点开才看；展开/收起状态记忆到 localStorage（er_anFold_v2），下次进入保持一致。
+   引擎与判定逻辑零改动：只改「放哪儿」，afold 只是 DOM 重排。 */
+function anSecMark(k,lab,hint){
+  return '<div class="ansec" data-k="'+k+'" data-lab="'+lab+'" data-hint="'+(hint||'')+'"></div>';
+}
+function anFoldState(){
+  try{var o=JSON.parse(_ls('er_anFold_v2')||'{}');return (o&&typeof o==='object')?o:{}}catch(eF){eF.name}
+  return {};
+}
+function anFoldDom(box){
+  if(!box||!box.querySelectorAll)return;
+  var st=anFoldState();
+  var marks=box.querySelectorAll('div.ansec');
+  Array.prototype.forEach.call(marks,function(mk){
+    var k=mk.getAttribute('data-k')||'x';
+    var lab=mk.getAttribute('data-lab')||'',hint=mk.getAttribute('data-hint')||'';
+    var txt=function(o){return (o?'▾ ':'▸ ')+esc(lab)+(hint?' <span class="dim">'+esc(hint)+'</span>':'')};
+    var wrap=document.createElement('div');wrap.className='anfold';
+    wrap.setAttribute('data-k',k);wrap.id='anf_'+k;
+    var btn=document.createElement('button');btn.type='button';btn.className='anfoldbtn';
+    var body=document.createElement('div');body.className='anfoldbody';
+    var open=!!st[k];
+    btn.innerHTML=txt(open);
+    if(!open)body.style.display='none';
+    btn.onclick=function(){
+      var o=body.style.display==='none';
+      body.style.display=o?'':'none';
+      btn.innerHTML=txt(o);
+      var s2=anFoldState();s2[k]=o;_ls('er_anFold_v2',JSON.stringify(s2));
+    };
+    wrap.appendChild(btn);wrap.appendChild(body);
+    mk.parentNode.insertBefore(wrap,mk);
+    var nx=mk.nextSibling;
+    while(nx&&!(nx.nodeType===1&&nx.classList&&nx.classList.contains('ansec'))){
+      var after=nx.nextSibling;
+      if(nx.nodeType===1)body.appendChild(nx);
+      else if(nx.nodeType===3&&!nx.textContent.trim())mk.parentNode.removeChild(nx);
+      nx=after;
+    }
+    mk.parentNode.removeChild(mk);
+  });
 }
 /* ==================== v4.39 第八 tab UI 增强（R-1~R-7）====================
    规格：ER配招助手_v4.39_队伍分析器UI增强_交互设计书.md（六槽位 §1.1 / 图鉴级选择器 §1.2 /
@@ -18850,7 +18909,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.326';
+var ER_ENGINE_VER='v4.327';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
