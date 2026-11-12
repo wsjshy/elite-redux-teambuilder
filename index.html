@@ -973,7 +973,7 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <select id="tmSort">
       <option value="id">编号</option><option value="bst">种族值（总值）</option><option value="atk">攻击</option><option value="spe">速度</option>
     </select>
-    <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button>
+    <button class="btn" style="background:var(--accent);color:#fff" onclick="document.getElementById('savFile').click()">📂 解析存档 .sav</button><span id="savLastTip" style="display:none;font-size:13px;color:var(--sub)"></span>
     <input type="file" id="savFile" accept=".sav" hidden onchange="parseSavFile(this)">
     <div id="savSlotsBox" style="display:inline-block;margin-left:6px;font-size:14.5px"></div> <!-- v4.111 档位选择UI -->
     <button class="btn" onclick="toggleCsvPanel()" title="CSV 名单导入队伍（前6只），不填充下方全图鉴组队池" id="csvBtn">📥 粘贴 CSV</button>
@@ -4619,6 +4619,12 @@ function toggleTmMore(){
     ['csvBtn','randTeamBtn','randLegBtn','randModeBtn','sugPoolBtn','multiPickBtn'].forEach(function(id){
       var e=document.getElementById(id);if(e)r.appendChild(e);
     });
+    /* v4.324：存档记住上次文件名——解析过一次就常驻显示，下次不用回想「上次导的是哪个」 */
+    var tip=document.getElementById('savLastTip');
+    if(tip){
+      var ln=_ls('er_lastSavName');
+      if(ln){tip.textContent='上次：'+ln;tip.title='上次解析的存档文件（仅记录文件名，不保存内容）';tip.style.display=''}
+    }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mv);else mv();
 })();
@@ -6280,6 +6286,7 @@ function parseSavFile(input){
           '<span class="dim" style="font-size:14.5px">已读取 '+arr.length+' 字节</span></div></div>';
         return;
       }
+      try{_ls('er_lastSavName',f.name||'')}catch(eLS){eLS.name}
       lastSavCsv=rowsToCsv(res.rows);
       /* v4.114 A：ANCHORS 自检保留为内部逻辑（仅 console，不下发 UI） */
       if(typeof ER_DEBUG!=='undefined'&&ER_DEBUG){if(res.summary.anchorsFail&&res.summary.anchorsFail.length)console.log('[ER-sav anchors FAIL]',res.summary.anchorsFail);if(res.summary.anchorsOk&&res.summary.anchorsOk.length)console.log('[ER-sav anchors OK]',res.summary.anchorsOk);}   /* v4.149：debug 日志门控，默认静默（数据仍供逻辑用） */
@@ -6317,6 +6324,7 @@ function parseSavFile(input){
         _typeRow+
         '<div id="savPcList" style="max-height:300px;overflow-y:auto"></div></div>';
       var html='<div class="sec" style="border-color:var(--accent);background:#eef6ff"><h3>📊 存档解析结果（'+esc(f.name)+'）</h3>'+
+        '<div style="font-size:13.5px;color:var(--sub)">存档文件：'+esc(String(f.name||'（未命名）'))+'</div>'+
         '<div style="font-size:15px">总记录 <b>'+res.summary.total+'</b> | 队伍 <b>'+res.summary.party+'</b> | 电脑区 '+res.summary.pc+' | 特殊区 '+res.summary.special+' | 段轮换 K='+res.summary.K+'</div>'+'<div style="margin-top:8px"><button class="btn" style="background:var(--accent);color:#fff;width:100%" onclick="savJumpAnalyze()" title="切到队伍分析：按你存档里的真实配招 / 道具 / 性格 / EV 做全队体检">👉 用这份存档做全队体检</button></div>'+
         /* v4.121 P0：一键入队按钮常驻在解析结果区（不再藏在电脑区清单内） */
         (res.summary.special>0?'<div style="margin-top:4px;padding:4px 6px;background:#fff3e0;border-radius:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:13.5px;color:var(--sub)">特殊区·设施预设 '+res.summary.special+' 条：</span><button class="btn-mini" onclick="savPcEnqueueAllSpc()" style="background:var(--accent);color:#fff">一键入队前 6</button></div>':'')+
@@ -8402,18 +8410,40 @@ function _tcFixHtml(kind,tset){
 function _tcVList(V,sevTag,fixOnce){
   if(!V||!V.length)return "";
   var line=function(x){var fx=x.fix?fixOnce(x.fix):"";return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+fx+"</div>"};
-  if(V.length<=3)return V.map(line).join("");
-  var n=V.length-3;
-  return V.slice(0,3).map(line).join("")
-    +"<div class='tcMore' data-n='"+n+"' style='display:none'>"+V.slice(3).map(line).join("")+"</div>"
-    +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>展开其余 "+n+" 条</button>";
+  /* v4.324：按严重度分组——硬伤全给（紧急不藏），提示先给 2 条其余折叠，参考整组折叠 */
+  var g={2:[],1:[],0:[]};
+  V.forEach(function(x){g[(x.s===2)?2:((x.s===1)?1:0)].push(x)});
+  var out="";
+  if(g[2].length)out+=g[2].map(line).join("");
+  if(g[1].length){
+    out+="<div style='margin-top:7px;font-size:14px;color:#b26a00;font-weight:700'>提示 "+g[1].length+" 条</div>";
+    if(g[1].length<=2){out+=g[1].map(line).join("")}
+    else{
+      var n1=g[1].length-2;
+      out+=g[1].slice(0,2).map(line).join("")
+        +"<div class='tcMore' data-n='"+n1+"' data-lb='提示' style='display:none'>"+g[1].slice(2).map(line).join("")+"</div>"
+        +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>展开其余 "+n1+" 条提示</button>";
+    }
+  }
+  if(g[0].length){
+    out+="<div class='tcMore' data-n='"+g[0].length+"' data-lb='' style='display:none'>"
+      +"<div style='margin:7px 0 2px;font-size:14px;color:var(--sub);font-weight:700'>参考 "+g[0].length+" 条（背景信息，不影响胜负手）</div>"
+      +g[0].map(line).join("")+"</div>"
+      +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>参考 "+g[0].length+" 条（背景信息）</button>";
+  }
+  return out;
 }
 function tcToggleMore(btn){
-  var box=btn&&btn.previousElementSibling;
-  if(!box||String(box.className).indexOf('tcMore')<0)return;
+  if(!btn)return;
+  /* v4.324：向前找最近的 .tcMore（参考组按钮与折叠区之间可能隔着提示组内容，不能只看紧邻兄弟） */
+  var box=null,p=btn.previousElementSibling;
+  while(p){if(String(p.className).indexOf('tcMore')>=0){box=p;break}p=p.previousElementSibling}
+  if(!box)return;
   var open=box.style.display!=='none';
   box.style.display=open?'none':'';
-  btn.textContent=open?('展开其余 '+box.getAttribute('data-n')+' 条'):'收起';
+  var lb=box.getAttribute('data-lb')||'';
+  var n=box.getAttribute('data-n');
+  btn.textContent=open?(lb?('展开其余 '+n+' 条 '+lb):('展开 '+n+' 条')):'收起';
 }
 function teamCheckHtml(_R){
   try{
@@ -18589,7 +18619,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.323';
+var ER_ENGINE_VER='v4.324';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
