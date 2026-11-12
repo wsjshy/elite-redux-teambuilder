@@ -1,6 +1,6 @@
 {
   "name": "elite-redux-teambuilder",
-  "version": "4.325.0",
+  "version": "4.326.0",
   "private": true,
   "description": "Pokémon Elite Redux 存档解析 + 配招助手（单文件 HTML + 外置数据分片）",
   "scripts": {

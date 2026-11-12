@@ -8297,6 +8297,16 @@ function _tcFixHtml(kind,tset){
     var srp=Math.round((x.sr||0)*100);
     var tone=srp>=50?"color:var(--warnred);font-weight:700":"color:var(--sub)";
     var held=(own&&!x.own)?"<span style='font-size:12.5px;color:var(--warnred)'>　未持有</span>":"";
+    /* v4.326：候选直接可落地——点一下就把这只（连同特性/道具/性格/EV/四招）放进队伍。
+       plan 收集「卡片上承诺的额外调整」（改槽 / 换性格 / 补速 EV），落地时一并写入。 */
+    var plan={want:'',nat:'',spe:0};
+    var pushBtnHtml=function(){
+      var tip=plan.want?'（含改槽）':((plan.spe||plan.nat)?'（含配速）':'');
+      return "<button class='btn-mini' type='button' data-tcca='"+String(x.s&&x.s.id)+"'"
+        +" data-tcw='"+String(plan.want||'')+"' data-tcnat='"+String(plan.nat||'')+"'"
+        +" data-tcspe='"+String(plan.spe||0)+"' onclick='tcApplyCand(this)'"
+        +" style='margin-left:6px'>↪ 换上这一只"+tip+"</button>";
+    };
     var head="<b>"+x.zh+"</b>"
       +(x.real?"<span style='font-size:12.5px;color:#2e7d32;font-weight:700'>　已带"+x.realHit+"</span>":"")
       +"<span style='font-size:12.5px;color:var(--sub)'>　"+x.mv+"</span>"
@@ -8321,7 +8331,7 @@ function _tcFixHtml(kind,tset){
           var swO=_tcSwapOwn(x.own,want);
           noteO=swO?("<span style='color:#b26a00'>改槽：把「"+swO.zh+"」换成「"+swO.want+"」（其余三招照存档）</span>")
             :("<span style='color:#b26a00'>存档这四招全是强化/钉子，腾槽得你自己定砍哪一招</span>");
-          if(swO){var _spO=speciesById(x.own.图鉴编号);noteO+=_mvAvailNote(_spO,mvIdByZhOrEn(swO.want),x.own)}
+          if(swO){plan.want=swO.want;var _spO=speciesById(x.own.图鉴编号);noteO+=_mvAvailNote(_spO,mvIdByZhOrEn(swO.want),x.own)}
         }
         if(kind==="clear"){
           try{
@@ -8337,8 +8347,10 @@ function _tcFixHtml(kind,tset){
               if(curEvO>=ev2&&natOk){
                 noteO+="<span style='color:var(--sub)'>　存档实配速度 "+curV+" 已经是这套 EV 下的水平——再快只能换一只更快的清钉手</span>";
               }else if(curEvO>=ev2){
+                plan.nat='爽朗';
                 noteO+="<span style='color:#b26a00'>　先手清钉：速 EV 已经够（存档现有 "+curEvO+"），只把性格换成爽朗 → "+vv2+"（P"+spdRankOfVal(vv2)+"）</span>";
               }else{
+                plan.nat='爽朗';plan.spe=ev2;
                 noteO+="<span style='color:#b26a00'>　先手清钉："+(natOk?"":"性格改爽朗 + ")+"速补到 "+ev2+" EV（存档现在 "+curEvO+"，多 "+(ev2-curEvO)+" 点）→ "+vv2+"（P"+spdRankOfVal(vv2)+"）</span>";
               }
             }
@@ -8346,7 +8358,8 @@ function _tcFixHtml(kind,tset){
         }
         noteO+=_megaNeedNote(x.s,x.own);
         conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>存档实配：特性 <b>"+(x.own['主特性(当前生效)']||'—')+"</b>"
-          +"　道具 "+(x.own.道具||"—")+"　性格 <b>"+(x.own.性格||"—")+"</b>　EV "+_ownEvAry(x.own).join("/")+"　"+noteO+"</div>";
+          +"　道具 "+(x.own.道具||"—")+"　性格 <b>"+(x.own.性格||"—")
+          +(plan.nat?" → "+plan.nat:"")+"</b>　EV "+_tcEvShowTxt(_ownEvAry(x.own),plan.spe)+"　"+noteO+pushBtnHtml()+"</div>";
       }else{
         var b0=(deriveBuilds(x.s,tset)||[])[0],info=anRowOf(x.s,b0),evs=(info.ev||[0,0,0,0,0,0]);
         var slotsZh=[];
@@ -8354,6 +8367,7 @@ function _tcFixHtml(kind,tset){
         var hitZh="";
         for(var wi=0;wi<want.length;wi++){if(slotsZh.indexOf(want[wi])>=0){hitZh=want[wi];break}}
         var sw=hitZh?null:_tcSwapFor(b0,want),note="";
+        if(sw)plan.want=want[0];
         if(kind.indexOf("weather:")===0){
           var _w3=kind.split(":")[1],_sa3=TC_WEATHER_SET_ABI[_w3],_ii3=(x.s.inns||[]);
           if(_sa3.indexOf(info.abi)>=0||_sa3.some(function(a){return _ii3.indexOf(a)>=0})){note="<span style='color:#2e7d32'>特性自动起"+_w3+"，出场即触发、不占回合也不用带招——比手动"+TC_WEATHER_MOVE[_w3]+"优</span>"}
@@ -8372,7 +8386,9 @@ function _tcFixHtml(kind,tset){
               note+="<span style='color:var(--sub)'>　速度已到它的上限 "+maxV+"（P"+spdRankOfVal(maxV)
                 +"），抢不过更快的撒钉手——只能接受后手清钉</span>";
             }else if(nowV<tg){
+              plan.nat='爽朗';
               var evs2=evForSpeed(tg,(x.s.base||[])[5]||0,31,1),vv=speedStat((x.s.base||[])[5]||0,evs2,31,1);
+              plan.spe=evs2;
               var curEv=+(evs[5]||0),how=(curEv>=evs2)
                 ?("速 EV 已经够（现有 "+curEv+"），只把性格换成爽朗")
                 :("性格改爽朗 + 速补到 "+evs2+" EV（比现在多 "+(evs2-curEv)+" 点，从别的项挤）");
@@ -8383,8 +8399,8 @@ function _tcFixHtml(kind,tset){
         }
         note+=_megaNeedNote(x.s,null);
         conf="<div style='margin-left:2px;font-size:12.5px;color:var(--sub)'>特性 <b>"+(info.abi||"—")+"</b>"
-          +"　道具 "+(info.item||"—")+"　性格 <b>"+(info.nat||"—")+"</b>　EV "
-          +[0,1,2,3,4,5].map(function(i){return (+(evs[i]||0))}).join("/")+"　"+note+"</div>";
+          +"　道具 "+(info.item||"—")+"　性格 <b>"+(info.nat||"—")+(plan.nat?" → "+plan.nat:"")+"</b>　EV "
+          +_tcEvShowTxt([0,1,2,3,4,5].map(function(i){return (+(evs[i]||0))}),plan.spe)+"　"+note+pushBtnHtml()+"</div>";
       }
     }catch(eCf){eCf.name}
     var sim="";
@@ -9040,6 +9056,112 @@ function tcAsyncCard(){
     }catch(eAS){el.innerHTML='<div class="tip">判定失败：'+esc(String(eAS&&eAS.message||eAS))+'</div>'}
   },0);
   return "<div id='"+id+"'><div style='font-size:14px;color:var(--sub);padding:6px 0'>⚙️ 正在生成判定…（首次约 3 秒，同一队伍之后秒开）</div></div>";
+}
+/* v4.326：把「怎么修」里的候选一键落地——带上它自己的特性/道具/性格/EV/四招。
+   队伍已满 6 只时替换「当前整队里最该动的一只」（与体检卡的换人基线同一个口径），
+   不足 6 只则直接加入。替换是写操作，走两段式确认（4 秒内再点一次才执行）。 */
+/* 卡片上的 EV 串：有补速建议时直接显示「补完之后」的分配，和落地结果一致 */
+function _tcEvShowTxt(ev,spe){
+  var base=(ev||[]).slice(0,6);
+  while(base.length<6)base.push(0);
+  var txt=base.map(function(v){return +(v||0)}).join("/");
+  if(+(spe||0)>0){
+    try{var nv=_tcSetSpeEv(base,spe);return nv.join("/")+"（速已补到 "+spe+"）"+"　原 "+txt}catch(eEv2){eEv2.name}
+  }
+  return txt;
+}
+/* 把速 EV 抬到目标值，差额从当前最大的一项里挤（不超 508 总量上限） */
+function _tcSetSpeEv(ev,val){
+  var out=(ev||[]).slice(0,6);
+  while(out.length<6)out.push(0);
+  for(var i=0;i<6;i++)out[i]=+(out[i]||0);
+  var diff=val-out[3];
+  if(diff<=0)return out;
+  out[3]=val;
+  while(diff>0){
+    var mi=-1,mx=0;
+    for(var j=0;j<6;j++){if(j===3)continue;if(out[j]>mx){mx=out[j];mi=j}}
+    if(mi<0||mx<=0)break;
+    var take=diff>mx?mx:diff;out[mi]-=take;diff-=take;
+  }
+  var sum=0;for(var k=0;k<6;k++)sum+=out[k];
+  if(sum>508){
+    var cut=sum-508;
+    for(var q=0;q<6;q++){
+      if(q===3)continue;
+      var tk=cut>out[q]?out[q]:cut;out[q]-=tk;cut-=tk;
+      if(cut<=0)break;
+    }
+  }
+  return out;
+}
+function tcApplyCand(btn){
+  if(!btn)return;
+  var sid=+(btn.getAttribute('data-tcca')||0);
+  var sp=null;try{sp=speciesById(sid)}catch(e1){sp=null}
+  if(!sp){toast('找不到这只的数据，刷新后重试');return}
+  if(typeof team==='undefined'||!team){toast('队伍还没加载好');return}
+  if(team.indexOf(sp)>=0){toast(sp.zh+' 已经在队伍里了，配置见「队伍构建」的槽位');return}
+  var dropId=0,dropped='';
+  try{var dp=_tcDropOf(team);if(dp&&dp.drop){dropId=dp.drop.id;dropped=dp.drop.zh}}catch(e2){e2.name}
+  var now=Date.now();
+  if(team.length>=6&&!(window._tcApplyTs&&now-window._tcApplyTs<4000)){
+    window._tcApplyTs=now;
+    btn.textContent='⚠ 再点确认：换掉 '+(dropped||'最后一只');
+    setTimeout(function(){try{btn.textContent='↪ 换上这一只'}catch(e3){e3.name}},4500);
+    toast('队伍已满 6 只，再点一次确认换掉 '+(dropped||'最后一只'));
+    return;
+  }
+  window._tcApplyTs=0;
+  var want=String(btn.getAttribute('data-tcw')||''),tnat=String(btn.getAttribute('data-tcnat')||'');
+  var tspe=+(btn.getAttribute('data-tcspe')||0);
+  var info=null,bd=null;
+  /* 卡片上写的那套配置就是落地的这套：两边同源走 deriveBuilds，避免「建议写 A、点下去变 B」 */
+  try{bd=deriveBuilds(sp,team)[0]||null;if(bd)info=coreApplyPlanInfo(sp,bd)}catch(e4){info=null}
+  /* 卡片承诺的改槽：把要的那一招塞进对应槽（其余槽不动） */
+  if(info&&want){
+    var slotIdx=-1;
+    try{var swx=_tcSwapFor(bd,want);if(swx&&swx.idx>=1)slotIdx=swx.idx-1}catch(eSw){slotIdx=-1}
+    if((info.moves||[]).indexOf(want)<0){
+      if(!info.moves)info.moves=[];
+      if(slotIdx<0||slotIdx>=info.moves.length)slotIdx=(info.moves.length>=4?info.moves.length-1:info.moves.length);
+      info.moves[slotIdx]=want;
+    }
+  }
+  /* 卡片承诺的性格 / 速 EV */
+  try{if(tnat)info.nat=normNatName(tnat)}catch(eNt){eNt.name}
+  if(info&&tspe>0){
+    try{info.ev=_tcSetSpeEv(info.ev||[0,0,0,0,0,0],tspe)}catch(eEv){eEv.name}
+  }
+  if(!info||!(info.moves||[]).length){
+    try{
+      var asm=mateAssemble({s:sp,priRole:''},team,coreSys(team[0]));
+      if(asm)info={fromSave:false,item:asm.item||'',moves:(asm.moves||[]).map(function(x){return x.zh}),
+        pps:[],ev:(asm.ev&&asm.ev.alloc)||null,nat:asm.nat||'',pick:asm.abiName||''};
+    }catch(e5){e5.name}
+  }
+  if(!info||!(info.moves||[]).length){toast(sp.zh+' 的配置暂时生成不出来，可先手动加入');return}
+  var outName='';
+  if(team.length>=6){
+    var idx=-1;
+    if(dropId)idx=team.map(function(x){return x&&x.id}).indexOf(dropId);
+    if(idx<0)idx=team.length-1;
+    outName=(team[idx]&&team[idx].zh)||'';
+    try{delete teamInfo[team[idx].id]}catch(e6){e6.name}
+    team[idx]=sp;teamInfo[sp.id]=info;
+  }else{
+    team.push(sp);teamInfo[sp.id]=info;
+  }
+  try{saveTeam()}catch(e7){e7.name}
+  try{renderTm(true)}catch(e8){e8.name}
+  try{renderSlots()}catch(e9){e9.name}
+  try{renderAnalyze()}catch(eA){eA.name}
+  btn.textContent=outName?'✓ 已换上':'✓ 已加入';
+  try{btn.disabled=true}catch(eB){eB.name}
+  toast(outName?('已用 '+sp.zh+' 换掉 '+outName+'，配置（特性/道具/性格/EV/四招）已一并写入，分析页正在重算体检'):('已把 '+sp.zh+' 加入队伍，配置已一并写入'));
+  setTimeout(function(){
+    try{if(typeof renderAnTab==='function')renderAnTab()}catch(eC){eC.name}
+  },60);
 }
 /* v4.325：展开某条结论的「怎么修」时才真正计算候选配置 */
 var _tcFixSeq=0;
@@ -18728,7 +18850,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.325';
+var ER_ENGINE_VER='v4.326';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
