@@ -1087,6 +1087,17 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 .anfoldbtn:active{transform:translateY(1px)}
 .anfoldbtn .dim{font-size:12.5px;font-weight:400;color:var(--sub)}
 .anfoldbody{padding-top:2px}
+/* v4.328 队伍构建页：答案条 + 推荐配置块 */
+.tmans{margin:2px 0 8px;padding:9px 12px;border:1px solid var(--guide-border,#64b5f6);border-radius:10px;background:var(--guide-bg,#e3f2fd);color:var(--text);font-size:14.5px;line-height:1.5}
+.tmreco{margin:2px 10px 6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:14px;line-height:1.55}
+.tmreco .tmrlab{display:inline-block;margin-right:6px;padding:0 6px;border-radius:4px;background:var(--accent,#2563eb);color:#fff;font-size:12.5px;vertical-align:1px}
+.tmreco .tmr1 b{font-size:15px;color:var(--text)}
+.tmreco .tmr2{margin-top:2px;color:var(--text)}
+.tmreco .tmr3{margin-top:2px;color:var(--sub);font-size:13px}
+.tmreco .tmr4{margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tmmore{margin:0 10px 6px}
+.tmmore>summary{cursor:pointer;font-size:13.5px;color:var(--sub);padding:3px 0}
+.tmmore>summary:hover{color:var(--accent)}
 </style>
     👋 新玩家 3 步：① 搜索选一只宝可梦 → ② 看流派区推荐队伍 → ③ 点「带此队去分析」。
     <button id="erGuideClose" style="float:right;background:none;border:none;color:#0d47a1;cursor:pointer">×</button>
@@ -4841,6 +4852,7 @@ function removeFromTeam(s){
 }
 function renderSlots(){
   var html='';
+  html+=tmAnswerBar();
   for(var i=0;i<6;i++){
     var s=team[i];
     if(s){
@@ -4849,7 +4861,9 @@ function renderSlots(){
       html+='<div class="slot">'+sprImg(s.id,'spslot')+'<span class="nm">'+esc(s.zh)+'</span>'+tlabel(s.t1)+(s.t2!==s.t1?' '+tlabel(s.t2):'')+
         (_plR?'<span style="background:var(--accent);color:#fff;border-radius:3px;padding:0 4px;font-size:13px;margin-left:2px" title="已采用配速：'+_plR.nat+'性格 · 实速 '+(+_plR.val||0)+'（核心配队第 6 段可改）">速'+(+_plR.val||0)+'</span>':'')+(typeof teamPrioMark==='function'?teamPrioMark(s):'')+
         '<button class="x" onclick="removeFromTeamById('+s.id+')">×</button></div>';
-      html+='<div style="padding:0 10px 4px">'+abiBadges(s)+'</div>';
+      html+=tmRecoLine(s);
+      html+='<details class="tmmore"><summary>细节与手动改（防守轴 / 特性 / 招式 / 道具）</summary>';
+      html+='<div style="padding:2px 0 4px">'+abiBadges(s)+'</div>';
       /* 可选特性点选模拟生效（单选）
          v4.44 盲区并项：三项同名（全库 151~156 只）→ 展示层去重为「唯一特性」单个静态徽标
          （数据真值不动；同名三连既无选择意义、又是重复噪音。参照 v4.43 P2-C 展示层处理手法） */
@@ -4871,6 +4885,7 @@ function renderSlots(){
         html+='<div class="slotinfo" style="padding:0 10px 6px">招式：'+(mv.join(' ')||'—')+
           (info.item?' · 道具 '+esc(info.item):'')+'</div>';
       }
+      html+='</details>';
     }else{
       html+='<div class="slot empty">空位</div>';
     }
@@ -4881,6 +4896,89 @@ function renderSlots(){
   $('tmSlots').innerHTML=html;
 }
 
+/* ==================== v4.328 队伍构建页：直接给答案 ====================
+   用户诉求：别再让我一只只去点特性/招式，直接告诉我怎么配；要选就选真正有意义的那个，并说清为什么。
+   做法：
+   · 每只成员默认显示引擎推荐的那一套（特性/道具/性格/EV/四招），一行读完；
+   · 「✓ 用这套」一键写入（与体检卡/核心配队同一口径 deriveBuilds + coreApplyPlanInfo）；
+   · 原来的点选芯片收进「手动改」折叠，想改才展开；
+   · 页面顶部一句话说明：已经配好，唯一必须你定的是「核心是谁」，因为其余 5 只围绕它配。 */
+var _tmRecoC={};
+function _tmTeamSig(){
+  try{return (typeof team!=='undefined'&&team)?team.map(function(x){return x.id}).join(','):''}catch(eS){eS.name}
+  return '';
+}
+function tmRecoOf(s){
+  if(!s||!s.id)return null;
+  var k=String(s.id)+'|'+_tmTeamSig();
+  if(_tmRecoC[k])return _tmRecoC[k];
+  var info=null,bd=null,bs=[];
+  try{bs=deriveBuilds(s,team)||[];bd=bs[0]||null;if(bd)info=coreApplyPlanInfo(s,bd)}catch(e){info=null}
+  if(!info)info={_none:true};
+  info._bd=bd;info._alt=(bs&&bs.length>1)?bs[1]:null;
+  info._why=(bd&&(bd.desc||bd.why))||'';
+  _tmRecoC[k]=info;return info;
+}
+function _tmSameCfg(s,r){
+  try{
+    var inf=(typeof teamInfo!=='undefined'&&teamInfo)?teamInfo[s.id]:null;
+    if(!inf||inf.fromSave)return false;
+    if(String(inf.pick||'')!==String(r.pick||''))return false;
+    if(String(inf.item||'')!==String(r.item||''))return false;
+    if(String(inf.nat||'')!==String(r.nat||''))return false;
+    var a=(inf.ev||[]).map(function(v){return +(v||0)}).join('/');
+    var b=(r.ev||[]).map(function(v){return +(v||0)}).join('/');
+    if(a!==b)return false;
+    return (inf.moves||[]).join('/')===(r.moves||[]).join('/');
+  }catch(eC){eC.name}
+  return false;
+}
+function tmRecoApply(id){
+  var s=null;try{s=speciesById(id)}catch(eS){s=null}
+  if(!s)return;
+  var r=tmRecoOf(s);
+  if(!r||r._none){toast('这只暂无可落地配置，请用「手动改」');return}
+  teamInfo[s.id]={fromSave:false,item:r.item||'',moves:(r.moves||[]).slice(),pps:[],ev:(r.ev||[]).slice(),nat:r.nat||'',pick:r.pick||''};
+  saveTeam();
+  try{renderSlots()}catch(e1){e1.name}
+  try{renderAnalyze()}catch(e2){e2.name}
+  try{renderAnTab()}catch(e3){e3.name}
+  toast('已应用推荐配置：'+(s.zh||''));
+}
+function _tmShortWhy(t){
+  t=String(t||'');
+  if(t.length>52)t=t.slice(0,52)+'…';
+  return t;
+}
+function tmRecoLine(s){
+  var r=tmRecoOf(s);
+  if(!r)return '';
+  if(r._none)return '<div class="tmreco"><b>推荐</b>：数据不足，这只请用「手动改」自己配。</div>';
+  var same=_tmSameCfg(s,r);
+  var inf=null;try{inf=teamInfo[s.id]||null}catch(eI){eI.name}
+  var evTxt=(r.ev||[]).map(function(v){return +(v||0)}).join('/');
+  var mvTxt=(r.moves||[]).join(' · ')||'—';
+  var h='<div class="tmreco">'+
+    '<div class="tmr1"><span class="tmrlab">推荐</span>特性 <b>'+esc(r.pick||'—')+'</b>　道具 <b>'+esc(r.item||'—')+'</b>　性格 <b>'+esc(r.nat||'—')+'</b>　EV <b>'+esc(evTxt)+'</b></div>'+
+    '<div class="tmr2">招：'+esc(mvTxt)+'</div>'+
+    (r._why?'<div class="tmr3">为什么：'+esc(_tmShortWhy(r._why))+'</div>':'')+
+    '<div class="tmr4">'+
+      (same?'<span class="badge badge-res">✓ 已是这套</span>'
+            :(inf&&inf.fromSave?'<span class="badge badge-neu">当前用的是存档实配</span> <button class="btn-mini" type="button" onclick="tmRecoApply('+s.id+')">✓ 换成引擎推荐</button>'
+                                :'<button class="btn-mini" type="button" onclick="tmRecoApply('+s.id+')">✓ 用这套</button>'))+
+    '</div></div>';
+  return h;
+}
+function tmAnswerBar(){
+  if(!team||!team.length)return '';
+  var core=null;
+  try{var ci=erCoreIdx();core=team[ci]||null}catch(eC){eC.name}
+  return '<div class="tmans">'+
+    '<b>这张表已经替你配好了</b>：每只下面是引擎推荐（特性 / 道具 / 性格 / EV / 四招），点「✓ 用这套」就写进队伍，不必自己一项项选。'+
+    '<div style="margin-top:3px">唯一必须你定的是 <b>核心是谁</b>：它决定另外 5 只围绕谁配。当前核心：<b>'+esc(core?core.zh:'未设')+
+    '</b>（点槽位右上角 ⭐ 切换）。想改细节时再展开「手动改」。</div></div>';
+}
+/* ============================================ */
 /* v4.101 队检 chip 展开 */
 /* v4.101 队检聚合告警 */
 /* v4.101 迷你联防条 */
@@ -18909,7 +19007,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.327';
+var ER_ENGINE_VER='v4.328';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
