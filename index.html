@@ -12572,6 +12572,16 @@ function evDuraAlloc(s){
 }
 function sanitizeBuild(s,b){
   if(!b||!s)return b;
+  /* v4.323：4 招去重——补位 / 队友装配 / 机制模板叠加可能把同一招 push 两次
+     （实例：雷公 #243「反射壁 / 反射壁 / 伏特攻击 / 睡觉」），去重后槽位由 fillMvSlots 补满 */
+  try{
+    var _mvD=(b.mv&&b.mv.main)||[],_seenD={},_ndD=[];
+    _mvD.forEach(function(x){if(!x||x.id==null)return;var kD=''+x.id;if(_seenD[kD])return;_seenD[kD]=1;_ndD.push(x)});
+    if(_ndD.length!==_mvD.length){
+      b.mv.main=_ndD;
+      if(_ndD.length<4){try{b=fillMvSlots(s,b)}catch(eDF){eDF.name}}
+    }
+  }catch(eDD){eDD.name}
   try{
     var mv=(b.mv&&b.mv.main)||[],phys=0,spec=0,atkAny=0;
     mv.forEach(function(x){var m=MV[x.id];if(!m)return;var cat=m[4];
@@ -18579,7 +18589,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.322';
+var ER_ENGINE_VER='v4.323';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -18681,7 +18691,16 @@ function mateAssemble(r,teamArr,coreSysList){
     }
     var ev=pick.ev||buildEvs(s2,side,pick.roleTag,pick.name);
     var it=(pick.it&&pick.it.length)?pick.it[0]:null;
-    var mv=((pick.mv&&pick.mv.main)||[]).slice(0,4).map(function(sl){
+    /* v4.323：出队配置去重——deriveBuilds 源头可能保留重复槽（雷公 反射壁×2），入队前拦一道 */
+    var _mvDd=[],_mvSd={};((pick.mv&&pick.mv.main)||[]).forEach(function(sl){if(!sl||sl.id==null)return;var kd=''+sl.id;if(_mvSd[kd])return;_mvSd[kd]=1;_mvDd.push(sl)});
+    if(_mvDd.length<4){
+      try{
+        var _tB={mv:{main:_mvDd.slice()},side:(side||pick.side||coreSide(s2)),roleTag:(pick.roleTag||'输出'),name:(pick.name||'')};
+        var _fB=fillMvSlots(s2,_tB);
+        _mvDd=((_fB&&_fB.mv&&_fB.mv.main)||_mvDd).slice(0,4);
+      }catch(eF2){eF2.name}
+    }
+    var mv=_mvDd.slice(0,4).map(function(sl){
       var m=MV[sl.id];return {id:sl.id,zh:(m?m[1]:String(sl.id)),ty:(m?m[3]:''),cat:(m?m[4]:'')};
     });
     var _ab0=(abi&&abi[0])||null;
@@ -18689,6 +18708,7 @@ function mateAssemble(r,teamArr,coreSysList){
     if(!_abName)_abName=(s2.abis||[])[0]||'';
     out={abi:abi,abiName:_abName,
       item:(it?(Array.isArray(it)?it[0]:it):''),itemWhy:(it&&it[1])||'',ev:ev,
+      nat:(function(){try{return (pick.nat&&pick.nat[0]&&pick.nat[0][0])?normNatName(pick.nat[0][0]):''}catch(eN){return ''}})(),
       roleTag:pick.roleTag,side:side,name:pick.name,moves:mv,priRole:pri,assembled:true};
   }else{
     out={abi:[],abiName:'',item:'',itemWhy:'',ev:null,roleTag:tag,side:coreSide(s2),name:'',moves:[],priRole:pri,assembled:false};
@@ -18915,6 +18935,58 @@ function oneLiner(bd){
   if(hasRec)bits.push('自带回复所以更耐打');
   return bits.join('，')+'。';
 }
+/* v4.323：核心页「就用这套」——把核心 + 主推队友按各自装配结果搬进队伍构建（配置全带） */
+function coreApplyPlanInfo(sp,bd){
+  var abn='';try{
+    var _a=(bd&&bd.abi&&bd.abi[0])||null;
+    if(_a){if(_a.id!=null&&_a.id!==''&&typeof ABI!=='undefined'&&ABI[_a.id])abn=(ABI[_a.id][2]||ABI[_a.id][1]||'');else abn=String(_a.n||'')}
+  }catch(e0){abn=''}
+  var nat='';try{nat=normNatName((bd&&bd.nat&&bd.nat[0]&&bd.nat[0][0])||'')}catch(e1){nat=''}
+  var mv=[];try{mv=((bd&&bd.mv&&bd.mv.main)||[]).map(function(x){return (MV[x.id]||[])[1]||String(x.id)})}catch(e2){mv=[]}
+  return {fromSave:false,item:(bd&&bd.it&&bd.it[0]&&bd.it[0][0])||'',moves:mv,pps:[],
+    ev:(bd&&bd.ev&&bd.ev.alloc)||null,nat:nat,pick:abn};
+}
+function coreApplyAll(){
+  var P=window._CORE_PLAN;
+  if(!P||!P.cid){toast('先在核心页选一只核心宝可梦');return}
+  var coreSp=null;try{coreSp=(ERDATA.species||[]).filter(function(x){return +x.id===+P.cid})[0]||null}catch(eF){coreSp=null}
+  if(!coreSp){toast('核心数据丢失，刷新后重试');return}
+  var now=Date.now();
+  if(team.length&&!(window._coreApplyTs&&now-window._coreApplyTs<4000)){
+    window._coreApplyTs=now;
+    var b0=document.getElementById('coreApplyBtn');
+    if(b0)b0.textContent='⚠ 再点一次确认替换（现有 '+team.length+' 只将被清空）';
+    setTimeout(function(){var b=document.getElementById('coreApplyBtn');if(b)b.textContent='🧩 就用这套（6 只一键配齐）'},4500);
+    toast('当前队伍有 '+team.length+' 只，再点一次确认替换');
+    return;
+  }
+  window._coreApplyTs=0;
+  var bd=null;try{bd=deriveBuilds(coreSp,null)[0]||null}catch(eB){bd=null}
+  var items=[{s:coreSp,info:coreApplyPlanInfo(coreSp,bd)}];
+  (P.mates||[]).forEach(function(m){
+    if(items.length>=6)return;
+    var sp=null;try{sp=(ERDATA.species||[]).filter(function(x){return +x.id===+m.id})[0]||null}catch(eS){sp=null}
+    if(!sp||items.some(function(t){return t.s===sp}))return;
+    var asm=null;
+    try{
+      var ctxTeam=[coreSp].concat(items.map(function(t){return t.s}));
+      asm=mateAssemble({s:sp,priRole:m.pri},ctxTeam,coreSys(coreSp));
+    }catch(eA){asm=null}
+    if(!asm)return;
+    items.push({s:sp,info:{fromSave:false,item:asm.item||'',moves:(asm.moves||[]).map(function(x){return x.zh}),
+      pps:[],ev:(asm.ev&&asm.ev.alloc)||null,nat:asm.nat||'',pick:asm.abiName||''}});
+  });
+  team.length=0;Object.keys(teamInfo).forEach(function(k){delete teamInfo[k]});
+  var ok=0;
+  items.forEach(function(t){
+    if(team.length>=6)return;
+    if(team.indexOf(t.s)>-1)return;
+    if(!isValidSp(t.s))return;
+    team.push(t.s);teamInfo[t.s.id]=t.info;ok++;
+  });
+  try{renderTm(true)}catch(e1){e1.name}try{renderSlots()}catch(e2){e2.name}try{renderAnalyze()}catch(e3){e3.name}saveTeam();
+  toast('已配齐 '+ok+' 只（核心 + 队友），切到「队伍构建」可直接看体检');
+}
 function renderCore(s){
   if(!window.__erReady){var _co=document.getElementById('coreOut');if(_co)_co.innerHTML='<div class="tip">数据加载中…</div>';return}
   if(window.__ER_PARTIAL){var _co2=document.getElementById('coreOut');if(_co2)_co2.innerHTML='<div class="tip">部分数据缺失（'+(Object.keys(window.__ER_SHARDS.fail||{}).join('/')||'未知')+'），请点右下角「重试」</div>';return}
@@ -19112,10 +19184,13 @@ function renderCore(s){
     if(bd.it.length>3)html+='<span class="dim">（另有 '+(bd.it.length-3)+' 项备选）</span>';
     html+='</div></div>';
     /* ⑧ 队友（v4.24：**完整 6 人推荐队**，每只带定位徽章 + 同定位候选可混搭替换；备选 5 只网格） */
-    html+='<div class="fld"><div class="fhd"><span class="fno">8</span>推荐队伍（6 人）</div>'+
+    html+='<div class="fld"><div class="fhd"><span class="fno">8</span>推荐队伍（6 人）'+
+      '<button class="btn-mini" id="coreApplyBtn" type="button" style="margin-left:8px;background:#00897b;color:#fff;font-size:14.5px" onclick="coreApplyAll()" title="把核心与主推队友的完整配置（特性 / 道具 / 性格 / EV / 四招）一次搬进「队伍构建」">🧩 就用这套（6 只一键配齐）</button>'+
+      '</div>'+
       '<div class="dim">核心（'+esc(bd.side)+'向 / '+esc(bd.roleTag||'')+'）＋5 名队友；每名队友标<u>定位</u>，定位下方给出同定位候选，可混搭替换；全部按综合分+体系+联防动态权衡</div>';
     /* v4.33 N1：6 人队=核心+5 名队友——主推最多 5 只（原 tms.main 可 6 只→正文"核心以外 6 只"=7 人超限矛盾） */
     var mainMates=(tms.main&&tms.main.length)?tms.main.slice(0,5):tms.slice(0,5),seenId={},altMates=[];
+    try{window._CORE_PLAN={cid:s.id,mates:mainMates.map(function(r){return {id:(r&&r.s)?r.s.id:null,pri:(r&&r.priRole)||''}}).filter(function(m){return m.id!=null})}}catch(ePlan){ePlan.name}
     mainMates.forEach(function(r){if(r&&r.s)seenId[String(r.s.id)]=1});
     tms.slice(5).forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
     recs.forEach(function(r){if(r&&r.s&&altMates.length<5&&!seenId[String(r.s.id)]){seenId[String(r.s.id)]=1;altMates.push(r)}});
