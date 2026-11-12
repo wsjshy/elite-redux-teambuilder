@@ -10784,8 +10784,14 @@ function archOfSp(s,side,roleTag){
 /* 体系打分：返回 {total, dims[], drop, dropWhy}；dims 逐维度列分（可解释）
    v4.2：drop 机制**已停用**（用户裁定：推荐逻辑改正向体系构建，不做反向淘汰）——
    字段保留但恒为 false，仅为兼容既有调用方/断言；不再有 −999 否决。 */
+var _sysScoreC={},_sysScoreK='';
 function sysScore(s,arch,ctx){
   ctx=ctx||{};
+  var _sk=String((ctx.core&&ctx.core.id)||0)+'|'+(ctx.side||'')+'|'+String((ctx.counters||[]).join(','));
+  if(_sk!==_sysScoreK){_sysScoreC={};_sysScoreK=_sk}
+  var _kc=String((s&&s.id)||0)+'|'+arch;
+  var _hit=_sysScoreC[_kc];
+  if(_hit)return _hit;
   if(!ctx.learn)ctx.learn=learnOf(s);
   if(!ctx.conv)ctx.conv=convOf(s);
   if(!ctx.sys)ctx.sys=spSys(s);
@@ -10798,7 +10804,9 @@ function sysScore(s,arch,ctx){
     total+=pts;
     dims.push({dim:d.dim,w:d.w,pts:pts,txt:r.t,drop:false});
   });
-  return {total:total,dims:dims,drop:false,dropWhy:'',arch:arch};
+  var _ret={total:total,dims:dims,drop:false,dropWhy:'',arch:arch};
+  _sysScoreC[_kc]=_ret;
+  return _ret;
 }
 /* 体系 → 该体系维度权重表文本（写进模板卡/报告） */
 function sysTable(arch){
@@ -15996,7 +16004,22 @@ function _teamBlind(tal){var n=0;for(var t in tal)if(tal[t].w>0&&tal[t].r===0&&t
 /* P1-2/P1-3：全局队友频次 + 同核心跨流派复用登记（模块级；UI 增量、导出脚本按物种序确定） */
 var _MATE_FREQ={},_MATE_FREQ_SEEN={},_CORE_MATE_USED={};
 var _USED_PEN=3.0;   /* 同核心跨流派复用惩罚（换皮治理，v4.34g 换皮 36/67 → 目标显著下降） */
+var _ftCache={};
 function findTeammates(s,side,roleTag){
+  side=side||coreSide(s);roleTag=roleTag||'输出';
+  var _fk=String(s&&s.id)+'|'+side+'|'+roleTag;
+  var _fv=_ftCache[_fk];
+  if(_fv)return _fv;
+  _fv=_findTeammatesCore(s,side,roleTag);
+  /* 数据未就绪/分片缺件时不缓存，避免把半截结果钉死 */
+  if(_fv&&window.__erReady&&!window.__ER_PARTIAL){
+    _ftCache[_fk]=_fv;
+    var _fn=0;for(var _fk2 in _ftCache)_fn++;
+    if(_fn>60)_ftCache={};
+  }
+  return _fv;
+}
+function _findTeammatesCore(s,side,roleTag){
   side=side||coreSide(s);roleTag=roleTag||'输出';
   var weak=coreWeak(s),holes=coverHoles(s),sys=coreSys(s),learn=learnOf(s);
   var hasRec=hasAny(learn,FUNC_MV.rec),hasHaz=hasAny(learn,FUNC_MV.hazard),hasSpd=hasAny(learn,FUNC_MV.speed);
@@ -19012,7 +19035,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.329';
+var ER_ENGINE_VER='v4.330';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -19823,8 +19846,14 @@ function selectCore(id){
   if(!s)return;
   coreSel=s;
   switchTab('core');
-  renderCore(s);
+  /* v4.330：实测 renderCore 冷态约 1.1s（findTeammates ×4 扫全库 + 体系打分）；
+     同步调用期间浏览器不重绘 → 用户点了像没反应。这里先切到详情并放骨架，再异步算。 */
+  var _so=document.getElementById('coreOut');
+  var _sb=document.getElementById('thrBoardCore');
+  if(_sb)_sb.innerHTML='';
+  if(_so)_so.innerHTML='<div class="tip" style="padding:22px 10px;text-align:center;font-size:15px">正在算这一只的队友与配置…</div>';
   corePhase('detail');
+  setTimeout(function(){try{renderCore(s)}catch(eR){eR.name}},0);
 }
 function _initCoreList(){
   if(window._coreListInit)return;window._coreListInit=true;
