@@ -16585,11 +16585,12 @@ function _deriveBuildsCore(s,team){
       if(n==='加速')return !wall&&atkN>=2;
       if(n==='预知梦')return !wall&&atkN>=1;
       if(n==='傲慢')return !wall&&b.side==='特殊';
+      if(n==='魔法防守'||n==='毛皮大衣'||n==='持久力'||n==='自我修复'||n==='奇迹皮肤')return true;
       if(n==='妖精气场')return hasDmg('妖精');
       if(n==='森林之怒')return hasDmg('草');
       if(n==='火山之怒')return hasDmg('火');
       if(n==='腐蚀')return hasDmg('毒');
-      if(n==='超能之心')return hasDmg('超能');
+      if(n==='超能之心')return hasDmg('超能力');
       if(n==='鞭打')return !wall&&b.side==='物理';
       if(n==='斗争精神')return !wall&&hasDmg('一般');
       if(n==='大地冲击')return hasDmg('电');
@@ -16654,7 +16655,108 @@ function _deriveBuildsCore(s,team){
         b.abi[0].why=[dn+'：本流派四招没有可触发的招式，此特性不生效，主推换更契合的特性'];
         b.abi[0].sc=Math.min(+(b.abi[0].sc||0),1);
       }
+    });  /* v4.363 属性强化型特性死联动第四批：招式属性威力提升（龙颚/燃烧/虫之预感/钢能力者/黑暗亲和/激流/茂盛/猛火/深度冻结/北极光/复仇之魂/适应力）、
+     一般招转属性皮肤（一般皮肤/青草皮肤/格斗皮肤/岩石皮肤/水之皮肤/超能皮肤）、用某属性招后追加触发（雷电召唤/火山之怒/霜火/水电转化）。
+     判死口径：四招里没有该属性的伤害招（皮肤看一般伤害招，适应力看本系伤害招）= 该特性在本流派拿不到加成。 */
+  try{
+    var _A4_B={'龙颚':['龙'],'燃烧':['火'],'虫之预感':['虫'],'钢能力者':['钢'],'黑暗亲和':['恶'],'激流':['水'],'茂盛':['草'],'猛火':['火'],
+      '深度冻结':['水','冰'],'北极光':['冰'],'复仇之魂':['幽灵'],'适应力':['*STAB'],'雷电召唤':['电'],'火山之怒':['火'],'霜火':['火'],'水电转化':['电','水']};
+    var _A4_SKIN={'一般皮肤':'一般','青草皮肤':'一般','格斗皮肤':'一般','岩石皮肤':'一般','水之皮肤':'一般','超能皮肤':'一般'};
+    var _A4_EXCL=/飞翔|挖洞|潜水|日光束|弹跳|自由落体|破坏光线|终极冲击|蓄力|影子之力|自爆|同归|大爆炸|预知未来/;
+    function _a4Hit(ab,b){
+      var ty=_A4_SKIN[ab],ts=_A4_B[ab]||[];
+      var all=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      return all.some(function(x){
+        var M=MV[x.id];if(!M||M[4]==='变化')return false;
+        if(ts[0]==='*STAB')return M[3]===s.t1||M[3]===s.t2;
+        if(ty)return M[3]===ty;
+        return ts.indexOf(M[3])>-1;
+      });
+    }
+    function _a4OkMove(ab,id){
+      var M=MV[id];if(!M||M[4]==='变化')return false;
+      var ty=_A4_SKIN[ab];if(ty)return M[3]===ty;
+      var ts=_A4_B[ab]||[];
+      if(ts[0]==='*STAB')return M[3]===s.t1||M[3]===s.t2;
+      return ts.indexOf(M[3])>-1;
+    }
+    function _a4AltOk(n,b,allM){
+      var wall=/联防|消耗|受|辅助|墙/.test(String(b.name||''));
+      var atkN=allM.filter(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'}).length;
+      function hasDmg(ty){return allM.some(function(x){return MV[x.id]&&MV[x.id][3]===ty&&MV[x.id][4]!=='变化'})}
+      if(n==='避雷针'||n==='毒刺'||n==='尖刺盔甲'||n==='纯朴'||n==='防弹'||n==='粉彩护幕'||n==='复制')return wall;
+      if(n==='加速')return !wall&&atkN>=2;
+      if(n==='预知梦')return !wall&&atkN>=1;
+      if(n==='傲慢')return !wall&&b.side==='特殊';
+      if(n==='魔法防守'||n==='毛皮大衣'||n==='持久力'||n==='自我修复'||n==='奇迹皮肤')return true;
+      if(n==='妖精气场')return hasDmg('妖精');
+      if(n==='森林之怒')return hasDmg('草');
+      if(n==='火山之怒')return hasDmg('火');
+      if(n==='腐蚀')return hasDmg('毒');
+      if(n==='超能之心')return hasDmg('超能力');
+      if(n==='鞭打')return !wall&&b.side==='物理';
+      if(n==='斗争精神')return !wall&&hasDmg('一般');
+      if(n==='大地冲击')return hasDmg('电');
+      return false;
+    }
+    out.forEach(function(b){
+      if(b.score===99)return;
+      if(!b.abi||!b.abi.length||!b.abi[0])return;
+      var ab=b.abi[0].n;
+      if(!_A4_B[ab]&&!_A4_SKIN[ab])return;
+      var dn=ab;
+      try{var _z4=null;(ERDATA.abilities||[]).forEach(function(x){if(String(x[0])===String(b.abi[0].id))_z4=x[2]});if(!_z4)_z4=abiZhSp(b.abi[0].id);if(_z4)dn=_z4}catch(eD4){eD4.name}
+      if(_a4Hit(ab,b))return;
+      var allM=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      var carried=allM.map(function(x){return +x.id});
+      var coreIds=(b.core||[]).map(function(id){return +id});
+      var learn=learnOf(s)||[];
+      var cand=learn.filter(function(id){
+        if(carried.indexOf(id)>-1||!MV[id]||!_a4OkMove(ab,id))return false;
+        var M=MV[id];
+        if(b.side==='物理'&&M[4]!=='物理')return false;
+        if(b.side==='特殊'&&M[4]!=='特殊')return false;
+        if(+(M[5]||0)<70||+(M[6]||0)<90)return false;
+        if(_A4_EXCL.test(M[1]))return false;
+        return true;
+      }).sort(function(a1,c1){
+        var M1=MV[a1],M2=MV[c1];
+        var sa1=(s.t1===M1[3]||s.t2===M1[3])?1:0,sb1=(s.t1===M2[3]||s.t2===M2[3])?1:0;
+        if(sa1!==sb1)return sb1-sa1;
+        return +(M2[5]||0)-+(M1[5]||0);
+      })[0];
+      var atkObjs=allM.filter(function(x){
+        return MV[x.id]&&MV[x.id][4]!=='变化'&&coreIds.indexOf(+x.id)<0&&!_UTIL_R.test(MV[x.id][1]);
+      });
+      if(cand&&atkObjs.length){
+        atkObjs.sort(function(a1,c1){
+          var pa=+(MV[a1.id][5]||0),pc=+(MV[c1.id][5]||0);
+          if(pc!==pa)return pa-pc;
+          return +(MV[a1.id][6]||0)-+(MV[c1.id][6]||0);
+        });
+        var tgt=atkObjs[0],oldName=MV[tgt.id][1];
+        tgt.id=+cand;tgt.kind='attack';tgt.tag=MV[cand][1];
+        tgt.why=[MV[cand][1]+'：'+dn+'要靠这类招式加成，原'+oldName+'吃不到加成，换成它让特性真正生效'];
+        try{tgt.prin=mvDutyAxes(b.roleTag,'attack').axis}catch(eP4){eP4.name}
+        b.abi[0].why=[MV[cand][1]+'吃满'+dn+'加成，本流派特性真正生效'];
+        return;
+      }
+      for(var k4=1;k4<b.abi.length;k4++){
+        var nm4=b.abi[k4].n;
+        if(_a4AltOk(nm4,b,allM)){
+          var deadAbi4=b.abi[0];
+          b.abi[0]=b.abi[k4];b.abi[k4]=deadAbi4;
+          b.abi[0].why=[nm4+'：原'+dn+'在本流派没有能吃到加成的招式，换成与现有招式联动的特性'];
+          b.abi[0].sc=1;
+          return;
+        }
+      }
+      if(b.abi[0]){
+        b.abi[0].why=[dn+'：本流派四招没有该属性的伤害招，此特性拿不到加成，主推换更契合的特性'];
+        b.abi[0].sc=Math.min(+(b.abi[0].sc||0),1);
+      }
     });
+  }catch(eA4){eA4.name}
   }catch(eA3){eA3.name}
   return out;}function classifyBuilds(s,bs){
   var list=(bs||[]).slice().sort(function(a,b){
@@ -20029,7 +20131,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.362';
+var ER_ENGINE_VER='v4.363';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
