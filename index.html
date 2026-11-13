@@ -15166,6 +15166,44 @@ function teamHasRecovery(self,teamArr){
     for(var m=0;m<_RECOVERY_MV.length;m++){if(learnHasName(sp,_RECOVERY_MV[m],L))return _RECOVERY_MV[m]}
   }
   return null}
+/* ============ v4.344 专属道具（种族绑定，直接排第一） ============
+   口径来自 ERDATA.items 描述里写的绑定种族（381 大葱描述缺失 → 按系列惯例绑大葱鸭/葱游兵）。
+   这类道具对绑定种族往往是「攻击项直接翻倍」，强于讲究头带 1.5 且不锁招——该带就必须是主推，
+   不能因为通用池里「生命宝珠 1.3 / 讲究头带 1.5」分数高就把它挤掉。 */
+var SIGN_ITEM=[
+  {id:382,zh:'电气球',sign:[25,1588,1589,1590,1591,1592,26,1553,1857,1891],
+   why:'电气球（皮卡丘/雷丘专属）：攻与特攻 ×2，且不锁招——比讲究头带 1.5 更划算'},
+  {id:380,zh:'粗骨头',sign:[104,105,1568],
+   why:'粗骨头（卡拉卡拉/嘎啦嘎啦专属）：物攻 ×2，且不锁招——比讲究头带 1.5 更划算'},
+  {id:381,zh:'大葱',sign:[83,1574,865],
+   why:'大葱（大葱鸭/葱游兵专属）：暴击率大幅提升——搭高暴击招（树叶刃/暗袭要害）才算吃满'},
+  {id:375,zh:'心之水滴',sign:[380,381,1539,1540],
+   why:'心之水滴（拉帝亚斯/拉帝欧斯专属）：特攻与特防 ×1.5'},
+  {id:376,zh:'深海之牙',sign:[366],
+   why:'深海之牙（珍珠贝专属）：特攻 ×2，且不锁招'},
+  {id:377,zh:'深海鳞片',sign:[366],
+   why:'深海鳞片（珍珠贝专属）：特防 ×2'},
+  {id:379,zh:'金属粉',sign:[132],
+   why:'金属粉（百变怪专属）：防御 ×1.5'}
+];
+function signItemOf(s,side,roleTag){
+  try{
+    var sid=String(s&&s.id),tg=String(roleTag||''),sd=String(side||'');
+    var wall=(tg==='肉盾'||tg==='受队'||tg==='辅助'||tg==='联防'||sd==='辅助');
+    for(var i=0;i<SIGN_ITEM.length;i++){
+      var it=SIGN_ITEM[i];
+      if(!it.sign||it.sign.map(String).indexOf(sid)<0)continue;
+      /* 攻击向专属只在对应侧给；防御向专属只在耐久位给 */
+      if(it.zh==='电气球'&&wall)continue;
+      if((it.zh==='粗骨头'||it.zh==='大葱')&&(sd==='特殊'||sd==='辅助'))continue;
+      if((it.zh==='心之水滴'||it.zh==='深海之牙')&&sd!=='特殊')continue;
+      if((it.zh==='深海鳞片'||it.zh==='金属粉')&&!wall)continue;
+      if(it.zh==='深海鳞片'&&it.sign.map(String).indexOf(sid)>-1&&sd==='特殊')continue;
+      return it;
+    }
+  }catch(eSig){eSig.name}
+  return null;
+}
 function buildItem(s,side,roleTag,ctx){
   var list=itemDecide(s,side,roleTag,ctx).map(function(e){return [e.zh,e.why]});
   /* v4.10 机制锚点（§3 imposter_anchor：道具三选 讲究围巾/气势披带/脱壳忍者壳）——正向置顶，不剔除既有候选 */
@@ -15217,6 +15255,14 @@ function buildItem(s,side,roleTag,ctx){
       return false; /* 队伍非空且无回复 → 剔除 */
     });
   }catch(eLoOrb){}
+  /* v4.344 专属道具终门：绑定种族且用得上 → 直接置顶（备选保留 2 项，仍念旧口径） */
+  try{
+    var _si=signItemOf(s,side,roleTag);
+    if(_si&&_si.zh){
+      var _keep=list.filter(function(x){return x[0]!==_si.zh});
+      list=[[_si.zh,_si.why]].concat(_keep).slice(0,3);
+    }
+  }catch(eSig2){eSig2.name}
   return list
 }
 function isHighCritMove(mvId){
@@ -19269,7 +19315,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.343';
+var ER_ENGINE_VER='v4.344';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
