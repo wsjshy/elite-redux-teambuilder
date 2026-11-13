@@ -16130,6 +16130,27 @@ function _deriveBuildsCore(s,team){
       b.it=keep;
     });
   }catch(eHv){eHv.name}
+  /* v4.352 生命宝珠 × 固定回复（消耗/联防流派）：宝珠每回合自伤 10% 会抵掉羽栖/晨光/自我再生这类固定回复，
+     这类流派的正解是常驻续航件（剩饭 / 毒系黑色污泥）。
+     但吸血类（终极吸取/吸取拳/寄生种子）反过来吃宝珠的 30% 伤害加成，净收益为正，不动。 */
+  try{
+    var _DR=/终极吸取|吸取拳|寄生种子|汲取|吸血|吸取/;
+    var _FX=/羽栖|晨光|月光|光合作用|生蛋|睡觉|自我再生|再生/;
+    out.forEach(function(b){
+      if(!b.it||!b.it.length)return;
+      if(String(b.it[0][0]||'').indexOf('生命宝珠')<0)return;
+      var dn=false,fx=false;
+      ((b.mv&&b.mv.main)||[]).forEach(function(m){var M=MV[m.id];if(!M)return;var nm=String(M[1]);if(_DR.test(nm))dn=true;if(_FX.test(nm))fx=true});
+      if(!fx||dn)return;
+      if(!(/消耗|联防|受|双墙/.test(String(b.name||''))||b.side==='辅助'))return;
+      var _po=(+s.t1===10||+s.t2===10);
+      var like=_po?['黑色污泥','消耗流要的是常驻续航：宝珠每回合自伤 10%，会抵掉固定回复']:
+        ['剩饭','消耗流要的是常驻续航：宝珠每回合自伤 10%，会抵掉羽栖/晨光这类固定回复'];
+      var keep=[like];
+      b.it.forEach(function(x){if(String(x[0])!=='剩饭'&&String(x[0])!=='黑色污泥'&&keep.length<3)keep.push(x)});
+      b.it=keep;
+    });
+  }catch(eOrb){eOrb.name}
   /* 破壳 × 单纯 的怪，默认首屏就该是破壳那条线（否则第一眼看到的是联防流派，等于没推） */
   try{
     var _lb1=learnOf(s)||[];
@@ -19514,7 +19535,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.351';
+var ER_ENGINE_VER='v4.352';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
