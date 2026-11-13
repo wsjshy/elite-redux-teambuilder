@@ -16105,6 +16105,31 @@ function _deriveBuildsCore(s,team){
       b.it=keep;
     });
   }catch(eHb){eHb.name}
+  /* v4.351 收获 / 贪吃鬼 × 果（消耗品联动）：
+     收获每回合把吃掉的果长回来、贪吃鬼让果在半血就触发 —— 道具位没有果，两条特性都是白拿。
+     仍然不做单解绑定：只换道具位首位，专属道具占位则让位，已有果的不动，
+     带杂技的流派走宝石那条线（果会提前吃掉，打断「道具已消耗」的节奏）。 */
+  try{
+    out.forEach(function(b){
+      if(b.score===99)return;
+      var abiN=String((b.abi&&b.abi[0]&&b.abi[0].n)||'');
+      if(!/收获|贪吃鬼/.test(abiN))return;
+      if(!b.it||!b.it.length)return;
+      var top=String(b.it[0][0]||'');
+      if(top.indexOf('果')>-1)return;
+      /* 道具位被别的东西占死（专属件 / 杂技要宝石 / 剩饭厚底靴是续航骨架）：宁可把特性降次推，也不硬换 */
+      var _dm=function(){if(b.abi&&b.abi.length>1){var t=b.abi[0];b.abi[0]=b.abi[1];b.abi[1]=t;}};
+      if(/电气球|粗骨头|大葱|心之水滴|深海之牙|深海鳞片|金属粉|极速粉末/.test(top)){_dm();return;}
+      var ci=((b.mv&&b.mv.main)||[]).map(function(x){return +x.id});
+      if(ci.indexOf(512)>-1){_dm();return;}
+      if(/剩饭|厚底靴/.test(top)&&(b.side==='辅助'||/联防|消耗|双墙/.test(String(b.name||'')))){_dm();return;}
+      var why=/收获/.test(abiN)?'收获：每回合把吃掉的果长回来 —— 果从一次性变成可循环的续航':
+        '贪吃鬼：果在半血就触发 —— 把回血提前到最危险的那一回合';
+      var keep=[['文柚果',why]];
+      b.it.forEach(function(x){if(String(x[0])!=='文柚果'&&keep.length<3)keep.push(x)});
+      b.it=keep;
+    });
+  }catch(eHv){eHv.name}
   /* 破壳 × 单纯 的怪，默认首屏就该是破壳那条线（否则第一眼看到的是联防流派，等于没推） */
   try{
     var _lb1=learnOf(s)||[];
@@ -19489,7 +19514,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.350';
+var ER_ENGINE_VER='v4.351';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

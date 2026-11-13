@@ -38,6 +38,7 @@ D:\game\elite-redux\
 ├── nn_data\mech_lib_v412.json              ← ★v4.12 机制知识库（52 机制 / 156 combo / 40 词汇，meta version3 / schema v412 / updated 2026-10-10；既有 28 条逐字保留 + 24 新机制 + 32 新 combo，全部带来源 URL）
 ├── nn_data\smogon_prior_2026-09.json       ← ★v4.12 Smogon 标准对战先验（120 物种 / 2335 行，gen3ou×1.0 + gen9nationaldex×0.5，srcMax=0.516601 与既有 usagePrior 锚点逐位一致；引擎 SMOGON_PRIOR_ENABLED 开关消费、置 false 逐字节回退 v4.11）
 ├── nn_data\axis_lib.json                   ← ★15 协同轴知识库（v4.9 七字段逐字不动 + v4.12 每轴新增「体系模板」键：六位完整体系设计 15 轴×6 位=90/90）
+├── docs\dev\配队联动口径.md          ← ★**联动判定纪律**：代价 → 解法池 → 条件匹配；破壳/杂技/收获贪吃鬼/单纯无防守 四条落地 + why 写法 + 已证伪清单
 ├── docs\dev\仓库与分支说明.md         ← ★**仓库结构内部口径**：master/gh-pages 两条线的关系（「线上正常但首页显示旧提交」的成因）、分支清单与能否删、两个 HTML 入口、运行时文件 vs 本地源料、75 MB 体量构成、版本号三处同步护栏
 ├── docs\research\                    ← ★研究 / 清理 / 验证合辑（2026-11-07 起）
 │   ├── nn_data备份说明_20261107.md    ← nn_data/ 打包入库的理由、包内清单、还原与更新步骤、sha256
@@ -2735,6 +2736,7 @@ GitHub 首页默认显示 master，所以看起来「停滞」。
 | v4.331 | 1,867,400 | D386CF008AAB6C061053A1EFAF46B31C38A47595 | 线上一致（gh-pages `446791b`，逐字节核验） |
 | v4.332 | 1,870,922 | 94BF030D41EDF6EC786EA521CD9AF3BDB5305881 | 线上一致（gh-pages `eb4dcde`，逐字节核验） |
 | v4.333 | 1,872,939 | D8B23F0A6D7D82306A1FB58A695E714117D93AAD | 线上一致（gh-pages `fc9d42e`，逐字节核验） |
+| v4.351 | 1,904,441 | PENDING | 待部署（收获/贪吃鬼 × 果：有果位换文柚果，没果位降特性次推） |
 | v4.350 | 1,902,700 | A52E61667081D85D16090DB92352A386E1580DA0 | 线上一致（gh-pages `3a5ef0c`，逐字节核验） |
 | v4.349 | 1,901,489 | AAF4EA8C9A98274BB70452F66A0F8764A2368B42 | 线上一致（gh-pages `a06793a`，逐字节核验） |
 | v4.348 | 1,899,134 | 197F6D797FB43F3C404F8F73BC2758EBD8F393D6 | 线上一致（gh-pages `adc3d0e`，逐字节核验） |
