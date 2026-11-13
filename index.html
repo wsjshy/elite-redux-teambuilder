@@ -15940,29 +15940,59 @@ function _deriveBuildsCore(s,team){
       }catch(eEv3){eEv3.name}
     });
   }catch(eEv4){eEv4.name}
-  /* v4.345 招式/特性 × 道具 收口（此处 abi 已定稿，才能按真实特性给道具）：
-     ① 杂技(512)：无道具时威力 ×1.5 —— 带任何道具都是自废核心招，道具位就该空着
-     ② 毒疗 / 中毒激升：不吃毒等于白拿特性 → 剧毒宝珠
-     ③ 毅力（物理侧）：要异常才 ×1.5 → 火焰宝珠（灼伤减攻由毅力抵消）
-     ④ 列表压到 3 项：原来种子/宝石会堆到 5-6 项，纯噪音（全库 300 条超 3 项） */
+  /* ============ v4.345/v4.346 招式·特性 × 道具 收口（此处 abi 已定稿，才能按真实特性给道具） ============
+     ① 杂技(512)：不是「不能带道具」，而是「要被用掉」——宝石/果/香草/气球/披带这类一次性消耗品
+        打出去或用掉后道具位空出，杂技立刻 ×1.5；剩饭/讲究/进化奇石/宝珠这类常驻件才会一直占位、永远不翻倍。
+     ② 轻装：消耗道具即速度 ×2 —— 消耗品是特性开关，不是备选。
+     ③ 毒疗/中毒激升 → 剧毒宝珠；毅力（物理侧）→ 火焰宝珠（灼伤减攻由毅力抵消）。
+     ④ 冲突裁决：杂技/轻装要消耗品时，常驻宝珠让位并注明「二者只能选一」。
+     ⑤ 列表压到 3 项（原来种子/宝石会堆到 5-6 项，纯噪音）。 */
+  try{
+    if(typeof CONS_ITEM==='undefined'){
+      window.CONS_ITEM={};
+      [332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349].forEach(function(id){var z=itemZhName(id,'');if(z)CONS_ITEM[z]=1});
+      [76,78,79,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,125,129,130,131].forEach(function(id){var z=itemZhName(id,'');if(z)CONS_ITEM[z]=1});
+      ['白色香草','心灵香草','力量香草','气球','气势披带','弱点保险','属性减伤果'].forEach(function(z){CONS_ITEM[z]=1});
+    }
+  }catch(eCons){eCons.name}
   try{
     out.forEach(function(b){
       try{
         var its=(b.it||[]).slice();
         if(!its.length)return;
         var mains=(b.mv&&b.mv.main)||[];
-        var _acro=mains.filter(function(x){return +x.id===512})[0];
-        if(_acro&&(_acro.tag==='核心'||((b.core||[]).indexOf(512)>=0))){
-          b.it=[['不带道具','杂技无道具时威力 ×1.5（75 → 112.5）；带任何道具都会失去这个翻倍，道具位空着更好']];
-          return;
-        }
         var abiZ=(b.abi||[]).map(function(a){return String(a&&a.n)}).join('|');
+        var _isCons=function(x){return !!(x&&CONS_ITEM[x[0]])};
+        var _clean=function(t){return String(t||'').replace(/。$/,'')};
+        var _gem=(function(){var g=GEM_TYPE[String(s.t1)]||0;return g?itemZhName(g,''):''})();
+        /* ① 异常系道具（先落位，后面若被判为消耗路线会让位） */
         if(/毒疗|中毒激升/.test(abiZ)){
           if(!its.some(function(x){return x[0]==='剧毒宝珠'}))
             its.unshift(['剧毒宝珠','毒疗/中毒激升要吃中毒才生效：剧毒宝珠每回合叠毒，同时按最大 HP 持续回血']);
         }else if(/毅力/.test(abiZ)&&b.side==='物理'){
           if(!its.some(function(x){return x[0]==='火焰宝珠'}))
             its.unshift(['火焰宝珠','毅力要异常状态才加成：火焰宝珠自烧触发攻 ×1.5（灼伤减攻由毅力抵消）']);
+        }
+        /* ② 需要「道具被用掉」的机制：杂技核心位 / 轻装 */
+        var _acro=mains.filter(function(x){return +x.id===512})[0];
+        var _acroCore=!!(_acro&&(_acro.tag==='核心'||((b.core||[]).indexOf(512)>=0)));
+        var _unb=/轻装/.test(abiZ);
+        if(_acroCore||_unb){
+          var keep=its.filter(_isCons);
+          var note='；先把它消耗掉，道具位空出的那一刻'+(  _acroCore?'杂技 ×1.5（75 → 112.5）':'轻装触发速度 ×2');
+          if(_acroCore?/杂技/.test(String(keep[0]&&keep[0][1])):/轻装/.test(String(keep[0]&&keep[0][1])))note='';
+          if(keep.length){
+            keep[0]=[keep[0][0],_clean(keep[0][1])+note];
+          }else{
+            var _cw;
+            if(_gem)_cw='带本系宝石 '+_gem+'：打出去就用掉，道具位一空'+( _acroCore?'杂技立即 ×1.5（75 → 112.5）':'轻装立即提速 ×2');
+            else _cw='带一次性消耗品（果/香草/气球）：用掉后道具位空出'+( _acroCore?'，杂技 ×1.5（75 → 112.5）':'，轻装速度 ×2');
+            keep=[[_gem||'文柚果',_cw]];
+          }
+          if(/毒疗|中毒激升|毅力/.test(abiZ)&&keep[0]){
+            keep[0][1]=_clean(keep[0][1])+'（剧毒/火焰宝珠是常驻件，带着它杂技/轻装永远不触发，只能二选一）';
+          }
+          its=keep;
         }
         b.it=its.slice(0,3);
       }catch(eIt1){eIt1.name}
@@ -19343,7 +19373,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.345';
+var ER_ENGINE_VER='v4.346';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
