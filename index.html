@@ -16141,16 +16141,40 @@ function _deriveBuildsCore(s,team){
       if(String(b.it[0][0]||'').indexOf('生命宝珠')<0)return;
       var dn=false,fx=false;
       ((b.mv&&b.mv.main)||[]).forEach(function(m){var M=MV[m.id];if(!M)return;var nm=String(M[1]);if(_DR.test(nm))dn=true;if(_FX.test(nm))fx=true});
-      if(!fx||dn)return;
+      /* 防守型（消耗 / 联防 / 墙 / 辅助）整体不配宝珠：站场要的是常驻续航，不是 30% 伤害 */
       if(!(/消耗|联防|受|双墙/.test(String(b.name||''))||b.side==='辅助'))return;
       var _po=(+s.t1===10||+s.t2===10);
-      var like=_po?['黑色污泥','消耗流要的是常驻续航：宝珠每回合自伤 10%，会抵掉固定回复']:
-        ['剩饭','消耗流要的是常驻续航：宝珠每回合自伤 10%，会抵掉羽栖/晨光这类固定回复'];
+      var like=_po?['黑色污泥','防守型要的是常驻续航：宝珠每回合自伤 10%，站场回合越多亏得越多']:
+        ['剩饭','防守型要的是常驻续航：宝珠每回合自伤 10%，站场回合越多亏得越多'];
       var keep=[like];
       b.it.forEach(function(x){if(String(x[0])!=='剩饭'&&String(x[0])!=='黑色污泥'&&keep.length<3)keep.push(x)});
       b.it=keep;
     });
   }catch(eOrb){eOrb.name}
+  /* v4.353 生命宝珠 × 消伤特性：强行（忽略附加效果，宝珠反伤随附加效果一起被吃掉）、
+     魔法防守（不吃非直接伤害）—— 这两条特性带宝珠是纯赚 30%，进攻侧应当首推。
+     仍走条件：非防守型 + ≥2 个伤害招 + 道具位没被专属件占住。 */
+  try{
+    out.forEach(function(b){
+      if(b.score===99)return;
+      var abiN=String((b.abi&&b.abi[0]&&b.abi[0].n)||'');
+      if(!/强行|魔法防守/.test(abiN))return;
+      if(b.side==='辅助'||/消耗|联防|受|双墙/.test(String(b.name||'')))return;
+      var mvs=(b.mv&&b.mv.main)||[];var dmg=0;
+      mvs.forEach(function(x){var M=MV[x.id];if(M&&(M[4]==='物理'||M[4]==='特殊')&&(+M[5]||0)>0)dmg++});
+      if(dmg<2)return;
+      if(!b.it||!b.it.length)return;
+      var top=String(b.it[0][0]||'');
+      if(top.indexOf('生命宝珠')>-1)return;
+      if(/电气球|粗骨头|大葱|心之水滴|深海之牙|深海鳞片|金属粉|极速粉末/.test(top))return;
+      var ci=mvs.map(function(x){return +x.id});if(ci.indexOf(512)>-1)return;
+      var why=/强行/.test(abiN)?'强行：附加效果被忽略，宝珠的反伤也跟着失效 —— 30% 增伤纯赚':
+        '魔法防守：不吃非直接伤害 —— 宝珠的反伤对你无效，30% 增伤纯赚';
+      var keep=[['生命宝珠',why]];
+      b.it.forEach(function(x){if(String(x[0])!=='生命宝珠'&&keep.length<3)keep.push(x)});
+      b.it=keep;
+    });
+  }catch(eLo2){eLo2.name}
   /* 破壳 × 单纯 的怪，默认首屏就该是破壳那条线（否则第一眼看到的是联防流派，等于没推） */
   try{
     var _lb1=learnOf(s)||[];
@@ -19535,7 +19559,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.352';
+var ER_ENGINE_VER='v4.353';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
