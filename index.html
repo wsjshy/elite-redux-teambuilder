@@ -16342,6 +16342,52 @@ function _deriveBuildsCore(s,team){
       });
     });
   }catch(eCh){eCh.name}
+  /* v4.358 同属性攻击招冗余：两个同属性、同类别、无特殊职责的伤害招 = 重复覆盖，
+     把弱者换成引擎候选序里第一个异属性攻击招补打击面。b.core 里的流派核心招不动。 */
+  try{
+    var _UTIL_R=/折返|替换|巴投|龙尾|吼叫|吸取|吸血|汲取|电光|突袭|子弹|音速|冰砾|水流喷射|真空波|佯攻|击掌|封锁|岩石封锁|火焰旋涡|绑紧|噪音|撒娇|瞪眼|叫声|金属音/;
+    out.forEach(function(b){
+      if(b.score===99)return;
+      var allM=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      var coreIds=((b.core||[]).map(function(id){return +id}));
+      var atkObjs=allM.filter(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'});
+      var groups={};
+      atkObjs.forEach(function(x){
+        var key=MV[x.id][3]+'|'+MV[x.id][4];
+        (groups[key]=groups[key]||[]).push(x);
+      });
+      Object.keys(groups).forEach(function(key){
+        var grp=groups[key];
+        if(grp.length<2)return;
+        var plain=grp.filter(function(x){
+          return coreIds.indexOf(+x.id)<0&&!_UTIL_R.test(MV[x.id][1]);
+        });
+        if(plain.length<2)return;
+        var haveIds=allM.map(function(x){return +x.id});
+        var haveTypes={};
+        atkObjs.forEach(function(x){haveTypes[MV[x.id][3]]=1});
+        var _CHARGE_R=/飞翔|挖洞|潜水|日光束|弹跳|自由落体|破坏光线|终极冲击|蓄力|影子之力/;
+        var pool=pickAttacks(s,b.side,40,b.roleTag);
+        var cand=pool.filter(function(o){
+          if(!o||!o.id||haveIds.indexOf(+o.id)>-1||haveTypes[o.ty]===1)return false;
+          var M=MV[o.id],_pow=+(M[5]||0),_acc=+(M[6]||0);
+          return _pow>=70&&_acc>=90&&!_CHARGE_R.test(M[1]);
+        })[0];
+        if(!cand)return;
+        plain.sort(function(a,c){
+          var pa=+(MV[a.id][5]||0),pc=+(MV[c.id][5]||0);
+          if(pc!==pa)return pa-pc;
+          var ha=+(MV[a.id][6]||0),hc=+(MV[c.id][6]||0);
+          return ha-hc;
+        });
+        var tgt=plain[0];
+        var oldName=MV[tgt.id][1];
+        tgt.id=+cand.id;tgt.kind='attack';tgt.tag=MV[cand.id][1];
+        tgt.why=[MV[cand.id][1]+'：原'+oldName+'与同属性另一招职责重复，换成异属性攻击招补打击面，四个槽各有各的用处'];
+        try{tgt.prin=mvDutyAxes(b.roleTag,'attack').axis}catch(eP){eP.name}
+      });
+    });
+  }catch(eRed){eRed.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19717,7 +19763,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.357';
+var ER_ENGINE_VER='v4.358';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
