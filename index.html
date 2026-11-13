@@ -11684,7 +11684,28 @@ function coreSys(s){
     return Object.keys(sys).slice();
   },'sys');
 }
-function coreSide(s){return _spCacheS(s,function(){var b=s.base;if(b[1]>b[3])return '物理';if(b[3]>b[1])return '特殊';return '双刀'},'side')}
+/* v4.343 攻击侧判定不再只看种族值：把「学得会什么、池子多厚多宽」一起算。
+   池质量 = 前三强伤害招均值（威力×命中），广度 = 可打击属性数；种族值只做锚点：
+   差距≥15%时以种族值为准（除非对面池子厚 45% 以上），差距不到 15% 由池子定，接近则双刀。 */
+function _mvKitOf(s,side){
+  var L=(typeof learnOf==='function'?learnOf(s):[])||[],arr=[],ty={};
+  L.forEach(function(id){var m=MV[id];if(!m||m[4]!==side)return;var pw=m[5]||0;if(pw<55)return;
+    var acc=(m[6]===undefined||m[6]===null)?100:m[6];if(acc>100)acc=100;
+    arr.push(pw*acc/100);ty[m[3]]=1});
+  arr.sort(function(x,y){return y-x});
+  var top=arr.slice(0,3),avg=top.length?(top[0]+(top[1]||0)+(top[2]||0))/top.length:0;
+  return {avg:avg,ty:Object.keys(ty).length,n:arr.length};
+}
+function coreSide(s){return _spCacheS(s,function(){
+  var a=s.base[1],c=s.base[3];
+  var P=_mvKitOf(s,'物理'),S=_mvKitOf(s,'特殊');
+  var sp=a*P.avg*(1+0.08*P.ty),ss=c*S.avg*(1+0.08*S.ty);
+  if(!sp&&!ss)return '双刀';if(!sp)return '特殊';if(!ss)return '物理';
+  if(a>=c*1.15)return (ss>sp*1.45)?'特殊':'物理';
+  if(c>=a*1.15)return (sp>ss*1.45)?'物理':'特殊';
+  if(sp>ss*1.25)return '物理';if(ss>sp*1.25)return '特殊';
+  return '双刀';
+},'side')}
 function coreRole(s){
   return _spCacheS(s,function(){return _coreRoleRaw(s)},'role');
 }
@@ -13095,7 +13116,10 @@ function sanitizeBuild(s,b){
     /* v4.32 P1-3：物理攻击种族极低（<70）不推荐物理招——双倍奉还/吸取拳等物理招伤害可忽略（幸福蛋攻10案例）；
        判据用 base[1]（物理攻击种族）而非 atkBest（max(攻,特攻)——幸福蛋特攻75会误放行）；
        过滤后 side/性格/EV 同步特殊侧，槽位由 fillMvSlots 补满 */
-    if(((s.base&&s.base[1])||0)<70&&phys>0&&!b.mechRw){
+    var _atk0=((s.base&&s.base[1])||0),_spa0=((s.base&&s.base[3])||0);
+    /* v4.343：原判据只看「物攻<70」就删物理招，没比对手的特攻——地鼠(攻55/特35)会被判成「物攻太低」
+       而改投特殊，特攻其实更低。改为：仅当特攻明显高于物攻（≥15%）时才净化物理招。 */
+    if(_atk0<70&&_spa0>_atk0*1.15&&phys>0&&!b.mechRw){
       /* v4.34 P0-1：b.core（机制流派登记的核心招）豁免本净化——原逻辑把「陀螺球/扑击/欺诈/硬撑」等
          低物攻物种的机制核心招一并过滤，导致「挂名不给件」的 1 招残卡（报告 4.1）
          v4.34 P0-1b：机制流派（b.mechRw）**整体豁免**——其攻击招由机制提供力度
@@ -15469,13 +15493,13 @@ function _mvNameAll(s,kwList){var out=[];kwList.forEach(function(kw){var id=_mvN
 function comboBuildsOf(s){
   var res=[];
   try{
-    var stab=stabBest(s,'物理')||stabBest(s,'特殊');
+    var _cs=coreSide(s),_s1=(_cs==='特殊')?'特殊':'物理';var stab=stabBest(s,_s1)||stabBest(s,_s1==='物理'?'特殊':'物理');
     var stabId=(stab&&stab.id)||null;
     /* v4.62 修复：技术高手/完美主义者(全招>60不生效)→本系招改选 power≤60 招 */
     var _hasTech=(s.abis||[]).concat(s.inns||[]).some(function(n){return /技术高手|完美主义者|Technician/.test(String(n||''))});
     if(_hasTech){var _low=null;(learnOf(s)||[]).forEach(function(id){var mm=MV[id];if(mm&&(mm[3]===s.t1||mm[3]===s.t2)&&(mm[5]||0)>0&&(mm[5]||0)<=60){_low=id;return}});if(_low)stabId=_low}
     /* 替身强化流：替身 + 强化招(剑舞/龙舞/冥想) + 控场(催眠粉/电磁波/催眠术) + 本系攻击 */
-    var sub=_mvNameHas(s,'替身');var boost=_mvNameAll(s,['剑舞','龙舞','冥想'])[0];
+    var sub=_mvNameHas(s,'替身');var boost=_mvNameAll(s,(_cs==='特殊')?['冥想','诡计','蝶舞','生长']:['剑舞','龙舞','磨爪','生长'])[0];
     var control=_mvNameAll(s,['催眠粉','电磁波','催眠术','电磁波波'])[0];
     if(sub&&boost&&control&&stabId){
       res.push({name:'替身强化流',roleTag:'强化',side:coreSide(s),score:4,breakingRoute:'组合',
@@ -15849,6 +15873,27 @@ function _deriveBuildsCore(s,team){
       if(bad.length>1){mvs.forEach(function(x,i){if(i>0&&bad.indexOf(x)>-1)mvs.splice(i,1)});try{b=fillMvSlots(s,b)}catch(eF2){eF2.name}}
     });
   }catch(eBs){eBs.name}
+  /* v4.343c 努力值/性格跟着实际输出侧走：招全在一侧、却把 100+ EV 投在另一侧 = 投废项
+     （皮卡丘原「252攻 + 全特殊招」这类）。只在真正投废时重算，耐久/辅助模板不动。 */
+  try{
+    out.forEach(function(b){
+      try{
+        var _ids=(b.mv&&b.mv.main)||[],_p=0,_q=0;
+        _ids.forEach(function(x){var m=MV[x&&x.id];if(!m)return;if(m[4]==='物理')_p++;else if(m[4]==='特殊')_q++;});
+        if(!b.ev||!b.ev.alloc)return;
+        var _al=b.ev.alloc,_tg=String(b.roleTag||'');
+        if(_tg==='肉盾'||_tg==='受队'||_tg==='辅助'||_tg==='联防'||b.side==='辅助')return;
+        var _fix='';
+        if(_p===0&&_q>0&&_al[1]>=100)_fix='特殊';
+        else if(_q===0&&_p>0&&_al[3]>=100)_fix='物理';
+        if(!_fix)return;
+        var _ne=null;try{_ne=buildEvs(s,_fix,_tg,b.name,b)}catch(eEv1){eEv1.name}
+        if(_ne&&_ne.alloc)b.ev=_ne;
+        var _nn2=null;try{_nn2=buildNature(s,_fix,_tg,b)}catch(eEv2){eEv2.name}
+        if(_nn2&&_nn2.length)b.nat=_nn2;
+      }catch(eEv3){eEv3.name}
+    });
+  }catch(eEv4){eEv4.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19224,7 +19269,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.342';
+var ER_ENGINE_VER='v4.343';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
