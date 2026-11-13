@@ -16043,7 +16043,7 @@ function _deriveBuildsCore(s,team){
         }
       }
       if(/单纯/.test(abiN)){
-        if(_hasBoost(ids)){_itemLink();return;}
+        if(_hasBoost(ids))return;
         LB=LB||learnOf(s)||[];
         var _SPEC=[347,417,483,526,74,334],_PHYS=[14,339,349,468,187,74,526,334];
         var _pool=(b.side==='特殊')?_SPEC:_PHYS;
@@ -16066,7 +16066,6 @@ function _deriveBuildsCore(s,team){
         if(!_tgt)return;
         _tgt.id=_pick;_tgt.kind='boost';_tgt.tag='强化';
         _tgt.why=['单纯：所有强化效果 ×2 —— 一次就是 +2，强化招在这只身上收益翻倍'];
-        _itemLink();
       }else if(/无防守/.test(abiN)){
         if(_OHKO.some(function(id){return ids.indexOf(id)>-1}))return;
         LB=LB||learnOf(s)||[];
@@ -16079,15 +16078,30 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eLk){eLk.name}
-  /* 破壳的降防代价由香草抹平这件事，对「所有带破壳的流派」都成立，不只单纯那条线 */
+  /* 破壳的降防只是「可能被反击」的代价，解法不止香草：
+     破壳后速度够先手、且本系高威力招足够一次打穿 → 带进攻件（生命宝珠/弱点保险）比香草更值；
+     只有速度先手不够或清场火力不足（会被反打）时，才把香草提到首推；其余情况香草只作备选、不占首位。 */
   try{
     out.forEach(function(b){
-      var ci=((b.mv&&b.mv.main)||[]).map(function(x){return +x.id});
+      var mvs=(b.mv&&b.mv.main)||[];
+      var ci=mvs.map(function(x){return +x.id});
       if(ci.indexOf(504)<0)return;
       if(!b.it||!b.it.length)return;
       if(/电气球|粗骨头|大葱|心之水滴|深海之牙|深海鳞片|金属粉|极速粉末/.test(String(b.it[0][0]||'')))return;
-      var keep=[['白色香草','破壳掉的 2 级防 / 特防被香草当场抹平，少一个破绽']];
+      var _sim=/单纯/.test(String((b.abi&&b.abi[0]&&b.abi[0].n)||''));
+      var _spdA=(+((s.base&&s.base[5])||0))*(_sim?3:2);
+      var _stab=0;mvs.forEach(function(x){var m=MV[x.id];if(!m)return;
+        var ty=+m[3];if(ty!==+s.t1&&ty!==+s.t2)return;if((+m[5]||0)>=80)_stab++;});
+      /* 别的解法同样算数：替身/守住/睡觉 挡一回合、结实/多鳞 硬吃一发，都不必用香草顶首推 */
+      var _safeSetup=(ci.indexOf(164)>-1||ci.indexOf(182)>-1||ci.indexOf(156)>-1||/结实|多重鳞片|多鳞/.test(String((b.abi||[]).map(function(x){return String(x&&x.n)}).join('|'))));
+      var _needHerb=((_spdA<110||_stab<2)&&!_safeSetup);
+      var _herb=['白色香草',_needHerb?'破壳后仍可能被超速打回：香草抹平 2 级防 / 特防，先把破绽补上':
+        '破壳后已能先手、火力也够：香草只是备选（真要防反打再换，平时让位给进攻件）'];
+      var keep=[];
+      if(_needHerb)keep.push(_herb);
       b.it.forEach(function(x){if(String(x[0])!=='白色香草'&&keep.length<3)keep.push(x)});
+      if(!_needHerb&&keep.length<3)keep.push(_herb);
+      if(keep.length>3)keep=keep.slice(0,3);
       b.it=keep;
     });
   }catch(eHb){eHb.name}
@@ -19475,7 +19489,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.349';
+var ER_ENGINE_VER='v4.350';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
