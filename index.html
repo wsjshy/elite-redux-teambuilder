@@ -15940,6 +15940,34 @@ function _deriveBuildsCore(s,team){
       }catch(eEv3){eEv3.name}
     });
   }catch(eEv4){eEv4.name}
+  /* v4.345 招式/特性 × 道具 收口（此处 abi 已定稿，才能按真实特性给道具）：
+     ① 杂技(512)：无道具时威力 ×1.5 —— 带任何道具都是自废核心招，道具位就该空着
+     ② 毒疗 / 中毒激升：不吃毒等于白拿特性 → 剧毒宝珠
+     ③ 毅力（物理侧）：要异常才 ×1.5 → 火焰宝珠（灼伤减攻由毅力抵消）
+     ④ 列表压到 3 项：原来种子/宝石会堆到 5-6 项，纯噪音（全库 300 条超 3 项） */
+  try{
+    out.forEach(function(b){
+      try{
+        var its=(b.it||[]).slice();
+        if(!its.length)return;
+        var mains=(b.mv&&b.mv.main)||[];
+        var _acro=mains.filter(function(x){return +x.id===512})[0];
+        if(_acro&&(_acro.tag==='核心'||((b.core||[]).indexOf(512)>=0))){
+          b.it=[['不带道具','杂技无道具时威力 ×1.5（75 → 112.5）；带任何道具都会失去这个翻倍，道具位空着更好']];
+          return;
+        }
+        var abiZ=(b.abi||[]).map(function(a){return String(a&&a.n)}).join('|');
+        if(/毒疗|中毒激升/.test(abiZ)){
+          if(!its.some(function(x){return x[0]==='剧毒宝珠'}))
+            its.unshift(['剧毒宝珠','毒疗/中毒激升要吃中毒才生效：剧毒宝珠每回合叠毒，同时按最大 HP 持续回血']);
+        }else if(/毅力/.test(abiZ)&&b.side==='物理'){
+          if(!its.some(function(x){return x[0]==='火焰宝珠'}))
+            its.unshift(['火焰宝珠','毅力要异常状态才加成：火焰宝珠自烧触发攻 ×1.5（灼伤减攻由毅力抵消）']);
+        }
+        b.it=its.slice(0,3);
+      }catch(eIt1){eIt1.name}
+    });
+  }catch(eIt2){eIt2.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19315,7 +19343,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.344';
+var ER_ENGINE_VER='v4.345';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
