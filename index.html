@@ -16004,7 +16004,8 @@ function _deriveBuildsCore(s,team){
      只替换非核心的伤害/功能位；学不会就保持原样，不硬造。 */
   try{
     var _OHKO=[32,90,329];
-    var _BST_ANY=[14,187,339,349,468,347,417,483,334,74,526];
+    var _BST_ANY=[14,187,339,349,468,347,417,483,334,74,526,504];
+    var _hasBoost=function(ids){return _BST_ANY.some(function(id){return ids.indexOf(id)>-1})};
     out.forEach(function(b){
       if(b.score===99)return;
       var abiN=(b.abi&&b.abi[0]&&String(b.abi[0].n))||'';
@@ -16013,8 +16014,14 @@ function _deriveBuildsCore(s,team){
       var ids=mvs.map(function(x){return x.id});
       var LB=null,_pick=null,_tgt=null;
       if(_BST_ANY.some(function(id){return ids.indexOf(id)>-1})&&_OHKO.some(function(id){return ids.indexOf(id)>-1}))return;
+      /* 能学破壳的单纯怪：破壳 × 单纯 是最强的一条线（+2/+2/+2 被翻成 +4/+4/+4），
+         此时把单纯提到首推，并保证破壳在招里 */
+      if(!/单纯/.test(abiN)&&/单纯/.test((b.abi||[]).map(function(a){return String(a&&a.n)}).join('|'))){
+        var _lb0=learnOf(s)||[];
+        if(_lb0.indexOf(504)>-1){b.abi.forEach(function(a,i){if(/单纯/.test(String(a&&a.n))){b.abi.splice(i,1);b.abi.unshift(a)}});abiN='单纯';}
+      }
       if(/单纯/.test(abiN)){
-        if(_BST_ANY.some(function(id){return ids.indexOf(id)>-1}))return;
+        if(_hasBoost(ids))return;
         LB=LB||learnOf(s)||[];
         var _SPEC=[347,417,483,526,74,334],_PHYS=[14,339,349,468,187,74,526,334];
         var _pool=(b.side==='特殊')?_SPEC:_PHYS;
@@ -16049,6 +16056,15 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eLk){eLk.name}
+  /* 破壳 × 单纯 的怪，默认首屏就该是破壳那条线（否则第一眼看到的是联防流派，等于没推） */
+  try{
+    var _lb1=learnOf(s)||[];
+    if(_lb1.indexOf(504)>-1&&/单纯/.test(out.map(function(b){return (b.abi||[]).map(function(x){return String(x&&x.n)}).join('|')}).join('|'))){
+      var _i0=-1;
+      out.forEach(function(b,i){if(_i0<0&&((b.mv&&b.mv.main)||[]).some(function(x){return +x.id===504}))_i0=i});
+      if(_i0>0){var _mv0=out[_i0];out.splice(_i0,1);out.unshift(_mv0);}
+    }
+  }catch(eSm){eSm.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19424,7 +19440,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.347';
+var ER_ENGINE_VER='v4.348';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
