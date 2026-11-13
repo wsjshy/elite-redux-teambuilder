@@ -15825,6 +15825,30 @@ function _deriveBuildsCore(s,team){
       else if(_p===0&&_q===0)b.side='辅助';
     });
   }catch(eSd){eSd.name}
+  /* v4.342 强化槽方向校准：强化招与实际伤害招反向（特殊攻手带剑舞）等于空槽，
+     换成同侧强化招；只有学得会才换，学不会保持原样（不硬造）。 */
+  try{
+    var _BP=[14,187,339,349,468],_BS=[347,417,483],_LB=null;
+    out.forEach(function(b){
+      if(b.score===99)return;
+      var mvs=(b.mv&&b.mv.main)||[],p=0,q=0;
+      mvs.forEach(function(x){var m=MV[x.id];if(!m)return;if(m[4]==='物理')p++;else if(m[4]==='特殊')q++});
+      var spec=(p===0&&q>0),phys=(q===0&&p>0);
+      if(!spec&&!phys)return;
+      var badList=spec?_BP:_BS,want=spec?_BS:_BP;
+      var bad=mvs.filter(function(x){return badList.indexOf(x.id)>-1});
+      if(!bad.length)return;
+      if(!_LB)_LB=learnOf(s)||[];
+      var alt=null;
+      want.forEach(function(id){if(alt===null&&_LB.indexOf(id)>-1&&!mvs.some(function(x){return x.id===id}))alt=id});
+      if(alt===null){['破壳','自我激励','生长'].forEach(function(k){var id=_mvNameHas(s,k);if(alt===null&&id&&!mvs.some(function(x){return x.id===id}))alt=id})}
+      if(alt===null)return;
+      var first=bad[0];
+      first.id=alt;first.kind='boost';first.tag='强化';
+      first.why=['换成与实际输出同侧的强化（'+String((MV[alt]||[])[1]||alt)+'）——原强化招强化的是你没有的攻击'];
+      if(bad.length>1){mvs.forEach(function(x,i){if(i>0&&bad.indexOf(x)>-1)mvs.splice(i,1)});try{b=fillMvSlots(s,b)}catch(eF2){eF2.name}}
+    });
+  }catch(eBs){eBs.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19200,7 +19224,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.341';
+var ER_ENGINE_VER='v4.342';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
