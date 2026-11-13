@@ -16553,6 +16553,109 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eA2){eA2.name}
+  /* v4.362 特性×招式死联动第三批：电晶体（电招）/ 天恩（追加效果招）/ 极度好战（非排除清单伤害招）/ 月食（妖精·恶招或催眠术）。
+     发电机（入场/电场蓄电）机制待引擎核实，本批不落规则。 */
+  try{
+    function _b3Sec(id){
+      var de=String((MV[id]&&MV[id][10])||'');
+      var ps=de.match(/(\d+)%/g)||[];
+      return ps.some(function(x){var n=parseInt(x,10);return n>0&&n<100});
+    }
+    var _B3_EXCL=/飞翔|挖洞|潜水|日光束|弹跳|自由落体|破坏光线|终极冲击|蓄力|影子之力|自爆|同归|大爆炸|预知未来/;
+    function _b3Trig(ab,id){
+      if(!MV[id])return false;
+      var dmg=MV[id][4]!=='变化';
+      if(ab==='电晶体')return dmg&&MV[id][3]==='电'&&+(MV[id][5]||0)>0;
+      if(ab==='天恩')return dmg&&_b3Sec(id);
+      if(ab==='月食')return MV[id][1]==='催眠术'||(dmg&&(MV[id][3]==='妖精'||MV[id][3]==='恶'));
+      if(ab==='极度好战'){
+        if(!dmg)return false;
+        if((MV[id][11]||[]).indexOf('连击')>-1)return false;
+        if(_B3_EXCL.test(MV[id][1]))return false;
+        return true;
+      }
+      return false;
+    }
+    var _B3_LIST=['电晶体','天恩','极度好战','月食'];
+    function _b3AltOk(n,b,allM){
+      var wall=/联防|消耗|受|辅助|墙/.test(String(b.name||''));
+      var atkN=allM.filter(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'}).length;
+      function hasDmg(ty){return allM.some(function(x){return MV[x.id]&&MV[x.id][3]===ty&&MV[x.id][4]!=='变化'})}
+      if(n==='避雷针'||n==='毒刺'||n==='尖刺盔甲'||n==='纯朴'||n==='防弹'||n==='粉彩护幕'||n==='复制')return wall;
+      if(n==='加速')return !wall&&atkN>=2;
+      if(n==='预知梦')return !wall&&atkN>=1;
+      if(n==='傲慢')return !wall&&b.side==='特殊';
+      if(n==='妖精气场')return hasDmg('妖精');
+      if(n==='森林之怒')return hasDmg('草');
+      if(n==='火山之怒')return hasDmg('火');
+      if(n==='腐蚀')return hasDmg('毒');
+      if(n==='超能之心')return hasDmg('超能');
+      if(n==='鞭打')return !wall&&b.side==='物理';
+      if(n==='斗争精神')return !wall&&hasDmg('一般');
+      if(n==='大地冲击')return hasDmg('电');
+      return false;
+    }
+    out.forEach(function(b){
+      if(b.score===99)return;
+      if(!b.abi||!b.abi.length||!b.abi[0])return;
+      var ab=b.abi[0].n;
+      if(_B3_LIST.indexOf(ab)<0)return;
+      var dn=ab;
+      try{var _z=null;(ERDATA.abilities||[]).forEach(function(a){if(String(a[0])===String(b.abi[0].id))_z=a[2]});if(!_z)_z=abiZhSp(b.abi[0].id);if(_z)dn=_z}catch(eD){eD.name}
+      var allM=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      if(allM.some(function(x){return _b3Trig(ab,x.id)}))return;
+      var carried=allM.map(function(x){return +x.id});
+      var coreIds=(b.core||[]).map(function(id){return +id});
+      var learn=learnOf(s)||[];
+      var cand=learn.filter(function(id){
+        if(carried.indexOf(id)>-1||!MV[id]||!_b3Trig(ab,id))return false;
+        var M=MV[id];
+        if(M[4]==='变化')return false;
+        if(b.side==='物理'&&M[4]!=='物理')return false;
+        if(b.side==='特殊'&&M[4]!=='特殊')return false;
+        if(ab!=='月食'){
+          if(+(M[5]||0)<70||+(M[6]||0)<90)return false;
+          if(_B3_EXCL.test(M[1]))return false;
+        }
+        return true;
+      }).sort(function(a,c){
+        var M1=MV[a],M2=MV[c];
+        var sa=(s.t1===M1[3]||s.t2===M1[3])?1:0,sc2=(s.t1===M2[3]||s.t2===M2[3])?1:0;
+        if(sa!==sc2)return sc2-sa;
+        return +(M2[5]||0)-+(M1[5]||0);
+      })[0];
+      var atkObjs=allM.filter(function(x){
+        return MV[x.id]&&MV[x.id][4]!=='变化'&&coreIds.indexOf(+x.id)<0&&!_UTIL_R.test(MV[x.id][1]);
+      });
+      if(cand&&atkObjs.length){
+        atkObjs.sort(function(a,c){
+          var pa=+(MV[a.id][5]||0),pc=+(MV[c.id][5]||0);
+          if(pc!==pa)return pa-pc;
+          return +(MV[a.id][6]||0)-+(MV[c.id][6]||0);
+        });
+        var tgt=atkObjs[0],oldName=MV[tgt.id][1];
+        tgt.id=+cand;tgt.kind='attack';tgt.tag=MV[cand][1];
+        tgt.why=[MV[cand][1]+'：'+dn+'要靠这类招式触发，原'+oldName+'不触发特性，换成它让特性真正生效'];
+        try{tgt.prin=mvDutyAxes(b.roleTag,'attack').axis}catch(eP2){eP2.name}
+        b.abi[0].why=[MV[cand][1]+'触发'+dn+'，本流派特性真正生效'];
+        return;
+      }
+      for(var k=1;k<b.abi.length;k++){
+        var nm=b.abi[k].n;
+        if(_b3AltOk(nm,b,allM)){
+          var deadAbi=b.abi[0];
+          b.abi[0]=b.abi[k];b.abi[k]=deadAbi;
+          b.abi[0].why=[nm+'：原'+dn+'在本流派没有可触发的招式，换成与现有招式联动的特性'];
+          b.abi[0].sc=1;
+          return;
+        }
+      }
+      if(b.abi[0]){
+        b.abi[0].why=[dn+'：本流派四招没有可触发的招式，此特性不生效，主推换更契合的特性'];
+        b.abi[0].sc=Math.min(+(b.abi[0].sc||0),1);
+      }
+    });
+  }catch(eA3){eA3.name}
   return out;}function classifyBuilds(s,bs){
   var list=(bs||[]).slice().sort(function(a,b){
     var d=(b.score||0)-(a.score||0);
@@ -19926,7 +20029,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.361';
+var ER_ENGINE_VER='v4.362';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
