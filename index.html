@@ -15998,6 +15998,57 @@ function _deriveBuildsCore(s,team){
       }catch(eIt1){eIt1.name}
     });
   }catch(eIt2){eIt2.name}
+  /* v4.347 特性 → 招式取向（特性白送的双倍/必中，不配就是白拿）：
+     · 单纯：所有强化效果 ×2 —— 没有强化招等于特性作废，按实际输出侧补一个
+     · 无防守：对手无法回避 —— 一击必杀招从 30% 命中变必中，没带就是浪费
+     只替换非核心的伤害/功能位；学不会就保持原样，不硬造。 */
+  try{
+    var _OHKO=[32,90,329];
+    var _BST_ANY=[14,187,339,349,468,347,417,483,334,74,526];
+    out.forEach(function(b){
+      if(b.score===99)return;
+      var abiN=(b.abi&&b.abi[0]&&String(b.abi[0].n))||'';
+      var mvs=(b.mv&&b.mv.main)||[];
+      if(!mvs.length)return;
+      var ids=mvs.map(function(x){return x.id});
+      var LB=null,_pick=null,_tgt=null;
+      if(_BST_ANY.some(function(id){return ids.indexOf(id)>-1})&&_OHKO.some(function(id){return ids.indexOf(id)>-1}))return;
+      if(/单纯/.test(abiN)){
+        if(_BST_ANY.some(function(id){return ids.indexOf(id)>-1}))return;
+        LB=LB||learnOf(s)||[];
+        var _SPEC=[347,417,483,526,74,334],_PHYS=[14,339,349,468,187,74,526,334];
+        var _pool=(b.side==='特殊')?_SPEC:_PHYS;
+        _pool.forEach(function(id){if(_pick===null&&LB.indexOf(id)>-1&&ids.indexOf(id)<0)_pick=id});
+        if(_pick===null){
+          /* 池子外的强化招：按名字兜底（生长/自我激励/宇宙力量/磨砺等可能不在标准池内） */
+          var _re=/剑舞|腹鼓|健美|龙舞|磨爪|冥想|诡计|蝶舞|铁壁|生长|自我激励|破壳|宇宙力量|磨砺|萤火|愤怒之粉|舞/;
+          LB.forEach(function(id){var m=MV[id];if(_pick!==null||!m)return;if(m[4]!=='变化')return;
+            if(!_re.test(String(m[1])))return;if(ids.indexOf(+id)>-1)return;
+            var _self=String((m[10]||'')+(m[9]||''));if(/对手|目标/.test(_self)&&!/自身|自己/.test(_self))return;
+            _pick=+id;
+          });
+        }
+        if(_pick===null){
+          /* 学不会任何强化招 → 单纯等于空特性，直接降为次推，别把废特性挂首推 */
+          if(b.abi&&b.abi.length>1){var _a0=b.abi[0];b.abi[0]=b.abi[1];b.abi[1]=_a0;}
+          return;
+        }
+        mvs.forEach(function(x){if(_tgt===null&&(b.core||[]).indexOf(x.id)<0&&MV[x.id]&&MV[x.id][4]!=='变化')_tgt=x});
+        if(!_tgt)return;
+        _tgt.id=_pick;_tgt.kind='boost';_tgt.tag='强化';
+        _tgt.why=['单纯：所有强化效果 ×2 —— 一次就是 +2，强化招在这只身上收益翻倍'];
+      }else if(/无防守/.test(abiN)){
+        if(_OHKO.some(function(id){return ids.indexOf(id)>-1}))return;
+        LB=LB||learnOf(s)||[];
+        _OHKO.forEach(function(id){if(_pick===null&&LB.indexOf(id)>-1)_pick=id});
+        if(_pick===null)return;
+        mvs.forEach(function(x){if(_tgt===null&&(b.core||[]).indexOf(x.id)<0&&MV[x.id]&&MV[x.id][4]!=='变化')_tgt=x});
+        if(!_tgt)return;
+        _tgt.id=_pick;_tgt.kind='attack';_tgt.tag='一击必杀';
+        _tgt.why=['无防守：对手无法回避 —— 一击必杀招从三成命中变成必中'];
+      }
+    });
+  }catch(eLk){eLk.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19373,7 +19424,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.346';
+var ER_ENGINE_VER='v4.347';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
