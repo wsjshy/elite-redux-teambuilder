@@ -16408,8 +16408,73 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eTe){eTe.name}
-  return out;
-}
+  /* v4.360 特性×招式死联动：触发类特性（拳/反伤/啃咬/波动/接触）在本流派没有可触发的招式 = 白拿。
+     解法池：先换能触发特性的攻击招（质量门）；换不了再验证一个能联动现有招式的备选特性；都不成立就不动。 */
+  try{
+    var _AL_PUNCH=/拳/;
+    var _AL_RECOIL=/双刃头锤|舍身撞|勇鸟|伏特攻击|木槌|火焰驱进|猛撞|地狱翻滚|爆爆头突击|闪焰冲锋|狂野伏特|抓狂/;
+    var _AL_JAW=/咬碎|冰牙|火牙|雷牙|毒牙|尖牙|咬|牙/;
+    var _AL_PULSE=/波导弹|水炮|水之波动|恶之波动|龙之波动|加农光炮|根源波动|真气弹|波动|脉冲|光环/;
+    function _alTrig(ab,id){
+      if(!MV[id])return false;
+      if(ab==='铁拳')return _AL_PUNCH.test(MV[id][1]);
+      if(ab==='舍身')return _AL_RECOIL.test(MV[id][1]);
+      if(ab==='强壮之颚')return _AL_JAW.test(MV[id][1]);
+      if(ab==='超级发射器')return _AL_PULSE.test(MV[id][1]);
+      if(ab==='硬爪')return mvIsContact(id);
+      return false;
+    }
+    var _AL_FIVE=['铁拳','舍身','强壮之颚','超级发射器','硬爪'];
+    function _alAltOk(n,b,allM){
+      if(n==='致命精准'||n==='脑核之力')return allM.some(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'});
+      if(n==='燃烧之魂')return allM.some(function(x){return MV[x.id]&&MV[x.id][3]==='火'&&MV[x.id][4]!=='变化'});
+      if(n==='要塞')return /联防|消耗|受|辅助|墙/.test(String(b.name||''));
+      return false;
+    }
+    out.forEach(function(b){
+      if(b.score===99)return;
+      if(!b.abi||!b.abi.length||!b.abi[0])return;
+      var ab=b.abi[0].n;
+      if(_AL_FIVE.indexOf(ab)<0)return;
+      var allM=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      if(allM.some(function(x){return _alTrig(ab,x.id)}))return;
+      var carried=allM.map(function(x){return +x.id});
+      var coreIds=(b.core||[]).map(function(id){return +id});
+      var pool=pickAttacks(s,b.side,40,b.roleTag);
+      var cand=pool.filter(function(o){
+        if(!o||!o.id||carried.indexOf(+o.id)>-1||!MV[o.id])return false;
+        if(!_alTrig(ab,o.id))return false;
+        var M=MV[o.id],_p=+(M[5]||0),_ac=+(M[6]||0);
+        return _p>=70&&_ac>=90&&!/飞翔|挖洞|潜水|日光束|弹跳|自由落体|破坏光线|终极冲击|蓄力|影子之力/.test(M[1]);
+      })[0];
+      if(cand){
+        var atkObjs=allM.filter(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'&&coreIds.indexOf(+x.id)<0&&!_UTIL_R.test(MV[x.id][1])});
+        if(!atkObjs.length)return;
+        atkObjs.sort(function(a,c){
+          var pa=+(MV[a.id][5]||0),pc=+(MV[c.id][5]||0);
+          if(pc!==pa)return pa-pc;
+          return +(MV[a.id][6]||0)-+(MV[c.id][6]||0);
+        });
+        var tgt=atkObjs[0],oldName=MV[tgt.id][1];
+        tgt.id=+cand.id;tgt.kind='attack';tgt.tag=MV[cand.id][1];
+        tgt.why=[MV[cand.id][1]+'：'+ab+'要靠这类招式触发，原'+oldName+'不触发特性，换成它让特性真正生效'];
+        try{tgt.prin=mvDutyAxes(b.roleTag,'attack').axis}catch(eP){eP.name}
+        b.abi[0].why=[MV[cand.id][1]+'触发'+ab+'，本流派特性真正生效'];
+        return;
+      }
+      for(var k=1;k<b.abi.length;k++){
+        var nm=b.abi[k].n;
+        if(_alAltOk(nm,b,allM)){
+          var deadAbi=b.abi[0];
+          b.abi[0]=b.abi[k];b.abi[k]=deadAbi;
+          b.abi[0].why=[nm+'：原'+ab+'在本流派没有可触发的招式，换成与现有招式联动的特性'];
+          b.abi[0].sc=1;
+          return;
+        }
+      }
+    });
+  }catch(eAl){eAl.name}
+  return out;}
 function classifyBuilds(s,bs){
   var list=(bs||[]).slice().sort(function(a,b){
     var d=(b.score||0)-(a.score||0);
@@ -19783,7 +19848,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.359';
+var ER_ENGINE_VER='v4.360';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
