@@ -16321,6 +16321,27 @@ function _deriveBuildsCore(s,team){
       b.it=keep.slice(0,3);
     });
   }catch(eIL){eIL.name}
+  /* v4.357 讲究件 × 变化招死槽：讲究头带/眼镜/围巾锁招后，变化招根本选不出来 = 占槽。
+     用引擎自己的攻击候选序 pickAttacks 补一个没带过的攻击招；没有候选就不动。 */
+  try{
+    out.forEach(function(b){
+      if(b.score===99)return;
+      var top=String((b.it&&b.it[0]&&b.it[0][0])||'');
+      if(!/讲究头带|讲究眼镜|讲究围巾/.test(top))return;
+      var mvs=(b.mv&&b.mv.main)||[];
+      var have=mvs.map(function(x){return +x.id});
+      var pool=pickAttacks(s,b.side,20,b.roleTag).map(function(o){return +o.id})
+        .filter(function(id){return have.indexOf(id)<0});
+      mvs.forEach(function(x){
+        var M=MV[x.id];if(!M||M[4]!=='变化')return;
+        if(!pool.length)return;
+        var pick=pool.shift();
+        x.id=pick;x.kind='attack';x.tag=MV[pick][1];
+        x.why=[MV[pick][1]+'：讲究件锁招后变化招选不出来，换成攻击招，四个槽都能打'];
+        try{x.prin=mvDutyAxes(b.roleTag,'attack').axis}catch(eP){eP.name}
+      });
+    });
+  }catch(eCh){eCh.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19696,7 +19717,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.356';
+var ER_ENGINE_VER='v4.357';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
