@@ -16388,6 +16388,26 @@ function _deriveBuildsCore(s,team){
       });
     });
   }catch(eRed){eRed.name}
+  /* v4.359 地形延长器死联动：自身没有场地招、主特性/天性也没有场地制造者，延长器无场地可延长 */
+  try{
+    var _TE_T_R=/草地场地|电气场地|精神场地|薄雾场地/;
+    out.forEach(function(b){
+      var list=b.it||[];
+      var idx=-1;
+      for(var k=0;k<list.length;k++){if(/地形延长器/.test(String(list[k][0]))){idx=k;break}}
+      if(idx<0)return;
+      var allM=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      var hasMv=allM.some(function(x){return MV[x.id]&&_TE_T_R.test(MV[x.id][1])});
+      var allAb=(s.abis||[]).concat(s.inns||[]);
+      var hasAbi=allAb.some(function(n){return /制造者$/.test(String(n))});
+      if(hasMv||hasAbi)return;
+      list.splice(idx,1);
+      if(list.length===0){
+        var _po=(+s.t1===10||+s.t2===10);
+        list.push([_po?'黑色污泥':'剩饭','地形延长器在本流派没有场地可延长，换成通用续航件更实用']);
+      }
+    });
+  }catch(eTe){eTe.name}
   return out;
 }
 function classifyBuilds(s,bs){
@@ -19763,7 +19783,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.358';
+var ER_ENGINE_VER='v4.359';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
