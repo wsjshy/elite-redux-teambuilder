@@ -16013,15 +16013,37 @@ function _deriveBuildsCore(s,team){
       if(!mvs.length)return;
       var ids=mvs.map(function(x){return x.id});
       var LB=null,_pick=null,_tgt=null;
+      /* 破壳的代价是 -2 防 / -2 特防：香草用掉即抹平，这是「无伤破壳」最直接的解法。
+         专属道具优先，不抢电气球/粗骨头这类种族绑定件。 */
+      var _itemLink=function(){
+        var ci=mvs.map(function(x){return +x.id});
+        if(ci.indexOf(504)<0)return;
+        if(!b.it||!b.it.length)return;
+        if(/电气球|粗骨头|大葱|心之水滴|深海之牙|深海鳞片|金属粉|极速粉末/.test(String(b.it[0][0]||'')))return;
+        var keep=[['白色香草','破壳掉的 2 级防 / 特防被香草当场抹平，净收益就是纯 +4/+4/+4']];
+        b.it.forEach(function(x){if(String(x[0])!=='白色香草'&&keep.length<3)keep.push(x)});
+        b.it=keep;
+      };
       if(_BST_ANY.some(function(id){return ids.indexOf(id)>-1})&&_OHKO.some(function(id){return ids.indexOf(id)>-1}))return;
-      /* 能学破壳的单纯怪：破壳 × 单纯 是最强的一条线（+2/+2/+2 被翻成 +4/+4/+4），
-         此时把单纯提到首推，并保证破壳在招里 */
-      if(!/单纯/.test(abiN)&&/单纯/.test((b.abi||[]).map(function(a){return String(a&&a.n)}).join('|'))){
+      /* 破壳 × 单纯：破壳自带 -2 防 / -2 特防，属于「有代价的强化」，不无条件绑定。
+         多条件同时成立才推：① 破壳后有效速度 ≥ 90（能先手）② ≥2 个伤害招（真能清场）
+         ③ 不是纯辅助/纯联防 ④ 有保命手（替身/守住/睡觉）或能带香草（无专属道具占位） */
+      var _abiAll2=(b.abi||[]).map(function(a){return String(a&&a.n)}).join('|');
+      if(!/单纯/.test(abiN)&&/单纯/.test(_abiAll2)){
         var _lb0=learnOf(s)||[];
-        if(_lb0.indexOf(504)>-1){b.abi.forEach(function(a,i){if(/单纯/.test(String(a&&a.n))){b.abi.splice(i,1);b.abi.unshift(a)}});abiN='单纯';}
+        if(_lb0.indexOf(504)>-1){
+          var _dmg=0;mvs.forEach(function(x){var m=MV[x.id];if(m&&(m[4]==='物理'||m[4]==='特殊')&&(+m[5]||0)>0)_dmg++});
+          var _spd0=+((s.base&&s.base[5])||0);
+          var _safe=(ids.indexOf(164)>-1||ids.indexOf(182)>-1||ids.indexOf(156)>-1);
+          var _noSign=!/电气球|粗骨头|大葱|心之水滴|深海之牙|深海鳞片|金属粉|极速粉末/.test(String((b.it&&b.it[0]&&b.it[0][0])||''));
+          if(_dmg>=2&&_spd0*3>=90&&b.side!=='辅助'&&(_safe||_noSign)){
+            b.abi.forEach(function(a,i){if(/单纯/.test(String(a&&a.n))){b.abi.splice(i,1);b.abi.unshift(a)}});
+            abiN='单纯';
+          }
+        }
       }
       if(/单纯/.test(abiN)){
-        if(_hasBoost(ids))return;
+        if(_hasBoost(ids)){_itemLink();return;}
         LB=LB||learnOf(s)||[];
         var _SPEC=[347,417,483,526,74,334],_PHYS=[14,339,349,468,187,74,526,334];
         var _pool=(b.side==='特殊')?_SPEC:_PHYS;
@@ -16044,6 +16066,7 @@ function _deriveBuildsCore(s,team){
         if(!_tgt)return;
         _tgt.id=_pick;_tgt.kind='boost';_tgt.tag='强化';
         _tgt.why=['单纯：所有强化效果 ×2 —— 一次就是 +2，强化招在这只身上收益翻倍'];
+        _itemLink();
       }else if(/无防守/.test(abiN)){
         if(_OHKO.some(function(id){return ids.indexOf(id)>-1}))return;
         LB=LB||learnOf(s)||[];
@@ -16056,12 +16079,24 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eLk){eLk.name}
+  /* 破壳的降防代价由香草抹平这件事，对「所有带破壳的流派」都成立，不只单纯那条线 */
+  try{
+    out.forEach(function(b){
+      var ci=((b.mv&&b.mv.main)||[]).map(function(x){return +x.id});
+      if(ci.indexOf(504)<0)return;
+      if(!b.it||!b.it.length)return;
+      if(/电气球|粗骨头|大葱|心之水滴|深海之牙|深海鳞片|金属粉|极速粉末/.test(String(b.it[0][0]||'')))return;
+      var keep=[['白色香草','破壳掉的 2 级防 / 特防被香草当场抹平，少一个破绽']];
+      b.it.forEach(function(x){if(String(x[0])!=='白色香草'&&keep.length<3)keep.push(x)});
+      b.it=keep;
+    });
+  }catch(eHb){eHb.name}
   /* 破壳 × 单纯 的怪，默认首屏就该是破壳那条线（否则第一眼看到的是联防流派，等于没推） */
   try{
     var _lb1=learnOf(s)||[];
-    if(_lb1.indexOf(504)>-1&&/单纯/.test(out.map(function(b){return (b.abi||[]).map(function(x){return String(x&&x.n)}).join('|')}).join('|'))){
+    if(_lb1.indexOf(504)>-1&&out.some(function(b){return /单纯/.test(String((b.abi&&b.abi[0]&&b.abi[0].n)||''))&&((b.mv&&b.mv.main)||[]).some(function(x){return +x.id===504})})){
       var _i0=-1;
-      out.forEach(function(b,i){if(_i0<0&&((b.mv&&b.mv.main)||[]).some(function(x){return +x.id===504}))_i0=i});
+      out.forEach(function(b,i){if(_i0<0&&/单纯/.test(String((b.abi&&b.abi[0]&&b.abi[0].n)||''))&&((b.mv&&b.mv.main)||[]).some(function(x){return +x.id===504}))_i0=i});
       if(_i0>0){var _mv0=out[_i0];out.splice(_i0,1);out.unshift(_mv0);}
     }
   }catch(eSm){eSm.name}
@@ -19440,7 +19475,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.348';
+var ER_ENGINE_VER='v4.349';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
