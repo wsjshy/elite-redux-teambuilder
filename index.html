@@ -16474,8 +16474,86 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eAl){eAl.name}
-  return out;}
-function classifyBuilds(s,bs){
+  /* v4.361 特性×招式死联动第二批：连续攻击（连击招）/庞克摇滚（声音招）/舞者（舞蹈招）。
+     有合格攻击槽且学的会触发招 → 换招；否则换验证过的备选特性；都不成立（含 score99）不动。 */
+  try{
+    var _A2_SOUND=/巨声|虫鸣|大声咆哮|大喊|噪音|金属音|回声|轮唱|吵闹|爆音波|草笛|唱歌|超音波|音波|轰鸣|笛声|刺耳|靡靡|声音/;
+    function _a2Trig(ab,id){
+      if(!MV[id])return false;
+      if(ab==='连续攻击')return (MV[id][11]||[]).indexOf('连击')>-1;
+      if(ab==='庞克摇滚')return _A2_SOUND.test(MV[id][1]);
+      if(ab==='舞者')return /舞/.test(MV[id][1]);
+      return false;
+    }
+    var _A2_LIST=['连续攻击','庞克摇滚','舞者'];
+    function _a2AltOk(n,b,allM){
+      var hasAtk=allM.some(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'});
+      var hasStatus=allM.some(function(x){return MV[x.id]&&MV[x.id][4]==='变化'});
+      var wall=/联防|消耗|受|辅助|墙/.test(String(b.name||''));
+      if(n==='脑核之力'||n==='致命精准'||n==='自信过度'||n==='暴力冲刺')return hasAtk;
+      if(n==='燃烧之魂')return allM.some(function(x){return MV[x.id]&&MV[x.id][3]==='火'&&MV[x.id][4]!=='变化'});
+      if(n==='恶作剧之心')return hasStatus;
+      if(n==='防尘'||n==='隔音'||n==='卷发'||n==='要塞')return wall;
+      if(n==='胆量'||n==='破格')return true;
+      return false;
+    }
+    out.forEach(function(b){
+      if(b.score===99)return;
+      if(!b.abi||!b.abi.length||!b.abi[0])return;
+      var ab=b.abi[0].n;
+      if(_A2_LIST.indexOf(ab)<0)return;
+      var allM=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      if(allM.some(function(x){return _a2Trig(ab,x.id)}))return;
+      var carried=allM.map(function(x){return +x.id});
+      var coreIds=(b.core||[]).map(function(id){return +id});
+      var learn=learnOf(s)||[];
+      var candList=learn.filter(function(id){
+        return carried.indexOf(id)<0&&MV[id]&&_a2Trig(ab,id);
+      }).map(function(id){
+        var M=MV[id];
+        if(ab==='连续攻击')return {id:id,eff:+(M[5]||0)*5,acc:+(M[6]||0)};
+        return {id:id,eff:+(M[5]||0),acc:+(M[6]||0)};
+      }).filter(function(o){
+        if(ab==='连续攻击')return o.eff>=100&&o.acc>=90;
+        return o.eff>=70&&o.acc>=90&&!/飞翔|挖洞|潜水|日光束|弹跳|自由落体|破坏光线|终极冲击|蓄力|影子之力/.test(MV[o.id][1]);
+      }).sort(function(a,c){
+        var ta=MV[a.id][3],tc=MV[c.id][3];
+        var sa=(s.t1===ta||s.t2===ta)?1:0;
+        var sc2=(s.t1===tc||s.t2===tc)?1:0;
+        if(sa!==sc2)return sc2-sa;
+        if(c.eff!==a.eff)return c.eff-a.eff;
+        return a.acc-c.acc;
+      });
+      var cand=candList[0];
+      var atkObjs=allM.filter(function(x){
+        return MV[x.id]&&MV[x.id][4]!=='变化'&&coreIds.indexOf(+x.id)<0&&!_UTIL_R.test(MV[x.id][1]);
+      });
+      if(cand&&atkObjs.length){
+        atkObjs.sort(function(a,c){
+          var pa=+(MV[a.id][5]||0),pc=+(MV[c.id][5]||0);
+          if(pc!==pa)return pa-pc;
+          return +(MV[a.id][6]||0)-+(MV[c.id][6]||0);
+        });
+        var tgt=atkObjs[0],oldName=MV[tgt.id][1];
+        tgt.id=+cand.id;tgt.kind='attack';tgt.tag=MV[cand.id][1];
+        tgt.why=[MV[cand.id][1]+'：'+ab+'要靠这类招式触发，原'+oldName+'不触发特性，换成它让特性真正生效'];
+        try{tgt.prin=mvDutyAxes(b.roleTag,'attack').axis}catch(eP){eP.name}
+        b.abi[0].why=[MV[cand.id][1]+'触发'+ab+'，本流派特性真正生效'];
+        return;
+      }
+      for(var k=1;k<b.abi.length;k++){
+        var nm=b.abi[k].n;
+        if(_a2AltOk(nm,b,allM)){
+          var deadAbi=b.abi[0];
+          b.abi[0]=b.abi[k];b.abi[k]=deadAbi;
+          b.abi[0].why=[nm+'：原'+ab+'在本流派没有可触发的招式，换成与现有招式联动的特性'];
+          b.abi[0].sc=1;
+          return;
+        }
+      }
+    });
+  }catch(eA2){eA2.name}
+  return out;}function classifyBuilds(s,bs){
   var list=(bs||[]).slice().sort(function(a,b){
     var d=(b.score||0)-(a.score||0);
     if(d)return d;
@@ -19848,7 +19926,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.360';
+var ER_ENGINE_VER='v4.361';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
