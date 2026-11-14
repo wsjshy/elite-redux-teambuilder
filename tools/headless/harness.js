@@ -423,6 +423,7 @@ function convSrcLabel(conv){var t=(conv&&conv.src)||'一般';return (t==='一般
 function hitAdjOf(m){
   var a=m[6];
   if(a===0)return {mul:1.05,why:'必中×1.05'};
+  if(a&&a<60)return {mul:0.55,why:'命中'+a+'×0.55（低命中期望）'};
   if(a&&a<85)return {mul:0.8,why:'命中'+a+'×0.8'};
   if(a>=85&&a<90)return {mul:0.95,why:'命中'+a+'×0.95'};
   return {mul:1,why:null};
@@ -11882,6 +11883,52 @@ function bestCoverAtk(s,side){
   });
   return best;
 }
+/* v4.372：全力攻击模板专用选招——可靠命中（必中或≥85）、排除僵直/蓄力，
+   按 SF 有效威力（×1.3）排序，避免把 50% 命中/反伤招当本系首选。 */
+function _sfTwoTurn(id){
+  if(id===264||id===658)return true;
+  var _d=String((MV[id]||[])[10]||'');
+  return /recharg|Can only be used every-?other turn|must rest/i.test(_d)
+      || /on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(_d);
+}
+function _sfReliable(id){
+  var m=MV[id];if(!m)return false;
+  var a=m[6];
+  if(!(a===0||a>=85))return false;
+  if(_sfTwoTurn(id))return false;
+  return true;
+}
+function _sfHas(id){return (','+MV_FLAG.sheer+',').indexOf(','+id+',')>-1;}
+function bestStabAtkSF(s,side){
+  var learn=learnOf(s),best=null;
+  learn.forEach(function(id){
+    var m=MV[id];if(!m||m[4]==='变化')return;
+    if(isBannedBattleMv(id))return;
+    if(side!=='双刀'&&m[4]!==side)return;
+    if(!(m[3]===s.t1||m[3]===s.t2))return;
+    var pow=m[5]||0;if(pow<60)return;
+    if(!_sfReliable(id))return;
+    var eff=pow*(_sfHas(id)?1.3:1);
+    if(!best||eff>best.eff||(eff===best.eff&&(m[6]||0)>(MV[best.id][6]||0)))
+      best={id:id,kind:'attack',tag:'本系',pow:pow,eff:eff,why:['本系可靠招 '+m[1]+'('+pow+'，命中'+(m[6]===0?'必中':m[6])+')'+(_sfHas(id)?'，全力攻击×1.3 且无反伤':'')]};
+  });
+  return best;
+}
+function bestCoverAtkSF(s,side){
+  var learn=learnOf(s),best=null;
+  learn.forEach(function(id){
+    var m=MV[id];if(!m||m[4]==='变化')return;
+    if(isBannedBattleMv(id))return;
+    if(side!=='双刀'&&m[4]!==side)return;
+    if(m[3]===s.t1||m[3]===s.t2)return;
+    var pow=m[5]||0;if(pow<70)return;
+    if(!_sfReliable(id))return;
+    var eff=pow*(_sfHas(id)?1.3:1);
+    if(!best||eff>best.eff||(eff===best.eff&&(m[6]||0)>(MV[best.id][6]||0)))
+      best={id:id,kind:'cover',tag:'补盲',pow:pow,eff:eff,why:['可靠补盲 '+m[1]+'('+pow+'，命中'+(m[6]===0?'必中':m[6])+')，替代低命中/僵直招']};
+  });
+  return best;
+}
 function bestRecMv(s){
   var learn=learnOf(s),best=null;
   learn.forEach(function(id){
@@ -12931,9 +12978,9 @@ var MECH_BUILD={
     if(!mechAbiRwHits(s,'sheer_force_boost'))return null;
     var b=mechBuildBase(s,coreSide(s),'全力攻击炮台','sheer_force_boost',
       '全力攻击：带追加效果的招威力 1.3 倍（追加取消）——配生命宝珠时 1.3 覆盖且**反作用取消**，纯白嫖增伤');
-    var hot=bestStabAtk(s,b.side,null);if(hot)b.mv.main.push(hot);
-    var cov=bestCoverAtk(s,b.side);if(cov)b.mv.main.push(cov);
-    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身保血']});
+    var hot=bestStabAtkSF(s,b.side)||bestStabAtk(s,b.side,null);if(hot)b.mv.main.push(hot);
+    var cov=bestCoverAtkSF(s,b.side)||bestCoverAtk(s,b.side);if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：用 1/4 血换替身，挡异常状态/逼换读招；全力攻击加成招已抵消宝珠反伤，替身是主要 HP 自耗']});
     b.it=[['生命宝珠','全力攻击+宝珠：1.3 倍无反作用（Sheer Force 覆盖宝珠加成并抵消反伤——Bulbapedia）']];
     b.abi=forceMechAbi(s,'sheer_force_boost',b.abi);   /* v4.34 P1-3：全力攻击须由所选特性真正提供（如超级班基拉斯R 原选扬沙） */
     b.basis.push({k:'mech',txt:'机制 全力攻击（sheer_force_boost）——追加换威力，宝珠反作用被吞'});
@@ -13337,7 +13384,8 @@ function _pickAttacksCore(s,side,n,role){
      晴/雨/沙/雪偏好各自受益招；权重表见 SYS_MV_ADJ，选招依据里逐条写明「体系加成 ×N（体系名）」 */
   var arch=archOfSp(s,side,role);
   var _miMech=mechOn()?mechRecItemId(s,side,role||'输出'):null;
-  var _miNG=mechOn()?mechAbiRwHits(s,'no_guard_hit'):false;   /* §3 无防守（特性级）→ 双方必中前提改写 */
+  var _miNG=false;                                  /* v4.372：可选特性无防守不替别的流派兜底，仅固定天性无防守才恒必中 */
+  if(mechOn()){var _ngN372=mechAbiNamesFor(s,'no_guard_hit');_miNG=!!(_ngN372.inn&&_ngN372.inn.length);}
   learn.forEach(function(id){
     var m=MV[id];if(!m||m[4]==='变化')return;
     if(isBannedBattleMv(id))return;   /* v4.34 P2-1：捕宠招（点到为止/手下留情）不入对战配招池（报告 4.7） */
@@ -13369,7 +13417,7 @@ function _pickAttacksCore(s,side,n,role){
     /* B5 + v3.23：-ate 转换招输出倍率按特性取值（ateMulOf）——宏族 ×1.0（无 10% 加成）、三特例 ×1.1 */
     var ateMul=(convHit?ateMulOf(conv.id):1);
     var h=hitAdjOf(m),w=weatherAdjOf(s,m,learn,conv),a=abiAdjOf(s,side,ty,names,null,stab),c=costOf(s,m,hasRec);
-    if(mech.noGuard||_miNG)h={mul:1.0,why:'无防守：双方必中，命中维度不计代价×1.0'};   /* v4.52 R9-E2 D-11：命中完全归零（原仅×1.05解锁） */
+    if(_miNG)h={mul:1.0,why:'无防守（固定天性）：双方必中，命中维度不计代价×1.0'};   /* v4.372：可选无防守不在此通用池假设 */
     /* v4.52 R9-E2：再生力(109)轮转回弹——近身战/反伤/降能力类代价乘子从惩罚端回弹 ×1.05（成本从×0.90回到×0.95量级）。 */
     try{if(names.indexOf('再生力')>-1&&c&&c.mul<0.99){c.mul=Math.min(1,c.mul*1.05);(c.why=c.why||[]).push('再生力轮转回弹×1.05')}}catch(eRg){}
     var cover=atkCover(s,id),covAdj=Math.min(1.5,1+0.05*cover.length),prio=m[8]||0;
@@ -15976,6 +16024,70 @@ function _deriveBuildsCore(s,team){
       if(Object.keys(_drop371).length)out=out.filter(function(_,i){return !_drop371[i]});
     }
   }catch(eX371){eX371.name}
+  /* v4.372：全库命中诚实修正——流派实际特性不保证命中时，把 <70 命中攻击招换成可靠招；
+     强行流里非加成的反伤本系招也换成可靠/可加成招。逐条应用并更新已用集，防重复。 */
+  try{
+    var _reRE372=/recharg|Can only be used every-?other turn|must rest/i;
+    var _chRE372=/on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i;
+    var _lkRE372=/two to three turns|rampages|thrashes about/i;
+    function _clean372(id){
+      var m=MV[id];if(!m)return false;
+      var a=m[6];
+      if(!(a===0||a>=85))return false;
+      if(id===264||id===658)return false;
+      var d=String(m[10]||'');
+      return !(_reRE372.test(d)||_chRE372.test(d)||_lkRE372.test(d));
+    }
+    function _sf372(id){return (','+MV_FLAG.sheer+',').indexOf(','+id+',')>-1;}
+    function _rk372(id){return (','+MV_FLAG.reckless+',').indexOf(','+id+',')>-1;}
+    function _stab372(id){var ty=MV[id][3];return ty===s.t1||ty===s.t2;}
+    function _pick372(b,removedId,wantStab,used,noRecoil){
+      var tiers=[[],[]],rkTiers=[[],[]];
+      learnOf(s).forEach(function(id){
+        if(used[id]||id===removedId)return;
+        var m=MV[id];if(!m||m[4]==='变化'||(m[5]||0)<55)return;
+        if(b.side!=='双刀'&&b.side!=='辅助'&&m[4]!==b.side)return;
+        if(!_clean372(id))return;
+        var stab=_stab372(id);
+        if(wantStab&&!stab)return;
+        var p=m[5]||0;if(stab)p*=1.5;if(_sf372(id)&&b._runsSF372)p*=1.3;
+        var rec={id:id,p:p,stab:stab};
+        if(noRecoil&&_rk372(id)){(stab?rkTiers[0]:rkTiers[1]).push(rec);}
+        else{(stab?tiers[0]:tiers[1]).push(rec);}
+      });
+      var pool=wantStab?tiers[0]:(tiers[1].length?tiers[1]:tiers[0]);
+      var rkPool=wantStab?rkTiers[0]:(rkTiers[1].length?rkTiers[1]:rkTiers[0]);
+      if(!pool.length)pool=rkPool;
+      pool.sort(function(a,b){return b.p-a.p||(MV[b.id][6]||0)-(MV[a.id][6]||0);});
+      return pool[0]||null;
+    }
+    out.forEach(function(b){
+      if(!b||!b.mv||!b.mv.main)return;
+      var actualAbi=(b.abi[0]||{}).n;
+      b._runsSF372=actualAbi==='强行'||(s.inns||[]).indexOf('强行')>-1;
+      var guaranteed=actualAbi==='无防守'||(s.inns||[]).indexOf('无防守')>-1;
+      var guard=0;
+      while(guard++<6){
+        var used={},idx=-1,target=null;
+        b.mv.main.forEach(function(m,k){used[m.id]=1;});
+        for(var k=0;k<b.mv.main.length;k++){
+          var m=b.mv.main[k],r=MV[m.id];
+          if(!r||r[4]==='变化')continue;
+          var badAcc=r[6]>0&&r[6]<70&&!guaranteed;
+          var badRecoil=b._runsSF372&&_stab372(m.id)&&_rk372(m.id)&&!_sf372(m.id);
+          if(badAcc||badRecoil){target={m:m,k:k,wantStab:_stab372(m.id),recoil:badRecoil};break;}
+        }
+        if(!target)break;
+        var rep=_pick372(b,target.m.id,target.wantStab,used,target.recoil);
+        if(!rep)break;
+        var rm=MV[rep.id],accTxt=rm[6]===0?'必中':rm[6];
+        var why=target.recoil
+          ? ['反伤本系招换成可靠招 '+rm[1]+'（'+rm[5]+'，命中'+accTxt+'），全力攻击流避免自损']
+          : ['可靠招 '+rm[1]+'（'+rm[5]+'，命中'+accTxt+'）替代低命中招，期望输出更稳'];
+        b.mv.main[target.k]={id:rep.id,kind:rep.stab?'本系':'cover',tag:rep.stab?'本系':'补盲',why:why};
+      }
+    });
+  }catch(eX372){eX372.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -21004,4 +21116,4 @@ function v483SelectToChips(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',v483SelectToChips);else v483SelectToChips();
 
 ;module.exports={ERDATA:ERDATA,deriveBuilds:deriveBuilds,classifyBuilds:classifyBuilds,
-  learnOf:learnOf,MV:MV,ITM:ITM,sideDisp:sideDisp};
+  learnOf:learnOf,MV:MV,ITM:ITM,sideDisp:sideDisp,MV_FLAG:MV_FLAG,pickAttacks:pickAttacks};

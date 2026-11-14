@@ -28,7 +28,7 @@ function erRestoreAtkSel(){};function drawCoreList(){};
 
 EXPORT = r"""
 ;module.exports={ERDATA:ERDATA,deriveBuilds:deriveBuilds,classifyBuilds:classifyBuilds,
-  learnOf:learnOf,MV:MV,ITM:ITM,sideDisp:sideDisp};
+  learnOf:learnOf,MV:MV,ITM:ITM,sideDisp:sideDisp,MV_FLAG:MV_FLAG,pickAttacks:pickAttacks};
 """
 
 out = STUB + '\n' + lite + '\n' + spd + '\n' + adv + '\n' + b4 + EXPORT
