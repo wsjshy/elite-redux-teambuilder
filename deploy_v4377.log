@@ -1,0 +1,6 @@
+[0/6] start branch: fix/abi-dedup-detail-20261108
+[1/6] clean, skip commit
+[2/6] deploy artifacts staged to C:\temp\er-deploy
+[2b/6] staged artifacts verified: 23 files
+Switched to and reset branch 'gh-pages'
+[3/6] gh-pages realigned to github/gh-pages (增量底座正确)
