@@ -10324,10 +10324,7 @@ function tplAdd(i,id){
 function gotoMv(name){
   $('mvSearch').value=name;renderMv();switchTab('move');
 }
-function gotoItem(name){
-  var id=itemByZhOrEn(name),it=ITM[id];
-  toast('【'+name+'】\n'+(it?it[3]||'(无描述)':'（未收录）'));
-}
+function gotoItem(name){itemModalZh(name);}   /* v4.373：道具点击改轻量弹层（原 toast 信息会自动消失） */
 
 /* ============ 核心配队（选定核心 → 定位/配招/性格/队友） ============ */
 var NATURES={
@@ -12835,6 +12832,7 @@ var MECH_BUILD={
   acrobatics_item:function(s,cs){
     if(!mechHasMv(s,512))return null;
     if(mechFlowFit(s,'acrobatics_item')===null)return null;   /* v4.58 门控：非本系飞行/无轻装/atk<90 剔除冠名 */
+    if(!acrobaticsWinsPower(s))return null;   /* v4.373：杂技有效威力赢不过本系最强招则不冠名（飞行系/轻装已在 helper 内放行） */
     /* v4.44 P1-5（物攻向统一，根因修复）：side 原按 coreSide(s) 取「物种攻击面更强者」→ 特攻更高的物种被建成
        side='特殊'，于是「杂技爆发流」出现 特攻 EV + 减攻击性格 + 3 招特殊招 的组合，而流派身份招「杂技」是**物理招**
        （`moves[512] split:0`，ER 威力 75、无道具 ×1.5=112.5）——流派名宣布的爆发手段实际零投入。
@@ -13544,7 +13542,9 @@ function buildMoves(s,side,roleTag){
   /* 输出/天气流：攻击位优先 2 个，防止功能招占满 4 槽把攻击挤出 */
   if(r!=='肉盾'&&r!=='受队'){
     var placed=0;
-    att.forEach(function(c){
+    /* v4.373：前 2 攻击位按评分取最强——pickAttacks 输出是为 4 攻击槽做的覆盖贪心序，直接取前 2 会丢掉最高分本系招（如大针蜂超级角击被居合劈挤掉） */
+    var _attTop=att.slice().sort(function(c1,c2){return c2.score-c1.score;});
+    _attTop.forEach(function(c){
       if(placed<2&&funcUsed.indexOf(c.id)<0){push(c.id,c.why,(c.stab?'本系·':'')+(c.prio>0?'先制·':'')+(c.conv?'转换·':'')+'攻击',c.kind,{cover:c.cover.length,prio:c.prio,conv:!!c.conv});placed++}
     });
   }
@@ -13574,6 +13574,29 @@ function buildMoves(s,side,roleTag){
   return {main:main,backup:backup.slice(0,6),side:side,funcs:funcs,selfSetter:selfSetter,
     wxMv:main.some(function(x){return WEATHER_MV[x.id]!==undefined})};
 }
+/* v4.373：性格加速度是否值得——按「速度带」量化，仅当 +速性格能反超一批中性满速反超不了的对手才选爽朗/胆小 */
+var NATURE_BAND_MIN=38; /* 约全库 2%（1906 物种）；低于此=速度带几乎为空，加力更优 */
+var _nsbMemo={};
+function natureSpeedBoostWanted(s){
+  var bspe=+((s.base||[])[5]||0);
+  if(_nsbMemo.hasOwnProperty(bspe))return _nsbMemo[bspe];
+  var sNeu=calcStat(bspe,252,100,1.0),sUp=calcStat(bspe,252,100,1.1),band=0;
+  for(var i=0;i<ERDATA.species.length;i++){var sp=ERDATA.species[i];if(!sp.base)continue;
+    var v=calcStat(+sp.base[5],252,100,1.0);if(v>sNeu&&v<=sUp)band++;}
+  var want=band>=NATURE_BAND_MIN;_nsbMemo[bspe]=want;return want;
+}
+/* v4.373：非本系杂技冠名是否真的更优——杂技有效威力（无道具×1.5×飞行特性加成）须≥本系最强物理招 */
+var _ACRO_FLY_MUL={26:1.25,278:1.3,359:1.2,606:1.5};
+function acrobaticsWinsPower(s){
+  if(s.t1==='飞行'||s.t2==='飞行')return true;
+  if((s.abis||[]).indexOf('轻装')>-1||(s.inns||[]).indexOf('轻装')>-1)return true;
+  var ids=((s.abiIds||[]).concat(s.innIds||[])).map(Number);
+  var flyMul=1.0;
+  for(var i=0;i<ids.length;i++){if(_ACRO_FLY_MUL[ids[i]])flyMul=Math.max(flyMul,_ACRO_FLY_MUL[ids[i]]);}
+  var acroEff=75*1.5*flyMul,stabMul=ids.indexOf(91)>-1?2:1.5,best=0,learn=learnOf(s);
+  for(var j=0;j<learn.length;j++){var m=MV[learn[j]];if(!m||m[4]!=='物理')continue;if(m[3]!==s.t1&&m[3]!==s.t2)continue;if((+m[5]||0)>best)best=+m[5];}
+  return acroEff>=best*stabMul;
+}
 function buildNature(s,side,roleTag,buildObj){
   var b=s.base;
   /* v4.37：拿到完整流派对象时，S2 空间核 / S1-A 先制集约核直接给「减速 / 主攻」性格（与 EV 联动对齐） */
@@ -13595,7 +13618,11 @@ function buildNature(s,side,roleTag,buildObj){
   /* v4.32 P1-2：双刀流按主攻侧给性格（原落入末行特殊分支 → 全物理配招给内敛/胆小=减攻矛盾）；
      物理主→固执/爽朗（不减攻击），特殊主→内敛/胆小 */
   if(side==='双刀')return (b[1]>=b[3])?[['固执','+攻击-特攻（双刀物主）'],['爽朗','+速度-特攻']]:[['内敛','+特攻-攻击（双刀特主）'],['胆小','+速度-攻击']];
-  if(b[5]>=110)return side==='物理'?[['爽朗','+速度-特攻，先手压制'],['固执','+攻击-特攻']]:[['胆小','+速度-攻击，先手压制'],['内敛','+特攻-攻击']];
+  if(b[5]>=110){
+    var _spdWant=natureSpeedBoostWanted(s);
+    if(side==='物理')return _spdWant?[['爽朗','+速度-特攻，先手压制（速度带需抢速）'],['固执','+攻击-特攻']]:[['固执','+攻击-特攻（满速已快过绝大多数，加力更优）'],['爽朗','+速度-特攻']];
+    return _spdWant?[['胆小','+速度-攻击，先手压制（速度带需抢速）'],['内敛','+特攻-攻击']]:[['内敛','+特攻-攻击（满速已快过绝大多数，加力更优）'],['胆小','+速度-攻击']];
+  }
   if(b[5]<60)return side==='物理'?[['勇敢','+攻击-速度（配空间）'],['固执','+攻击-特攻']]:[['冷静','+特攻-速度（配空间）'],['内敛','+特攻-攻击']];
   return side==='物理'?[['固执','+攻击-特攻'],['爽朗','+速度-特攻']]:[['内敛','+特攻-攻击'],['胆小','+速度-攻击']];
 }
@@ -19236,7 +19263,13 @@ function buildEvs(s,side,roleTag,buildName,buildObj){
       var natSpeed=true;try{var _nn=normNatName((buildObj&&buildObj.nat&&buildObj.nat[0])?buildObj.nat[0][0]:'');if(_nn&&!/(胆小|急躁|爽朗|天真|害羞)/.test(_nn))natSpeed=false}catch(eN){}
       if(tgt&&natSpeed){
         var e=spdEvTo(s,tgt);
-        if(e&&e.saved>=48&&e.ev<a[5]){a[0]+=e.saved;a[5]=e.ev;_spdCuted='卡 '+tgName+' 线('+tgt+') 省'+e.saved+' EV→HP';}
+        /* v4.373 修正：卡线若把速度 EV 降到 0（极速手 0 投仍压线）则不启用——
+           全量省下(252)会把 HP 顶到 256 越界，且脆皮高速手丢先手、HP 又救不了克制一击，保持满速；
+           同时 HP 再分配硬夹 252，溢出点改投物防，杜绝单项越界。 */
+        if(e&&e.saved>=48&&e.ev<a[5]&&e.ev>0){
+          var _roomHP=252-(+a[0]||0),_toHP=Math.min(_roomHP,e.saved),_rest=e.saved-_toHP;
+          a[0]=(+a[0]||0)+_toHP;if(_rest>0)a[2]=(+a[2]||0)+_rest;a[5]=e.ev;
+          _spdCuted='卡 '+tgName+' 线('+tgt+') 省'+e.saved+' EV→HP';}
       }
       if(!tgt){/* 空间/慢速：不动 */}
     }
@@ -19377,6 +19410,39 @@ function l1Modal(title,htmlStr){
   if(m.classList)m.classList.add('open');
 }
 function closeL1Modal(){var m=$('l1Modal');if(m&&m.classList)m.classList.remove('open')}
+/* v4.373 答案卡下钻：招式 / 道具 / 性格 / 努力值 轻量详情弹层（点空白或 × 关闭，不跳页） */
+function mvModalById(id){
+  var m=MV[id];if(!m){toast('未收录该招式');return}
+  var acc=(m[6]===0||m[6]==null)?'必中':m[6];
+  var prio=(m[8]?('先制 '+m[8]):'');
+  var full='<div style="margin-bottom:6px"><b>'+esc(m[1])+'</b>（'+esc(m[2])+'） <span class="badge badge-neu">#'+m[0]+'</span></div>'+
+    '<div style="margin:4px 0">'+tlabel(m[3])+' <span class="dim">'+splitLabel(m[4])+'</span></div>'+
+    '<div>威力 <b>'+(m[5]||'—')+'</b>　命中 <b>'+acc+'</b>　PP <b>'+m[7]+'</b>'+(prio?('　<span class="badge">'+prio+'</span>'):'')+'</div>'+
+    '<div class="ruleline" style="margin-top:6px">'+esc(m[10]||m[9]||'（无描述）')+'</div>';
+  l1Modal('招式 · '+m[1],full);
+}
+function itemModalZh(name){
+  var id=itemByZhOrEn(name),it=(id==null)?null:ITM[id];
+  var full='<div style="margin-bottom:6px"><b>'+esc(name)+'</b>'+(it?('（'+esc(it[1])+'）'):'')+'</div>'+
+    '<div>'+esc(it?it[3]:'（未收录）')+'</div>';
+  l1Modal('道具 · '+name,full);
+}
+function natModalZh(name){
+  var ef=NATURES[name];
+  var full='<div style="margin-bottom:6px"><b>'+esc(name)+'</b></div>'+
+    (ef?('<div>'+esc(ef[0])+'　'+esc(ef[1])+'</div>'):'<div class="dim">平衡性格，不修正能力</div>')+
+    '<div class="dim" style="margin-top:6px">仅把对应能力最终数值 ×1.1 / ×0.9，不影响招式与特性。</div>';
+  l1Modal('性格 · '+name,full);
+}
+function evModalBd(bd){
+  if(!bd||!bd.ev){toast('暂无努力值信息');return}
+  var a=bd.ev.alloc||[];
+  var full='<div style="margin-bottom:6px"><b>'+esc(bd.ev.template)+'</b>　<span class="dim">'+esc(bd.ev.summary)+'</span></div>'+
+    '<div style="margin:4px 0">'+a.map(function(v,i){return v?('<span class="chip" style="min-height:0;padding:2px 10px">'+esc(evName(i))+' '+v+'</span>'):''}).join('')+'</div>'+
+    '<div class="ruleline">'+esc(evWhyTxt(bd.ev.template))+'</div>';
+  l1Modal('努力值 · '+bd.ev.template,full);
+}
+function ansEvModal(SID,k){var ctx=window._ansCtx&&window._ansCtx[SID];if(!ctx||!ctx.showList)return;evModalBd(ctx.showList[k]);}
 /* L1 属性克制：攻（本系打谁有效，读 ERDATA.matchup，与「属性」页 renderAtk 同源）
    / 防（对手打你，读 defCellTrio，与「弱点（天性口径）」同源）两视角就地展开（懒渲染） */
 function l1AtkDef(boxId,spId,btn){
@@ -19480,7 +19546,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.371';
+var ER_ENGINE_VER='v4.372';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -19953,15 +20019,16 @@ function renderCore(s){
         h+='<button type="button" class="answtab'+(kk===k?' sel':'')+'" onclick="ansSwitch('+SID+','+kk+')">'+(kk===0?'⭐ 就这么配':'换玩法')+' '+esc(b.name)+'</button>';
       });
       h+='</div>';
-      h+='<div class="ansrow"><b>特性</b>'+esc(abi0)+'<b>道具</b>'+esc(it0)+'<b>性格</b>'+esc(nat0)+'</div>';
-      h+='<div class="ansrow"><b>努力值</b>'+esc(ev0)+'</div>';
-      h+='<div class="ansmv"><b>四招</b>'+(mv0.length?mv0.map(function(x,i){return '<span class="ansm"><i>'+(i+1)+'</i>'+esc(x)+'</span>'}).join(''):'—')+'</div>';
-      if(mm0.length)h+='<div class="ansmate"><b>带这 5 只</b>'+mm0.map(function(r){return '<span class="ansp">'+esc((r&&r.s&&r.s.zh)||'')+'<em>'+esc((r&&r.priRole)||'')+'</em></span>'}).join('')+'</div>';
+      var _abN=(bd.abi&&bd.abi[0])?bd.abi[0].n:'';
+      h+='<div class="ansrow"><b>特性</b><span class="ansclk" title="点开看特性详情" onclick="abiModal('+jsl(_abN)+',\'特性\')">'+esc(abi0)+'</span><b>道具</b><span class="ansclk" title="点开看道具详情" onclick="itemModalZh('+jsl(it0)+')">'+esc(it0)+'</span><b>性格</b><span class="ansclk" title="点开看性格效果" onclick="natModalZh('+jsl(nat0)+')">'+esc(nat0)+'</span></div>';
+      h+='<div class="ansrow"><b>努力值</b><span class="ansclk" title="点开看努力值分配理由" onclick="ansEvModal('+SID+','+k+')">'+esc(ev0)+'</span></div>';
+      h+='<div class="ansmv"><b>四招</b>'+((bd.mv&&bd.mv.main&&bd.mv.main.length)?bd.mv.main.map(function(x,i){var _nm=MV[x.id]?MV[x.id][1]:x.id;return '<span class="ansm ansclk" title="点开看招式详情" onclick="mvModalById('+x.id+')"><i>'+(i+1)+'</i>'+esc(_nm)+'</span>'}).join(''):'—')+'</div>';
+      if(mm0.length)h+='<div class="ansmate"><b>带这 5 只</b>'+mm0.map(function(r){var _id=(r&&r.s)?r.s.id:'';return '<span class="ansp ansclk" title="点开看这只的完整配置" onclick="selectCore('+jsl(String(_id))+')">'+esc((r&&r.s&&r.s.zh)||'')+'<em>'+esc((r&&r.priRole)||'')+'</em></span>'}).join('')+'</div>';
       h+='<div class="ansbtns"><button class="btn-mini" type="button" onclick="coreApplyAll()">🧩 就用这套（6 只一键配齐）</button><span class="dim">下方为「为什么」，按需再看</span></div>';
       return h;
     }
     if(!window._ansCtx)window._ansCtx={};
-    window._ansCtx[SID]={inner:cardInner};
+    window._ansCtx[SID]={inner:cardInner,showList:showList};
     return cardInner(0);
   })()+'</div>';
 
@@ -20082,7 +20149,7 @@ function renderCore(s){
         /* v4.56 C5：per-build 招组 why（深理由，如硬撑替身免被消去自异常）优先显示，
          仅当该招无流派级 why 时才回落 data.js 通用 movesNotes——此前通用注释逐流派雷同掩盖了深理由。 */
       var use=(sl.why&&sl.why.length)?esc(sl.why.join('；')):((ERDATA.movesNotes&&ERDATA.movesNotes[sl.id])?glossify(ERDATA.movesNotes[sl.id]):esc(sl.tag||''));
-      html+='<div class="mvrow"><span class="mvnm">'+(j+1)+'. '+esc(m?m[1]:sl.id)+'</span>'+
+      html+='<div class="mvrow"><span class="mvnm"><span class="abi" onclick="mvModalById('+sl.id+')">'+(j+1)+'. '+esc(m?m[1]:sl.id)+'</span></span>'+
         (m?('<span class="dim">'+tlabel(m[3])+' '+splitLabel(m[4])+' 威力 '+(m[5]||'-')+'</span>'):'')+
         '<span class="mvuse">'+mechBadgeForMove(sl.id)+use+'</span></div>';
     });
@@ -20129,7 +20196,7 @@ function renderCore(s){
     html+='</div>';
     /* ⑤ 性格 */
     html+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格</div><div>'+bd.nat.map(function(n){
-      return '<span class="abi">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>';
+      return '<span class="abi" onclick="natModalZh('+jsl(n[0])+')">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>';
     }).join('　')+'</div></div>';
     /* ⑥ 努力值分配（v4.11 新增输出：数组串 + 文本摘要 + 条形图 + 模板名） */
     html+=evBarHtml(bd);
