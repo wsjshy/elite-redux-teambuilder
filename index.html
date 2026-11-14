@@ -16847,6 +16847,52 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eA5){eA5.name}
+
+  /* v4.366 特性×天气/场地死联动第六批（源码考古口径）：
+     晴（叶绿素/太阳之力/叶绿体）/雨（悠游自如/雨盘）/电气场地（速度之力）/青草场地（草之皮毛）。
+     自身或队伍有对应天气/场地源即保留；否则换通用防守特性；都不成立则降权写明不生效。
+     注：干燥皮肤另带吸水免疫（独立收益），不在本批。 */
+  try{
+    var _A6_MAP={
+      '叶绿素':'sun','太阳之力':'sun','叶绿体':'sun',
+      '悠游自如':'rain','雨盘':'rain',
+      '速度之力':'terE','草之皮毛':'terG'
+    };
+    function _a6Names(t){return (t.abis||[]).concat(t.inns||[]).map(function(n){return String(n)});}
+    function _a6Src(t,kind){
+      var ns=_a6Names(t);
+      var abKw=kind==='sun'?'干旱':kind==='rain'?'降雨':kind==='terE'?'电气制造者':'青草制造者';
+      var mvKw=kind==='sun'?'大晴天':kind==='rain'?'求雨':kind==='terE'?'电气场地':'青草场地';
+      if(ns.some(function(n){return String(n).indexOf(abKw)>-1;}))return true;
+      return (learnOf(t)||[]).some(function(id){return MV[id]&&MV[id][1].indexOf(mvKw)>-1;});
+    }
+    function _a6Has(s,teamArr,kind){
+      if(_a6Src(s,kind))return true;
+      return (teamArr||[]).some(function(t){return _a6Src(t,kind);});
+    }
+    out.forEach(function(b){
+      if(b.score===99)return;
+      if(!b.abi||!b.abi.length||!b.abi[0])return;
+      var kind=_A6_MAP[b.abi[0].n];
+      if(!kind)return;
+      if(_a6Has(s,teamArr,kind))return;
+      var dn=b.abi[0].n;try{dn=abiDispName(dn)}catch(eD6){eD6.name}
+      for(var k6=1;k6<b.abi.length;k6++){
+        var nm6=b.abi[k6].n;
+        if(/魔法防守|毛皮大衣|持久力|自我修复|奇迹皮肤/.test(nm6)){
+          var dead6=b.abi[0];
+          b.abi[0]=b.abi[k6];b.abi[k6]=dead6;
+          b.abi[0].why=[nm6+'：原'+dn+'在本流派/本队拿不到天气或场地条件，换成不依赖该条件的特性'];
+          b.abi[0].sc=1;
+          return;
+        }
+      }
+      if(b.abi[0]){
+        b.abi[0].why=[dn+'：本流派/整队没有满足它的天气或场地条件，此特性当前不生效，主推请优先换更契合的特性'];
+        b.abi[0].sc=Math.min(+(b.abi[0].sc||0),1);
+      }
+    });
+  }catch(eA6){eA6.name}
   return out;}function classifyBuilds(s,bs){
   var list=(bs||[]).slice().sort(function(a,b){
     var d=(b.score||0)-(a.score||0);
@@ -20220,7 +20266,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.365';
+var ER_ENGINE_VER='v4.366';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
