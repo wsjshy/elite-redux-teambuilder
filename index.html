@@ -14011,7 +14011,9 @@ function mechFlowFit(s,kind){
     for(var _ai=0;_ai<_aa.length;_ai++){if(_ACRO_ABI_IDS.indexOf(+_aa[_ai])>-1)return 'ok';}
     return null;
   }
-  if(kind==='foul_play_atk'){ /* 欺诈：按对方物攻结算，自身 atk≤90 才推；atk≥120 剔除 */
+  if(kind==='foul_play_atk'){ /* 欺诈：按对方物攻结算，自身物攻零收益；高速攻击手（最高攻≥110且速≥100）有自己的强力输出，不作欺诈核心 */
+    var _fpSpa=b[3]||0;
+    if(Math.max(atk,_fpSpa)>=110&&spe>=100)return null;
     if(atk<=90)return 'ok'; if(atk<120)return 'mid'; return null;
   }
   if(kind==='body_press_def'){ /* 扑击：按自身物防结算，def≥100 才推；90-99 中段降位非首推；def<90 剔除冠名 */
@@ -20430,10 +20432,10 @@ function evNatureLinkV437(s,b){
   /* 性格对齐（v4.43 P1-A：性格-主用项一致，替代旧「仅当当前性格 +速度」的 natPos 门）
      三判据：① 不得砍主用项（判据 7）② 正项须落在实际使用项（判据 8）③ 机制结算项优先（判据 9 / 表 4-2）
      旧门缺陷：`natPos &&` 只在原性格为 +速度 时才纠偏 → 「耐久 EV + 加速性格」（C5a/C1b 类）长期漏网。 */
-  var _md=mainDirOf(b),_physN=0,_specN=0,_has704=false,_has512=false,_has360=false;
+  var _md=mainDirOf(b),_physN=0,_specN=0,_has704=false,_has512=false,_has360=false,_has492=false;
   ((b.mv&&b.mv.main)||[]).forEach(function(sl){var m=MV[sl.id];if(!m)return;
     if(m[4]==='物理')_physN++;else if(m[4]==='特殊')_specN++;
-    if(+sl.id===704)_has704=true;if(+sl.id===512)_has512=true;if(+sl.id===360)_has360=true});
+    if(+sl.id===704)_has704=true;if(+sl.id===512)_has512=true;if(+sl.id===360)_has360=true;if(+sl.id===492)_has492=true});
   var want=null,wantWhy='';
   /* v4.43 修正轮：扑击（704）分支**必须前置于空间轴** —— 表 4-2「扑击=自身物防结算 → 性格加防」。
      原实现 isSp 在前 ⇒ 低速扑击核（如 #67 豪力 b[5]=45 / #75 隆隆石）被空间轴判成 勇敢（+攻击），
@@ -20442,6 +20444,7 @@ function evNatureLinkV437(s,b){
      口径：空间/低速轴的扑击核取「悠闲」（加防 + 减速，与 MECH_NATURE body_press_def.ifSpace='relaxed' 一致），
      非空间轴取「大胆」（加防 −攻击；扑击不吃攻击，减攻击无损失）。 */
   if(_has704&&_physN>0){want=isSp?'悠闲':'大胆';wantWhy='扑击按自身物防结算 → 性格取加防御'+(isSp?'（空间/低速轴 → 加防减速）':'')}
+  else if(_has492&&_physN>0){want=isSp?'悠闲':'大胆';wantWhy='欺诈按对方物攻结算，自身物攻零收益 → 性格加防御减攻击'}
   else if(isSp){want=(side==='特殊')?'冷静':'勇敢';wantWhy='速度非核心价值（空间核）：性格取减速项换输出'}
   else if(((+ev[5])||0)===0||(actual&&cls==='A'&&cover&&!B1&&!sub)){  /* v4.51 R8-E E4：子区路径移除 clsA 一票否决（高速先制手保留128速则允许加速性格）；core 路径保留 v4.50 */
     want=(_md==='特殊')?'内敛':'固执';
@@ -20453,7 +20456,7 @@ function evNatureLinkV437(s,b){
     var _blocked=(_md==='物理'&&_curNeg==='-攻击')||(_md==='特殊'&&_curNeg==='-特攻');          /* 判据 7 */
     var _posBad=((_md==='物理')&&_curPos!=='+攻击'&&_curPos!=='+速度'&&_physN>0)||
                 ((_md==='特殊')&&_curPos!=='+特攻'&&_curPos!=='+速度'&&_specN>0);                /* 判据 8 */
-    var _mechBad=(_has704&&_curPos!=='+防御')||(_has512&&_md==='特殊'&&_physN>0&&side==='特殊')||
+    var _mechBad=(_has704&&_curPos!=='+防御')||(_has492&&_curPos!=='+防御')||(_has512&&_md==='特殊'&&_physN>0&&side==='特殊')||
                  (_has360&&((+ev[5])||0)>0);                                                      /* 判据 9 */
     /* C5a / S1-E（v4.42 既有口径，本轮保留）：速度 EV 归零 ⇒ 「加速性格」空转（性格正项零收益）
        —— 旧门只在不带条件时纠偏，此处并入统一判据，避免本轮性格块改写后 C5a 回潮。
@@ -20821,7 +20824,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.377';
+var ER_ENGINE_VER='v4.378';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
