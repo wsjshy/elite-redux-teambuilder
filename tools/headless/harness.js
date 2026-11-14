@@ -13150,7 +13150,7 @@ var MECH_BUILD={
     var mv0=null;
     if(mechHasMv(s,68))mv0=68;else if(mechHasMv(s,243))mv0=243;else if(mechHasMv(s,368))mv0=368;
     if(mv0===null)return null;
-    if(!((bb[1]||0)<70||(bb[3]||0)<70))return null;              /* 自身攻击无用，才需要「被打才有输出」 */
+    if(mv0===68){if(!((bb[1]||0)<70))return null;}else if(mv0===243){if(!((bb[3]||0)<70))return null;}else if(!((bb[1]||0)<70||(bb[3]||0)<70))return null;              /* 自身攻击无用，才需要「被打才有输出」 */
     if(!(((bb[0]||0)+(bb[2]||0)+(bb[4]||0))>=250))return null;  /* 耐久核才算成立（吃得住才反得痛） */
     var sp=(mv0===243),nmt=mechMvZh(mv0);
     var b=mechBuildBase(s,sp?'特殊':'物理','反伤后手流','counter_mirror',
@@ -13404,7 +13404,7 @@ function _pickAttacksCore(s,side,n,role){
     /* v4.32 P1-3：跨侧纳入招检查对应种族可玩性——幸福蛋攻10 的特殊侧反击招（双倍奉还）无伤害 */
     if(mech.crossSide&&m[4]==='物理'&&(s.base[1]||0)<70)return;
     if(mech.crossSide&&m[4]==='特殊'&&(s.base[3]||0)<70)return;
-    var pow=(mech.pow!==null)?mech.pow:(m[5]||0);if(pow<55)return;
+    var pow=(mech.pow!==null)?mech.pow:(m[5]||0);try{var _tn377=(s.abis||[]).concat(s.inns||[]);if(_tn377.indexOf('技术高手')>-1&&(m[5]||0)>0&&(m[5]||0)<=60)pow*=1.5;}catch(eTn377){}if(pow<55)return;
     /* v4.52 R9-E2：威力型特性等效威力重算（在 sc 前折算到招选择维度，区别于种族×2 战斗计算）。
        大力士/瑜珈之力 物攻×1.5；硬爪 接触物攻×1.3；铁拳 拳类招×1.2。按叠加链只作用一次。 */
     try{
@@ -14253,7 +14253,7 @@ function pickAbiFor(s,side,roleTag,ctx){
       if(tag.nt){sc+=1;why.push('关键耐性')}
     }
     /* v4.68 P1-1：会心流特性语境判定——无会心来源（高会心招）则降权，不主推 */
-    try{var _CRIT_ABI=['狙击手','超幸运','锋锐','怒气冲天','连胜'];if(_CRIT_ABI.indexOf(n)>-1){var _tl=learnOf(s);var _hasCrit=_tl.some(function(m){var o=MV[m];return isHighCritMove(m)});if(!_hasCrit){sc-=4;why.push('会心流特性但无高会心招/焦点镜支撑 → 降权，主推换稳定输出特性')}}else{}}catch(eCri){}
+    try{var _CRIT_ABI=['狙击手','超幸运','锋锐','怒气冲天','连胜'];if(_CRIT_ABI.indexOf(n)>-1){var _tl=(ctx&&ctx.mvCtx&&ctx.mvCtx.length)?ctx.mvCtx:learnOf(s);var _hasCrit=_tl.some(function(m){var o=MV[m];return isHighCritMove(m)});if(!_hasCrit){sc-=4;why.push('会心流特性但无高会心招/焦点镜支撑 → 降权，主推换稳定输出特性')}}else{}}catch(eCri){}
     if(sc===0&&names.length===1){sc=0;why.push('唯一可选')}
     /* v4.54 项6 三维覆盖第二批（gameData 原文溯源，中文以 data.js ABI 实读为准）：
        · 压迫感(Pressure,id46)：未在 abiTags 标签体系 → 补识别：被对方击中时对方该招多耗 1 PP → 长站场消耗锚点；
@@ -14273,7 +14273,7 @@ function pickAbiFor(s,side,roleTag,ctx){
     else if(n==='狙击手'){sc+=1;
       var _bn=(ctx&&ctx.buildName)||'';
       var _isTank=(roleTag==='肉盾'||roleTag==='受队');
-      var _critMvs=learnOf(s).filter(function(m){return isHighCritMove(m)}).map(function(m){return MV[m][1]});
+      var _critMvs=((ctx&&ctx.mvCtx&&ctx.mvCtx.length)?ctx.mvCtx:learnOf(s)).filter(function(m){return isHighCritMove(m)}).map(function(m){return MV[m][1]});
       var _critStr=_critMvs.slice(0,3).join('、');
       if(_bn.indexOf('硬撑')>-1)why.push('狙击手：暴击伤害 2.25 倍——异常增幅下，'+(_critStr||'高威力招')+'暴击收尾兑现满威')
       else if(_critMvs.length)why.push('狙击手：暴击伤害 2.25 倍——自带高暴击招「'+_critStr+'」，叠加暴击率加成后，暴击打出 2.25 倍爆发')
@@ -19613,7 +19613,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.376';
+var ER_ENGINE_VER='v4.377';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
