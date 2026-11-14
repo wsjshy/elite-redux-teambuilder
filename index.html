@@ -11954,7 +11954,7 @@ function mechIsConsumable(id){
      ③ 新增机制流 counter_mirror（反伤，优先度 −5）/ recycle_consumable（回收利用×一次性消耗件）
    红线（§3.7 + v4.37 纪律延续）：只正向/前提改写，不硬剔除；不改 archOfSp 阈值、pvIsSpaceLike 门、
         道具池、EV 写入路径；不引入新反模式。 */
-var MECH_EXTRA_RW=['counter_mirror','recycle_consumable'];   /* 引擎侧新增流派（mechLib 词表外） */
+var MECH_EXTRA_RW=['counter_mirror','recycle_consumable','ivy_cudgel_anchor'];   /* 引擎侧新增流派（mechLib 词表外） */
 /* 机制必需件（道具门控）：kind = 'consumable-only'（必须是一次性消耗件且非讲究系）/ 'status-orb'（异常宝珠） */
 var MECH_ITEM_GATE={
   acrobatics_item:{kind:'consumable-only',item:'飞行宝石',
@@ -13938,6 +13938,7 @@ function mechHasAbi(s,zh){return (s.abis||[]).concat(s.inns||[]).indexOf(zh)>-1}
 /* v4.58 机制流适宜度门控 mechFlowFit（证据 C:\temp\er-acro-scan\：机制流 1431 推 660 不当=46%）。
    判据=特性池/关键种族/横向分位三合一。返回 'ok'=首推 / 'mid'=中段降位(why 注明横向中位) / null=硬剔除冠名。
    剔除只去流派冠名（机制招保留作补位招，配招槽不因剔除掉到 <4）；中段非硬剔。 */
+var _ACRO_ABI_IDS=[26,55,145,181,185,203,278,358,359,536,606,650,696,919,930,1003,1047,1093]; /* v4.370 杂技有效加成能力（自身作用于飞行/物理/接触招）：飘浮/活力/健壮胸肌/硬爪/亲子爱/远隔/南极鸟/好斗/猛鸟/血之代价/高空杂技/毒焰钳/顶级掠夺/铅爪/冰镐/猛禽/鸟类型/空手 */
 function mechFlowFit(s,kind){
   var b=(s&&s.base)||[0,0,0,0,0,0];
   var atk=b[1]||0,def=b[2]||0,spe=b[5]||0;
@@ -13948,9 +13949,11 @@ function mechFlowFit(s,kind){
     if(mechHasAbi(s,'毅力')||mechHasAbi(s,'毒疗')||mechHasAbi(s,'魔法防守')||mechHasAbi(s,'毒激'))return 'ok';
     return null;
   }
-  if(kind==='acrobatics_item'){ /* 杂技：本系飞行∨轻装∨atk≥110（REGISTER-2 收紧 90→110） */
+  if(kind==='acrobatics_item'){ /* v4.370：非本系杂技必须有真实加成（源码核实），移除 atk>=110 物攻兜底（高物攻不构成非本系冠名理由） */
     if(hasTy('飞行')||mechHasAbi(s,'轻装'))return 'ok';
-    if(atk>=110)return 'ok'; return null;
+    var _aa=(s.abiIds||[]).concat(s.innIds||[]);
+    for(var _ai=0;_ai<_aa.length;_ai++){if(_ACRO_ABI_IDS.indexOf(+_aa[_ai])>-1)return 'ok';}
+    return null;
   }
   if(kind==='foul_play_atk'){ /* 欺诈：按对方物攻结算，自身 atk≤90 才推；atk≥120 剔除 */
     if(atk<=90)return 'ok'; if(atk<120)return 'mid'; return null;
@@ -14249,6 +14252,24 @@ var MECH_BUILD={
   },
   /* 硬撑：异常状态下威力翻倍（70 → 140，ER 实值）→ 剧毒宝珠/火焰宝珠自异常
      v4.38 B4-1/B4-2：威力口径 112 → 140（与 ER 实值、自家 mech_lib、T-28 文案统一）；道具名规范化 剧毒宝珠(302)/火焰宝珠(303) */
+  /* v4.370 荆棘棒（专属）：厄诡椪各面具的输出核心——100 威力+高暴击+锤系，属性随面具变且始终本系 */
+  ivy_cudgel_anchor:function(s,cs){
+    if(!mechHasMv(s,900))return null;
+    if(!/厄诡椪/.test(s.zh||''))return null;   /* 荒漠仙人掌#1070/Cacjack#1086 仅可学，非专属不冠名 */
+    var b=mechBuildBase(s,'物理','荆棘棒核心流','ivy_cudgel_anchor',
+      '专属招荆棘棒：威力100+高暴击（HIGH）+锤系，属性随面具变化且始终本系——输出围绕它展开，不另开非本系杂技流');
+    b.mv.main.push({id:900,kind:'attack',tag:'核心',why:['专属：威力100+高暴击（HIGH 暴击率）','属性随面具变化，面具属性下同样本系','锤系招（吃锤系加成）']});
+    b.core=[900];
+    var extra=bestStabAtk(s,'物理',null);
+    if(extra&&+extra.id!==900)b.mv.main.push(extra);
+    var cov=bestCoverAtk(s,'物理');
+    if(cov)b.mv.main.push(cov);
+    if(mechHasMv(s,14))b.mv.main.push({id:14,kind:'tech',tag:'强化',why:['剑舞物攻+2，配合荆棘棒高暴击清场']});
+    b.it=[['生命宝珠','全招1.3倍增伤，荆棘棒/本系招一起受益（30%自伤换稳定输出）'],
+      ['讲究头带','物攻1.5倍锁定荆棘棒（不带剑舞时的直攻选择）']];
+    b.basis.push({k:'mech',txt:'机制 专属荆棘棒（100+高暴击+随面具变属性）——输出核心，不依赖非本系杂技'});
+    return b;
+  },
   facade_status:function(s,cs){
     if(!mechHasMv(s,263))return null;
     if(!physOutOk(s))return null;   /* v4.30 P0-1：物攻侧不可玩（如攻击 10 的幸福蛋）不生成物理硬撑流 */
@@ -20509,7 +20530,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.369';
+var ER_ENGINE_VER='v4.370';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
