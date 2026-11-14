@@ -15490,7 +15490,7 @@ function mechPrefix(p){
 function bestBreakingRoute(p){
   var cand=[],sc;
   if(p.hasBoost){sc=p.ok?3:2;cand.push({k:'强化',sc:sc+1})}
-  if(p.mixed){sc=(p.atk.ph&&p.atk.sp)?3:2;cand.push({k:'双刀',sc:sc})}
+  if(p.mixed){sc=(p.atk.ph&&p.atk.sp)?3:2;if(p.side!=='双刀')sc=Math.min(sc,2);cand.push({k:'双刀',sc:sc})}
   if(p.fn.knock){cand.push({k:'拍落削道具',sc:2})}
   if(p.bulky){cand.push({k:'消耗磨血',sc:p.du.bulk>=340?3:2})}
   if(!cand.length)return '';
@@ -15628,6 +15628,15 @@ function deriveBuilds(s,team){
   _DB_C[key]=v;_DB_N++;
   return v;
 }
+
+/* v4.365：防守/辅助流派准入（用户原则：攻防综合接近才同时推荐进攻与防守/辅助）。
+   综合耐久三角+免疫/减伤特性+回复手段，不能只看种族值；玻璃炮台不硬造联防流派。 */
+function canDefend(p){
+  if(p.bulky)return true;
+  if(p.ab&&p.ab.hf.length)return true;
+  if(p.du.bulk>=NEED_CFG.BULK_MID&&(p.fn.rec||(p.ab&&p.ab.im.length)))return true;
+  return false;
+}
 function _deriveBuildsCore(s,team){
   var p=profileOf(s),arr=[],teamArr=[];
   (team||[]).forEach(function(x){var t=x&&x.s?x.s:x;if(t&&''+t.id!==''+s.id)teamArr.push(t)});
@@ -15653,6 +15662,9 @@ function _deriveBuildsCore(s,team){
   /* ③ 空间侧（R07-32）：低速个体 ≥2 且队内有戏法空间 */
   if(slowCount>=2&&p.ok&&trSetter)cand.push({key:'tr',base:'慢速重炮',tag:'输出',sc:5+slowCount,
     drivenBy:['低速个体 '+slowCount+' 只（≤'+NEED_CFG.SPEED_LOW+'）','队内含戏法空间','力度 '+p.power+' 高']});
+  /* ③b 慢速耐久重炮（v4.365）：低速+高耐久+力度达标，自身即站场重炮，不强制队内戏法空间 */
+  if(p.slow&&p.bulky&&p.ok&&p.side!=='双刀')cand.push({key:'main',base:'慢速重炮',tag:'输出',sc:5,
+    drivenBy:['速度 '+p.du.spd.toFixed(0)+'（≤'+NEED_CFG.SPEED_LOW+' 低速）','耐久三角 '+p.du.bulk+' 可站场','力度 '+p.power+' 达标']});
   /* ④ 消耗侧（R07-33）：耐久高 且 钉子+回复均命中 */
   if(p.bulky&&hazRec)cand.push({key:'stall',base:'受队消耗',tag:'受队',sc:5+(p.du.bulk>=340?2:1),
     drivenBy:['耐久三角 '+p.du.bulk+' 高','钉子+回复双确认']});
@@ -15670,11 +15682,12 @@ function _deriveBuildsCore(s,team){
   /* 破盾路线：互斥择优；命中「双刀」才生成双刀破盾流派（不默认第三条） */
   if(route==='双刀'&&cand.length<4)cand.push({key:'mix',base:'破盾',tag:'输出',sc:3,side:'双刀',
     drivenBy:['双侧本系达标（物 '+(p.atk.ph?p.atk.ph.pow:0)+' / 特 '+(p.atk.sp?p.atk.sp.pow:0)+'）','破盾路线择优=双刀']});
-  /* 兜底（07 §4.6.4 ④）：不足 2 条 → 主力输出 + 主要防守手段 */
+  /* 兜底（07 §4.6.4 ④）：不足 2 条 → 主力输出 + 主要防守手段。
+     v4.365：防守兜底加 canDefend 准入——玻璃炮台（低耐久、无减伤特性、无回复）不硬造联防/辅助流派。 */
   if(cand.length<2){
     if(!cand.length||cand[0].key!=='speed')cand.push({key:'main',base:'主力输出压制',tag:'输出',sc:2,
       drivenBy:['力度 '+p.power+' / 本系最高折算威力 '+(p.atk.powBest||'—')]});
-    if(cand.length<2)cand.push({key:'def',base:(p.fn.rec?'稳健联防消耗':'稳健联防'),tag:'肉盾',sc:1,
+    if(cand.length<2&&canDefend(p))cand.push({key:'def',base:(p.fn.rec?'稳健联防消耗':'稳健联防'),tag:'肉盾',sc:1,
       drivenBy:['耐久三角 '+p.du.bulk,p.fn.rec?'自带回复手段':'靠队友回复']});
   }
   /* v4.34 P2-2/P2-3：负面天性（懒惰）与极低种族/无攻击招物种的模板闸门（报告 4.8/4.9） */
@@ -16770,6 +16783,70 @@ function _deriveBuildsCore(s,team){
     });
   }catch(eA4){eA4.name}
   }catch(eA3){eA3.name}
+
+  /* v4.365 特性×招式/队伍死联动第五批（源码考古口径）：
+     发电机（无电伤害招）/ 不仁不义（自身挂状态优先、否则队伍级）/ 天气依赖（沙·冰雹，队伍级天气源）/
+     狙击手·超幸运（无高会心招/暴击道具）/ 神枪手（无波动/箭类）/ 炮术（无波动类）。
+     满足触发条件即保留；否则换通用防守特性；都不成立则降权并写明不生效。 */
+  try{
+    var _A5_HIGHCRIT={2:1,163:1,238:1,314:1,348:1,400:1,403:1,404:1,421:1,427:1,440:1,534:1,905:1,909:1,924:1,1019:1};
+    function _a5Arrow(id){var m=MV[id];return !!m&&/箭|Arrow|Darts/i.test(m[1]+' '+m[2]);}
+    function _a5ItemIs(b,re){return (b.it||[]).some(function(x){return re.test(String(x&&x[0]||''))});}
+    /* 自身挂状态手段（不仁不义）：特性级优先，其次可学招式池（毒/麻痹/减速/束缚） */
+    function _a5SelfStatus(s){
+      var abN=(s.abis||[]).concat(s.inns||[]);
+      if(abN.some(function(n){return /静电|毒刺|毒棘|毒之棘|孢子|效果孢子|火焰之躯|恶臭|鳞粉|灼伤|放电|毒沼/.test(String(n))}))return true;
+      return (learnOf(s)||[]).some(function(id){var m=MV[id];return m&&/剧毒|^毒|麻痹|电磁波|减速|束缚|黏黏网|Toxic|Thunder Wave/.test(m[1]);});
+    }
+    function _a5TeamStatus(teamArr){return (teamArr||[]).some(function(t){return _a5SelfStatus(t);});}
+    /* 天气源：自身/队友的天气特性或天气招（沙=扬沙/沙暴，冰雹=降雪/冰雹） */
+    function _a5Wx(s,kind){
+      var abRe=kind==='sand'?/扬沙|沙暴/: /降雪|冰雹|暴雪/;
+      var mvKw=kind==='sand'?'沙暴':'冰雹';
+      if((s.abis||[]).concat(s.inns||[]).some(function(n){return abRe.test(String(n))}))return true;
+      return (learnOf(s)||[]).some(function(id){return MV[id]&&MV[id][1].indexOf(mvKw)>-1;});
+    }
+    function _a5TeamWx(teamArr,kind){return (teamArr||[]).some(function(t){return _a5Wx(t,kind);});}
+    function _a5Satisfied(s,b,ab,teamArr){
+      var allM=((b.mv&&b.mv.main)||[]).concat((b.mv&&b.mv.func)||[]);
+      function dmgOf(ty){return allM.some(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'&&MV[x.id][3]===ty});}
+      if(ab==='发电机')return dmgOf('电');
+      if(ab==='神枪手')return allM.some(function(x){return mvHasFlag(x.id,'launcher')||_a5Arrow(x.id);});
+      if(ab==='炮术')return allM.some(function(x){return mvHasFlag(x.id,'launcher');});
+      if(ab==='狙击手'||ab==='超幸运'){
+        if(allM.some(function(x){return _A5_HIGHCRIT[x.id];}))return true;
+        if(_a5ItemIs(b,/焦点镜片|锐利之爪|锐利之牙|大葱|吉利拳/))return true;
+        return false;
+      }
+      if(ab==='不仁不义'){if(_a5SelfStatus(s))return true;return _a5TeamStatus(teamArr);}
+      if(ab==='沙隐'||ab==='沙之力'){if(_a5Wx(s,'sand'))return true;return _a5TeamWx(teamArr,'sand');}
+      if(ab==='白茫茫'||ab==='冰冻之躯'||ab==='拨雪'||ab==='暴雪之力'){if(_a5Wx(s,'hail'))return true;return _a5TeamWx(teamArr,'hail');}
+      return true;
+    }
+    var _A5_LIST=['发电机','不仁不义','沙隐','沙之力','白茫茫','冰冻之躯','拨雪','暴雪之力','狙击手','超幸运','神枪手','炮术'];
+    out.forEach(function(b){
+      if(b.score===99)return;
+      if(!b.abi||!b.abi.length||!b.abi[0])return;
+      var ab=b.abi[0].n;
+      if(_A5_LIST.indexOf(ab)<0)return;
+      if(_a5Satisfied(s,b,ab,teamArr))return;
+      var dn=ab;try{dn=abiDispName(ab)}catch(eD5){eD5.name}
+      for(var k5=1;k5<b.abi.length;k5++){
+        var nm5=b.abi[k5].n;
+        if(/魔法防守|毛皮大衣|持久力|自我修复|奇迹皮肤/.test(nm5)){
+          var dead5=b.abi[0];
+          b.abi[0]=b.abi[k5];b.abi[k5]=dead5;
+          b.abi[0].why=[nm5+'：原'+dn+'在本流派/本队拿不到触发条件，换成不依赖该条件的特性'];
+          b.abi[0].sc=1;
+          return;
+        }
+      }
+      if(b.abi[0]){
+        b.abi[0].why=[dn+'：本流派/整队没有满足它的触发条件，此特性当前不生效，主推请优先换更契合的特性'];
+        b.abi[0].sc=Math.min(+(b.abi[0].sc||0),1);
+      }
+    });
+  }catch(eA5){eA5.name}
   return out;}function classifyBuilds(s,bs){
   var list=(bs||[]).slice().sort(function(a,b){
     var d=(b.score||0)-(a.score||0);
@@ -20143,7 +20220,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.364';
+var ER_ENGINE_VER='v4.365';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
