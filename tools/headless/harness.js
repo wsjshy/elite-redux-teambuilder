@@ -8997,6 +8997,13 @@ var MV_FLAG={
   keen:'2,12,13,15,75,154,163,206,210,238,314,332,337,348,400,403,404,421,427,440,444,530,533,534,548,632,709,712,722,756,772,773,776,782,798,802,821,836,844,858,869,870,873,885,906,910,919',   /* FLAG_KEEN_EDGE_BOOST 锐利，47 条 */
   fist:'4,5,7,8,9,146,183,223,264,302,309,325,327,359,370,398,409,418,612,628,674,689,745,746,761,769,788,789,819,862,863',   /* FLAG_IRON_FIST_BOOST 拳类，31 条 */
   striker:'23,24,25,26,27,67,136,167,299,630,651,708,741,751,826,843,895',   /* FLAG_STRIKER_BOOST 踢类，17 条 */
+  arrow:'625,775,777,779,783,784,791,795,796,797,799,803,805,807,813,816,833,962,1030',   /* FLAG arrowBased 箭类，19 条 */
+  horn:'30,31,32,64,65,224,398,427,529,532,647,781,793,809,884,890,917,948,986,987,992,995',   /* FLAG hornBased 角类，22 条 */
+  air:'13,16,17,18,19,59,139,177,181,196,211,239,257,311,314,318,366,403,413,466,536,542,572,584,613,742,780,839,920,921,922,923,973,976,983,1024',   /* FLAG airBased 空中/翼类，36 条 */
+  hammer:'21,152,359,452,628,655,656,830,859,896,900,926,927,928,929,930,931,932,933,934,935,936,937,938,939,940,941,942,943,944,952,1002',   /* FLAG hammerBased 锤类，32 条 */
+  throwing:'69,88,121,140,155,157,301,317,374,402,439,479,486,507,716,753,883,1013,1015,1016,1017,1018,1021',   /* FLAG throwingBased 投掷类，23 条 */
+  drill:'32,65,529,890,995',   /* FLAG drill 钻头类，5 条 */
+  light:'62,76,109,113,148,235,236,295,324,408,412,429,430,546,605,617,632,634,675,962,964',   /* FLAG light 光线类，21 条 */
 };
 function mvHasFlag(id,k){
   if(!id||!k)return false;
@@ -14193,6 +14200,18 @@ function famAbiRuleOf(n){
     case '铁拳':return {label:'拳类',check:function(m){return mvHasFlag(m,'fist')}};
     case '强壮之颚':return {label:'啃咬/颚类',check:function(m){return mvHasFlag(m,'jaw')}};
     case '超级发射器':return {label:'波动/波导',check:function(m){return mvHasFlag(m,'launcher')}};
+    case '巨翼':return {label:'空/翼',check:function(m){return mvHasFlag(m,'air')}};
+    case '强大之角':return {label:'角/钻',check:function(m){return mvHasFlag(m,'horn')}};
+    case '弓箭手':return {label:'箭',check:function(m){return mvHasFlag(m,'arrow')}};
+    case '超级重击者':return {label:'锤',check:function(m){return mvHasFlag(m,'hammer')}};
+    case '神话之箭':return {label:'箭',check:function(m){return mvHasFlag(m,'arrow')}};
+    case '能量角':return {label:'角/钻',check:function(m){return mvHasFlag(m,'horn')}};
+    case '穿刺者':return {label:'角/钻',check:function(m){return mvHasFlag(m,'horn')}};
+    case '灵魂粉碎者':return {mul:1.1,label:'锤',check:function(m){return mvHasFlag(m,'hammer')}};
+    case '岩石载荷':return {mul:1.5,label:'岩石/投掷',check:function(m){var r=MV[m];return !!r&&(r[3]==='岩石'||mvHasFlag(m,'throwing'))}};
+    case '恶作剧礼物':return {mul:1.5,label:'冰/投掷',check:function(m){var r=MV[m];return !!r&&(r[3]==='冰'||mvHasFlag(m,'throwing'))}};
+    case '锤拳':return {mul:1.25,label:'拳/锤',check:function(m){return mvHasFlag(m,'fist')||mvHasFlag(m,'hammer')}};
+    case '巨型钻头':return {label:'角/钻头',check:function(m){return mvHasFlag(m,'horn')||mvHasFlag(m,'drill')}};
     default:return null;
   }
 }
@@ -14268,7 +14287,8 @@ function pickAbiFor(s,side,roleTag,ctx){
       var _fr=famAbiRuleOf(n);
       if(_fr){
         var _pool=(ctx&&ctx.mvCtx&&ctx.mvCtx.length)?ctx.mvCtx:learnOf(s);
-        if(_pool.some(_fr.check)){sc+=1;why.push(_fr.label+'招 ×1.3：本流派实配招式命中该族群，特性直接增伤')}
+        var _mul=_fr.mul||1.3;
+        if(_pool.some(_fr.check)){sc+=1;why.push(_fr.label+'招 ×'+_mul+'：本流派实配招式命中该族群，特性直接增伤')}
         else{sc-=2;why.push('实配四招无'+_fr.label+'招，此特性不触发 → 降权，主推换更契合的特性')}
       }
     }catch(eFam){eFam.name}
@@ -19556,7 +19576,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.374';
+var ER_ENGINE_VER='v4.375';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

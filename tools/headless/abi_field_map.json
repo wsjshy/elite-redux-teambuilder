@@ -1,0 +1,375 @@
+{
+ "ABILITY_STANCE_CHANGE": {
+  "id": 176,
+  "fields": [
+   "arrowBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_KEEN_EDGE": {
+  "id": 271,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_BONE_ZONE": {
+  "id": 353,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_BONE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_GIANT_WINGS": {
+  "id": 371,
+  "fields": [
+   "airBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_DEADEYE": {
+  "id": 376,
+  "fields": [
+   "arrowBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_MIGHTY_HORN": {
+  "id": 390,
+  "fields": [
+   "hornBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_HARDENED_SHEATH": {
+  "id": 391,
+  "fields": [
+   "hornBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_SWEEPING_EDGE": {
+  "id": 421,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_DUAL_WIELD": {
+  "id": 433,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_ROCKY_PAYLOAD": {
+  "id": 449,
+  "fields": [
+   "throwingBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_ARCHER": {
+  "id": 470,
+  "fields": [
+   "arrowBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_SUPER_SLAMMER": {
+  "id": 472,
+  "fields": [
+   "hammerBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_WIND_RIDER": {
+  "id": 484,
+  "fields": [
+   "airBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_MYSTIC_BLADES": {
+  "id": 505,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": [
+   "ABILITY_KEEN_EDGE"
+  ]
+ },
+ "ABILITY_WIND_POWER": {
+  "id": 550,
+  "fields": [
+   "airBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_MOLTEN_BLADES": {
+  "id": 593,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": [
+   "ABILITY_KEEN_EDGE"
+  ]
+ },
+ "ABILITY_BRAWLING_WYVERN": {
+  "id": 600,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_PUNCH"
+  ],
+  "deleg": [
+   "ABILITY_NO_GUARD"
+  ]
+ },
+ "ABILITY_JUNSHI_SANDA": {
+  "id": 769,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_PUNCH",
+   "MOVE_FLAG_KICK"
+  ],
+  "deleg": []
+ },
+ "ABILITY_MYTHICAL_ARROWS": {
+  "id": 601,
+  "fields": [
+   "arrowBased"
+  ],
+  "moveflags": [],
+  "deleg": [
+   "ABILITY_ARCHER"
+  ]
+ },
+ "ABILITY_DUAL_HAMMER": {
+  "id": 642,
+  "fields": [
+   "hammerBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_DENTING_BLOWS": {
+  "id": 643,
+  "fields": [
+   "hammerBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_SOUL_CRUSHER": {
+  "id": 645,
+  "fields": [
+   "hammerBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_PINNACLE_BLADE": {
+  "id": 698,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_DEEP_CUTS": {
+  "id": 736,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_ENERGIZED_HORNS": {
+  "id": 751,
+  "fields": [
+   "hornBased"
+  ],
+  "moveflags": [],
+  "deleg": [
+   "ABILITY_MIGHTY_HORN"
+  ]
+ },
+ "ABILITY_GUNMAN": {
+  "id": 780,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_MEGA_LAUNCHER"
+  ],
+  "deleg": [
+   "ABILITY_MEGA_LAUNCHER"
+  ]
+ },
+ "ABILITY_MIXED_MARTIAL_ARTS": {
+  "id": 813,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_PUNCH",
+   "MOVE_FLAG_KICK"
+  ],
+  "deleg": []
+ },
+ "ABILITY_FESTIVITIES": {
+  "id": 842,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_SOUND",
+   "MOVE_FLAG_DANCE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_IMPALER": {
+  "id": 845,
+  "fields": [
+   "hornBased"
+  ],
+  "moveflags": [],
+  "deleg": [
+   "ABILITY_MIGHTY_HORN"
+  ]
+ },
+ "ABILITY_REVERBATE": {
+  "id": 812,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_SOUND"
+  ],
+  "deleg": []
+ },
+ "ABILITY_TAEKKYEON": {
+  "id": 733,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_DANCE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_LASER_DRILL": {
+  "id": 907,
+  "fields": [
+   "hornBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_LIGHT_SABER": {
+  "id": 908,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_CHAINSAW": {
+  "id": 945,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_SHARP_TALONS": {
+  "id": 952,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KICK"
+  ],
+  "deleg": []
+ },
+ "ABILITY_DEVIOUS_PRESENT": {
+  "id": 941,
+  "fields": [
+   "throwingBased"
+  ],
+  "moveflags": [],
+  "deleg": []
+ },
+ "ABILITY_HAMMER_FIST": {
+  "id": 931,
+  "fields": [
+   "hammerBased"
+  ],
+  "moveflags": [
+   "MOVE_FLAG_PUNCH"
+  ],
+  "deleg": []
+ },
+ "ABILITY_BACKSTREET_BOY": {
+  "id": 976,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KICK",
+   "MOVE_FLAG_DANCE"
+  ],
+  "deleg": [
+   "ABILITY_STRIKER"
+  ]
+ },
+ "ABILITY_BACKFLIP": {
+  "id": 977,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_DANCE"
+  ],
+  "deleg": []
+ },
+ "ABILITY_CHESTNUT_AXE": {
+  "id": 959,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": [
+   "ABILITY_KEEN_EDGE"
+  ]
+ },
+ "ABILITY_MUSICAL_NOTES": {
+  "id": 912,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_SOUND"
+  ],
+  "deleg": []
+ },
+ "ABILITY_MEGA_DRILL": {
+  "id": 985,
+  "fields": [
+   "drill"
+  ],
+  "moveflags": [],
+  "deleg": [
+   "ABILITY_MIGHTY_HORN"
+  ]
+ },
+ "ABILITY_SINISTER_CLAWS": {
+  "id": 1011,
+  "fields": [],
+  "moveflags": [
+   "MOVE_FLAG_KEEN_EDGE"
+  ],
+  "deleg": [
+   "ABILITY_MYSTIC_BLADES",
+   "ABILITY_MYSTIC_BLADES"
+  ]
+ }
+}
