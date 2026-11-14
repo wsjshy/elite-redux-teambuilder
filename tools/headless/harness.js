@@ -16040,6 +16040,43 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eA9){eA9.name}
+  /* v4.376 防守流派死特性收口：防守/受队/联防/辅助流派若主推特性被前序批次判定「当前不生效」，
+     且备选里有「常驻防守能力」（不依赖天气/场地/指定招），直接换成它——减负，不让用户自己挑。
+     自包作用域独立 try/catch；只处理结构上已确认的死特性，不碰 score99 与进攻流派。 */
+  try{
+    var _D10_MAP={109:1,75:2,4:2,116:3,142:4,20:5,7:6,107:7,578:8,144:9,165:10};
+    var _D10_ROLES=['肉盾','受队','联防','辅助'];
+    function _d10IdOf(s,n){
+      var ab=(s&&s.abis)||[],ai=(s&&s.abiIds)||[];
+      for(var i=0;i<ab.length;i++){if(ab[i]===n)return ai[i]?+ai[i]:null;}
+      var ib=(s&&s.inns)||[],ii=(s&&s.innIds)||[];
+      for(var j=0;j<ib.length;j++){if(ib[j]===n)return ii[j]?+ii[j]:null;}
+      return null;
+    }
+    out.forEach(function(b){
+      try{
+        if(b.score===99)return;
+        if(!b.abi||b.abi.length<2||!b.abi[0])return;
+        var a0=b.abi[0];
+        if(!a0.why||JSON.stringify(a0.why).indexOf('此特性当前不生效')<0)return;
+        var isDef=(b.side==='辅助')||(_D10_ROLES.indexOf(b.roleTag)>=0);
+        if(!isDef)return;
+        var bestI=-1,bestRank=999;
+        for(var k=1;k<b.abi.length;k++){
+          var aid=_d10IdOf(s,b.abi[k].n);
+          if(aid==null||!_D10_MAP.hasOwnProperty(aid))continue;
+          var rk=_D10_MAP[aid];
+          if(rk<bestRank){bestRank=rk;bestI=k;}
+        }
+        if(bestI<0)return;
+        var dead=a0,nm=b.abi[bestI].n;
+        var dn=dead.n;try{dn=abiDispName(dead.n)}catch(eD10){dn=dead.n}
+        b.abi[0]=b.abi[bestI];b.abi[bestI]=dead;
+        b.abi[0].sc=1;
+        b.abi[0].why=[nm+'：原'+dn+'在本流派拿不到触发条件，换成本流派常驻生效的防守特性'];
+      }catch(eD10b){eD10b.name}
+    });
+  }catch(eD10){eD10.name}
   /* v4.371：进攻流派同玩法去重——同 side/主推特性/主推道具/EV 模板且主招集合 Jaccard≥0.6
      （4 槽至少 3 槽重合，含仅排序不同的同招组）视为同一玩法，只保留评分最高一条。
      用户口径：综合特性与技能存在最优解，不平铺近同流派。防御/辅助流派不动；
@@ -19576,7 +19613,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.375';
+var ER_ENGINE_VER='v4.376';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
