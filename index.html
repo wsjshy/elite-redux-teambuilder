@@ -3644,7 +3644,7 @@ function anDetailHtml(s,bd,R){
   if(!bd){h+='<div class="tip">该成员暂无引擎推荐流派（deriveBuilds 未返回）</div>';return h}
   /* ① 玩法流派一句话 */
   h+='<div class="fld"><div class="fhd"><span class="fno">1</span>玩法流派</div><div><b>'+esc(bd.name||'')+'</b> '+
-    '<span class="dim">'+esc(bd.side||'')+'向 · '+esc(bd.roleTag||'')+'</span><div class="oltext">'+esc(oneLiner(bd))+'</div>'+
+    '<span class="dim">'+sideDisp(bd)+' · '+esc(bd.roleTag||'')+'</span><div class="oltext">'+esc(oneLiner(bd))+'</div>'+
     (bd.warn?'<div class="tip" style="margin-top:3px"><span class="badge badge-warnimm">注意</span> '+esc(bd.warn)+'</div>':'')+
     '</div></div>';
   h+=roleCard5Html(s,bd,R);   /* v4.91 任务A：五段式角色定位卡（接在流派一句话之后，风格同 fld） */
@@ -4023,7 +4023,7 @@ function openSp(s){
     }
     var spd0=0;try{spd0=spdViewValOf(s)}catch(eS){spd0=0}
     html+='<div class="spans">'+
-      '<div class="spanshd">通用配法（不依赖当前队伍）：'+(bd0?esc(bd0.side+'向 · '+bd0.name):'—')+'</div>'+
+      '<div class="spanshd">通用配法（不依赖当前队伍）：'+(bd0?esc(sideDisp(bd0)+' · '+bd0.name):'—')+'</div>'+
       '<div class="spansrow">推荐 <b>'+esc(abi0)+'</b> · 道具 <b>'+esc(it0)+'</b> · 性格 <b>'+esc(nat0)+'</b></div>'+
       '<div class="spansrow">实速 <b>'+(spd0||'—')+'</b>（速度档满投；下面可拖滑块自定义）</div>'+
       '<button class="btn" style="background:var(--accent);color:#fff;width:100%;margin-top:7px" onclick="gotoCoreFromSp(\''+s.id+'\')" title="进入核心配队，自动带出队友和四招">🤖 以它为核心生成组队建议（含队友和四招）</button>'+
@@ -16956,7 +16956,44 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eA7){eA7.name}
-  return out;}function classifyBuilds(s,bs){
+  /* v4.368 慢速/空间流派的速度 EV 与命名口径一致性：
+     流派名写「慢速重炮 / 空间」，EV 模板却按速攻给满 252 速度 —— 基础速度 60 的慢速手追不上谁，
+     这 252 点是纯浪费，也和新手从名字读到的「慢速」自相矛盾。
+     处理：按空间低速模板重算（252HP + 252 主输出 + 4 防，速度 0 EV），并剔掉 +速度性格（空间队里同样没收益）。 */
+  try{
+    out.forEach(function(b){
+      if(!(/慢速|空间/.test(b.name||'')))return;
+      if(!(b.ev&&b.ev.alloc))return;
+      if(b.ev.template==='空间低速')return;
+      if((+b.ev.alloc[5]||0)<100)return;
+      var _a8i=(b.side==='特殊')?3:1,_a8a=[0,0,0,0,0,0];
+      _a8a[0]=252;_a8a[_a8i]=252;_a8a[2]=4;
+      b.ev.template='空间低速';b.ev.alloc=_a8a;
+      try{b.ev.summary=evRebuildSummary(_a8a)}catch(eA8s){b.ev.summary=''}
+      if(b.nat&&b.nat.length){
+        var _a8n=b.nat.filter(function(o){return !/(胆小|急躁|爽朗|天真|害羞)/.test(String((o&&o[0])||''))});
+        b.nat=_a8n.length?_a8n:[[(b.side==='特殊')?'内敛':'固执','慢速流派：加主输出就够，速度性格在这里没有收益']];
+      }
+      b.warn=(b.warn?b.warn+'；':'')+'命名是慢速/空间却按速攻投了 252 速度 EV —— 追不上就是白给，已改空间低速（252HP / 252'+((b.side==='特殊')?'特攻':'物攻')+' / 4防，速度 0 EV）';
+    });
+  }catch(eA8){eA8.name}
+  return out;}
+function sideDisp(bd){
+  /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
+     「物理向 / 特殊向」会被读成「要练攻」，一律显示「防御向」。 */
+  try{
+    if(!bd)return '';
+    var _r=String(bd.roleTag||'');
+    if(_r==='肉盾'||_r==='受队'||_r==='联防'||_r==='辅助'){
+      var _d=0,_m=(bd.mv&&bd.mv.main)||[],_k;
+      for(_k=0;_k<_m.length;_k++){var _mv0=MV[_m[_k].id];if(_mv0&&_mv0[4]!=='变化'&&+_mv0[5]>0)_d++;}
+      if(_d<=1)return '防御向';
+    }
+    return String(bd.side||'')+'向';
+  }catch(eSD){eSD.name}
+  return String((bd&&bd.side)||'')+'向';
+}
+function classifyBuilds(s,bs){
   var list=(bs||[]).slice().sort(function(a,b){
     var d=(b.score||0)-(a.score||0);
     if(d)return d;
@@ -20329,7 +20366,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.367';
+var ER_ENGINE_VER='v4.368';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -20796,7 +20833,7 @@ function renderCore(s){
         return r.length?r.join(' / '):'—';
       })();
       var mv0=(bd.mv&&bd.mv.main)?bd.mv.main.map(function(x){return MV[x.id]?MV[x.id][1]:''}).filter(Boolean):[];
-      var h='<div class="anshd">这只就这么配<span class="anssub">'+esc(bd.side)+'向 · '+esc(bd.name||'')+' · 另 5 只围绕它配</span></div>';
+      var h='<div class="anshd">这只就这么配<span class="anssub">'+sideDisp(bd)+' · '+esc(bd.name||'')+' · 另 5 只围绕它配</span></div>';
       h+='<div class="answtabs">';
       _mainReps.forEach(function(b,kk){
         h+='<button type="button" class="answtab'+(kk===k?' sel':'')+'" onclick="ansSwitch('+SID+','+kk+')">'+(kk===0?'⭐ 就这么配':'换玩法')+' '+esc(b.name)+'</button>';
