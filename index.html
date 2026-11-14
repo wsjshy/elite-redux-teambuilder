@@ -1387,6 +1387,18 @@ function abiIdByZhOrEn(n){
   var al=ERDATA.abiAlias&&ERDATA.abiAlias[n];
   return (al===undefined||al===null)?null:(''+al);
 }
+/* v4.364：机制行里的特性名统一取特性表展示名（物种表可能沿用旧译名，如「月食」→「月蚀」）。
+   解析不到时回退原名，保证不丢信息。 */
+function abiDispName(n){
+  try{
+    var id=abiIdByZhOrEn(n);
+    if(id!=null&&ABI[id]){
+      var z=ABI[id][2];
+      if(z)return z;
+    }
+  }catch(e){}
+  return n;
+}
 function mvIdByZhOrEn(n){for(var k in MV){if(MV[k][1]===n||MV[k][2]===n)return k}return null}
 /* v4.124 P1-2：修复 anMvId 未定义（L3752/3757/3761/4412 调用）——move 可为 id 数字或中文/英文名串，统一归一到 id */
 function anMvId(m){
@@ -1718,7 +1730,7 @@ function abiAdjOf(s,side,ty,names,targetNames,isStab){
       else if(o.stat==='atk'&&(side==='物理'||side==='双刀'))hit=true;
       else if(o.stat==='spa'&&(side==='特殊'||side==='双刀'))hit=true;
     }
-    if(hit&&best.mul<1.2)best={mul:1.2,why:n+'输出×1.2'+(o.cond?'('+o.cond+')':'')+(o.note?'('+o.note+')':''),warn:null};
+    if(hit&&best.mul<1.2)best={mul:1.2,why:abiDispName(n)+'输出×1.2'+(o.cond?'('+o.cond+')':'')+(o.note?'('+o.note+')':''),warn:null};
   });
   if(IMMUNE_RISK[ty]&&IMMUNE_RISK[ty].length){
     best.warn=ty+'属性招可能被「'+IMMUNE_RISK[ty].slice(0,3).join('/')+'」等免疫特性废掉';
@@ -20131,7 +20143,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.363';
+var ER_ENGINE_VER='v4.364';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
