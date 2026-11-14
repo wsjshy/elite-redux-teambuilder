@@ -16977,6 +16977,146 @@ function _deriveBuildsCore(s,team){
       b.warn=(b.warn?b.warn+'；':'')+'命名是慢速/空间却按速攻投了 252 速度 EV —— 追不上就是白给，已改空间低速（252HP / 252'+((b.side==='特殊')?'特攻':'物攻')+' / 4防，速度 0 EV）';
     });
   }catch(eA8){eA8.name}
+  /* v4.369 特性×条件死联动第八批（源码考古口径，本地 src/abilities.cc 1,078 块实证）：
+     ① 属性伤害招族（16）：四招里没有该属性「伤害招」→ 威力加成永远拿不到，判死。
+     ② 满血先制族（6）：同上（满血不可判，掉血即失效只用 why 说明，不判死）。
+     ③ 单招 id 绑定族（8）：只对某指定招生效，没带即死。
+     ④ 天气/道具双通道（4）：花之礼(晴)/花项链(青草场地)/古代活性(晴或驱劲能量)/夸克充能(电气场地或驱劲能量)。
+     ⑤ 队友依赖（4）：钢之意志/花幕/飞空助力/鼠王 —— 整队找不到配对即死（单打尤其）。
+     口径铁律：只判「结构上不可能触发」（招式/属性/道具/队友），不判运行时维度（HP/自身异常/击倒/回合计数）
+     —— 第八批 1.4 清单那批只登记台账、写 why，绝不动 sc。残血双档族有 1.2/1.3 底档（非零收益），同样不判死。 */
+  try{
+    var _A9_T={306:['恶'],336:['电'],337:['草'],281:['电'],278:['冰','飞行'],713:['水'],
+      757:['恶'],432:['火'],466:['火','电'],883:['岩石','钢','格斗'],881:['岩石'],449:['岩石'],
+      941:['冰'],478:['妖精','恶'],1009:['龙','冰'],659:['钢']};
+    var _A9_G={177:['飞行'],351:['火'],362:['冰'],430:['电'],522:['幽灵'],946:['飞行']};
+    var _A9_M={960:[594],963:[560],500:[460],830:[459],786:[47],327:[95],631:[87],776:[237,290]};
+    var _A9_W={122:'sun',984:'terG',548:'sun',549:'terE'};
+    var _A9_X={252:'钢',166:'草',544:'fly',891:'lowBST'};
+    var _A9_GEN=/魔法防守|毛皮大衣|持久力|自我修复|奇迹皮肤/;
+    function _a9AllM(b){return ((b&&b.mv&&b.mv.main)||[]).concat((b&&b.mv&&b.mv.func)||[]);}
+    function _a9Dmg(allM,ty){
+      for(var i=0;i<allM.length;i++){var m=MV[allM[i].id];if(m&&m[4]!=='变化'&&+m[5]>0&&m[3]===ty)return true;}
+      return false;
+    }
+    function _a9WxSrc(t,kind){
+      var ns=((t&&t.abis)||[]).concat((t&&t.inns)||[]).map(function(n){return String(n)});
+      var abK=kind==='sun'?'干旱':(kind==='terE'?'电气制造者':'青草制造者');
+      var mvK=kind==='sun'?'大晴天':(kind==='terE'?'电气场地':'青草场地');
+      for(var i=0;i<ns.length;i++){if(ns[i].indexOf(abK)>-1)return true;}
+      var ls=[];try{ls=learnOf(t)||[]}catch(eL9){ls=[]}
+      for(var j=0;j<ls.length;j++){if(MV[ls[j]]&&String(MV[ls[j]][1]).indexOf(mvK)>-1)return true;}
+      return false;
+    }
+    function _a9HasWx(s,teamArr,kind){
+      if(_a9WxSrc(s,kind))return true;
+      var tm=teamArr||[];
+      for(var i=0;i<tm.length;i++){if(tm[i]&&tm[i].id!==s.id&&_a9WxSrc(tm[i],kind))return true;}
+      return false;
+    }
+    function _a9TeamDmg(teamArr,s,ty){
+      if(_a9Dmg(_a9AllM(s),ty))return true;
+      var tm=teamArr||[];
+      for(var i=0;i<tm.length;i++){
+        var t=tm[i];if(!t)continue;
+        var ls=[];try{ls=learnOf(t)||[]}catch(eL9b){ls=[]}
+        for(var j=0;j<ls.length;j++){var m=MV[ls[j]];if(m&&m[4]!=='变化'&&+m[5]>0&&m[3]===ty)return true;}
+      }
+      return false;
+    }
+    function _a9HasStored(b){
+      var its=(b&&b.it)||[];
+      for(var i=0;i<its.length;i++){if(/驱劲能量|Booster Energy/.test(String((its[i]&&its[i][0])||its[i]||'')))return true;}
+      return false;
+    }
+    function _a9Fallback(b,dn,txt){
+      for(var k=1;k<b.abi.length;k++){
+        var nm=b.abi[k].n;
+        if(_A9_GEN.test(String(nm))){
+          var dead=b.abi[0];b.abi[0]=b.abi[k];b.abi[k]=dead;
+          b.abi[0].why=[nm+'：原'+dn+'在本流派/本队拿不到触发条件，换成不依赖该条件的特性'];
+          b.abi[0].sc=1;
+          return;
+        }
+      }
+      /* 没有通用防守特性备选时，退一步取「分数最高的其他可选特性」——减负口径：
+         不能让玩家自己看着「该特性不生效」再去想换什么，直接替他换掉。 */
+      var bi9=-1,bs9=-1;
+      for(var k2=1;k2<b.abi.length;k2++){
+        var n2=String(b.abi[k2].n||'');
+        if(!n2||n2===String(dn))continue;
+        var s2=+(b.abi[k2].sc||0);
+        if(s2>bs9){bs9=s2;bi9=k2;}
+      }
+      if(bi9>0&&bs9>=+(b.abi[0].sc||0)){
+        var dead2=b.abi[0];b.abi[0]=b.abi[bi9];b.abi[bi9]=dead2;
+        b.abi[0].why=[String(b.abi[0].n||'')+'：原'+dn+'在本流派/本队拿不到触发条件（'+txt+'），换成本队里更站得住的特性'];
+        return;
+      }
+      b.abi[0].why=[dn+'：'+txt+'，此特性当前不生效，主推请优先换更契合的特性'];
+      b.abi[0].sc=Math.min(+(b.abi[0].sc||0),1);
+    }
+    out.forEach(function(b){
+      if(b.score===99)return;
+      if(!b.abi||!b.abi.length||!b.abi[0])return;
+      var id=+(b.abi[0].id||0);
+      if(!(_A9_T[id]||_A9_G[id]||_A9_M[id]||_A9_W[id]||_A9_X[id]))return;
+      var ab0=b.abi[0];
+      var dn=String(ab0.n||'');try{dn=abiDispName(ab0.n)}catch(eD9){dn=String(ab0.n||'')}
+      var allM=_a9AllM(b);
+      if(_A9_T[id]){
+        var tys=_A9_T[id],hit9=false;
+        for(var a=0;a<tys.length;a++){if(_a9Dmg(allM,tys[a])){hit9=true;break;}}
+        if(!hit9)_a9Fallback(b,dn,'本流派四招没有'+tys.join('/')+'属性伤害招，'+dn+'的威力加成拿不到');
+        return;
+      }
+      if(_A9_G[id]){
+        var tys2=_A9_G[id],hit92=false;
+        for(var a2=0;a2<tys2.length;a2++){if(_a9Dmg(allM,tys2[a2])){hit92=true;break;}}
+        if(!hit92){_a9Fallback(b,dn,'本流派四招没有'+tys2.join('/')+'属性伤害招，'+dn+'的先制拿不到');return;}
+        var w9=ab0.why;
+        if(Object.prototype.toString.call(w9)==='[object Array]'){w9.push(dn+'：满血才 +1 先制，掉血即失效');}
+        else{ab0.why=[String(w9||'')+'（满血才 +1 先制，掉血即失效）'];}
+        return;
+      }
+      if(_A9_M[id]){
+        var mids=_A9_M[id],hit93=false;
+        for(var a3=0;a3<allM.length;a3++){if(mids.indexOf(+allM[a3].id)>-1){hit93=true;break;}}
+        if(!hit93){
+          var nms=[];for(var a4=0;a4<mids.length;a4++){try{nms.push(MV[mids[a4]][1])}catch(eM9){nms.push('#'+mids[a4])}}
+          _a9Fallback(b,dn,'该特性只对「'+nms.join('/')+'」生效，本流派没带这招');
+        }
+        return;
+      }
+      if(_A9_W[id]){
+        var kind=_A9_W[id];
+        if(id===548||id===549){if(_a9HasStored(b))return;}
+        if(_a9HasWx(s,teamArr,kind))return;
+        _a9Fallback(b,dn,(kind==='sun'?'整队没有大晴天源（且未带驱劲能量）':(kind==='terE'?'整队没有电气场地源（且未带驱劲能量）':'整队没有青草场地源')));
+        return;
+      }
+      if(_A9_X[id]){
+        var kx=_A9_X[id],ok9=false,tm9=teamArr||[];
+        if(kx==='钢'||kx==='草'){
+          if(String(s.t1)===kx||String(s.t2)===kx)ok9=true;
+          for(var i9=0;i9<tm9.length&&!ok9;i9++){var t9=tm9[i9];if(t9&&(String(t9.t1)===kx||String(t9.t2)===kx))ok9=true;}
+          if(!ok9)_a9Fallback(b,dn,'整队没有'+kx+'属性同伴，'+dn+'的加成没有作用对象');
+        }else if(kx==='fly'){
+          ok9=_a9TeamDmg(tm9,s,'飞行');
+          if(!ok9)_a9Fallback(b,dn,'自身和整队都没有飞行属性伤害招，'+dn+'的加成没有作用对象');
+        }else if(kx==='lowBST'){
+          for(var i10=0;i10<tm9.length&&!ok9;i10++){
+            var t10=tm9[i10];if(!t10||t10.id===s.id)continue;
+            var bs=0,b0=(t10.base||[]);
+            for(var j10=0;j10<b0.length;j10++)bs+=+b0[j10]||0;
+            if(bs>0&&bs<400)ok9=true;
+          }
+          if(!ok9)_a9Fallback(b,dn,'整队没有种族值总和低于 400 的同伴，'+dn+'的加成没有作用对象');
+        }
+        return;
+      }
+    });
+  }catch(eA9){eA9.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -19223,7 +19363,10 @@ function coreIdeaOf(s,plan,V){
   var pr=(plan&&plan.prof)||{};
   var hasAxis=!!(plan&&plan.axis&&plan.axis.name);
   var scope=hasAxis?'':((plan&&plan.sysKey)?plan.sysKey:'无天气/场地依赖');
-  var head=(V&&V.name?V.name+' · ':'')+(scope?(' · '+scope):'')+((pr.role||'')+(pr.side||'')+'向');
+  /* v4.369：这里的「向」也要跟 sideDisp 同口径 —— profileOf 的 role 是「受队核心/肉盾核心」这类，
+     直接拼会产出「肉盾核心物理向」这种读不明白的标签；耐久向一律收敛成「防御向」。 */
+  var _dir9=(/受队核心|肉盾核心/.test(String(pr.role||'')))?'防御向':(String(pr.side||'')+'向');
+  var head=(V&&V.name?V.name+' · ':'')+(scope?(' · '+scope):'')+_dir9;
   if(hasAxis)return head;
   return head+' —— '+String((V&&V.idea)||'需求驱动');
 }
@@ -20366,7 +20509,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.368';
+var ER_ENGINE_VER='v4.369';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
