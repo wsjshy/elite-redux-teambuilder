@@ -13185,6 +13185,7 @@ function fillMvSlots(s,b){
   var side=(b.side==='双刀')?'双刀':((b.side==='物理')?'物理':'特殊');
   var att=pickAttacks(s,side,4,b.roleTag||'输出');
   var rest=FUNC_MV.rec.concat(FUNC_MV.protect,FUNC_MV.speed,FUNC_MV.hazard,FUNC_MV.wear);
+  if(isGlassCannon(s))rest=rest.filter(function(id){return FUNC_MV.hazard.indexOf(id)<0;});
   /* v4.32 P1-3：物理攻击种族 <70 时 rest 池过滤物理招（防净化后被双倍奉还等补回） */
   var physOK=((s.base&&s.base[1])||0)>=70;
   if(!physOK)rest=rest.filter(function(id){var m=MV[id];return !m||m[4]!=='物理'});
@@ -13497,6 +13498,10 @@ function stabBest(s,side){
   });
   return best;
 }
+/* v4.374：玻璃大炮判定——速度种族≥100 且耐久三角<BULK_MID（270），脆皮高速进攻手，不挂被动团队辅助钉子 */
+function isGlassCannon(s){
+  return (s.base[5]||0)>=NEED_CFG.SPEED_HIGH && bulkOf(s)<NEED_CFG.BULK_MID;
+}
 function buildMoves(s,side,roleTag){
   var learn=learnOf(s);
   var learnSet={};learn.forEach(function(x){learnSet[''+x]=1});
@@ -13526,6 +13531,9 @@ function buildMoves(s,side,roleTag){
     var _i2=funcOrder.indexOf('rec');
     if(_i2>1){funcOrder.splice(_i2,1);funcOrder.splice(1,0,'rec')}
   }
+  /* v4.374：玻璃大炮不铺被动钉子（毒菱/撒菱/隐形岩/黏黏网）——脆皮铺场回合易被秒、且与其进攻定位错配；
+     该槽由后续攻击位/游击/保命自然补位 */
+  if(isGlassCannon(s))funcOrder=funcOrder.filter(function(k){return k!=='hazard';});
   var slots=[],funcUsed=[];
   function push(cid,why,tag,kind,ex){
     var k=kind||mvKindOf(cid),w=(why||[]).slice();
@@ -14360,6 +14368,7 @@ function profileOf(s){
 /* 机制前缀（07 §4.6.4：前缀只用机制名——天气/场地/空间/顺风/钉子/强化/接棒/免疫） */
 function mechPrefix(p){
   var f=p.field||[],s=p.side;
+  var _glass=p.fast&&p.du.bulk<NEED_CFG.BULK_MID;   /* v4.374：玻璃大炮不冠钉子名 */
   if(f.indexOf('晴')>-1)return '晴';
   if(f.indexOf('雨')>-1)return '雨';
   if(f.indexOf('沙')>-1)return '沙';
@@ -14373,7 +14382,7 @@ function mechPrefix(p){
   if(p.fn.tr&&p.du.spd<=50)return '空间';
   if(p.slow&&p.ok&&p.du.spd<=50)return '空间';
   if(p.fn.tw)return '顺风';
-  if(p.fn.haz)return '钉子';
+  if(p.fn.haz&&!_glass)return '钉子';
   if(p.hasBoost)return '强化';
   if(p.hasPass)return '接棒';
   if(p.ab.im.length||p.ab.hf.length)return '免疫';
@@ -14464,7 +14473,8 @@ function comboBuildsOf(s){
     var hazard=_mvNameAll(s,['隐形岩','撒菱','毒菱','黏黏网'])[0];
     var phaze=_mvNameAll(s,['吹飞','吼叫','龙尾'])[0];
     var rec=_mvNameAll(s,['羽栖','睡觉','再生','歇息','进食'])[0];
-    if(hazard&&phaze&&rec){
+    /* v4.374：玻璃大炮一律不造钉子轮转受队流——纸耐久（bulk<270）完不成「撒钉→吹飞→回复」多回合站场，单属性减伤天性不改变中性招被秒，且其联防位已由「顺风稳健联防消耗」覆盖；非玻璃大炮维持原口径 */
+    if(hazard&&phaze&&rec&&!isGlassCannon(s)){
       res.push({name:'钉子轮转流',roleTag:'受队',side:coreSide(s),score:4,breakingRoute:'组合',
         mv:{main:[{id:hazard,kind:'hazard',tag:'钉子',why:['撒钉子压血线']},
                  {id:phaze,kind:'phaze',tag:'吹飞',why:['吹飞/吼叫强制换人滚钉子']},
@@ -19546,7 +19556,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.372';
+var ER_ENGINE_VER='v4.374';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
