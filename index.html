@@ -17138,6 +17138,47 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eA9){eA9.name}
+  /* v4.371：进攻流派同玩法去重——同 side/主推特性/主推道具/EV 模板且主招集合 Jaccard≥0.6
+     （4 槽至少 3 槽重合，含仅排序不同的同招组）视为同一玩法，只保留评分最高一条。
+     用户口径：综合特性与技能存在最优解，不平铺近同流派。防御/辅助流派不动；
+     score99 同配置近同卡同样合并，并列时保留先出现的冠名。 */
+  try{
+    var _DEF_ROLE371={'肉盾':1,'受队':1,'联防':1,'辅助':1};
+    function _off371(b){if(String(b.side)==='辅助')return false;if(_DEF_ROLE371[String(b.roleTag)])return false;return true;}
+    function _ids371(b){return (b.mv&&b.mv.main||[]).map(function(x){return x.id});}
+    function _jac371(a,b){var A={},B={},u={};a.forEach(function(x){A[x]=1});b.forEach(function(x){B[x]=1});
+      var inter=0,un=0;for(var k in A)if(B[k])inter++;
+      a.concat(b).forEach(function(x){if(!u[x]){u[x]=1;un++}});
+      return un?inter/un:0;}
+    var _pos371=[];
+    out.forEach(function(b,i){if(_off371(b))_pos371.push(i);});
+    if(_pos371.length>=2){
+      var _par371=_pos371.map(function(_,j){return j});
+      function _find371(x){while(_par371[x]!==x){_par371[x]=_par371[_par371[x]];x=_par371[x];}return x;}
+      function _union371(a,b){var ra=_find371(a),rb=_find371(b);if(ra!==rb)_par371[rb]=ra;}
+      for(var _i371=0;_i371<_pos371.length;_i371++){
+        for(var _j371=_i371+1;_j371<_pos371.length;_j371++){
+          var b1=out[_pos371[_i371]],b2=out[_pos371[_j371]];
+          var _ab1=((b1.abi&&b1.abi[0])?b1.abi[0].n:''),_ab2=((b2.abi&&b2.abi[0])?b2.abi[0].n:'');
+          var _it1=((b1.it&&b1.it[0])?b1.it[0][0]:''),_it2=((b2.it&&b2.it[0])?b2.it[0][0]:'');
+          var _ev1=((b1.ev&&b1.ev.template)||''),_ev2=((b2.ev&&b2.ev.template)||'');
+          var same=(String(b1.side)===String(b2.side))&&(_ab1===_ab2)&&(_it1===_it2)&&(_ev1===_ev2)
+            &&(_jac371(_ids371(b1),_ids371(b2))>=0.6);
+          if(same)_union371(_i371,_j371);
+        }
+      }
+      var _cl371={};
+      _pos371.forEach(function(_,j){var r=_find371(j);(_cl371[r]=_cl371[r]||[]).push(j);});
+      var _drop371={};
+      for(var k371 in _cl371){var mem=_cl371[k371];if(mem.length<2)continue;
+        var keep=mem.slice().sort(function(x,y){
+          var sx=+(out[_pos371[x]].score)||0,sy=+(out[_pos371[y]].score)||0;
+          if(sy!==sx)return sy-sx;return x-y;})[0];
+        mem.forEach(function(j){if(j!==keep)_drop371[_pos371[j]]=1});
+      }
+      if(Object.keys(_drop371).length)out=out.filter(function(_,i){return !_drop371[i]});
+    }
+  }catch(eX371){eX371.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20530,7 +20571,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.370';
+var ER_ENGINE_VER='v4.371';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
