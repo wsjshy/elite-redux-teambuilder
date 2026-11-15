@@ -2481,7 +2481,17 @@ function anDetailHtml(s,bd,R){
   h+=evBarHtml(bd);
   /* D-6 性格 + 原因 */
   h+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格 + 原因</div><div>'+
-    ((((bd.nat||[]).length))?(bd.nat.map(function(n){return '<span class="abi">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>'}).join('　')):'<span class="dim">—</span>')+'</div></div>';
+    (function(){
+      var _v386nat=bd.nat||[],_v386kept=[],_v386plus={},_v386neg={};
+      _v386nat.forEach(function(n){
+        var _nm=String((n&&n[0])||''),_e=(typeof NATURES!=='undefined'&&NATURES[_nm])||null;
+        var _p=_e?String(_e[0]||''):'',_d=_e?String(_e[1]||''):'';
+        if(!_v386kept.length){_v386kept.push(n);if(_p)_v386plus[_p.slice(1)]=1;if(_d)_v386neg[_d.slice(1)]=1;return;}
+        var _clash=(_p&&_v386neg[_p.slice(1)])||(_d&&_v386plus[_d.slice(1)]);
+        if(!_clash){_v386kept.push(n);if(_p)_v386plus[_p.slice(1)]=1;if(_d)_v386neg[_d.slice(1)]=1;}
+      });
+      return _v386kept.length?_v386kept.map(function(n){return '<span class="abi">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>'}).join('　'):'<span class="dim">—</span>';
+    })()+'</div></div>';
   /* D-3 道具 + 玩家向说明（itemNote） */
   h+='<div class="fld"><div class="fhd"><span class="fno">6</span>道具（主推 + 备选）</div><div>';
   var _it=(bd.it||[]);
@@ -16804,6 +16814,91 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eV4385){eV4385.name}
+  /* v4.386 后置 pass（在 eX371 同玩法去重 / eX372 终门 / v383 / v384 / v385 收尾之后，输入为最终名的卡）：
+     ① 进攻身份物种存在过 strict 三条件门的进攻卡时，把该进攻卡移到 builds[0]；被挤下的机制/防守卡保留为备选，不删不改内容；
+        白名单 rw（imposter_anchor / toxic_heal_item）维持 [0]；只有 loose 进攻卡、未过 strict 门的物种记台账不重排。
+     ② 玻璃大炮（速≥100 且 bulk<270）卡面含睡觉 156：可学严格自回血 → 换自回血；无可学自回血 → 换可学补盲伤害招（异属性优先，按引擎评分取最高），无合格补盲再用守住 182。
+     ③ 9 条错名改既有流派名，只改 name；EV/性格/招组/道具/特性不动。自包作用域。 */
+  try{
+    var _v386DEF_ROLE={'肉盾':1,'受队':1,'联防':1,'辅助':1};
+    var _v386OFF_ROLE={'输出':1,'强化':1,'增伤':1};
+    var _v386OFF_SIDE={'物理':1,'特殊':1,'双刀':1};
+    var _v386TRUE_RW={'imposter_anchor':1,'toxic_heal_item':1};
+    var _v386REC={105:1,234:1,235:1,236:1,355:1,303:1,135:1,208:1,631:1,275:1,392:1,622:1,744:1,915:1,202:1,409:1,532:1,72:1,71:1,837:1,73:1};
+    var _v386REC_PREF=[105,355,234,235,236,303,135,208,631,275,392,622,744,915,202,409,532,72,71,837,73];
+    /* 1643-1647 洛托姆五形态 spd=86>60，撞 v4.382「慢速重炮 spd>60=0」硬门，本版不改名单独上报；其余按既有身份门改名 */
+    var _v386RENAMES={'636':['属性免疫联防位','慢速重炮','辅助','辅助',[252,0,4,252,0,0]],'871':['属性免疫联防位','慢速重炮','辅助','辅助',[252,0,4,252,0,0]],'2290':['钉子破盾','钉子主力输出压制','双刀','输出',[4,0,0,252,0,252]],'1729':['稳健联防','速攻压制','物理','输出',[4,252,0,0,0,252]]};
+    function _v386MvIds(b){return (b.mv.main||[]).concat(b.mv.func||[]).map(function(x){return +x.id});}
+    function _v386DmgN(ids){return ids.filter(function(id){return MV[id]&&MV[id][4]!=='变化'}).length;}
+    function _v386StabN(s,ids){return ids.filter(function(id){var m=MV[id];return m&&m[4]!=='变化'&&(s.t1===m[3]||s.t2===m[3])}).length;}
+    function _v386OffEv(a){return Math.max(a[1]||0,a[3]||0);}
+    function _v386LooseOff(b){return _v386OFF_SIDE[String(b.side)]&&_v386OFF_ROLE[String(b.roleTag)];}
+    function _v386Strict(s,b){var a=(b.ev&&b.ev.alloc)||[],ids=_v386MvIds(b);return _v386LooseOff(b)&&_v386DmgN(ids)>=2&&_v386OffEv(a)>=120&&_v386StabN(s,ids)>=1;}
+    function _v386Def(b){return _v386DEF_ROLE[String(b.roleTag)]||String(b.side)==='辅助';}
+    function _v386Ident(s){return (+s.base[5]||0)>=100||Math.max(+s.base[1]||0,+s.base[3]||0)>=110;}
+    /* ③ 改名：只改 name，其余字段不动；per-build 标记显式重置 */
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var rid=_v386RENAMES[String(s.id)];
+      if(!rid)return;
+      if(b._v386Renamed===undefined)b._v386Renamed=null;
+      if(b._v386OldName===undefined)b._v386OldName=null;
+      var _ra=(b.ev&&b.ev.alloc)||[];
+      var _raOk=rid[4].length===_ra.length&&rid[4].every(function(v,i){return (+_ra[i]||0)===v;});
+      if(String(b.name)===rid[0]&&String(b.side)===rid[2]&&String(b.roleTag)===rid[3]&&_raOk){b._v386OldName=String(b.name);b.name=rid[1];b._v386Renamed=rid[1];}
+    });
+    /* ② 睡觉 156 替换：先可学严格自回血，再补盲伤害招，最后守住 182 */
+    out.forEach(function(b){
+      if(!b||!b.mv)return;
+      var ids=_v386MvIds(b);
+      if(ids.indexOf(156)<0)return;
+      if(!isGlassCannon(s))return;
+      if(b._v386MvSwap===undefined)b._v386MvSwap=null;
+      var kit={};ids.forEach(function(id){kit[''+id]=1});
+      var learn=learnOf(s);
+      var heal=null;
+      for(var pi=0;pi<_v386REC_PREF.length;pi++){var hid=_v386REC_PREF[pi];if(learn.indexOf(hid)>-1&&!kit[''+hid]){heal=hid;break;}}
+      var main=b.mv.main||[],func=b.mv.func||[],slotArr=null,slotIdx=-1;
+      var mi=main.findIndex(function(x){return +x.id===156});
+      if(mi>=0){slotArr=main;slotIdx=mi;}else{var fi=func.findIndex(function(x){return +x.id===156});if(fi>=0){slotArr=func;slotIdx=fi;}}
+      if(!slotArr)return;
+      if(heal!=null){
+        var hm=MV[heal];
+        var hvamp=hm&&hm[4]!=='变化';
+        slotArr[slotIdx]={id:heal,kind:hvamp?hm[4]:'rec',tag:hvamp?'吸血':'回复',why:['可学自回血 '+hm[1]+' 替代睡觉156：站场续航（'+(hvamp?('威力'+(hm[5]||0)):'变化招')+'，命中'+(hm[6]||0)+'）']};
+        b._v386MvSwap='sleep→'+heal+' '+hm[1];
+        return;
+      }
+      var effSide=String(b.side);
+      if(!_v386OFF_SIDE[effSide]){var ph=0,sp=0;ids.forEach(function(id){var m=MV[id];if(!m)return;if(m[4]==='物理')ph++;else if(m[4]==='特殊')sp++;});effSide=ph>=sp?'物理':'特殊';}
+      var pool=[];
+      try{pool=_pickAttacksCore(s,effSide,4,String(b.roleTag||'输出'))||[];}catch(eP){pool=[];}
+      var cand=pool.filter(function(c){return c&&!kit[''+c.id];});
+      cand.sort(function(a,c2){return c2.score-a.score;});
+      var cover=cand.filter(function(c){return !c.stab;});
+      var pick=cover[0]||cand[0]||null;
+      if(pick){
+        slotArr[slotIdx]={id:pick.id,kind:pick.stab?'attack':'cover',tag:pick.stab?'本系':'补盲',why:(pick.why||[]).slice()};
+        b._v386MvSwap='sleep→'+pick.id+' '+MV[pick.id][1];
+      }else{
+        slotArr[slotIdx]={id:182,kind:'变化',tag:'保命',why:['守住182：无可学补盲伤害招，保命挡一击（替代睡觉156）']};
+        b._v386MvSwap='sleep→182 守住';
+      }
+    });
+    /* ① 排序：strict 进攻卡移 [0]；白名单不动；仅 loose 记台账 */
+    if(_v386Ident(s)){
+      var first=out[0];
+      var strict=out.filter(function(b){return _v386Strict(s,b);});
+      if(_v386Def(first)&&strict.length){
+        if(!_v386TRUE_RW[first.mechRw]){
+          var lead=strict[0],ix=out.indexOf(lead);
+          if(ix>0){out.splice(ix,1);out.unshift(lead);if(lead._v386Reordered===undefined)lead._v386Reordered=true;}
+        }
+      }else if(_v386Def(first)&&out.some(_v386LooseOff)&&!strict.length){
+        if(first._v386LooseLedger===undefined)first._v386LooseLedger='仅 loose 进攻卡、未过 strict 三条件门，本版不重排';
+      }
+    }
+  }catch(eV4386){eV4386.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20238,7 +20333,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.385';
+var ER_ENGINE_VER='v4.386';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -20681,7 +20776,22 @@ function renderCore(s){
     var fk=(g.rep._candKey==='main'||g.rep._candKey==='def');
     if(fk)_foldReps.push(g.rep);else _mainReps.push(g.rep);
   });
-  var showList=_mainReps.concat(_foldReps).concat(_mergeFroms);
+  var showList=_mainReps.concat(_foldReps).concat(_mergeFroms);
+  /* v4.386 ⑤ 展示层默认位锚定：classifyBuilds 内部按 score 降序分组的结果保留，但默认首卡/首 tab 锚定引擎 builds[0]
+     （① 后置 pass 已把 strict 进攻卡移到 out[0]；白名单机制卡引擎 [0] 本就是机制卡，身份不变）。
+     引擎首卡若落在兜底/合并区，提到主推荐首位；其余卡仍在换玩法/兜底区，不删不藏。仅动展示列表顺序，不动卡内容。 */
+  try{(function(){
+    var _v386eng=builds&&builds[0];if(!_v386eng)return;
+    var _v386mi=_mainReps.indexOf(_v386eng);
+    if(_v386mi===0)return;
+    if(_v386mi>0){_mainReps.splice(_v386mi,1);_mainReps.unshift(_v386eng);}
+    else{
+      var _v386fi=_foldReps.indexOf(_v386eng);
+      if(_v386fi>=0){_foldReps.splice(_v386fi,1);_mainReps.unshift(_v386eng);}
+      else{var _v386gi=_mergeFroms.indexOf(_v386eng);if(_v386gi>=0){_mergeFroms.splice(_v386gi,1);_mainReps.unshift(_v386eng);}}
+    }
+    showList=_mainReps.concat(_foldReps).concat(_mergeFroms);
+  })();}catch(eV386d){eV386d.name}
   var in0c=coreIntensity(s);
   var tags=coreTags(s);
   var SID=s.id;
