@@ -1,0 +1,1457 @@
+[
+ {
+  "id": "3",
+  "zh": "妙蛙花",
+  "spd": 80,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "12",
+  "zh": "巴大蝶",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "55",
+  "zh": "哥达鸭",
+  "spd": 85,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "62",
+  "zh": "蚊香泳士",
+  "spd": 70,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "87",
+  "zh": "白海狮",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "127",
+  "zh": "凯罗斯",
+  "spd": 85,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "141",
+  "zh": "镰刀盔",
+  "spd": 80,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "146",
+  "zh": "火焰鸟",
+  "spd": 90,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "149",
+  "zh": "快龙",
+  "spd": 80,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "151",
+  "zh": "梦幻",
+  "spd": 100,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "157",
+  "zh": "火暴兽",
+  "spd": 100,
+  "name": "速攻压制",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "212",
+  "zh": "巨钳螳螂",
+  "spd": 65,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "230",
+  "zh": "刺龙王",
+  "spd": 85,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "250",
+  "zh": "凤王",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "252",
+  "zh": "木守宫",
+  "spd": 70,
+  "name": "轻装速攻流",
+  "src": {
+   "wx": false,
+   "light": true,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速"
+ },
+ {
+  "id": "267",
+  "zh": "狩猎凤蝶",
+  "spd": 85,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "272",
+  "zh": "乐天河童",
+  "spd": 80,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "275",
+  "zh": "狡猾天狗",
+  "spd": 80,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "279",
+  "zh": "大嘴鸥",
+  "spd": 65,
+  "name": "雨速攻压制",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "332",
+  "zh": "梦歌仙人掌",
+  "spd": 85,
+  "name": "沙速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "358",
+  "zh": "风铃铃",
+  "spd": 65,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "382",
+  "zh": "盖欧卡",
+  "spd": 90,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "384",
+  "zh": "烈空坐",
+  "spd": 95,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "425",
+  "zh": "飘飘球",
+  "spd": 70,
+  "name": "轻装速攻流",
+  "src": {
+   "wx": false,
+   "light": true,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速"
+ },
+ {
+  "id": "469",
+  "zh": "远古巨蜓",
+  "spd": 95,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "473",
+  "zh": "象牙猪",
+  "spd": 80,
+  "name": "雪速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「拨雪」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "487",
+  "zh": "骑拉帝纳",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "503",
+  "zh": "大剑鬼",
+  "spd": 70,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "508",
+  "zh": "长毛狗",
+  "spd": 90,
+  "name": "沙速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "521",
+  "zh": "高傲雉鸡",
+  "spd": 93,
+  "name": "顺风速攻压制",
+  "src": {
+   "wx": false,
+   "light": true,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速；速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速"
+ },
+ {
+  "id": "530",
+  "zh": "龙头地鼠",
+  "spd": 88,
+  "name": "沙速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "549",
+  "zh": "裙儿小姐",
+  "spd": 90,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "566",
+  "zh": "始祖小鸟",
+  "spd": 70,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": true,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速；速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速"
+ },
+ {
+  "id": "581",
+  "zh": "舞天鹅",
+  "spd": 87,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "584",
+  "zh": "双倍多多冰",
+  "spd": 95,
+  "name": "雪速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「拨雪」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "586",
+  "zh": "萌芽鹿",
+  "spd": 95,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "628",
+  "zh": "勇士雄鹰",
+  "spd": 80,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "635",
+  "zh": "三首恶龙",
+  "spd": 98,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "689",
+  "zh": "龟足巨铠",
+  "spd": 68,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "695",
+  "zh": "光电伞蜥",
+  "spd": 109,
+  "name": "晴速攻压制",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "717",
+  "zh": "伊裴尔塔尔",
+  "spd": 99,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "733",
+  "zh": "铳嘴大鸟",
+  "spd": 60,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "797",
+  "zh": "铁火辉夜",
+  "spd": 61,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "841",
+  "zh": "苹裹龙",
+  "spd": 70,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": true,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速；速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速"
+ },
+ {
+  "id": "865",
+  "zh": "葱游兵",
+  "spd": 65,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "873",
+  "zh": "雪绒蛾",
+  "spd": 65,
+  "name": "雪速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "904",
+  "zh": "万针鱼",
+  "spd": 85,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "914",
+  "zh": "狂欢浪舞鸭",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "944",
+  "zh": "滋汁鼹",
+  "spd": 75,
+  "name": "轻装速攻流",
+  "src": {
+   "wx": false,
+   "light": true,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速"
+ },
+ {
+  "id": "947",
+  "zh": "怖纳噬草",
+  "spd": 100,
+  "name": "速攻压制",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "962",
+  "zh": "下石鸟",
+  "spd": 82,
+  "name": "顺风速攻压制",
+  "src": {
+   "wx": false,
+   "light": true,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速；速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速"
+ },
+ {
+  "id": "973",
+  "zh": "缠红鹤",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "975",
+  "zh": "浩大鲸",
+  "spd": 73,
+  "name": "雪速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「拨雪」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1026",
+  "zh": "幽隐鸮",
+  "spd": 55,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1052",
+  "zh": "鲲鹏王",
+  "spd": 108,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1078",
+  "zh": "土龙车车",
+  "spd": 55,
+  "name": "顺风速攻压制",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1079",
+  "zh": "超级土龙车车",
+  "spd": 75,
+  "name": "顺风速攻压制",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1502",
+  "zh": "超级喷火龙X",
+  "spd": 100,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1511",
+  "zh": "超级凯罗斯",
+  "spd": 105,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1518",
+  "zh": "超级巨钳螳螂",
+  "spd": 75,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1533",
+  "zh": "超级七夕青鸟",
+  "spd": 100,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1549",
+  "zh": "盖欧卡-原始回归",
+  "spd": 90,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1574",
+  "zh": "大葱鸭-伽勒尔",
+  "spd": 55,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1577",
+  "zh": "急冻鸟-伽勒尔",
+  "spd": 95,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1578",
+  "zh": "闪电鸟-伽勒尔",
+  "spd": 100,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1579",
+  "zh": "火焰鸟-伽勒尔",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1640",
+  "zh": "樱花儿-晴天",
+  "spd": 85,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1673",
+  "zh": "萌芽鹿-夏天",
+  "spd": 95,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1674",
+  "zh": "萌芽鹿-秋天",
+  "spd": 95,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1675",
+  "zh": "萌芽鹿-冬天",
+  "spd": 95,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1817",
+  "zh": "裙儿小姐-洗翠",
+  "spd": 105,
+  "name": "速攻压制",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「叶绿素」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1818",
+  "zh": "勇士雄鹰-洗翠",
+  "spd": 80,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1822",
+  "zh": "狙射树枭-洗翠",
+  "spd": 95,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1880",
+  "zh": "超级快龙Y",
+  "spd": 100,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "1881",
+  "zh": "超级龙头地鼠",
+  "spd": 103,
+  "name": "速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "1906",
+  "zh": "超级风铃铃",
+  "spd": 65,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2104",
+  "zh": "超级巨钳蟹",
+  "spd": 85,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "2108",
+  "zh": "超级白海狮",
+  "spd": 90,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2113",
+  "zh": "超级盔甲鸟X",
+  "spd": 68,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2120",
+  "zh": "超级铳嘴大鸟",
+  "spd": 70,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2121",
+  "zh": "超级快龙",
+  "spd": 80,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2136",
+  "zh": "超级穿山王",
+  "spd": 95,
+  "name": "沙速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "2143",
+  "zh": "超级拉普拉斯X",
+  "spd": 85,
+  "name": "雨速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "2171",
+  "zh": "超级三首恶龙R",
+  "spd": 70,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2184",
+  "zh": "超级精灵蜂",
+  "spd": 55,
+  "name": "顺风速攻压制",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2191",
+  "zh": "超级喷火龙Z",
+  "spd": 85,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2196",
+  "zh": "超级钢铠鸦",
+  "spd": 57,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2199",
+  "zh": "超级沙螺蟒",
+  "spd": 106,
+  "name": "速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「挖沙」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "2216",
+  "zh": "超级大剑鬼",
+  "spd": 100,
+  "name": "速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「悠游自如」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "2246",
+  "zh": "火焰鸟-Ex",
+  "spd": 90,
+  "name": "晴速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2268",
+  "zh": "超级双倍多多冰",
+  "spd": 105,
+  "name": "速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「拨雪」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "2275",
+  "zh": "超级双倍多多冰R",
+  "spd": 80,
+  "name": "雪速攻强化清场",
+  "src": {
+   "wx": true,
+   "light": false,
+   "scarf": false,
+   "tw": false,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自天气提速特性「拨雪」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速"
+ },
+ {
+  "id": "2302",
+  "zh": "七夕青鸟R",
+  "spd": 78,
+  "name": "顺风速攻压制",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2303",
+  "zh": "超级七夕青鸟R",
+  "spd": 88,
+  "name": "晴速攻压制",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2501",
+  "zh": "变隐龙骑海狮",
+  "spd": 95,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2549",
+  "zh": "三首恶龙R",
+  "spd": 70,
+  "name": "场地速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": false,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ },
+ {
+  "id": "2569",
+  "zh": "快龙-快递形态",
+  "spd": 80,
+  "name": "顺风速攻强化清场",
+  "src": {
+   "wx": false,
+   "light": false,
+   "scarf": false,
+   "tw": true,
+   "boost": true,
+   "mult": true
+  },
+  "note": "速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速"
+ }
+]

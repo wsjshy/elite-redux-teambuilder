@@ -36,7 +36,7 @@ function scan(team) {
         if (!src.ok) A0.push({ id: s.id, zh: s.zh, spd: spd(s), name: n });
         if (evSpd(b) === 0) {
           const k = s.id + '|' + n;
-          if (!dMap.has(k)) dMap.set(k, { id: s.id, zh: s.zh, spd: spd(s), name: n, ev: String((b.ev || {}).summary || ''), src, stale: !!b.v13EvStale });
+          if (!dMap.has(k)) dMap.set(k, { id: s.id, zh: s.zh, spd: spd(s), name: n, ev: String((b.ev || {}).summary || ''), src, stale: !!b.v13EvStale, note: b.v13MultNote || null });
         }
       }
       if (n === '慢速重炮' && spd(s) > 60) B.push({ id: s.id, zh: s.zh, spd: spd(s), name: n });
@@ -50,6 +50,10 @@ const D = [...dMap.values()];
 const dNoMult = D.filter(r => !r.src.mult);
 const multExc = D.filter(r => r.src.mult);
 const stale = D.filter(r => r.stale);
+// 例外分档（可叠加）：天气提速 / 保留顺风 / 轻装 / 讲究围巾；每条必须挂分档 why 文案
+const cat = { wx: 0, tw: 0, light: 0, scarf: 0 };
+multExc.forEach(r => { if (r.src.wx) cat.wx++; if (r.src.twMv) cat.tw++; if (r.src.light) cat.light++; if (r.src.scarf) cat.scarf++; });
+const missingNote = multExc.filter(r => !r.note);
 function srcLabel(src) {
   const a = [];
   if (src.wx) a.push('天气提速特性');
@@ -91,8 +95,11 @@ C.forEach(r => console.log('   FAIL #' + r.id, r.zh, r.name));
 console.log('④ 速攻卡 0 速投入(去重) 总数:', D.length);
 console.log('   其中 无自有倍率来源(必须0):', dNoMult.length, dNoMult.length === 0 ? 'PASS' : 'FAIL');
 dNoMult.forEach(r => console.log('   FAIL #' + r.id, r.zh, 'spd=' + r.spd, r.name));
-console.log('   有倍率来源例外(天气提速/保留顺风/轻装/围巾):', multExc.length);
-multExc.forEach(r => console.log('   EXC #' + r.id, r.zh, 'spd=' + r.spd, r.name, '[' + srcLabel(r.src) + ']'));
+console.log('   有倍率来源例外(天气提速/保留顺风/轻装/围巾):', multExc.length,
+  '分档(可叠加) 天气提速=' + cat.wx + ' 保留顺风=' + cat.tw + ' 轻装=' + cat.light + ' 围巾=' + cat.scarf);
+console.log('   例外缺分档 why 文案:', missingNote.length, missingNote.length === 0 ? 'PASS' : 'FAIL');
+missingNote.forEach(r => console.log('   NONOTE #' + r.id, r.zh, r.name));
+multExc.forEach(r => console.log('   EXC #' + r.id, r.zh, 'spd=' + r.spd, r.name, '[' + srcLabel(r.src) + ']', r.note ? 'why✓' : 'why✗'));
 console.log('   基础速度≥100 倍率残留 EV 未投入(已降级, 登记 v4.383 EV 层):', stale.length);
 stale.forEach(r => console.log('   STALE #' + r.id, r.zh, 'spd=' + r.spd, r.name));
 console.log('\n降级命名清单(v13Demoted, 去重):', demoted.length);
@@ -100,6 +107,6 @@ const demSet = new Set(demoted.map(r => r.chg));
 [...demSet].forEach(c => console.log('   ' + c));
 console.log('\n四轴只读登记(六人队, 本版不改):', JSON.stringify(axes));
 
-const fail = A0.length + B.length + C.length + dNoMult.length;
+const fail = A0.length + B.length + C.length + dNoMult.length + missingNote.length;
 console.log('\n=== 断言结果:', fail === 0 ? 'ALL PASS' : fail + ' 项 FAIL', '===');
 process.exit(fail === 0 ? 0 : 1);
