@@ -4710,6 +4710,21 @@ function abiImHf(s){
   apply(s.inns,'天性');apply(s.abis,'可选');
   return {im:im,hf:hf,hfMul:hfMul,nt:nt,phy:phy};
 }
+/* v4.383：减伤轴 self-centric 权威判据（判据只走特性 id，不按特性名白名单猜；只认该卡实际 abi[0]，不看物种可选池）。
+   RED_ABI_IDS：源码 .onDefensiveMultiplier / .onAfterTypeEffectiveness 防守侧真减伤 id 集
+   （多重鳞片/幻影防守/毛皮大衣/毛茸茸/厚脂肪/坚硬岩石/过滤/水泡/热交换等逐条源码核实）。
+   已排除：纯属性免疫（独立「属性免疫联防位」流派）；结实/画皮/复活类一次性保命；
+   再生/毒疗/自然回复类续航；神奇守护(25，非 SE 招伤害归零＝判定改写型免疫)；强投手(864，每次上场一次接触半减)。
+   标签 HF（abiTagOf.hf，复合特性递归合并）作为兜底。 */
+var RED_ABI_IDS=new Set([4,17,40,47,75,79,85,100,111,116,134,136,142,169,195,199,200,218,231,232,244,246,272,283,296,303,306,311,313,317,318,337,342,392,399,431,440,442,445,482,499,524,526,539,547,571,582,585,613,660,664,671,678,682,705,709,712,726,741,753,754,759,764,773,779,804,805,817,822,829,838,855,860,873,881,889,900,904,922,925,932,936,944,948,954,957,962,965,968,970,986,997,1004,1010,1021,1022,1031,1032,1048,1053]);
+var SURV_ABI_IDS=new Set([5,209,248,427,429,583,629,899,864]);
+var REC_ABI_IDS=new Set([30,44,61,82,90,93,102,115,131,139,144,247,307,333,415,566,875,886,890,991]);
+var REC_DESC_RE=/回复最大HP|每回合回复|回复造成伤害|吸取.*HP|回复1\/|治愈自身|治愈异常|替换下场时,治愈|下场时回复|回复2\/3|回复1\/4|回复1\/8|回复1\/16|回复1\/3/;
+function _v383Abi0(b){var a=b&&b.abi&&b.abi[0];if(!a)return{n:'',id:''};var id=String(a.id||NM2ID[a.n]||'');return{n:a.n,id:id}}
+function _v383RedAbi(a){if(!a||!a.id)return false;if(RED_ABI_IDS.has(a.id)||RED_ABI_IDS.has(+a.id))return true;var tg=abiTagOf(a.n);return !!(tg&&tg.hf&&tg.hf.length)}
+function _v383ImmAbi(a){if(!a)return false;var tg=abiTagOf(a.n);return !!(tg&&tg.im&&tg.im.length)}
+function _v383SurvAbi(a){return !!(a&&a.id&&(SURV_ABI_IDS.has(a.id)||SURV_ABI_IDS.has(+a.id)))}
+function _v383RecAbi(a){if(!a||!a.id)return false;if(REC_ABI_IDS.has(a.id)||REC_ABI_IDS.has(+a.id))return true;var e=_abEnt(a.id);return !!(e&&REC_DESC_RE.test(String(e[3]||'')))}
 /* 成员防守三口径：基础 / 天性修正（仅固定天性生效）/ 生效口径（勾选→按勾选特性；未勾选→可选池最优提示） */
 /* 减半倍率解析：没有自定义倍率的特性一律 ×0.5；
    厚脂(.25)/熔岩铠甲(.7)/黑暗亲和(.75) 由 ABI_TAG_PATCH.hfMul 给出真实值 */
@@ -16568,6 +16583,97 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eX372){eX372.name}
+  /* v4.383 减伤轴/轮转 self-centric 收尾：对已生成流派按「该卡实际 abi[0] + 实战招组」复核冠名。
+     · 名含「减伤轴」但 abi[0] 非 RED → 降级：纯属性免疫→属性免疫联防位；保命/回复→受队消耗；其余按招组落强化清场/轮转补盲/主力输出压制/受队消耗；
+     · 「强化减伤轴」缺强化招 → 降纯「减伤轴」；
+     · 名含「轮转」但 4 招无 369/521 → 降级到非轮转既有名；
+     · 保留的减伤轴：why 写实（特性 id + 描述 + 源码幅度/生效条件；文案与源码不一致并列写明）。
+     本块不增删流派、不重排 top-4、不动 EV/性格/道具/招组。 */
+  try{
+    var _v383boostIds=FUNC_MV.boost.concat([504,526]);
+    var _v383pivIds=[369,521];
+    var _v383ov={'317':'文案「效果绝佳 −25%」/ 源码 MUL(.65) 实测 −35%（效果绝佳时）',
+      '582':'文案「效果绝佳 −25%」/ 源码 MUL(.65) 实测 −35%（效果绝佳时）',
+      '200':'文案仅写钢招威力 1.3 倍；源码防守侧：自身含钢属性时恶/幽灵招 ×0.5',
+      '442':'文案仅写进攻 +50%；源码防守侧：受妖精属性招 ×0.5',
+      '440':'源码防守侧 MUL(.5)：受到所有招式伤害 ×0.5（复合：变色+变换自如+毛皮大衣+冰鳞粉）',
+      '499':'源码防守侧：效果绝佳招 MUL(.65)（−35%）',
+      '524':'源码防守侧：声音类招 MUL(.5)（×0.5）',
+      '613':'源码防守侧：物理招 MUL(.5)（×0.5）',
+      '664':'源码防守侧：火招 RESISTANCE(.5)（×0.5）',
+      '671':'源码防守侧：击中要害时 MUL(.25)（×1/4）',
+      '678':'源码防守侧：接触招 MUL(.5)、火招 RESISTANCE(2.0)（×2 弱点）；文案「接触1/4、火4倍」与源码不符',
+      '682':'源码防守侧：火招 RESISTANCE(.5)（×0.5）',
+      '726':'源码防守侧：声音类招 MUL(.5)（×0.5）',
+      '741':'源码防守侧：本回合未出手前 MUL(.7)（−30%）',
+      '773':'源码防守侧：特性生效期间效果绝佳招 ×0.5',
+      '779':'源码防守侧：HP 全满时 MUL(.5)（掉血后失效）',
+      '817':'源码防守侧：愤怒状态 MUL(.8)（−20%）；文案「减半/降低50%」与源码不符',
+      '829':'源码防守侧：自身含钢属性时恶/幽灵招 ×0.5',
+      '881':'源码防守侧：岩石招 RESISTANCE(.5)（×0.5）',
+      '900':'源码防守侧：沙暴下特殊招 MUL(.5)（×0.5）',
+      '925':'源码防守侧：特殊招 MUL(.5)（×0.5）',
+      '932':'源码防守侧：第一次受到攻击 MUL(.65)（−35%，一次性）',
+      '936':'源码防守侧：火/冰招 RESISTANCE(.5)（×0.5）',
+      '948':'源码防守侧：接触招 MUL(.5)、火招 RESISTANCE(2.0)（×2 弱点）',
+      '954':'源码防守侧：火/冰招 RESISTANCE(.5)（×0.5）',
+      '962':'源码防守侧：特殊招 MUL(.7)（−30%）',
+      '968':'源码防守侧：MUL(.8)（−20%）+ 免疫击中要害',
+      '970':'源码防守侧：MUL(.8)（−20%）+ 免疫击中要害',
+      '997':'源码防守侧：MUL(.8)（−20%）+ 免疫击中要害',
+      '1004':'源码防守侧：被抵抗招 MUL(.7)（−30%）、其余 MUL(.85)（−15%）；文案「10%/20%」条件与幅度均不符',
+      '1010':'源码防守侧：火招 RESISTANCE(.5)（×0.5）',
+      '1032':'源码防守侧：草招 RESISTANCE(.5)（×0.5）',
+      '1048':'源码防守侧：攻击方为虫属性时 MUL(.5)（×0.5）',
+      '1053':'源码防守侧：火招 RESISTANCE(.5)（×0.5）'};
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var _v383mv=(b.mv.main||[]).map(function(x){return +x.id}).concat((b.mv.func||[]).map(function(x){return +x.id}));
+      var _v383a0=_v383Abi0(b);
+      var _v383red=_v383RedAbi(_v383a0),_v383imm=_v383ImmAbi(_v383a0),_v383sur=_v383SurvAbi(_v383a0),_v383rec=_v383RecAbi(_v383a0);
+      var _v383boost=_v383mv.some(function(id){return _v383boostIds.indexOf(id)>=0});
+      var _v383piv=_v383pivIds.some(function(id){return _v383mv.indexOf(id)>=0});
+      var _v383al=(b.ev&&b.ev.alloc)||[];
+      var _v383offEv=Math.max(_v383al[1]||0,_v383al[3]||0);
+      var _v383dmg=_v383mv.filter(function(id){var r=MV[id];return r&&r[4]!=='变化'}).length;
+      var _v383off=_v383dmg>=2&&_v383offEv>=120;
+      var _v383nm=String(b.name);
+      function _v383route(){
+        if(_v383imm)return '属性免疫联防位';
+        if(_v383off)return _v383boost?'强化清场':'主力输出压制';
+        if(_v383piv)return '轮转补盲';
+        return '受队消耗';
+      }
+      /* 轮转族：无 pivot 一律去轮转冠名 */
+      if(_v383nm.indexOf('轮转')>=0&&!_v383piv){
+        var _v383t=_v383route();
+        b.name=_v383t;b.v383Demoted=_v383nm+'→'+_v383t;
+        b.nameMismatch=(b.nameMismatch?b.nameMismatch+'；':'')+'无急速折返369/伏特替换521 游击招 → 去轮转冠名（按招组落既有流派）';
+        _v383nm=_v383t;
+      }
+      /* 减伤轴族：只认 abi[0] 是否 RED */
+      if(_v383nm.indexOf('减伤轴')>=0){
+        if(_v383red){
+          if(_v383nm.indexOf('强化减伤轴')>=0&&!_v383boost){
+            var _v383fix=_v383nm.replace('强化减伤轴','减伤轴');
+            b.name=_v383fix;b.v383Demoted=_v383nm+'→'+_v383fix;
+            b.nameMismatch=(b.nameMismatch?b.nameMismatch+'；':'')+'缺强化招 → 降纯减伤轴';
+            _v383nm=_v383fix;
+          }
+          /* why 写实：特性 id + 描述 + 源码幅度/生效条件；不一致并列写明 */
+          var _v383re=_abEnt(_v383a0.id);
+          var _v383why='自身减伤特性「'+_v383a0.n+'」('+_v383a0.id+')：'+(_v383re?String(_v383re[3]||'').split('\n')[0]:'');
+          if(_v383ov[_v383a0.id])_v383why+='；'+_v383ov[_v383a0.id];
+          if(b.abi&&b.abi[0]&&b.abi[0].why&&b.abi[0].why.indexOf(_v383why)<0)b.abi[0].why.push(_v383why);
+          (b.mv.main||[]).forEach(function(x){if(x&&x.why&&x.why.indexOf(_v383why)<0)x.why.push(_v383why)});
+        }else{
+          var _v383t2=_v383route();
+          b.name=_v383t2;b.v383Demoted=_v383nm+'→'+_v383t2;
+          b.nameMismatch=(b.nameMismatch?b.nameMismatch+'；':'')+'首推特性非真减伤（免疫/保命/回复/无特性）→ 去减伤轴冠名，按招组落既有流派';
+        }
+      }
+    });
+  }catch(eV4383){eV4383.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20002,7 +20108,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.382';
+var ER_ENGINE_VER='v4.383';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21641,4 +21747,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 ;module.exports={ERDATA:ERDATA,deriveBuilds:deriveBuilds,classifyBuilds:classifyBuilds,
   learnOf:learnOf,MV:MV,ITM:ITM,sideDisp:sideDisp,MV_FLAG:MV_FLAG,pickAttacks:pickAttacks,
   ownAutoSys:ownAutoSys,profileOf:profileOf,spdOf:spdOf,bulkOf:bulkOf,
-  pvWeatherSpeedMul:pvWeatherSpeedMul,mechPrefix:mechPrefix,isGlassCannon:isGlassCannon};
+  pvWeatherSpeedMul:pvWeatherSpeedMul,mechPrefix:mechPrefix,isGlassCannon:isGlassCannon,
+  abiTagOf:abiTagOf,abiImHf:abiImHf,NM2ID:NM2ID,_abEnt:_abEnt,
+  RED_ABI_IDS:RED_ABI_IDS,_v383Abi0:_v383Abi0,_v383RedAbi:_v383RedAbi,_v383ImmAbi:_v383ImmAbi,_v383SurvAbi:_v383SurvAbi,_v383RecAbi:_v383RecAbi,
+  ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND};

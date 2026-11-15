@@ -1,0 +1,1073 @@
+{
+ "4": {
+  "enum": "BATTLE_ARMOR",
+  "en": "Battle Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "战斗盔甲"
+ },
+ "17": {
+  "enum": "IMMUNITY",
+  "en": "Immunity",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_POISON) RESISTANCE(.5); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & (CHECK_STATUS1 & ~CHECK_SLEEP)) return TRUE; }, .breakable = TRUE, .removesStatusOnImmunity = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "免疫"
+ },
+ "25": {
+  "enum": "WONDER_GUARD",
+  "en": "Wonder Guard",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod < GetSuperEffectiveMult()) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE, .randomizerBanned = TRUE,"
+  ],
+  "zh": "神奇守护"
+ },
+ "40": {
+  "enum": "MAGMA_ARMOR",
+  "en": "Magma Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER || moveType == TYPE_ICE) RESISTANCE(.7); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & CHECK_FROSTBITE) return TRUE; }, .breakable = TRUE, .removesStatusOnImmunity = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "熔岩铠甲"
+ },
+ "47": {
+  "enum": "THICK_FAT",
+  "en": "Thick Fat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "厚脂肪"
+ },
+ "134": {
+  "enum": "HEAVY_METAL",
+  "en": "Heavy Metal",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GHOST || moveType == TYPE_DARK) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "重金属"
+ },
+ "75": {
+  "enum": "SHELL_ARMOR",
+  "en": "Shell Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "硬壳盔甲"
+ },
+ "79": {
+  "enum": "RIVALRY",
+  "en": "Rivalry",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { int genderAtk = GetGenderFromSpeciesAndPersonality(gBattleMons[attacker].species, gBattleMons[attacker].personality); if (genderAtk == MON_MALE) genderAtk = MON_FEMALE; else if (genderAtk == MON_FEMALE) genderAtk = MON_MALE; if (genderAtk != MON_GENDERLESS && genderA"
+  ],
+  "teAfter": [],
+  "zh": "斗争心"
+ },
+ "85": {
+  "enum": "HEATPROOF",
+  "en": "Heatproof",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "耐热"
+ },
+ "87": {
+  "enum": "DRY_SKIN",
+  "en": "Dry Skin",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(1.25); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "干燥皮肤"
+ },
+ "100": {
+  "enum": "STALL",
+  "en": "Stall",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (gCurrentTurnActionNumber < GetBattlerTurnOrderNum(battler)) MUL(.7); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "慢出"
+ },
+ "111": {
+  "enum": "FILTER",
+  "en": "Filter",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "过滤"
+ },
+ "116": {
+  "enum": "SOLID_ROCK",
+  "en": "Solid Rock",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "坚硬岩石"
+ },
+ "136": {
+  "enum": "MULTISCALE",
+  "en": "Multiscale",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "多重鳞片"
+ },
+ "140": {
+  "enum": "TELEPATHY",
+  "en": "Telepathy",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (target == BATTLE_PARTNER(battler) && gBattleMoves[move].power) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_ATTACKER_OR_TARGET, .breakable = TRUE,"
+  ],
+  "zh": "心灵感应"
+ },
+ "142": {
+  "enum": "OVERCOAT",
+  "en": "Overcoat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.8); }, .breakable = TRUE, .powderImmune = TRUE, .sandImmune = TRUE, .hailImmune = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "防尘"
+ },
+ "169": {
+  "enum": "FUR_COAT",
+  "en": "Fur Coat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "毛皮大衣"
+ },
+ "195": {
+  "enum": "WATER_COMPACTION",
+  "en": "Water Compaction",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "遇水凝固"
+ },
+ "199": {
+  "enum": "WATER_BUBBLE",
+  "en": "Water Bubble",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "水泡"
+ },
+ "200": {
+  "enum": "STEELWORKER",
+  "en": "Steelworker",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "zh": "钢能力者"
+ },
+ "218": {
+  "enum": "FLUFFY",
+  "en": "Fluffy",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "毛茸茸"
+ },
+ "231": {
+  "enum": "SHADOW_SHIELD",
+  "en": "Shadow Shield",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "幻影防守"
+ },
+ "232": {
+  "enum": "PRISM_ARMOR",
+  "en": "Prism Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "棱镜装甲"
+ },
+ "244": {
+  "enum": "PUNK_ROCK",
+  "en": "Punk Rock",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IsSoundMove(attacker, move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "庞克摇滚"
+ },
+ "246": {
+  "enum": "ICE_SCALES",
+  "en": "Ice Scales",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "冰鳞粉"
+ },
+ "272": {
+  "enum": "PRISM_SCALES",
+  "en": "Prism Scales",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.7); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "棱镜鳞片"
+ },
+ "283": {
+  "enum": "CHRISTMAS_SPIRIT",
+  "en": "Christmas Spirit",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IsBattlerWeatherAffected(battler, WEATHER_HAIL_ANY)) MUL(.5); }, .breakable = TRUE, .hailImmune = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "雪之精神"
+ },
+ "296": {
+  "enum": "LEAD_COAT",
+  "en": "Lead Coat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.6); }, .onStat = +[](ON_STAT) { if (statId == STAT_SPEED) *stat *= .9; }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "铅质外壳"
+ },
+ "303": {
+  "enum": "FOSSILIZED",
+  "en": "Fossilized",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_ROCK) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "化石化"
+ },
+ "306": {
+  "enum": "NOCTURNAL",
+  "en": "Nocturnal",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_DARK || moveType == TYPE_FAIRY) RESISTANCE(.75); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "黑暗亲和"
+ },
+ "311": {
+  "enum": "LIQUIFIED",
+  "en": "Liquified",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER) RESISTANCE(2); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "液化"
+ },
+ "313": {
+  "enum": "DRAGONSLAYER",
+  "en": "Dragonslayer",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_DRAGON)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "猎龙者"
+ },
+ "1048": {
+  "enum": "INSECTEATER",
+  "en": "Insect Eater",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_BUG)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": ""
+ },
+ "314": {
+  "enum": "MOUNTAINEER",
+  "en": "Mountaineer",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (moveType == TYPE_ROCK) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE, .stealthRockImmune = TRUE,"
+  ],
+  "zh": "登山"
+ },
+ "317": {
+  "enum": "PERMAFROST",
+  "en": "Permafrost",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "永冻层"
+ },
+ "318": {
+  "enum": "PRIMAL_ARMOR",
+  "en": "Primal Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "根源盔甲"
+ },
+ "337": {
+  "enum": "RAW_WOOD",
+  "en": "Raw Wood",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GRASS) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "原木"
+ },
+ "1032": {
+  "enum": "SMOLDERING_WOOD",
+  "en": "Smoldering Wood",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GRASS) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": ""
+ },
+ "342": {
+  "enum": "SEAWEED",
+  "en": "Seaweed",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE && IS_BATTLER_OF_TYPE(battler, TYPE_GRASS)) RESISTANCE(0.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "海草"
+ },
+ "353": {
+  "enum": "BONE_ZONE",
+  "en": "Bone Zone",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!DoesMoveMatchFlag(battler, move, moveType, MOVE_FLAG_BONE)) return; if (*mod >= UQ_4_12(1.0)) return; if (*mod == 0) { *mod = UQ_4_12(1.0); if (mod1) MulModifier(mod, mod1); if (mod2) MulModifier(mod, mod2); if (mod3) MulModifier(mod, mod3); } if (*mod < UQ_"
+  ],
+  "zh": "骨之领域"
+ },
+ "392": {
+  "enum": "ARCTIC_FUR",
+  "en": "Arctic Fur",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "北极毛皮"
+ },
+ "399": {
+  "enum": "PARRY",
+  "en": "Parry",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); },"
+  ],
+  "teAfter": [],
+  "zh": "招架"
+ },
+ "422": {
+  "enum": "GIFTED_MIND",
+  "en": "Gifted Mind",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (moveType == TYPE_BUG || moveType == TYPE_GHOST || moveType == TYPE_DARK) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "zh": "天才思想"
+ },
+ "431": {
+  "enum": "DUNE_TERROR",
+  "en": "Dune Terror",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IsBattlerWeatherAffected(battler, WEATHER_SANDSTORM_ANY)) MUL(.65); }, .breakable = TRUE, .sandImmune = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "沙暴恐惧"
+ },
+ "440": {
+  "enum": "PRISMATIC_FUR",
+  "en": "Prismatic Fur",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.5); }, .onBeforeAttack = +[](ON_BEFORE_ATTACK) -> int { if (battler == attacker && Impl<ABILITY_RKS_SYSTEM>.onBeforeAttack(DELEGATE_BEFORE_ATTACK)) return TRUE; return Impl<ABILITY_COLOR_CHANGE>.onBeforeAttack(DELEGATE_BEFORE_ATTACK); }, .onBeforeAttackFor = APP"
+  ],
+  "teAfter": [],
+  "zh": "棱镜毛皮"
+ },
+ "442": {
+  "enum": "FAE_HUNTER",
+  "en": "Fae Hunter",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_FAIRY)) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "妖精猎者"
+ },
+ "445": {
+  "enum": "LUMBERJACK",
+  "en": "Lumberjack",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_GRASS)) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "伐木工"
+ },
+ "482": {
+  "enum": "SAND_GUARD",
+  "en": "Sand Guard",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move) && IsBattlerWeatherAffected(attacker, WEATHER_SANDSTORM_ANY)) MUL(.5); }, .breakable = TRUE, .sandImmune = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "沙漠守护"
+ },
+ "499": {
+  "enum": "REFRIGERATOR",
+  "en": "Refrigerator",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "冰箱"
+ },
+ "524": {
+  "enum": "BASS_BOOSTED",
+  "en": "Bass Boosted",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IsSoundMove(attacker, move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "强力低音"
+ },
+ "526": {
+  "enum": "MONSTER_HUNTER",
+  "en": "Monster Hunter",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_DARK)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "怪物猎人"
+ },
+ "539": {
+  "enum": "CHROME_COAT",
+  "en": "Chrome Coat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.6); }, .onStat = Impl<ABILITY_LEAD_COAT>.onStat, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "合金外壳"
+ },
+ "547": {
+  "enum": "PURIFYING_SALT",
+  "en": "Purifying Salt",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GHOST) RESISTANCE(.5); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & CHECK_STATUS1) return TRUE; }, .breakable = TRUE, .removesStatusOnImmunity = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "洁净之盐"
+ },
+ "571": {
+  "enum": "FIRE_SCALES",
+  "en": "Fire Scales",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "火鳞粉"
+ },
+ "582": {
+  "enum": "PERMAFROST_CLONE",
+  "en": "Thick Skin",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "厚皮肤"
+ },
+ "585": {
+  "enum": "SUN_BASKING",
+  "en": "Basking",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IsBattlerWeatherAffected(battler, WEATHER_SUN_ANY) && IS_MOVE_PHYSICAL(move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "晒太阳"
+ },
+ "604": {
+  "enum": "DESERT_SPIRIT",
+  "en": "Desert Spirit",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod == 0 && !IsBattlerGrounded(target) && moveType == TYPE_GROUND && IsBattlerWeatherAffected(battler, WEATHER_SANDSTORM_ANY)) { *mod = UQ_4_12(1.0); } }, .sandImmune = TRUE,"
+  ],
+  "zh": "沙漠意志"
+ },
+ "607": {
+  "enum": "TERA_SHELL",
+  "en": "Tera Shell",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod >= UQ_4_12(1.0) && BATTLER_MAX_HP(target)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "zh": "太晶甲壳"
+ },
+ "613": {
+  "enum": "APPLE_ENLIGHTENMENT",
+  "en": "Apple Enlightenment",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "苹果款待"
+ },
+ "620": {
+  "enum": "OLD_MARINER",
+  "en": "Old Mariner",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE && IS_BATTLER_OF_TYPE(battler, TYPE_GRASS)) RESISTANCE(0.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "老水手"
+ },
+ "660": {
+  "enum": "ULTRA_INSTINCT",
+  "en": "Ultra Instinct",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); },"
+  ],
+  "teAfter": [],
+  "zh": "超本能"
+ },
+ "664": {
+  "enum": "FLAME_BUBBLE",
+  "en": "Flame Bubble",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "火焰泡泡"
+ },
+ "671": {
+  "enum": "BAD_OMEN",
+  "en": "Bad Omen",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (isCrit) MUL(.25); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "凶兆"
+ },
+ "678": {
+  "enum": "FLUFFIEST",
+  "en": "Fluffiest",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "极致蓬松"
+ },
+ "682": {
+  "enum": "IRON_GIANT",
+  "en": "Iron Giant",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "钢铁巨人"
+ },
+ "705": {
+  "enum": "TERASTAL_TREASURE",
+  "en": "Terastal Treasure",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.6); }, .onStat = +[](ON_STAT) { if (statId == STAT_SPEED) *stat *= .8; }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "太晶宝藏"
+ },
+ "709": {
+  "enum": "DREAM_STATE",
+  "en": "Dream State",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "梦境"
+ },
+ "712": {
+  "enum": "FLAME_SHIELD",
+  "en": "Flame Shield",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "火焰之盾"
+ },
+ "726": {
+  "enum": "SLUDGY_MIX",
+  "en": "Sludgy Mix",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IsSoundMove(attacker, move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "泥浆混合物"
+ },
+ "739": {
+  "enum": "TERAFORM_ZERO",
+  "en": "Teraform Zero",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod >= UQ_4_12(1.0) && BATTLER_MAX_HP(target)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "zh": "太晶之初"
+ },
+ "741": {
+  "enum": "BREAKWATER",
+  "en": "Breakwater",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (gCurrentTurnActionNumber < GetBattlerTurnOrderNum(battler)) MUL(.7); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "破水而出"
+ },
+ "753": {
+  "enum": "CRUST_COAT",
+  "en": "Crust Coat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "面包外壳"
+ },
+ "754": {
+  "enum": "PUFFY",
+  "en": "Puffy",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "蓬松"
+ },
+ "759": {
+  "enum": "FARADAY_CAGE",
+  "en": "Faraday Cage",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "法拉第笼"
+ },
+ "764": {
+  "enum": "DEEP_FREEZE",
+  "en": "Deep Freeze",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "深度冻结"
+ },
+ "773": {
+  "enum": "SOOTHSAYER",
+  "en": "Soothsayer",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!GetAbilityState(target, ability)) return; if (*mod >= UQ_4_12(1.0)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE, .persistent = TRUE,"
+  ],
+  "zh": "占卜大师"
+ },
+ "776": {
+  "enum": "UNOWN_POWER",
+  "en": "Unown Power",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod < GetSuperEffectiveMult() && (move == MOVE_HIDDEN_POWER || move == MOVE_SECRET_POWER)) *mod = GetSuperEffectiveMult(); }, .randomizerBanned = TRUE, .omniStab = TRUE,"
+  ],
+  "zh": "未知力量"
+ },
+ "779": {
+  "enum": "BLIGHT_SCALE",
+  "en": "Blight Scale",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "枯萎鳞片"
+ },
+ "804": {
+  "enum": "FIREFIGHTER",
+  "en": "Firefighter",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_FIRE)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "消防员"
+ },
+ "805": {
+  "enum": "SEPIA_LENS",
+  "en": "Sepia Lens",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move) && IsBattlerWeatherAffected(attacker, WEATHER_SANDSTORM_ANY)) MUL(.5); }, .breakable = TRUE, .sandImmune = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "棕褐色镜片"
+ },
+ "817": {
+  "enum": "MADNESS_ENHANCEMENT",
+  "en": "Madness Enhancement",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (gBattleMons[battler].status2 & STATUS2_ENRAGED) { MUL(.8); } },"
+  ],
+  "teAfter": [],
+  "zh": "狂化增强"
+ },
+ "822": {
+  "enum": "OMINOUS_SHROUD",
+  "en": "Ominous Shroud",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "不祥之幕"
+ },
+ "829": {
+  "enum": "STAINLESS_STEEL",
+  "en": "Stainless Steel",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "zh": "不锈钢"
+ },
+ "838": {
+  "enum": "GUARDIAN_COAT",
+  "en": "Guardian Coat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.8); }, .breakable = TRUE, .powderImmune = TRUE, .sandImmune = TRUE, .hailImmune = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "守护者外套"
+ },
+ "855": {
+  "enum": "HYPER_CLEANSE",
+  "en": "Hyper Cleanse",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_POISON) RESISTANCE(.5); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & CHECK_STATUS1) return TRUE; }, .breakable = TRUE, .removesStatusOnImmunity = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "超净"
+ },
+ "860": {
+  "enum": "HASTE_MAKES_WASTE",
+  "en": "Haste Makes Waste",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (gCurrentTurnActionNumber < GetBattlerTurnOrderNum(battler)) MUL(.7); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "欲速则不达"
+ },
+ "864": {
+  "enum": "CHUCKSTER",
+  "en": "Chuckster",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (!GetAbilityState(battler, ability) && IsMoveMakingContact(move, attacker)) { MUL(.5); } },"
+  ],
+  "teAfter": [],
+  "zh": "强投手"
+ },
+ "873": {
+  "enum": "ICE_PLUMES",
+  "en": "Ice Plumes",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "冰羽"
+ },
+ "881": {
+  "enum": "STONECUTTER",
+  "en": "Stonecutter",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_ROCK) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "石匠"
+ },
+ "889": {
+  "enum": "THICK_BLUBBER",
+  "en": "Thick Blubber",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.25); }, .onStat = +[](ON_STAT) { if (statId == STAT_SPEED) *stat *= .5; },"
+  ],
+  "teAfter": [],
+  "zh": "厚脂"
+ },
+ "900": {
+  "enum": "SAND_FIEND",
+  "en": "Sand Fiend",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move) && IsBattlerWeatherAffected(attacker, WEATHER_SANDSTORM_ANY)) MUL(.5); }, .breakable = TRUE, .sandImmune = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "沙之魔"
+ },
+ "904": {
+  "enum": "STRONG_FOUNDATION",
+  "en": "Strong Foundation",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER || moveType == TYPE_GROUND) RESISTANCE(.50); }, .suctionCups = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "坚实基础"
+ },
+ "1031": {
+  "enum": "ROCK_ARMOR",
+  "en": "Rock Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.9); }, .addsType = TYPE_ROCK,"
+  ],
+  "teAfter": [],
+  "zh": ""
+ },
+ "922": {
+  "enum": "EMPRESS",
+  "en": "Empress",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { int genderAtk = GetGenderFromSpeciesAndPersonality(gBattleMons[attacker].species, gBattleMons[attacker].personality); if (genderAtk == MON_MALE) genderAtk = MON_FEMALE; else if (genderAtk == MON_FEMALE) genderAtk = MON_MALE; if (genderAtk != MON_GENDERLESS && genderA"
+  ],
+  "teAfter": [],
+  "zh": "女皇"
+ },
+ "948": {
+  "enum": "MASSIVE_PELT",
+  "en": "Massive Pelt",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "厚重毛皮"
+ },
+ "944": {
+  "enum": "BARK_SKIN",
+  "en": "Dead Bark",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) { MUL(.7); } else { MUL(.85); } }, .addsType = TYPE_GHOST,"
+  ],
+  "teAfter": [],
+  "zh": "枯树皮"
+ },
+ "967": {
+  "enum": "FOGGY_EYE",
+  "en": "Foggy Eye",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (moveType != TYPE_GHOST) return; if (!IsBattlerWeatherAffected(target, WEATHER_FOG_ANY)) return; if (*mod > UQ_4_12(0.5)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET,"
+  ],
+  "zh": "雾眼"
+ },
+ "962": {
+  "enum": "ANGELIC_WINGS",
+  "en": "Angelic Wings",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.7); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "天使之翼"
+ },
+ "957": {
+  "enum": "BRAIN_MASS",
+  "en": "Brain Mass",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "脑容量"
+ },
+ "954": {
+  "enum": "TUMMYACHE",
+  "en": "Tummyache",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "胃痛"
+ },
+ "936": {
+  "enum": "SUMO_GUARD",
+  "en": "Sumo Guard",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "相扑守卫"
+ },
+ "968": {
+  "enum": "TOXIC_SHELL",
+  "en": "Toxic Shell",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "毒壳"
+ },
+ "986": {
+  "enum": "MUCUS_MEMBRANE",
+  "en": "Mucus Membrane",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.7); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "黏液膜"
+ },
+ "970": {
+  "enum": "VOLTRON",
+  "en": "Voltron",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "战神金刚"
+ },
+ "965": {
+  "enum": "FIRE_RULER",
+  "en": "Fire Ruler",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "火之统治者"
+ },
+ "925": {
+  "enum": "RAINBOW_SCALES",
+  "en": "Rainbow Scales",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "彩虹鳞"
+ },
+ "932": {
+  "enum": "DRAKELP_HEAD",
+  "en": "Drakelp Head",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (!GetSingleUseAbilityCounter(battler, ability)) MUL(.65); }, .persistent = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "龙首藻"
+ },
+ "995": {
+  "enum": "ELEMENTAL_AEGIS",
+  "en": "Elemental Aegis",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { switch (moveType) { case TYPE_FIRE: case TYPE_WATER: case TYPE_ELECTRIC: RESISTANCE(0.5) return; } },"
+  ],
+  "teAfter": [],
+  "zh": "元素庇护"
+ },
+ "996": {
+  "enum": "AEGIS_WARD",
+  "en": "Aegis Ward",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { switch (moveType) { case TYPE_GHOST: case TYPE_DARK: case TYPE_PSYCHIC: RESISTANCE(0.5) return; } },"
+  ],
+  "teAfter": [],
+  "zh": "守护结界"
+ },
+ "997": {
+  "enum": "SHATTERED_ARMOR",
+  "en": "Shattered Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "破碎铠甲"
+ },
+ "1002": {
+  "enum": "FORTRESS",
+  "en": "Fortress",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { Impl<ABILITY_FILTER>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); Impl<ABILITY_SHELL_ARMOR>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); }, .onCrit = Impl<ABILITY_SHELL_ARMOR>.onCrit, .onCritFor = Impl<ABILITY_SHELL_ARMOR>.onCritFor, .breakable = TR"
+  ],
+  "teAfter": [],
+  "zh": "堡垒"
+ },
+ "1004": {
+  "enum": "FEATHERCOAT",
+  "en": "Feathercoat",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier < UQ_4_12(1)) MUL(.7); else MUL(.85); }, .breakable = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "羽衣"
+ },
+ "1010": {
+  "enum": "THERMAL_ENTROPY",
+  "en": "Thermal Entropy",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": "热熵"
+ },
+ "1015": {
+  "enum": "DROIDEKA",
+  "en": "Droideka",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { Impl<ABILITY_HEATPROOF>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); Impl<ABILITY_SHELL_ARMOR>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); }, .onCrit = Impl<ABILITY_SHELL_ARMOR>.onCrit, .onCritFor = Impl<ABILITY_SHELL_ARMOR>.onCritFor, .breakable ="
+  ],
+  "teAfter": [],
+  "zh": "毁灭者"
+ },
+ "1021": {
+  "enum": "AURA_ARMOR",
+  "en": "Aura Armor",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.65); },"
+  ],
+  "teAfter": [],
+  "zh": "气场铠甲"
+ },
+ "1022": {
+  "enum": "DEFLECT",
+  "en": "Deflect",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); },"
+  ],
+  "teAfter": [],
+  "zh": "偏斜"
+ },
+ "1038": {
+  "enum": "PETROLEUM_JELLY",
+  "en": "Petroleum Jelly",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { Impl<ABILITY_HYPER_CLEANSE>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); Impl<ABILITY_LIQUIFIED>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); }, .onStatusImmune = Impl<ABILITY_HYPER_CLEANSE>.onStatusImmune, .breakable = TRUE, .removesStatusOnImmunit"
+  ],
+  "teAfter": [],
+  "zh": ""
+ },
+ "1053": {
+  "enum": "THERMALDWELLER",
+  "en": "Thermal Dweller",
+  "defMul": [
+   "= +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,"
+  ],
+  "teAfter": [],
+  "zh": ""
+ },
+ "1083": {
+  "enum": "HIGH_RISE",
+  "en": "High Rise",
+  "defMul": [],
+  "teAfter": [
+   "= +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,"
+  ],
+  "zh": ""
+ }
+}

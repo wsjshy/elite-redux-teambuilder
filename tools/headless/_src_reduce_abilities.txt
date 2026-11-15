@@ -1,0 +1,238 @@
+[4] BATTLE_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[17] IMMUNITY / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_POISON) RESISTANCE(.5); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & (CHECK_STATUS1 & ~CHECK_SLEEP)) return TRUE; }, .breakable = TRUE, .removes
+[25] WONDER_GUARD / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod < GetSuperEffectiveMult()) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE, .randomizerBanned = TRUE,
+[40] MAGMA_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER || moveType == TYPE_ICE) RESISTANCE(.7); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & CHECK_FROSTBITE) return TRUE; }, .breakable = TRUE, 
+[47] THICK_FAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.5); }, .breakable = TRUE,
+[75] SHELL_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[79] RIVALRY / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { int genderAtk = GetGenderFromSpeciesAndPersonality(gBattleMons[attacker].species, gBattleMons[attacker].personality); if (genderAtk == MON_MALE) genderAtk = MON_FEMALE; else if (genderAtk
+[85] HEATPROOF / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,
+[87] DRY_SKIN / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(1.25); }, .breakable = TRUE,
+[100] STALL / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (gCurrentTurnActionNumber < GetBattlerTurnOrderNum(battler)) MUL(.7); }, .breakable = TRUE,
+[111] FILTER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[116] SOLID_ROCK / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[134] HEAVY_METAL / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GHOST || moveType == TYPE_DARK) RESISTANCE(.5); }, .breakable = TRUE,
+[136] MULTISCALE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,
+[140] TELEPATHY / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (target == BATTLE_PARTNER(battler) && gBattleMoves[move].power) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_ATTACKER_OR_TARGET, .breakable = TRUE,
+[142] OVERCOAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.8); }, .breakable = TRUE, .powderImmune = TRUE, .sandImmune = TRUE, .hailImmune = TRUE,
+[169] FUR_COAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.5); }, .breakable = TRUE,
+[195] WATER_COMPACTION / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER) RESISTANCE(.5); }, .breakable = TRUE,
+[199] WATER_BUBBLE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,
+[200] STEELWORKER / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TR
+[218] FLUFFY / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,
+[231] SHADOW_SHIELD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,
+[232] PRISM_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[244] PUNK_ROCK / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IsSoundMove(attacker, move)) MUL(.5); }, .breakable = TRUE,
+[246] ICE_SCALES / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,
+[272] PRISM_SCALES / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.7); }, .breakable = TRUE,
+[283] CHRISTMAS_SPIRIT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IsBattlerWeatherAffected(battler, WEATHER_HAIL_ANY)) MUL(.5); }, .breakable = TRUE, .hailImmune = TRUE,
+[296] LEAD_COAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.6); }, .onStat = +[](ON_STAT) { if (statId == STAT_SPEED) *stat *= .9; }, .breakable = TRUE,
+[303] FOSSILIZED / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_ROCK) RESISTANCE(.5); }, .breakable = TRUE,
+[306] NOCTURNAL / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_DARK || moveType == TYPE_FAIRY) RESISTANCE(.75); }, .breakable = TRUE,
+[311] LIQUIFIED / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER) RESISTANCE(2); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,
+[313] DRAGONSLAYER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_DRAGON)) MUL(.5); }, .breakable = TRUE,
+[314] MOUNTAINEER / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (moveType == TYPE_ROCK) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE, .stealthRockImmune = TRUE,
+[317] PERMAFROST / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[318] PRIMAL_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.5); }, .breakable = TRUE,
+[337] RAW_WOOD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GRASS) RESISTANCE(.5); }, .breakable = TRUE,
+[342] SEAWEED / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE && IS_BATTLER_OF_TYPE(battler, TYPE_GRASS)) RESISTANCE(0.5); }, .breakable = TRUE,
+[353] BONE_ZONE / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!DoesMoveMatchFlag(battler, move, moveType, MOVE_FLAG_BONE)) return; if (*mod >= UQ_4_12(1.0)) return; if (*mod == 0) { *mod = UQ_4_12(1.0); if (mod1) MulModifier(mod, mod1); 
+[392] ARCTIC_FUR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.65); }, .breakable = TRUE,
+[399] PARRY / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); },
+[422] GIFTED_MIND / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (moveType == TYPE_BUG || moveType == TYPE_GHOST || moveType == TYPE_DARK) *mod = 0; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,
+[431] DUNE_TERROR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IsBattlerWeatherAffected(battler, WEATHER_SANDSTORM_ANY)) MUL(.65); }, .breakable = TRUE, .sandImmune = TRUE,
+[440] PRISMATIC_FUR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.5); }, .onBeforeAttack = +[](ON_BEFORE_ATTACK) -> int { if (battler == attacker && Impl<ABILITY_RKS_SYSTEM>.onBeforeAttack(DELEGATE_BEFORE_ATTACK)) return TRUE; return Impl<ABILITY_C
+[442] FAE_HUNTER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_FAIRY)) RESISTANCE(.5); }, .breakable = TRUE,
+[445] LUMBERJACK / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_GRASS)) RESISTANCE(.5); }, .breakable = TRUE,
+[482] SAND_GUARD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move) && IsBattlerWeatherAffected(attacker, WEATHER_SANDSTORM_ANY)) MUL(.5); }, .breakable = TRUE, .sandImmune = TRUE,
+[499] REFRIGERATOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[524] BASS_BOOSTED / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IsSoundMove(attacker, move)) MUL(.5); }, .breakable = TRUE,
+[526] MONSTER_HUNTER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_DARK)) MUL(.5); }, .breakable = TRUE,
+[539] CHROME_COAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.6); }, .onStat = Impl<ABILITY_LEAD_COAT>.onStat, .breakable = TRUE,
+[547] PURIFYING_SALT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GHOST) RESISTANCE(.5); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & CHECK_STATUS1) return TRUE; }, .breakable = TRUE, .removesStatusOnImmunity =
+[571] FIRE_SCALES / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,
+[582] PERMAFROST_CLONE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[585] SUN_BASKING / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IsBattlerWeatherAffected(battler, WEATHER_SUN_ANY) && IS_MOVE_PHYSICAL(move)) MUL(.5); }, .breakable = TRUE,
+[604] DESERT_SPIRIT / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod == 0 && !IsBattlerGrounded(target) && moveType == TYPE_GROUND && IsBattlerWeatherAffected(battler, WEATHER_SANDSTORM_ANY)) { *mod = UQ_4_12(1.0); } }, .sandImmune = TRUE,
+[607] TERA_SHELL / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod >= UQ_4_12(1.0) && BATTLER_MAX_HP(target)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,
+[613] APPLE_ENLIGHTENMENT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.5); }, .breakable = TRUE,
+[620] OLD_MARINER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE && IS_BATTLER_OF_TYPE(battler, TYPE_GRASS)) RESISTANCE(0.5); }, .breakable = TRUE,
+[660] ULTRA_INSTINCT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); },
+[664] FLAME_BUBBLE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,
+[671] BAD_OMEN / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (isCrit) MUL(.25); }, .breakable = TRUE,
+[678] FLUFFIEST / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,
+[682] IRON_GIANT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,
+[705] TERASTAL_TREASURE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.6); }, .onStat = +[](ON_STAT) { if (statId == STAT_SPEED) *stat *= .8; }, .breakable = TRUE,
+[709] DREAM_STATE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[712] FLAME_SHIELD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[726] SLUDGY_MIX / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IsSoundMove(attacker, move)) MUL(.5); }, .breakable = TRUE,
+[739] TERAFORM_ZERO / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod >= UQ_4_12(1.0) && BATTLER_MAX_HP(target)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE,
+[741] BREAKWATER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (gCurrentTurnActionNumber < GetBattlerTurnOrderNum(battler)) MUL(.7); }, .breakable = TRUE,
+[753] CRUST_COAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[754] PUFFY / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,
+[759] FARADAY_CAGE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[764] DEEP_FREEZE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE,
+[773] SOOTHSAYER / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!GetAbilityState(target, ability)) return; if (*mod >= UQ_4_12(1.0)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TRUE, .persistent = TRUE,
+[776] UNOWN_POWER / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (*mod < GetSuperEffectiveMult() && (move == MOVE_HIDDEN_POWER || move == MOVE_SECRET_POWER)) *mod = GetSuperEffectiveMult(); }, .randomizerBanned = TRUE, .omniStab = TRUE,
+[779] BLIGHT_SCALE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,
+[804] FIREFIGHTER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_FIRE)) MUL(.5); }, .breakable = TRUE,
+[805] SEPIA_LENS / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move) && IsBattlerWeatherAffected(attacker, WEATHER_SANDSTORM_ANY)) MUL(.5); }, .breakable = TRUE, .sandImmune = TRUE,
+[817] MADNESS_ENHANCEMENT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (gBattleMons[battler].status2 & STATUS2_ENRAGED) { MUL(.8); } },
+[822] OMINOUS_SHROUD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,
+[829] STAINLESS_STEEL / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TR
+[838] GUARDIAN_COAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_PHYSICAL(move)) MUL(.8); }, .breakable = TRUE, .powderImmune = TRUE, .sandImmune = TRUE, .hailImmune = TRUE,
+[855] HYPER_CLEANSE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_POISON) RESISTANCE(.5); }, .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int { CHECK(status & CHECK_STATUS1) return TRUE; }, .breakable = TRUE, .removesStatusOnImmunity 
+[860] HASTE_MAKES_WASTE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (gCurrentTurnActionNumber < GetBattlerTurnOrderNum(battler)) MUL(.7); }, .breakable = TRUE,
+[864] CHUCKSTER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (!GetAbilityState(battler, ability) && IsMoveMakingContact(move, attacker)) { MUL(.5); } },
+[873] ICE_PLUMES / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,
+[881] STONECUTTER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_ROCK) RESISTANCE(.5); }, .breakable = TRUE,
+[889] THICK_BLUBBER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.25); }, .onStat = +[](ON_STAT) { if (statId == STAT_SPEED) *stat *= .5; },
+[900] SAND_FIEND / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move) && IsBattlerWeatherAffected(attacker, WEATHER_SANDSTORM_ANY)) MUL(.5); }, .breakable = TRUE, .sandImmune = TRUE,
+[904] STRONG_FOUNDATION / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_WATER || moveType == TYPE_GROUND) RESISTANCE(.50); }, .suctionCups = TRUE,
+[922] EMPRESS / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { int genderAtk = GetGenderFromSpeciesAndPersonality(gBattleMons[attacker].species, gBattleMons[attacker].personality); if (genderAtk == MON_MALE) genderAtk = MON_FEMALE; else if (genderAtk
+[925] RAINBOW_SCALES / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.5); }, .breakable = TRUE,
+[932] DRAKELP_HEAD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (!GetSingleUseAbilityCounter(battler, ability)) MUL(.65); }, .persistent = TRUE,
+[936] SUMO_GUARD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.5); }, .breakable = TRUE,
+[944] BARK_SKIN / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) { MUL(.7); } else { MUL(.85); } }, .addsType = TYPE_GHOST,
+[948] MASSIVE_PELT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(2.0); if (IsMoveMakingContact(move, attacker)) MUL(0.5); }, .breakable = TRUE,
+[954] TUMMYACHE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE || moveType == TYPE_ICE) RESISTANCE(.5); }, .breakable = TRUE,
+[957] BRAIN_MASS / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (BATTLER_MAX_HP(battler)) MUL(.5); }, .breakable = TRUE,
+[962] ANGELIC_WINGS / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_MOVE_SPECIAL(move)) MUL(.7); }, .breakable = TRUE,
+[965] FIRE_RULER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65); }, .breakable = TRUE,
+[967] FOGGY_EYE / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (moveType != TYPE_GHOST) return; if (!IsBattlerWeatherAffected(target, WEATHER_FOG_ANY)) return; if (*mod > UQ_4_12(0.5)) *mod = UQ_4_12(0.5); }, .onAfterTypeEffectivenessFor = APP
+[968] TOXIC_SHELL / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[970] VOLTRON / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[986] MUCUS_MEMBRANE / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.7); }, .breakable = TRUE,
+[995] ELEMENTAL_AEGIS / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { switch (moveType) { case TYPE_FIRE: case TYPE_WATER: case TYPE_ELECTRIC: RESISTANCE(0.5) return; } },
+[996] AEGIS_WARD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { switch (moveType) { case TYPE_GHOST: case TYPE_DARK: case TYPE_PSYCHIC: RESISTANCE(0.5) return; } },
+[997] SHATTERED_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); }, .onCrit = +[](ON_CRIT) { return NEVER_CRIT; }, .onCritFor = APPLY_ON_TARGET, .breakable = TRUE,
+[1002] FORTRESS / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { Impl<ABILITY_FILTER>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); Impl<ABILITY_SHELL_ARMOR>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); }, .onCrit = Impl<ABILITY_SHELL_
+[1004] FEATHERCOAT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (typeEffectivenessModifier < UQ_4_12(1)) MUL(.7); else MUL(.85); }, .breakable = TRUE,
+[1010] THERMAL_ENTROPY / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,
+[1015] DROIDEKA / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { Impl<ABILITY_HEATPROOF>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); Impl<ABILITY_SHELL_ARMOR>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); }, .onCrit = Impl<ABILITY_SHE
+[1021] AURA_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.65); },
+[1022] DEFLECT / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.8); },
+[1031] ROCK_ARMOR / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.9); }, .addsType = TYPE_ROCK,
+[1032] SMOLDERING_WOOD / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_GRASS) RESISTANCE(.5); }, .breakable = TRUE,
+[1038] PETROLEUM_JELLY / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { Impl<ABILITY_HYPER_CLEANSE>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); Impl<ABILITY_LIQUIFIED>.onDefensiveMultiplier(DELEGATE_DEFENSIVE_MULTIPLIER); }, .onStatusImmune = Impl<A
+[1048] INSECTEATER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (IS_BATTLER_OF_TYPE(attacker, TYPE_BUG)) MUL(.5); }, .breakable = TRUE,
+[1053] THERMALDWELLER / 
+   DEF-MUL: = +[](ON_DEFENSIVE_MULTIPLIER) { if (moveType == TYPE_FIRE) RESISTANCE(.5); }, .breakable = TRUE, .negatesBurnAtkDrop = TRUE, .noBurnDamage = TRUE,
+[1083] HIGH_RISE / 
+   TE-AFTER: = +[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; }, .onAfterTypeEffectivenessFor = APPLY_ON_TARGET, .breakable = TR
