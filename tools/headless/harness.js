@@ -16674,6 +16674,81 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eV4383){eV4383.name}
+  /* v4.384 收尾：增伤清场无来源归门 / 受队消耗 neither 退出 / 弱点保险高耐久撤首位。
+     只改 name / why / it 首位与标记；不增删流派、不重排 top-4、不动 EV/性格/招组。自包作用域。 */
+  try{
+    var _v384recMv=[105,202,234,235,236,303,355,409,156,215,361,456,505,532,631,72,71];
+    var _v384wearMv=[73,92,261,174,227];
+    var _v384protMv=[164,182];
+    var _v384boostMv=FUNC_MV.boost.concat([504,526]);
+    var _v384setup=[240,241,201,258,580,581,604,641];
+    var _v384recItem=['剩饭','黑色污泥'];
+    var _v384recAbi={'144':1,'90':1};
+    var _v384pre=['精神场地','薄雾场地','场地','电场','晴','雨','沙','雪'];
+    function _v384kit(b){var ids=[];(b.mv.main||[]).forEach(function(x){ids.push(+x.id)});(b.mv.func||[]).forEach(function(x){ids.push(+x.id)});return ids}
+    function _v384AbiIds(s){return (s.abiIds||[]).concat(s.innIds||[]).map(String)}
+    function _v384Prefix(n){for(var i=0;i<_v384pre.length;i++){if(n.indexOf(_v384pre[i])>=0)return _v384pre[i]}return ''}
+    function _v384Auto(s){
+      if((ownAutoSys(s)||[]).length)return true;
+      var re=/出场时(降下|制造|呼风|放晴|扬起|飘雪|展开)|制造.{0,4}场地|视为在大晴天/;
+      var ids=_v384AbiIds(s);
+      for(var k=0;k<ids.length;k++){var e=_abEnt(ids[k]);if(e&&re.test(String(e[3]||'')))return true}
+      return false;
+    }
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var ids=_v384kit(b);
+      var al=(b.ev&&b.ev.alloc)||[];
+      var offEv=Math.max(al[1]||0,al[3]||0);
+      var dmg=ids.filter(function(id){var r=MV[id];return r&&r[4]!=='变化'}).length;
+      var stabT={};if(s.t1)stabT[s.t1]=1;if(s.t2)stabT[s.t2]=1;
+      var stab=ids.filter(function(id){var r=MV[id];return r&&r[4]!=='变化'&&stabT[r[3]]}).length;
+      var boost=_v384boostMv.some(function(id){return ids.indexOf(id)>=0});
+      var bulk=bulkOf(s);
+      var nm=String(b.name);
+      var it0=b.it&&b.it[0]?String(b.it[0][0]):'';
+      var A=_v384recItem.some(function(n){return it0.indexOf(n)>=0})||_v384AbiIds(s).some(function(id){return _v384recAbi[id]})||_v384recMv.some(function(id){return ids.indexOf(id)>=0});
+      var B=bulk>=300&&(_v384wearMv.some(function(id){return ids.indexOf(id)>=0})||_v384protMv.some(function(id){return ids.indexOf(id)>=0}));
+      if(b._v384BoostReplaced===undefined)b._v384BoostReplaced=null;
+      if(b._v384BoostOld===undefined)b._v384BoostOld=null;
+      if(b._v384BoostNew===undefined)b._v384BoostNew=null;
+      if(b._v384BoostEdgeKept===undefined)b._v384BoostEdgeKept=false;
+      /* ③ 弱点保险 322：bulk≥300 撤首位换续航件；270–299 保留并 why 注明 */
+      if(it0==='弱点保险'){
+        if(bulk>=300){
+          var _ctr=/反伤/.test(nm)||String(b.mechRw||'')==='counter_mirror';
+          var _rest=_ctr?['剩饭','站场续航（耐久核主食；弱点保险仅被克制命中才翻双攻，高耐久不必赌一次触发）']:['剩饭','站场续航（高耐久被克制命中后翻双攻收益不如直接续航）'];
+          var _helm=_ctr?['凸凸头盔','物攻手碰瓷反伤（耐久核站场反伤配套）']:null;
+          var _rest2=(b.it||[]).filter(function(x){return String(x[0])!=='弱点保险'&&String(x[0])!=='剩饭'});
+          var _nw=[_rest]; if(_helm)_nw.push(_helm); _rest2.forEach(function(x){_nw.push(x)});
+          b.it=_nw.slice(0,3);
+          b._v384BoostReplaced=true;b._v384BoostOld='弱点保险';b._v384BoostNew=String(b.it[0][0]);
+        }else if(bulk>=270){
+          var _why=String((b.it&&b.it[0]&&b.it[0][1])||'');
+          if(_why.indexOf('仅在被克制命中时生效')<0)b.it[0][1]=_why+'；仅在被克制命中时生效';
+          b._v384BoostEdgeKept=true;
+        }
+      }
+      /* ② 受队消耗 neither：无回复且非高耐久+消耗/保命 → 退出受队消耗，归稳健联防 */
+      if(nm.indexOf('受队消耗')>=0&&!(A||B)){
+        b.name='稳健联防';
+        b._v384Demoted=nm+'→稳健联防';
+        b.nameMismatch=(b.nameMismatch?b.nameMismatch+'；':'')+'无回复手段且非高耐久+消耗/保命配置 → 退出受队消耗，按耐久配置归联防';
+        nm=b.name;
+      }
+      /* ① 裸名增伤清场且自身无体系来源 → 按三条件进攻门归一 */
+      if(nm.indexOf('增伤清场')>=0&&!_v384Prefix(nm)){
+        var hasSetup=_v384setup.some(function(id){return ids.indexOf(id)>=0});
+        if(!_v384Auto(s)&&!hasSetup){
+          var gate=dmg>=2&&offEv>=120&&stab>=1;
+          var target=gate?(boost?'强化清场':'主力输出压制'):'稳健联防';
+          b.name=target;
+          b._v384Demoted=(b._v384Demoted||'增伤清场')+'→'+target;
+          b.nameMismatch=(b.nameMismatch?b.nameMismatch+'；':'')+'自身无自动体系/自带开体系招/体系加成，去增伤清场冠名，按三条件进攻门落既有流派';
+        }
+      }
+    });
+  }catch(eV4384){eV4384.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20108,7 +20183,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.383';
+var ER_ENGINE_VER='v4.384';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

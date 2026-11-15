@@ -39,3 +39,5 @@ archive/version-snapshots/index.html.*
 
 # ===== 调试用 harness（大体积，仅本地，由 make_dbg_harness.py 重建，勿部署）=====
 tools/headless/harness_dbg.js
+# v4.384：v4.382 基线 harness（约 4 MB，由 _base_harness.py 重建，本地保留不入库）
+tools/headless/harness_base.js
