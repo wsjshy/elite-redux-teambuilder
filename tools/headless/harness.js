@@ -16749,6 +16749,61 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eV4384){eV4384.name}
+  /* v4.385 后置最终化（在 eX371 同玩法去重 / eX372 终门 / v383 / v384 收尾之后，输入为最终名的卡）：
+     只对「名字与 EV/性格不一致」的卡复用 buildEvs/buildNature 重算 EV+性格；不动招组/道具/特性/名字/候选/排序。
+     ② 防守身份进攻配置：role 进攻/轮转 → 台账留 v4.386 改名；role 防守 → 重算耐久。
+     ③ 性格减项被满投 252（或防守身份挂加速性格）→ 重算；重算后仍冲突则回退保留，单列拿不准。自包作用域。 */
+  try{
+    var _v385DEF_ROLE={'肉盾':1,'受队':1,'联防':1,'辅助':1};
+    var _v385DEF_NAME=/受队消耗|稳健联防|肉盾|减伤|属性免疫/;
+    var _v385SPD_NAT={'爽朗':1,'开朗':1,'胆小':1,'急躁':1,'天真':1};
+    function _v385Nat0(b){var n=b.nat;if(Array.isArray(n))return n[0]?String(n[0][0]||''):'';return String(n||'').split(',')[0].trim();}
+    function _v385DnIdx(nat){var e=NATURES[nat];if(!e)return -1;var dn=String(e[1]||'');var m={'-攻击':1,'-特攻':3,'-防御':2,'-特防':4,'-速度':5};return Object.prototype.hasOwnProperty.call(m,dn)?m[dn]:-1;}
+    function _v385Clash(b){var al=(b.ev&&b.ev.alloc)||[];var n0=_v385Nat0(b);var di=_v385DnIdx(n0);if(di<0)return false;return (+al[di]||0)>=252;}
+    function _v385DefSpd(b){return _v385SPD_NAT[_v385Nat0(b)]?true:false;}
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var nm=String(b.name),role=String(b.roleTag||''),side=String(b.side||'');
+      var al=(b.ev&&b.ev.alloc)||[];
+      var offEv=Math.max(al[1]||0,al[3]||0),bulk=(al[0]||0)+(al[2]||0)+(al[4]||0);
+      var isDefRole=_v385DEF_ROLE[role]?1:0,isDefName=_v385DEF_NAME.test(nm);
+      if(b._v385StallLedger===undefined)b._v385StallLedger=null;
+      if(b._v385EvNatureFixed===undefined)b._v385EvNatureFixed=false;
+      if(b._v385Uncertain===undefined)b._v385Uncertain=null;
+      if(b._v385OldNat===undefined)b._v385OldNat=null;
+      if(b._v385NewNat===undefined)b._v385NewNat=null;
+      if(b._v385OldAlloc===undefined)b._v385OldAlloc=null;
+      if(b._v385NewAlloc===undefined)b._v385NewAlloc=null;
+      /* ② 防守身份进攻配置：role 非防守 → 台账留 v4.386 改名，本版不动 EV/性格 */
+      if((isDefName||isDefRole)&&offEv>=252&&bulk<252&&!isDefRole){
+        b._v385StallLedger='防守名挂进攻配置(role='+role+')，留 v4.386 改名；本版不动 EV/性格';
+        return;
+      }
+      /* ③ 性格×主投资矛盾（含防守身份挂加速性格；② role 防守进攻配置一并重算耐久） */
+      var _forceDef=isDefRole&&offEv>=252&&bulk<252;
+      var clash=_v385Clash(b)||(isDefRole&&_v385DefSpd(b))||_forceDef;
+      if(!clash)return;
+      var _oldNat=b.nat,_oldEv=b.ev;
+      var _nn=null,_ee=null;
+      try{_nn=buildNature(s,side,role,b);}catch(eN5){_nn=null;}
+      try{_ee=buildEvs(s,side,role,nm,b);}catch(eE5){_ee=null;}
+      if(Array.isArray(_nn)&&_nn.length&&_ee&&_ee.alloc){
+        b.nat=_nn;b.ev=_ee;
+        if(_v385Clash(b)||(isDefRole&&_v385DefSpd(b))){
+          b.nat=_oldNat;b.ev=_oldEv;
+          b._v385Uncertain='重算后性格/EV 仍矛盾，保留原配置待人工复核';
+        }else{
+          b._v385EvNatureFixed=true;
+          b._v385OldNat=Array.isArray(_oldNat)&&_oldNat[0]?_oldNat[0][0]:'';
+          b._v385NewNat=_nn[0][0];
+          b._v385OldAlloc=(_oldEv&&_oldEv.alloc)?_oldEv.alloc.slice():[];
+          b._v385NewAlloc=_ee.alloc.slice();
+        }
+      }else{
+        b._v385Uncertain='重算未返回合法性格/EV，保留原配置';
+      }
+    });
+  }catch(eV4385){eV4385.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20183,7 +20238,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.384';
+var ER_ENGINE_VER='v4.385';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21825,4 +21880,5 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   pvWeatherSpeedMul:pvWeatherSpeedMul,mechPrefix:mechPrefix,isGlassCannon:isGlassCannon,
   abiTagOf:abiTagOf,abiImHf:abiImHf,NM2ID:NM2ID,_abEnt:_abEnt,
   RED_ABI_IDS:RED_ABI_IDS,_v383Abi0:_v383Abi0,_v383RedAbi:_v383RedAbi,_v383ImmAbi:_v383ImmAbi,_v383SurvAbi:_v383SurvAbi,_v383RecAbi:_v383RecAbi,
-  ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND};
+  ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND,
+  buildEvs:buildEvs,buildNature:buildNature,pvIsSpaceLike:pvIsSpaceLike,NATURES:NATURES};

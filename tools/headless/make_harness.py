@@ -33,7 +33,8 @@ EXPORT = r"""
   pvWeatherSpeedMul:pvWeatherSpeedMul,mechPrefix:mechPrefix,isGlassCannon:isGlassCannon,
   abiTagOf:abiTagOf,abiImHf:abiImHf,NM2ID:NM2ID,_abEnt:_abEnt,
   RED_ABI_IDS:RED_ABI_IDS,_v383Abi0:_v383Abi0,_v383RedAbi:_v383RedAbi,_v383ImmAbi:_v383ImmAbi,_v383SurvAbi:_v383SurvAbi,_v383RecAbi:_v383RecAbi,
-  ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND};
+  ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND,
+  buildEvs:buildEvs,buildNature:buildNature,pvIsSpaceLike:pvIsSpaceLike,NATURES:NATURES};
 """
 
 out = STUB + '\n' + lite + '\n' + spd + '\n' + adv + '\n' + b4 + EXPORT
