@@ -55,11 +55,12 @@ function scan(team, tag) {
       const ids = mvIds(b);
       cur[tag].push(snapOf(s, b));
       if (b._v386Reordered) reordered.push({ id: s.id, zh: s.zh, name: b.name, role: b.roleTag, side: b.side });
-      if (b._v386Renamed) renamed.push({ id: s.id, zh: s.zh, old: b._v386OldName, now: b.name });
-      if (b._v386MvSwap) {
-        if (String(b._v386MvSwap).indexOf('182') >= 0) swapProtect.push({ id: s.id, zh: s.zh, name: b.name, swap: b._v386MvSwap });
-        else if (REC_STRICT[+String(b._v386MvSwap).split('→')[1].split(' ')[0]]) swapHeal.push({ id: s.id, zh: s.zh, name: b.name, swap: b._v386MvSwap });
-        else swapCover.push({ id: s.id, zh: s.zh, name: b.name, swap: b._v386MvSwap });
+      if (b._v386Renamed || b._v387Renamed) renamed.push({ id: s.id, zh: s.zh, old: b._v386OldName, now: b.name });
+      const dSwap = b._v386MvSwap || b._v387SleepSwap;
+      if (dSwap) {
+        if (String(dSwap).indexOf('182') >= 0) swapProtect.push({ id: s.id, zh: s.zh, name: b.name, swap: dSwap });
+        else if (REC_STRICT[+String(dSwap).split('→')[1].split(' ')[0]]) swapHeal.push({ id: s.id, zh: s.zh, name: b.name, swap: dSwap });
+        else swapCover.push({ id: s.id, zh: s.zh, name: b.name, swap: dSwap });
       }
       if (b._v386LooseLedger) looseLedger.push({ id: s.id, zh: s.zh, name: b.name, side: b.side, role: b.roleTag });
       // ② 玻璃大炮含睡觉

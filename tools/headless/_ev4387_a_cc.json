@@ -1,0 +1,1764 @@
+[
+ {
+  "id": "317",
+  "en": "Permafrost",
+  "zh": "永冻层",
+  "shard_desc": "受到效果绝佳的攻击时，受到伤害减少25%",
+  "proto_const": "ABILITY_PERMAFROST",
+  "proto_en": "Permafrost",
+  "proto_idx": 317,
+  "proto_desc": "Takes 35% less damage from Super-effective moves.",
+  "proto_expanded": "Reduces damage from super-effective attacks by 35%. Multiplicative with other sources of damage reduction.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_PERMAFROST",
+    "line": 4155,
+    "body": "constexpr Ability Impl<ABILITY_PERMAFROST> = {\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (typeEffectivenessModifier >= GetSuperEffectiveMult()) MUL(.65);\n        },\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "MUL(.65)"
+    ],
+    "off": [],
+    "deleg": [],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "582",
+  "en": "Thick Skin",
+  "zh": "厚皮肤",
+  "shard_desc": "受到效果绝佳的攻击时，受到伤害减少25%",
+  "proto_const": "ABILITY_PERMAFROST_CLONE",
+  "proto_en": "Thick Skin",
+  "proto_idx": 582,
+  "proto_desc": "Takes 35% less damage from Super-effective moves.",
+  "proto_expanded": "Reduces damage from super-effective attacks by 35%. Multiplicative with other sources of damage reduction.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_PERMAFROST_CLONE",
+    "line": 7525,
+    "body": "constexpr Ability Impl<ABILITY_PERMAFROST_CLONE> = {\n    .onDefensiveMultiplier = Impl<ABILITY_PERMAFROST>.onDefensiveMultiplier,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_PERMAFROST",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_PERMAFROST",
+     "en": "Permafrost",
+     "handler": "onDefensiveMultiplier",
+     "line": 4155,
+     "def": [
+      "MUL(.65)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "200",
+  "en": "Steelworker",
+  "zh": "钢能力者",
+  "shard_desc": "钢属性的招式威力1.3倍",
+  "proto_const": "ABILITY_STEELWORKER",
+  "proto_en": "Steelworker",
+  "proto_idx": 200,
+  "proto_desc": "Normal moves become Steel. Steel resists Ghost and Dark.",
+  "proto_expanded": "Changes the user's Normal-type moves to Steel-type. If the user is Steel-type it resists Ghost and Dark, otherwise it gains Steel STAB.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_STEELWORKER",
+    "line": 2725,
+    "body": "constexpr Ability Impl<ABILITY_STEELWORKER> = {\n    ATE_ABILITY(TYPE_STEEL),\n    .onAfterTypeEffectiveness =\n        +[](ON_AFTER_TYPE_EFFECTIVENESS) {\n            if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return;\n            if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2;\n        },\n    .onAfterTypeEffectivenessFor = APPLY_ON_TARGET,\n    .breakable = TRUE,\n};",
+    "ate": "TYPE_STEEL",
+    "def": [],
+    "off": [],
+    "deleg": [],
+    "afterEff": "+[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; },",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "442",
+  "en": "Fae Hunter",
+  "zh": "妖精猎者",
+  "shard_desc": "对妖精属性精灵造成伤害+50%",
+  "proto_const": "ABILITY_FAE_HUNTER",
+  "proto_en": "Fae Hunter",
+  "proto_idx": 442,
+  "proto_desc": "Deals 1.5x damage to Fairy. Takes 0.5x damage from Fairy.",
+  "proto_expanded": "Deals 1.5x damage to Fairy-type Pokemon and takes 0.5x damage when attacked by Fairy-type Pokemon. Based on attacker/defender Pokemon types, not move types. The damage reduction is multiplicative with other sources.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_FAE_HUNTER",
+    "line": 5833,
+    "body": "constexpr Ability Impl<ABILITY_FAE_HUNTER> = {\n    .onOffensiveMultiplier =\n        +[](ON_OFFENSIVE_MULTIPLIER) {\n            if (IS_BATTLER_OF_TYPE(target, TYPE_FAIRY)) RESISTANCE(1.5);\n        },\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (IS_BATTLER_OF_TYPE(attacker, TYPE_FAIRY)) RESISTANCE(.5);\n        },\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "RESISTANCE(.5)"
+    ],
+    "off": [
+     "RESISTANCE(1.5)"
+    ],
+    "deleg": [],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "440",
+  "en": "Prismatic Fur",
+  "zh": "棱镜毛皮",
+  "shard_desc": "变色+变换自如+毛皮大衣+冰鳞粉",
+  "proto_const": "ABILITY_PRISMATIC_FUR",
+  "proto_en": "Prismatic Fur",
+  "proto_idx": 440,
+  "proto_desc": "Color Change + Protean + Fur Coat + Ice Scales.",
+  "proto_expanded": "Changes type to resist attacks before getting hit, changes type to match moves before landing a hit (activating once per turn), halves physical damage, and halves special damage. Damage reduction is multiplicative with other sources.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_PRISMATIC_FUR",
+    "line": 5809,
+    "body": "constexpr Ability Impl<ABILITY_PRISMATIC_FUR> = {\n    .onDefensiveMultiplier = +[](ON_DEFENSIVE_MULTIPLIER) { MUL(.5); },\n    .onBeforeAttack = +[](ON_BEFORE_ATTACK) -> int {\n        if (battler == attacker && Impl<ABILITY_RKS_SYSTEM>.onBeforeAttack(DELEGATE_BEFORE_ATTACK)) return TRUE;\n        return Impl<ABILITY_COLOR_CHANGE>.onBeforeAttack(DELEGATE_BEFORE_ATTACK);\n    },\n    .onBeforeAttackFor = APPLY_ON_ATTACKER_OR_TARGET,\n    .randomizerBanned = TRUE,\n    .omniStab = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "MUL(.5)"
+    ],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_RKS_SYSTEM",
+      "handler": "onBeforeAttack"
+     },
+     {
+      "const": "ABILITY_COLOR_CHANGE",
+      "handler": "onBeforeAttack"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "omniStab"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_RKS_SYSTEM",
+     "en": "RKS System",
+     "handler": "onBeforeAttack",
+     "line": 3114,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_COLOR_CHANGE",
+     "en": "Color Change",
+     "handler": "onBeforeAttack",
+     "line": 652,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "499",
+  "en": "Refrigerator",
+  "zh": "冰箱",
+  "shard_desc": "冰冻皮肤+发光",
+  "proto_const": "ABILITY_REFRIGERATOR",
+  "proto_en": "Refrigerator",
+  "proto_idx": 499,
+  "proto_desc": "Filter + Illuminate.",
+  "proto_expanded": "Reduces damage from super effective attacks by 35%. Multiplicative with other damage reduction sources. Boosts the user's accuracy by 1.2x. Removes Ghost-typing on target when landing an attack.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_REFRIGERATOR",
+    "line": 6549,
+    "body": "constexpr Ability Impl<ABILITY_REFRIGERATOR> = {\n    .onDefensiveMultiplier = Impl<ABILITY_FILTER>.onDefensiveMultiplier,\n    .onAccuracy = Impl<ABILITY_ILLUMINATE>.onAccuracy,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FILTER",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_ILLUMINATE",
+      "handler": "onAccuracy"
+     }
+    ],
+    "afterEff": "",
+    "flags": []
+   },
+   "bases": [
+    {
+     "const": "ABILITY_FILTER",
+     "en": "Filter",
+     "handler": "onDefensiveMultiplier",
+     "line": 1705,
+     "def": [
+      "MUL(.65)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_ILLUMINATE",
+     "en": "Illuminate",
+     "handler": "onAccuracy",
+     "line": 884,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "524",
+  "en": "Bass Boosted",
+  "zh": "强力低音",
+  "shard_desc": "放大器+庞克摇滚",
+  "proto_const": "ABILITY_BASS_BOOSTED",
+  "proto_en": "Bass Boosted",
+  "proto_idx": 524,
+  "proto_desc": "Amplifier + Punk Rock.",
+  "proto_expanded": "Boosts sound-based moves by 30%. Single-target sound moves gain spread targeting to hit both opposing Pokemon. Does not spread with multihit moves. Also boosts the user's sound moves by another 30% and reduces incoming sound move damage by 50%. Damage reduction is multiplicative with other sources.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_BASS_BOOSTED",
+    "line": 6763,
+    "body": "constexpr Ability Impl<ABILITY_BASS_BOOSTED> = {\n    .onOffensiveMultiplier =\n        +[](ON_OFFENSIVE_MULTIPLIER) {\n            Impl<ABILITY_AMPLIFIER>.onOffensiveMultiplier(DELEGATE_OFFENSIVE_MULTIPLIER);\n            Impl<ABILITY_PUNK_ROCK>.onOffensiveMultiplier(DELEGATE_OFFENSIVE_MULTIPLIER);\n        },\n    .onDefensiveMultiplier = Impl<ABILITY_PUNK_ROCK>.onDefensiveMultiplier,\n    .onModifyTargetFlag = Impl<ABILITY_AMPLIFIER>.onModifyTargetFlag,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_AMPLIFIER",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_AMPLIFIER",
+      "handler": "onModifyTargetFlag"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_AMPLIFIER",
+     "en": "Amplifier",
+     "handler": "onOffensiveMultiplier",
+     "line": 4813,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_PUNK_ROCK",
+     "en": "Punk Rock",
+     "handler": "onOffensiveMultiplier",
+     "line": 3293,
+     "def": [
+      "MUL(.5)"
+     ],
+     "off": [
+      "MUL(1.3)"
+     ],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "613",
+  "en": "Apple Enlightenment",
+  "zh": "苹果款待",
+  "shard_desc": "毛皮大衣+魔法防守",
+  "proto_const": "ABILITY_APPLE_ENLIGHTENMENT",
+  "proto_en": "Apple Enlightenment",
+  "proto_idx": 613,
+  "proto_desc": "Fur coat + Magic Guard.",
+  "proto_expanded": "Halves all incoming physical attack damage. Multiplicative with other sources of damage reduction. Also grants immunity to all non-attack damage sources including entry hazards, weather damage, status conditions, and recoil.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_APPLE_ENLIGHTENMENT",
+    "line": 7862,
+    "body": "constexpr Ability Impl<ABILITY_APPLE_ENLIGHTENMENT> = {\n    .onDefensiveMultiplier = Impl<ABILITY_FUR_COAT>.onDefensiveMultiplier,\n    .breakable = TRUE,\n    .magicGuard = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FUR_COAT",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "magicGuard",
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_FUR_COAT",
+     "en": "Fur Coat",
+     "handler": "onDefensiveMultiplier",
+     "line": 2324,
+     "def": [
+      "MUL(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "664",
+  "en": "Flame Bubble",
+  "zh": "火焰泡泡",
+  "shard_desc": "水泡+燃烧之魂",
+  "proto_const": "ABILITY_FLAME_BUBBLE",
+  "proto_en": "Flame Bubble",
+  "proto_idx": 664,
+  "proto_desc": "Water Bubble + Flaming Soul.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_FLAME_BUBBLE",
+    "line": 8388,
+    "body": "constexpr Ability Impl<ABILITY_FLAME_BUBBLE> = {\n    .onOffensiveMultiplier = Impl<ABILITY_WATER_BUBBLE>.onOffensiveMultiplier,\n    .onDefensiveMultiplier = Impl<ABILITY_WATER_BUBBLE>.onDefensiveMultiplier,\n    .onPriority = Impl<ABILITY_FLAMING_SOUL>.onPriority,\n    .onStatusImmune = Impl<ABILITY_WATER_BUBBLE>.onStatusImmune,\n    .breakable = TRUE,\n    .removesStatusOnImmunity = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_WATER_BUBBLE",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_WATER_BUBBLE",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_FLAMING_SOUL",
+      "handler": "onPriority"
+     },
+     {
+      "const": "ABILITY_WATER_BUBBLE",
+      "handler": "onStatusImmune"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_WATER_BUBBLE",
+     "en": "Water Bubble",
+     "handler": "onOffensiveMultiplier",
+     "line": 2710,
+     "def": [],
+     "off": [
+      "MUL(2.0)"
+     ],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_FLAMING_SOUL",
+     "en": "Flaming Soul",
+     "handler": "onPriority",
+     "line": 4535,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "671",
+  "en": "Bad Omen",
+  "zh": "凶兆",
+  "shard_desc": "对方造成伤害取最低随机数，受到击中要害伤害为1/4",
+  "proto_const": "ABILITY_BAD_OMEN",
+  "proto_en": "Bad Omen",
+  "proto_idx": 671,
+  "proto_desc": "Foes min roll. Takes 1/4 damage from crits.",
+  "proto_expanded": "Opponents deal minimum damage rolls when attacking, forcing 85% damage instead of 85-100% variance. Critical hits against this Pokemon deal only 25% of their normal damage instead of 150-200%.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_BAD_OMEN",
+    "line": 8463,
+    "body": "constexpr Ability Impl<ABILITY_BAD_OMEN> = {\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (isCrit) MUL(.25);\n        },\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "MUL(.25)"
+    ],
+    "off": [],
+    "deleg": [],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "678",
+  "en": "Fluffiest",
+  "zh": "极致蓬松",
+  "shard_desc": "受到接触类招式伤害减少为1/4，受到火属性招式伤害4倍",
+  "proto_const": "ABILITY_FLUFFIEST",
+  "proto_en": "Fluffiest",
+  "proto_idx": 678,
+  "proto_desc": "Quarters contact damage taken. 4x weak to Fire-type moves.",
+  "proto_expanded": "Reduces damage from contact moves by 75%. Fire-type moves to deal x4 damage to the user. Multiplicative with other forms of damage reduction.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_FLUFFIEST",
+    "line": 8573,
+    "body": "constexpr Ability Impl<ABILITY_FLUFFIEST> = {\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (moveType == TYPE_FIRE) RESISTANCE(2.0);\n            if (IsMoveMakingContact(move, attacker)) MUL(0.5);\n        },\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "MUL(0.5)",
+     "RESISTANCE(2.0)"
+    ],
+    "off": [],
+    "deleg": [],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "682",
+  "en": "Iron Giant",
+  "zh": "钢铁巨人",
+  "shard_desc": "耐热+重型坦克",
+  "proto_const": "ABILITY_IRON_GIANT",
+  "proto_en": "Iron Giant",
+  "proto_idx": 682,
+  "proto_desc": "Heatproof + Juggernaut.",
+  "proto_expanded": "Halves damage from Fire-type moves. Immune to burn damage and Attack drops from burn status. Boosts contact moves by adding 20% of the user's Defense stat to attack calculations. Prevents paralysis and immediately cures the status if inflicted on the user.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_IRON_GIANT",
+    "line": 8609,
+    "body": "constexpr Ability Impl<ABILITY_IRON_GIANT> = {\n    .onDefensiveMultiplier = Impl<ABILITY_HEATPROOF>.onDefensiveMultiplier,\n    .onChooseOffensiveStat = Impl<ABILITY_JUGGERNAUT>.onChooseOffensiveStat,\n    .onStatusImmune = +[](ON_STATUS_IMMUNE) -> int {\n        CHECK(status & CHECK_PARALYSIS)\n        return TRUE;\n    },\n    .breakable = TRUE,\n    .negatesBurnAtkDrop = TRUE,\n    .removesStatusOnImmunity = TRUE,\n    .noBurnDamage = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_HEATPROOF",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "handler": "onChooseOffensiveStat"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_HEATPROOF",
+     "en": "Heatproof",
+     "handler": "onDefensiveMultiplier",
+     "line": 1458,
+     "def": [
+      "RESISTANCE(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_JUGGERNAUT",
+     "en": "Juggernaut",
+     "handler": "onChooseOffensiveStat",
+     "line": 4181,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "726",
+  "en": "Sludgy Mix",
+  "zh": "泥浆混合物",
+  "shard_desc": "剧毒皮肤+庞克摇滚",
+  "proto_const": "ABILITY_SLUDGY_MIX",
+  "proto_en": "Sludgy Mix",
+  "proto_idx": 726,
+  "proto_desc": "Intoxicate + Punk Rock.",
+  "proto_expanded": "Converts all Normal-type moves into Poison-type moves and grants STAB for Poison-type moves. If the user is Poison-type their Poison moves have 10% toxic chance. Amplifies the user's sound moves by 30% and reduces incoming sound move damage by 50%. Damage reduction is multiplicative with other sources.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_SLUDGY_MIX",
+    "line": 9095,
+    "body": "constexpr Ability Impl<ABILITY_SLUDGY_MIX> = {\n    .onAttacker = Impl<ABILITY_INTOXICATE>.onAttacker,\n    .onOffensiveMultiplier = Impl<ABILITY_PUNK_ROCK>.onOffensiveMultiplier,\n    .onDefensiveMultiplier = Impl<ABILITY_PUNK_ROCK>.onDefensiveMultiplier,\n    .onMoveType = Impl<ABILITY_INTOXICATE>.onMoveType,\n    .onStab = Impl<ABILITY_INTOXICATE>.onStab,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_INTOXICATE",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_INTOXICATE",
+      "handler": "onMoveType"
+     },
+     {
+      "const": "ABILITY_INTOXICATE",
+      "handler": "onStab"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_INTOXICATE",
+     "en": "Intoxicate",
+     "handler": "onAttacker",
+     "line": 4214,
+     "def": [],
+     "off": [],
+     "ate": "TYPE_POISON",
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_PUNK_ROCK",
+     "en": "Punk Rock",
+     "handler": "onOffensiveMultiplier",
+     "line": 3293,
+     "def": [
+      "MUL(.5)"
+     ],
+     "off": [
+      "MUL(1.3)"
+     ],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "741",
+  "en": "Breakwater",
+  "zh": "破水而出",
+  "shard_desc": "悠游自如+慢出",
+  "proto_const": "ABILITY_BREAKWATER",
+  "proto_en": "Breakwater",
+  "proto_idx": 741,
+  "proto_desc": "Swift Swim + Stall.",
+  "proto_expanded": "Boosts Speed by 50% during rain. Reduces damage by 30% when moving before the opponent. Works when the user switches in mid-turn.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_BREAKWATER",
+    "line": 9261,
+    "body": "constexpr Ability Impl<ABILITY_BREAKWATER> = {\n    .onDefensiveMultiplier = Impl<ABILITY_STALL>.onDefensiveMultiplier,\n    .onStat = Impl<ABILITY_SWIFT_SWIM>.onStat,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_STALL",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_SWIFT_SWIM",
+      "handler": "onStat"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_STALL",
+     "en": "Stall",
+     "handler": "onDefensiveMultiplier",
+     "line": 1589,
+     "def": [
+      "MUL(.7)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_SWIFT_SWIM",
+     "en": "Swift Swim",
+     "handler": "onStat",
+     "line": 868,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "773",
+  "en": "Soothsayer",
+  "zh": "占卜大师",
+  "shard_desc": "5回合内所有招式对该精灵都算作效果不好",
+  "proto_const": "ABILITY_SOOTHSAYER",
+  "proto_en": "Soothsayer",
+  "proto_idx": 773,
+  "proto_desc": "Resists all attacks for three turns on first entry.",
+  "proto_expanded": "On entry, all attacks received by the user are considered not very effective for 3 turns. Deactivates when switching out.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_SOOTHSAYER",
+    "line": 9546,
+    "body": "constexpr Ability Impl<ABILITY_SOOTHSAYER> = {\n    .onEntry = +[](ON_ENTRY) -> int {\n        CHECK(!GetSingleUseAbilityCounter(battler, ability))\n        SetSingleUseAbilityCounter(battler, ability, TRUE);\n        SetAbilityState(battler, ability, 4);\n        return SwitchInAnnounce(B_MSG_SWITCHIN_SOOTHSAYER);\n    },\n    .onEndTurn = +[](ON_END_TURN) -> int {\n        int counter = GetAbilityState(battler, ability);\n        CHECK(counter)\n        SetAbilityState(battler, ability, counter - 1);\n        return FALSE;\n    },\n    .onAfterTypeEffectiveness =\n        +[](ON_AFTER_TYPE_EFFECTIVENESS) {\n            if (!GetAbilityState(target, ability)) return;\n            if (*mod >= UQ_4_12(1.0)) *mod = UQ_4_12(0.5);\n        },\n    .onAfterTypeEffectivenessFor = APPLY_ON_TARGET,\n    .breakable = TRUE,\n    .persistent = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [],
+    "afterEff": "+[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!GetAbilityState(target, ability)) return; if (*mod >= UQ_4_12(1.0)) *mod = UQ_4_12(0.5); },",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "779",
+  "en": "Blight Scale",
+  "zh": "枯萎鳞片",
+  "shard_desc": "多重鳞片+毒刺",
+  "proto_const": "ABILITY_BLIGHT_SCALE",
+  "proto_en": "Blight Scale",
+  "proto_idx": 779,
+  "proto_desc": "Multiscale + Poison Point",
+  "proto_expanded": "Reduces all incoming damage by 50% when the Pokemon is at max HP. Multiplicative with other sources of damage reduction. Has a 30% chance to inflict poison on contact moves, both when attacking and being attacked.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_BLIGHT_SCALE",
+    "line": 9636,
+    "body": "constexpr Ability Impl<ABILITY_BLIGHT_SCALE> = {\n    ON_EITHER_ABILITY(PoisonPoint),\n    .onDefensiveMultiplier = Impl<ABILITY_MULTISCALE>.onDefensiveMultiplier,\n    .breakable = TRUE,\n    .randomizerBanned = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_MULTISCALE",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_MULTISCALE",
+     "en": "Multiscale",
+     "handler": "onDefensiveMultiplier",
+     "line": 1945,
+     "def": [
+      "MUL(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "817",
+  "en": "Madness Enhancement",
+  "zh": "狂化增强",
+  "shard_desc": "在雾中陷入愤怒,愤怒时受到伤害减半.\n进入迷雾时陷入愤怒.当使用者愤怒时,所有受到的伤害降低50%,且不会受到愤怒伤害.",
+  "proto_const": "ABILITY_MADNESS_ENHANCEMENT",
+  "proto_en": "Madness Enhancement",
+  "proto_idx": 817,
+  "proto_desc": "Enrages in fog, reduces damage taken by 20% when enraged.",
+  "proto_expanded": "Becomes enraged when entering fog. All incoming damage is reduced by 20% when the user is enraged and it takes no damage from enrage.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_MADNESS_ENHANCEMENT",
+    "line": 10058,
+    "body": "constexpr Ability Impl<ABILITY_MADNESS_ENHANCEMENT> = {\n    .onEntry = +[](ON_ENTRY) -> int { return MadnessEnhancementHandler(battler, ABILITY_BS_PUSH_CURSOR_AND_CALLBACK); },\n    .onWeather = +[](ON_WEATHER) -> int { return MadnessEnhancementHandler(battler, ABILITY_BS_CALL); },\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (gBattleMons[battler].status2 & STATUS2_ENRAGED) {\n                MUL(.8);\n            }\n        },\n};",
+    "ate": null,
+    "def": [
+     "MUL(.8)"
+    ],
+    "off": [],
+    "deleg": [],
+    "afterEff": "",
+    "flags": []
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "829",
+  "en": "Stainless Steel",
+  "zh": "不锈钢",
+  "shard_desc": "坚壁 + 钢能力士.\n使用者无视大多数增加伤害或额外攻击次数的特性.将使用者的一般属性招式变为钢属性.如果使用者是钢属性,它抵抗幽灵和钢属性；否则,它获得钢属性的本系加成.",
+  "proto_const": "ABILITY_STAINLESS_STEEL",
+  "proto_en": "Stainless Steel",
+  "proto_idx": 829,
+  "proto_desc": "Fort Knox + Steelworker.",
+  "proto_expanded": "The user ignores most abilities that increase damage or hit additional times. Changes the user's Normal-type moves to Steel-type. If the user is Steel-type it resists Ghost and Steel, otherwise it gains Steel STAB.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_STAINLESS_STEEL",
+    "line": 10146,
+    "body": "constexpr Ability Impl<ABILITY_STAINLESS_STEEL> = {\n    ATE_ABILITY(TYPE_STEEL),\n    .onAfterTypeEffectiveness = Impl<ABILITY_STEELWORKER>.onAfterTypeEffectiveness,\n    .onAfterTypeEffectivenessFor = APPLY_ON_TARGET,\n    .breakable = TRUE,\n    .fortKnox = TRUE,\n};",
+    "ate": "TYPE_STEEL",
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_STEELWORKER",
+      "handler": "onAfterTypeEffectiveness"
+     }
+    ],
+    "afterEff": "Impl<ABILITY_STEELWORKER>.onAfterTypeEffectiveness,",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_STEELWORKER",
+     "en": "Steelworker",
+     "handler": "onAfterTypeEffectiveness",
+     "line": 2725,
+     "def": [],
+     "off": [],
+     "ate": "TYPE_STEEL",
+     "afterEff": "+[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; },"
+    }
+   ]
+  }
+ },
+ {
+  "id": "881",
+  "en": "Stonecutter",
+  "zh": "石匠",
+  "shard_desc": "化石 + 岩石属性招式无视特性.",
+  "proto_const": "ABILITY_STONECUTTER",
+  "proto_en": "Stonecutter",
+  "proto_idx": 881,
+  "proto_desc": "Fossilized + Rock moves ignore abilities.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_STONECUTTER",
+    "line": 10872,
+    "body": "constexpr Ability Impl<ABILITY_STONECUTTER> = {\n    .onOffensiveMultiplier = Impl<ABILITY_FOSSILIZED>.onOffensiveMultiplier,\n    .onDefensiveMultiplier = Impl<ABILITY_FOSSILIZED>.onDefensiveMultiplier,\n    .onMoldBreaker = +[](ON_MOLD_BREAKER) -> int {\n        gHitMarker |= HITMARKER_MOLD_BREAKER;\n        SetTypeBeforeUsingMove(move, battler);\n        u8 moveType;\n        GET_MOVE_TYPE(move, moveType)\n        if (gBattleMoves[move].type2) {\n            u16 typeEffectiveness;\n            CalculateMoveDamageAndEffectiveness(move, battler, gBattlerTarget, &moveType, &typeEffectiveness);\n        }\n        gHitMarker &= ~HITMARKER_MOLD_BREAKER;\n        return moveType == TYPE_ROCK;\n    },\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FOSSILIZED",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_FOSSILIZED",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_FOSSILIZED",
+     "en": "Fossilized",
+     "handler": "onOffensiveMultiplier",
+     "line": 3978,
+     "def": [
+      "RESISTANCE(.5)"
+     ],
+     "off": [
+      "MUL(1.2)"
+     ],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "900",
+  "en": "Sand Fiend",
+  "zh": "沙之魔",
+  "shard_desc": "沙之力 + 沙之守卫.",
+  "proto_const": "ABILITY_SAND_FIEND",
+  "proto_en": "Sand Fiend",
+  "proto_idx": 900,
+  "proto_desc": "Sand Force + Sand Guard.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_SAND_FIEND",
+    "line": 11082,
+    "body": "constexpr Ability Impl<ABILITY_SAND_FIEND> = {\n    .onImmune = Impl<ABILITY_SAND_GUARD>.onImmune,\n    .onDefensiveMultiplier = Impl<ABILITY_SAND_GUARD>.onDefensiveMultiplier,\n    .onStat = Impl<ABILITY_SAND_FORCE>.onStat,\n    .breakable = TRUE,\n    .sandImmune = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_SAND_GUARD",
+      "handler": "onImmune"
+     },
+     {
+      "const": "ABILITY_SAND_GUARD",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_SAND_FORCE",
+      "handler": "onStat"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_SAND_GUARD",
+     "en": "Sand Guard",
+     "handler": "onImmune",
+     "line": 6355,
+     "def": [
+      "MUL(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_SAND_FORCE",
+     "en": "Sand Force",
+     "handler": "onStat",
+     "line": 2224,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "925",
+  "en": "Rainbow Scales",
+  "zh": "彩虹鳞",
+  "shard_desc": "火鳞 + 品味彩虹.",
+  "proto_const": "ABILITY_RAINBOW_SCALES",
+  "proto_en": "Rainbow Scales",
+  "proto_idx": 926,
+  "proto_desc": "Fire Scales + Taste the Rainbow.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_RAINBOW_SCALES",
+    "line": 12065,
+    "body": "constexpr Ability Impl<ABILITY_RAINBOW_SCALES> = {\n    .onEntry = Impl<ABILITY_TASTE_THE_RAINBOW>.onEntry,\n    .onDefensiveMultiplier = Impl<ABILITY_FIRE_SCALES>.onDefensiveMultiplier,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_TASTE_THE_RAINBOW",
+      "handler": "onEntry"
+     },
+     {
+      "const": "ABILITY_FIRE_SCALES",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_TASTE_THE_RAINBOW",
+     "en": "Taste the Rainbow",
+     "handler": "onEntry",
+     "line": 12054,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_FIRE_SCALES",
+     "en": "Fire Scales",
+     "handler": "onDefensiveMultiplier",
+     "line": 7404,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "932",
+  "en": "Drakelp Head",
+  "zh": "龙首藻",
+  "shard_desc": "减弱受到的第一次攻击,并降低对手的攻击.",
+  "proto_const": "ABILITY_DRAKELP_HEAD",
+  "proto_en": "Drakelp Head",
+  "proto_idx": 989,
+  "proto_desc": "First hit taken deals 35% less damage, then lowers Atk by -1.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_DRAKELP_HEAD",
+    "line": 12213,
+    "body": "constexpr Ability Impl<ABILITY_DRAKELP_HEAD> = {\n    .onEntry = +[](ON_ENTRY) -> int { return DrakelpHeadReformHandler(battler, ability, ABILITY_BS_PUSH_CURSOR_AND_CALLBACK); },\n    .onTerrain = +[](ON_TERRAIN) -> int { return DrakelpHeadReformHandler(battler, ability, ABILITY_BS_CALL); },\n    .onDefender = +[](ON_DEFENDER) -> int {\n        CHECK(DidMoveHit())\n        CHECK_NOT(GetSingleUseAbilityCounter(battler, ability))\n        SetSingleUseAbilityCounter(battler, ability, TRUE);\n\n        int canLowerStat = ShouldApplyOnHitEffect(attacker) && StatLowerableOrMirrorArmor(attacker, STAT_ATK);\n\n        CHECK(canLowerStat || IsBattlerAlive(battler))\n\n        if (canLowerStat) AbilityStatusEffectSafe(MOVE_EFFECT_ATK_MINUS_1, battler, attacker);\n        BattleScriptCall(BattleScript_DrakelpHead);\n\n        return TRUE;\n    },\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (!GetSingleUseAbilityCounter(battler, ability)) MUL(.65);\n        },\n    .persistent = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "MUL(.65)"
+    ],
+    "off": [],
+    "deleg": [],
+    "afterEff": "",
+    "flags": []
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "936",
+  "en": "Sumo Guard",
+  "zh": "相扑守卫",
+  "shard_desc": "主宰 + 厚脂肪.",
+  "proto_const": "ABILITY_SUMO_GUARD",
+  "proto_en": "Sumo Guard",
+  "proto_idx": 936,
+  "proto_desc": "Juggernaut + Thick Fat.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_SUMO_GUARD",
+    "line": 11654,
+    "body": "constexpr Ability Impl<ABILITY_SUMO_GUARD> = {\n    .onDefensiveMultiplier = Impl<ABILITY_THICK_FAT>.onDefensiveMultiplier,\n    .onChooseOffensiveStat = Impl<ABILITY_JUGGERNAUT>.onChooseOffensiveStat,\n    .onStatusImmune = Impl<ABILITY_JUGGERNAUT>.onStatusImmune,\n    .breakable = TRUE,\n    .removesStatusOnImmunity = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_THICK_FAT",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "handler": "onChooseOffensiveStat"
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "handler": "onStatusImmune"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_THICK_FAT",
+     "en": "Thick Fat",
+     "handler": "onDefensiveMultiplier",
+     "line": 1081,
+     "def": [
+      "RESISTANCE(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_JUGGERNAUT",
+     "en": "Juggernaut",
+     "handler": "onChooseOffensiveStat",
+     "line": 4181,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "948",
+  "en": "Massive Pelt",
+  "zh": "厚重毛皮",
+  "shard_desc": "卷发 + 毛茸茸.",
+  "proto_const": "ABILITY_MASSIVE_PELT",
+  "proto_en": "Massive Pelt",
+  "proto_idx": 946,
+  "proto_desc": "Tangling Hair + Fluffy.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_MASSIVE_PELT",
+    "line": 11501,
+    "body": "constexpr Ability Impl<ABILITY_MASSIVE_PELT> = {\n    .onDefender = Impl<ABILITY_TANGLING_HAIR>.onDefender,\n    .onDefensiveMultiplier = Impl<ABILITY_FLUFFY>.onDefensiveMultiplier,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_TANGLING_HAIR",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_FLUFFY",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_TANGLING_HAIR",
+     "en": "Tangling Hair",
+     "handler": "onDefender",
+     "line": 3032,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_FLUFFY",
+     "en": "Fluffy",
+     "handler": "onDefensiveMultiplier",
+     "line": 3004,
+     "def": [
+      "MUL(0.5)",
+      "RESISTANCE(2.0)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "954",
+  "en": "Tummyache",
+  "zh": "胃痛",
+  "shard_desc": "厚脂肪 + 腐蚀.",
+  "proto_const": "ABILITY_TUMMYACHE",
+  "proto_en": "Tummyache",
+  "proto_idx": 952,
+  "proto_desc": "Thick Fat + Corrosion.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_TUMMYACHE",
+    "line": 11646,
+    "body": "constexpr Ability Impl<ABILITY_TUMMYACHE> = {\n    .onDefensiveMultiplier = Impl<ABILITY_THICK_FAT>.onDefensiveMultiplier,\n    .onTypeEffectiveness = Impl<ABILITY_CORROSION>.onTypeEffectiveness,\n    .onCanStatusType = Impl<ABILITY_CORROSION>.onCanStatusType,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_THICK_FAT",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_CORROSION",
+      "handler": "onTypeEffectiveness"
+     },
+     {
+      "const": "ABILITY_CORROSION",
+      "handler": "onCanStatusType"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_THICK_FAT",
+     "en": "Thick Fat",
+     "handler": "onDefensiveMultiplier",
+     "line": 1081,
+     "def": [
+      "RESISTANCE(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_CORROSION",
+     "en": "Corrosion",
+     "handler": "onTypeEffectiveness",
+     "line": 2931,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "962",
+  "en": "Angelic Wings",
+  "zh": "天使之翼",
+  "shard_desc": "棱镜鳞片 + 巨翼.",
+  "proto_const": "ABILITY_ANGELIC_WINGS",
+  "proto_en": "Angelic Wings",
+  "proto_idx": 961,
+  "proto_desc": "Prism Scales + Imposing Wings.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_ANGELIC_WINGS",
+    "line": 11602,
+    "body": "constexpr Ability Impl<ABILITY_ANGELIC_WINGS> = {\n    .onOffensiveMultiplier = Impl<ABILITY_HUGE_WINGS>.onOffensiveMultiplier,\n    .onDefensiveMultiplier = Impl<ABILITY_PRISM_SCALES>.onDefensiveMultiplier,\n    .breakable = TRUE,\n    .levitate = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_HUGE_WINGS",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PRISM_SCALES",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_HUGE_WINGS",
+     "en": "Imposing Wings",
+     "handler": "onOffensiveMultiplier",
+     "line": 8671,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_PRISM_SCALES",
+     "en": "Prism Scales",
+     "handler": "onDefensiveMultiplier",
+     "line": 3670,
+     "def": [
+      "MUL(.7)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "968",
+  "en": "Toxic Shell",
+  "zh": "毒壳",
+  "shard_desc": "硬壳盔甲 + 毒刺.",
+  "proto_const": "ABILITY_TOXIC_SHELL",
+  "proto_en": "Toxic Shell",
+  "proto_idx": 966,
+  "proto_desc": "Shell Armor + Poison Point.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_TOXIC_SHELL",
+    "line": 11678,
+    "body": "constexpr Ability Impl<ABILITY_TOXIC_SHELL> = {\n    .onAttacker = Impl<ABILITY_POISON_POINT>.onAttacker,\n    .onDefender = Impl<ABILITY_POISON_POINT>.onDefender,\n    .onDefensiveMultiplier = Impl<ABILITY_SHELL_ARMOR>.onDefensiveMultiplier,\n    .onCrit = Impl<ABILITY_SHELL_ARMOR>.onCrit,\n    .onCritFor = Impl<ABILITY_SHELL_ARMOR>.onCritFor,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_POISON_POINT",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_POISON_POINT",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_SHELL_ARMOR",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_SHELL_ARMOR",
+      "handler": "onCrit"
+     },
+     {
+      "const": "ABILITY_SHELL_ARMOR",
+      "handler": "onCritFor"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_POISON_POINT",
+     "en": "Poison Point",
+     "handler": "onAttacker",
+     "line": 969,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_SHELL_ARMOR",
+     "en": "Shell Armor",
+     "handler": "onDefensiveMultiplier",
+     "line": 1352,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "970",
+  "en": "Voltron",
+  "zh": "战神金刚",
+  "shard_desc": "金属化 + 战斗盔甲.",
+  "proto_const": "ABILITY_VOLTRON",
+  "proto_en": "Voltron",
+  "proto_idx": 968,
+  "proto_desc": "Metallic + Battle Armor.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_VOLTRON",
+    "line": 11779,
+    "body": "constexpr Ability Impl<ABILITY_VOLTRON> = {\n    .onEntry = Impl<ABILITY_METALLIC>.onEntry,\n    .onDefensiveMultiplier = Impl<ABILITY_BATTLE_ARMOR>.onDefensiveMultiplier,\n    .onCrit = Impl<ABILITY_BATTLE_ARMOR>.onCrit,\n    .onCritFor = Impl<ABILITY_BATTLE_ARMOR>.onCritFor,\n    .breakable = TRUE,\n    .addsType = TYPE_STEEL,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_METALLIC",
+      "handler": "onEntry"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCrit"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCritFor"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_METALLIC",
+     "en": "Metallic",
+     "handler": "onEntry",
+     "line": 4149,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_BATTLE_ARMOR",
+     "en": "Battle Armor",
+     "handler": "onDefensiveMultiplier",
+     "line": 524,
+     "def": [
+      "MUL(.8)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "997",
+  "en": "Shattered Armor",
+  "zh": "破碎铠甲",
+  "shard_desc": "战斗盔甲 + 废料场.",
+  "proto_const": "ABILITY_SHATTERED_ARMOR",
+  "proto_en": "Shattered Armor",
+  "proto_idx": 997,
+  "proto_desc": "Battle Armor + Scrapyard.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_SHATTERED_ARMOR",
+    "line": 12442,
+    "body": "constexpr Ability Impl<ABILITY_SHATTERED_ARMOR> = {\n    .onDefender = Impl<ABILITY_SCRAPYARD>.onDefender,\n    .onDefensiveMultiplier = Impl<ABILITY_BATTLE_ARMOR>.onDefensiveMultiplier,\n    .onCrit = Impl<ABILITY_BATTLE_ARMOR>.onCrit,\n    .onCritFor = Impl<ABILITY_BATTLE_ARMOR>.onCritFor,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_SCRAPYARD",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCrit"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCritFor"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_SCRAPYARD",
+     "en": "Scrapyard",
+     "handler": "onDefender",
+     "line": 5056,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_BATTLE_ARMOR",
+     "en": "Battle Armor",
+     "handler": "onDefensiveMultiplier",
+     "line": 524,
+     "def": [
+      "MUL(.8)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "1004",
+  "en": "Feathercoat",
+  "zh": "羽衣",
+  "shard_desc": "受到的所有攻击伤害降低10%.被抵抗时降低20%.",
+  "proto_const": "ABILITY_FEATHERCOAT",
+  "proto_en": "Feathercoat",
+  "proto_idx": 1004,
+  "proto_desc": "Takes 15% less damage from attacks, 30% if resisted.",
+  "proto_expanded": "Takes 15% less damage from all attacks. Takes 30% less damage from resisted attacks.",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_FEATHERCOAT",
+    "line": 12498,
+    "body": "constexpr Ability Impl<ABILITY_FEATHERCOAT> = {\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (typeEffectivenessModifier < UQ_4_12(1))\n                MUL(.7);\n            else\n                MUL(.85);\n        },\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "MUL(.7)",
+     "MUL(.85)"
+    ],
+    "off": [],
+    "deleg": [],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "1010",
+  "en": "Thermal Entropy",
+  "zh": "热熵",
+  "shard_desc": "热交换 + 耐热.",
+  "proto_const": "ABILITY_THERMAL_ENTROPY",
+  "proto_en": "Thermal Entropy",
+  "proto_idx": 1010,
+  "proto_desc": "Thermal Exchange + Heatproof.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_THERMAL_ENTROPY",
+    "line": 12562,
+    "body": "constexpr Ability Impl<ABILITY_THERMAL_ENTROPY> = {\n    .onDefender = Impl<ABILITY_THERMAL_EXCHANGE>.onDefender,\n    .onDefensiveMultiplier = Impl<ABILITY_HEATPROOF>.onDefensiveMultiplier,\n    .onStatusImmune = Impl<ABILITY_THERMAL_EXCHANGE>.onStatusImmune,\n    .breakable = TRUE,\n    .negatesBurnAtkDrop = TRUE,\n    .removesStatusOnImmunity = TRUE,\n    .noBurnDamage = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_THERMAL_EXCHANGE",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_HEATPROOF",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_THERMAL_EXCHANGE",
+      "handler": "onStatusImmune"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_THERMAL_EXCHANGE",
+     "en": "Thermal Exchange",
+     "handler": "onDefender",
+     "line": 7447,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_HEATPROOF",
+     "en": "Heatproof",
+     "handler": "onDefensiveMultiplier",
+     "line": 1458,
+     "def": [
+      "RESISTANCE(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "1032",
+  "en": "Smoldering Wood",
+  "zh": "",
+  "shard_desc": "Raw Wood + Flame Body.",
+  "proto_const": "ABILITY_SMOLDERING_WOOD",
+  "proto_en": "Smoldering Wood",
+  "proto_idx": 1032,
+  "proto_desc": "Raw Wood + Flame Body.",
+  "proto_expanded": "",
+  "en_match": true,
+  "cc": {
+   "own": {
+    "const": "ABILITY_SMOLDERING_WOOD",
+    "line": 4375,
+    "body": "constexpr Ability Impl<ABILITY_SMOLDERING_WOOD> = {\n    .onAttacker = Impl<ABILITY_FLAME_BODY>.onAttacker,\n    .onDefender = Impl<ABILITY_FLAME_BODY>.onDefender,\n    .onOffensiveMultiplier = Impl<ABILITY_RAW_WOOD>.onOffensiveMultiplier,\n    .onDefensiveMultiplier = Impl<ABILITY_RAW_WOOD>.onDefensiveMultiplier,\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FLAME_BODY",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_FLAME_BODY",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_RAW_WOOD",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_RAW_WOOD",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_FLAME_BODY",
+     "en": "Flame Body",
+     "handler": "onAttacker",
+     "line": 1108,
+     "def": [],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_RAW_WOOD",
+     "en": "Raw Wood",
+     "handler": "onOffensiveMultiplier",
+     "line": 4362,
+     "def": [
+      "RESISTANCE(.5)"
+     ],
+     "off": [
+      "MUL(1.2)"
+     ],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ },
+ {
+  "id": "1048",
+  "en": null,
+  "zh": "<缺失>",
+  "shard_desc": "",
+  "proto_const": "ABILITY_INSECTEATER",
+  "proto_en": "Insect Eater",
+  "proto_idx": 1048,
+  "proto_desc": "",
+  "proto_expanded": "",
+  "en_match": false,
+  "cc": {
+   "own": {
+    "const": "ABILITY_INSECTEATER",
+    "line": 4111,
+    "body": "constexpr Ability Impl<ABILITY_INSECTEATER> = {\n    .onOffensiveMultiplier =\n        +[](ON_OFFENSIVE_MULTIPLIER) {\n            if (IS_BATTLER_OF_TYPE(target, TYPE_BUG)) RESISTANCE(1.5);\n        },\n    .onDefensiveMultiplier =\n        +[](ON_DEFENSIVE_MULTIPLIER) {\n            if (IS_BATTLER_OF_TYPE(attacker, TYPE_BUG)) MUL(.5);\n        },\n    .breakable = TRUE,\n};",
+    "ate": null,
+    "def": [
+     "MUL(.5)"
+    ],
+    "off": [
+     "RESISTANCE(1.5)"
+    ],
+    "deleg": [],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": []
+  }
+ },
+ {
+  "id": "1053",
+  "en": null,
+  "zh": "<缺失>",
+  "shard_desc": "",
+  "proto_const": "ABILITY_THERMALDWELLER",
+  "proto_en": "Thermal Dweller",
+  "proto_idx": 1053,
+  "proto_desc": "",
+  "proto_expanded": "",
+  "en_match": false,
+  "cc": {
+   "own": {
+    "const": "ABILITY_THERMALDWELLER",
+    "line": 12873,
+    "body": "constexpr Ability Impl<ABILITY_THERMALDWELLER> = {\n    .onAttacker = Impl<ABILITY_IMMOLATE>.onAttacker,\n    .onDefensiveMultiplier = Impl<ABILITY_HEATPROOF>.onDefensiveMultiplier,\n    .onMoveType = Impl<ABILITY_IMMOLATE>.onMoveType,\n    .onStab = Impl<ABILITY_IMMOLATE>.onStab,\n    .breakable = TRUE,\n    .negatesBurnAtkDrop = TRUE,\n    .removesStatusOnImmunity = TRUE,\n    .noBurnDamage = TRUE,\n};",
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_IMMOLATE",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_HEATPROOF",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_IMMOLATE",
+      "handler": "onMoveType"
+     },
+     {
+      "const": "ABILITY_IMMOLATE",
+      "handler": "onStab"
+     }
+    ],
+    "afterEff": "",
+    "flags": [
+     "breakable"
+    ]
+   },
+   "bases": [
+    {
+     "const": "ABILITY_IMMOLATE",
+     "en": "Immolate",
+     "handler": "onAttacker",
+     "line": 3731,
+     "def": [],
+     "off": [],
+     "ate": "TYPE_FIRE",
+     "afterEff": ""
+    },
+    {
+     "const": "ABILITY_HEATPROOF",
+     "en": "Heatproof",
+     "handler": "onDefensiveMultiplier",
+     "line": 1458,
+     "def": [
+      "RESISTANCE(.5)"
+     ],
+     "off": [],
+     "ate": null,
+     "afterEff": ""
+    }
+   ]
+  }
+ }
+]

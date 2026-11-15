@@ -72,7 +72,7 @@ scan(allTeam, 'six'); scan([], 'empty');
 
 // ⑤ 快照逐条比对（v4.386 起按物种 id 分组多重集配对；改名物种豁免 name 键错位，alloc/nat 仍比对）
 const snap = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4385_base_snapshot.json'), 'utf8'));
-const RENAME_IDS = { '636': 1, '871': 1, '2290': 1, '1729': 1 };
+const RENAME_IDS = { '636': 1, '871': 1, '2290': 1, '1729': 1, '1643': 1, '1644': 1, '1645': 1, '1646': 1, '1647': 1 };
 function diffAgainst(base, now, tag) {
   // 改名物种整组豁免（name 键变化属预期）；其余按原 name 键多重集配对（v4.385 口径）。
   const baseG = new Map(), nowG = new Map();

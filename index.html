@@ -2581,6 +2581,20 @@ function anNatPos(nn){
   }catch(e){}
   return false;
 }
+/* v4.387 问题2：性格候选冲突归一（复用 v4.386 D-6 同一套规则），供详情 D-6 / 成员摘要 / 详情卡三处渲染共用；引擎 b.nat 数组不改。 */
+function keptNatList(nat){
+  try{
+    var list=nat||[],kept=[],plus={},neg={};
+    list.forEach(function(n){
+      var nm=String((n&&n[0])||""),e=(typeof NATURES!=="undefined"&&NATURES[nm])||null;
+      var p=e?String(e[0]||""):"",d=e?String(e[1]||""):"";
+      if(!kept.length){kept.push(n);if(p)plus[p.slice(1)]=1;if(d)neg[d.slice(1)]=1;return;}
+      var clash=(p&&neg[p.slice(1)])||(d&&plus[d.slice(1)]);
+      if(!clash){kept.push(n);if(p)plus[p.slice(1)]=1;if(d)neg[d.slice(1)]=1;}
+    });
+    return kept;
+  }catch(eKN){return nat||[];}
+}
 function anBuildOf(s,team){
   var bs=[];try{bs=deriveBuilds(s,team||null)||[]}catch(e){bs=[]}
   return bs.length?bs[0]:null;
@@ -3690,15 +3704,8 @@ function anDetailHtml(s,bd,R){
   /* D-6 性格 + 原因 */
   h+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格 + 原因</div><div>'+
     (function(){
-      var _v386nat=bd.nat||[],_v386kept=[],_v386plus={},_v386neg={};
-      _v386nat.forEach(function(n){
-        var _nm=String((n&&n[0])||''),_e=(typeof NATURES!=='undefined'&&NATURES[_nm])||null;
-        var _p=_e?String(_e[0]||''):'',_d=_e?String(_e[1]||''):'';
-        if(!_v386kept.length){_v386kept.push(n);if(_p)_v386plus[_p.slice(1)]=1;if(_d)_v386neg[_d.slice(1)]=1;return;}
-        var _clash=(_p&&_v386neg[_p.slice(1)])||(_d&&_v386plus[_d.slice(1)]);
-        if(!_clash){_v386kept.push(n);if(_p)_v386plus[_p.slice(1)]=1;if(_d)_v386neg[_d.slice(1)]=1;}
-      });
-      return _v386kept.length?_v386kept.map(function(n){return '<span class="abi">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>'}).join('　'):'<span class="dim">—</span>';
+      var _v387kept=keptNatList(bd.nat);
+      return _v387kept.length?_v387kept.map(function(n){return '<span class="abi">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>'}).join('　'):'<span class="dim">—</span>';
     })()+'</div></div>';
   /* D-3 道具 + 玩家向说明（itemNote） */
   h+='<div class="fld"><div class="fhd"><span class="fno">6</span>道具（主推 + 备选）</div><div>';
@@ -17810,40 +17817,8 @@ function _deriveBuildsCore(s,team){
   try{
     var _v383boostIds=FUNC_MV.boost.concat([504,526]);
     var _v383pivIds=[369,521];
-    var _v383ov={'317':'文案「效果绝佳 −25%」/ 源码 MUL(.65) 实测 −35%（效果绝佳时）',
-      '582':'文案「效果绝佳 −25%」/ 源码 MUL(.65) 实测 −35%（效果绝佳时）',
-      '200':'文案仅写钢招威力 1.3 倍；源码防守侧：自身含钢属性时恶/幽灵招 ×0.5',
-      '442':'文案仅写进攻 +50%；源码防守侧：受妖精属性招 ×0.5',
-      '440':'源码防守侧 MUL(.5)：受到所有招式伤害 ×0.5（复合：变色+变换自如+毛皮大衣+冰鳞粉）',
-      '499':'源码防守侧：效果绝佳招 MUL(.65)（−35%）',
-      '524':'源码防守侧：声音类招 MUL(.5)（×0.5）',
-      '613':'源码防守侧：物理招 MUL(.5)（×0.5）',
-      '664':'源码防守侧：火招 RESISTANCE(.5)（×0.5）',
-      '671':'源码防守侧：击中要害时 MUL(.25)（×1/4）',
-      '678':'源码防守侧：接触招 MUL(.5)、火招 RESISTANCE(2.0)（×2 弱点）；文案「接触1/4、火4倍」与源码不符',
-      '682':'源码防守侧：火招 RESISTANCE(.5)（×0.5）',
-      '726':'源码防守侧：声音类招 MUL(.5)（×0.5）',
-      '741':'源码防守侧：本回合未出手前 MUL(.7)（−30%）',
-      '773':'源码防守侧：特性生效期间效果绝佳招 ×0.5',
-      '779':'源码防守侧：HP 全满时 MUL(.5)（掉血后失效）',
-      '817':'源码防守侧：愤怒状态 MUL(.8)（−20%）；文案「减半/降低50%」与源码不符',
-      '829':'源码防守侧：自身含钢属性时恶/幽灵招 ×0.5',
-      '881':'源码防守侧：岩石招 RESISTANCE(.5)（×0.5）',
-      '900':'源码防守侧：沙暴下特殊招 MUL(.5)（×0.5）',
-      '925':'源码防守侧：特殊招 MUL(.5)（×0.5）',
-      '932':'源码防守侧：第一次受到攻击 MUL(.65)（−35%，一次性）',
-      '936':'源码防守侧：火/冰招 RESISTANCE(.5)（×0.5）',
-      '948':'源码防守侧：接触招 MUL(.5)、火招 RESISTANCE(2.0)（×2 弱点）',
-      '954':'源码防守侧：火/冰招 RESISTANCE(.5)（×0.5）',
-      '962':'源码防守侧：特殊招 MUL(.7)（−30%）',
-      '968':'源码防守侧：MUL(.8)（−20%）+ 免疫击中要害',
-      '970':'源码防守侧：MUL(.8)（−20%）+ 免疫击中要害',
-      '997':'源码防守侧：MUL(.8)（−20%）+ 免疫击中要害',
-      '1004':'源码防守侧：被抵抗招 MUL(.7)（−30%）、其余 MUL(.85)（−15%）；文案「10%/20%」条件与幅度均不符',
-      '1010':'源码防守侧：火招 RESISTANCE(.5)（×0.5）',
-      '1032':'源码防守侧：草招 RESISTANCE(.5)（×0.5）',
-      '1048':'源码防守侧：攻击方为虫属性时 MUL(.5)（×0.5）',
-      '1053':'源码防守侧：火招 RESISTANCE(.5)（×0.5）'};
+      /* v4.383 曾按旧文案并列注记，v4.387 起图鉴与卡面统一按源码幅度+生效条件。 */
+  var _v383ov={'317':"效果绝佳攻击受伤 ×0.65（−35%，效果绝佳时）",'582':"委托永冻层：效果绝佳攻击受伤 ×0.65（−35%）",'200':"一般招变钢并获钢本系；自身钢属性时恶/幽灵 ×0.5；ER 无钢招威力倍率",'442':"对妖精进攻 ×1.5；受妖精攻击 ×0.5",'440':"受伤 ×0.5（全招；复合变色+变换自如+毛皮大衣+冰鳞粉）",'499':"效果绝佳招受伤 ×0.65（−35%）；命中提升",'524':"声音招进攻 ×1.3、防守声音招 ×0.5",'613':"物理受伤 ×0.5；魔法防守",'664':"水招 ×2.0；火受伤 ×0.5；先制",'671':"对手攻击取最低随机数 ×0.85；暴击受伤 ×0.25（1/4）",'678':"接触招 ×0.5；火招 ×2.0（弱点；resistance 半程被 ignored 丢弃，只结算一次）",'682':"火/冰受伤 ×0.5；麻痹免疫",'726':"一般招变毒并获毒本系；声音招进攻 ×1.3、防守 ×0.5",'741':"未出手前受伤 ×0.7（−30%）；雨天提速",'773':"计数 4（回合末递减）；mod≥1.0 时受伤 ×0.5",'779':"满血受伤 ×0.5；接触中毒",'817':"愤怒状态受伤 ×0.8（−20%）；非愤怒无减伤",'829':"无视增伤/连击特性；一般招变钢+钢本系；自身钢时恶/幽灵 ×0.5",'881':"岩系进攻 ×1.2、防守 ×0.5；岩石招破特性",'900':"沙暴中受伤 ×0.5；沙暴增伤；沙暴免疫",'925':"特殊招受伤 ×0.5",'932':"首次受击 ×0.65（−35%，一次性）；降对手攻",'936':"火/冰受伤 ×0.5",'948':"接触招 ×0.5；火招 ×2.0（弱点；resistance 半程被 ignored 丢弃）",'954':"火/冰受伤 ×0.5；毒/钢可中毒",'962':"受伤 ×0.7（−30%）；飘浮",'968':"仅暴击免疫，无伤害倍率；接触中毒",'970':"受伤 ×0.8（−20%）；加钢属性；暴击免疫",'997':"受伤 ×0.8（−20%）；暴击免疫",'1004':"被抵抗招 ×0.7（−30%）；其余 ×0.85（−15%）",'1010':"火/冰受伤 ×0.5",'1032':"进攻 ×1.2、防守 ×0.5",'1048':"对虫进攻 ×1.5；受虫攻击 ×0.5（分片未登记，台账）",'1053':"火/冰受伤 ×0.5（分片未登记，台账）"};
     out.forEach(function(b){
       if(!b||!b.name)return;
       var _v383mv=(b.mv.main||[]).map(function(x){return +x.id}).concat((b.mv.func||[]).map(function(x){return +x.id}));
@@ -18107,6 +18082,74 @@ function _deriveBuildsCore(s,team){
       }
     }
   }catch(eV4386){eV4386.name}
+  /* v4.387 C：洛托姆五形态(1643-1647)睡觉组 kit={156,164,315,437}（2 伤害招、进攻 EV252）按招组落主力输出压制；
+     钉子组不动；全库其余候选一条不改。只改 name，EV/性格/招组/道具/特性不动。自包作用域。 */
+  try{
+    var _v387ROT={'1643':1,'1644':1,'1645':1,'1646':1,'1647':1};
+    var _v387KIT=[156,164,315,437];
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      if(!_v387ROT[String(s.id)])return;
+      var ids=(b.mv.main||[]).concat(b.mv.func||[]).map(function(x){return +x.id});
+      var kitOk=_v387KIT.every(function(id){return ids.indexOf(id)>=0})&&ids.length===4;
+      if(kitOk&&String(b.name)==='属性免疫联防位'){b._v387OldName=String(b.name);b.name='主力输出压制';b._v387Renamed='主力输出压制';}
+    });
+  }catch(eV4387){eV4387.name}
+  /* v4.387 D：睡觉 156 新判据（独立招位判据，不与披带/顺风速度档混用）。
+     允许 = bulk≥300，或（bulk≥270 且 min(Def,SpD)≥90 且无 4 倍弱点）。
+     落地集合 = 不满足判据且未登记持有：有可学严格自回血 → 换真回复；否则补盲伤害招（不重复、评分最高）；无合格补盲 → 守住182。
+     持有不动：受队消耗·bulk<300·除睡觉外无真回复（26 物种）；食梦依赖睡眠来源（5 物种）。回收一次流照常落地，why 注明回复由回收利用278承担。自包作用域。 */
+  try{
+    var _v387DREC={105:1,234:1,235:1,236:1,355:1,303:1,135:1,208:1,631:1,275:1,392:1,622:1,744:1,915:1,202:1,409:1,532:1,72:1,71:1,837:1,73:1};
+    var _v387DREC_PREF=[105,355,234,235,236,303,135,208,631,275,392,622,744,915,202,409,532,72,71,837,73];
+    var _v387DREAM={'96':1,'517':1,'518':1,'574':1,'575':1};
+    var _v387STALL={'95':1,'221':1,'246':1,'247':1,'304':1,'305':1,'410':1,'443':1,'444':1,'445':1,'473':1,'551':1,'552':1,'553':1,'696':1,'697':1,'698':1,'699':1,'776':1,'782':1,'878':1,'879':1,'880':1,'882':1,'1038':1,'1894':1};
+    var _v387DT=ERDATA.types||[],_v387DM=ERDATA.matchup||{};
+    function _v387Dec(v){return v===0?0:(v===0.5||v===3?0.5:(v===2?2:1));}
+    function _v3874x(s){var ds=[...new Set([s.t1,s.t2].filter(function(x){return x&&x!=='-';}).map(function(x){return _v387DT.indexOf(x);}).filter(function(x){return x>=0;}))];var res=[];for(var a=0;a<_v387DT.length;a++){var eff=1;ds.forEach(function(d){var row=_v387DM[d];eff*=_v387Dec(row&&row[a]!=null?row[a]:1);});if(eff===4)res.push(_v387DT[a]);}return res;}
+    function _v387Allow(s){var b=+s.base[0]+(+s.base[2])+(+s.base[4]),def=+s.base[2],spd=+s.base[4];return b>=300||(b>=270&&Math.min(def,spd)>=90&&_v3874x(s).length===0);}
+    function _v387Ids(b){return (b.mv.main||[]).concat(b.mv.func||[]).map(function(x){return +x.id;});}
+    out.forEach(function(b){
+      if(!b||!b.mv)return;
+      var ids=_v387Ids(b);
+      if(ids.indexOf(156)<0)return;
+      if(_v387Allow(s))return;
+      var main=b.mv.main||[],func=b.mv.func||[],slotArr=null,slotIdx=-1;
+      var mi=main.findIndex(function(x){return +x.id===156;});
+      if(mi>=0){slotArr=main;slotIdx=mi;}else{var fi=func.findIndex(function(x){return +x.id===156;});if(fi>=0){slotArr=func;slotIdx=fi;}}
+      if(!slotArr)return;
+      var slot=slotArr[slotIdx];
+      var isDream=_v387DREAM[String(s.id)]&&ids.indexOf(138)>=0;
+      var isStall=_v387STALL[String(s.id)]&&/受队消耗/.test(String(b.name||''));
+      if(isDream){slot.why=(slot.why||[]).concat(['食梦依赖睡眠来源，睡觉保留（本版不连食梦一并处理）']);b._v387SleepKeep='dream';return;}
+      if(isStall){slot.why=(slot.why||[]).concat(['睡觉为本流派唯一回复来源，替换即失去 受队消耗 背书，本版保留']);b._v387SleepKeep='stall';return;}
+      var kit={};ids.forEach(function(id){kit[''+id]=1;});
+      var learn=learnOf(s)||[];
+      var heal=null;
+      for(var pi=0;pi<_v387DREC_PREF.length;pi++){var hid=_v387DREC_PREF[pi];if(learn.indexOf(hid)>-1&&!kit[''+hid]){heal=hid;break;}}
+      var recycle=ids.indexOf(278)>=0;
+      var recNote=recycle?['回复由回收利用278承担']:[];
+      if(heal!=null){
+        var hm=MV[heal];var hvamp=hm&&hm[4]!=='变化';
+        slotArr[slotIdx]={id:heal,kind:hvamp?hm[4]:'rec',tag:hvamp?'吸血':'回复',why:(['可学自回血 '+hm[1]+' 替代睡觉156：站场续航（'+(hvamp?('威力'+(hm[5]||0)):'变化招')+'，命中'+(hm[6]||0)+'）']).concat(recNote)};
+        b._v387SleepSwap='sleep→'+heal+' '+hm[1];return;
+      }
+      var effSide=String(b.side);
+      if(!{'物理':1,'特殊':1,'双刀':1}[effSide]){var ph=0,sp=0;ids.forEach(function(id){var m=MV[id];if(!m)return;if(m[4]==='物理')ph++;else if(m[4]==='特殊')sp++;});effSide=ph>=sp?'物理':'特殊';}
+      var pool=[];try{pool=_pickAttacksCore(s,effSide,4,String(b.roleTag||'输出'))||[];}catch(eP){pool=[];}
+      var cand=pool.filter(function(c){return c&&!kit[''+c.id];});
+      cand.sort(function(a,c2){return c2.score-a.score;});
+      var cover=cand.filter(function(c){return !c.stab;});
+      var pick=cover[0]||cand[0]||null;
+      if(pick){
+        slotArr[slotIdx]={id:pick.id,kind:pick.stab?'attack':'cover',tag:pick.stab?'本系':'补盲',why:(pick.why||[]).slice().concat(recNote)};
+        b._v387SleepSwap='sleep→'+pick.id+' '+MV[pick.id][1];
+      }else{
+        slotArr[slotIdx]={id:182,kind:'变化',tag:'保命',why:(['守住182：无可学补盲伤害招，保命挡一击（替代睡觉156）']).concat(recNote)};
+        b._v387SleepSwap='sleep→182 守住';
+      }
+    });
+  }catch(eV4387D){eV4387D.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20827,7 +20870,7 @@ function needBuildHtml(sp,roleTag,itemTag,ctx){
   h+='<div style="font-size:14.5px;margin:2px 0"><b>特性：</b>'+_abiHtml+
     '　<b>道具：</b>'+(b.it||[]).slice(0,3).map(function(x,i){
       return (i===0?('<b class="abi" style="border-color:var(--ok)" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="主推：'+escq(x[1]+'')+'">⭐'+esc(x[0])+'</b>'):('<span class="abi" style="opacity:.85" onclick="event.stopPropagation();gotoItem('+jsl(x[0])+')" title="备选：'+escq(x[1]+'')+'">'+esc(x[0])+'</span><span style="font-size:13px;color:var(--sub)">备选</span>'+lockSwapTip449(b,x[0])))+mechBadgeForItem(x[0])}).join(' ')+
-    '　<b>性格：</b>'+esc((b.nat||[]).map(function(n){return n[0]}).join(' / '))+
+    '　<b>性格：</b>'+esc(keptNatList(b.nat).map(function(n){return n[0]}).join(' / '))+
     (_n0w?('<span style="font-size:13px;color:var(--sub)" title="'+escq(_n0w)+'">（依据）</span>'):'')+_aln+'</div>';
   /* v4.45 C-2：子区补 EV 可视条（与流派区详情同一渲染件 evBarHtml：数值串 + 模板名 + 分配依据） */
   h+=evBarHtml(b);
@@ -21541,7 +21584,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.386';
+var ER_ENGINE_VER='v4.387';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -22205,7 +22248,7 @@ function renderCore(s){
     if(_abC.length<bd.abi.length)html+='<div class="dim" style="font-size:14.5px">另有 '+(bd.abi.length-_abC.length)+' 个选项与该特性同名 → <b>唯一特性</b>，已合并展示</div>';
     html+='</div>';
     /* ⑤ 性格 */
-    html+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格</div><div>'+bd.nat.map(function(n){
+    html+='<div class="fld"><div class="fhd"><span class="fno">5</span>性格</div><div>'+keptNatList(bd.nat).map(function(n){
       return '<span class="abi" onclick="natModalZh('+jsl(n[0])+')">'+esc(n[0])+'</span><span class="dim"> '+esc(n[1])+'</span>';
     }).join('　')+'</div></div>';
     /* ⑥ 努力值分配（v4.11 新增输出：数组串 + 文本摘要 + 条形图 + 模板名） */
