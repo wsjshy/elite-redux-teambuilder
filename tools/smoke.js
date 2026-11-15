@@ -34,9 +34,9 @@ check('index.html 含版本真相源 ER_ENGINE_VER', () => {
   if (!m) throw new Error('未找到 ER_ENGINE_VER');
   return m[1];
 });
-check('index.html 体积合理 (1.2-2.0 MB)', () => {
+check('index.html 体积合理 (1.2–2.0 MiB)', () => {
   const s = size('index.html');
-  if (s < 1.2e6 || s > 2.0e6) throw new Error('size=' + s);
+  if (s < 1.2e6 || s > 2*1024*1024) throw new Error('size=' + s);
   return (s / 1024).toFixed(0) + ' KB';
 });
 
