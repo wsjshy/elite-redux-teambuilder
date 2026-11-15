@@ -14241,6 +14241,26 @@ function finalizeBuildInPlace(s,b){
             }
             var _v13why2='原速度依赖已移除（顺风/天气/轻装来源已不在实战招组内），本卡按耐久输出定位，不再冠速度名；速度 EV 未投入，本版未重排 EV/性格，速度线可在详情页速度滑块手动调整';
             (b.mv.main||[]).forEach(function(x){if(x&&x.why)x.why=x.why.concat([_v13why2])});
+          }else if(_v13Mult&&+((b.ev||{}).alloc||[])[5]===0){
+            /* v4.382 复核：有自有倍率来源但速度 EV=0 的速攻例外卡，按来源分档写明提速来源与失效条件；
+               只补 why 文案，不改 EV/性格/判定字段。来源档：天气提速特性 / 保留顺风 / 轻装 / 讲究围巾。 */
+            var _v13note=[];
+            if(_v13Wx>1){
+              var _wxNames=[];
+              try{var _wxPool=((s.inns||[]).concat(s.abis||[]));var _wxl=['悠游自如','叶绿素','拨沙','拨雪'];
+                _wxPool.forEach(function(pn){for(var wi=0;wi<_wxl.length;wi++){var hit=false;
+                  try{hit=abiSame(pn,_wxl[wi])}catch(eWx0){hit=String(pn)===_wxl[wi]}
+                  if(hit){var pns=String(pn&&pn.n?pn.n:pn);if(_wxNames.indexOf(pns)<0)_wxNames.push(pns);break;}}});
+              }catch(eWx1){eWx1.name}
+              _v13note.push('速度来自天气提速特性「'+(_wxNames.join('、')||'叶绿素/悠游自如/拨沙/拨雪')+'」（天气在场 ×1.5），故本卡不投速度；若天气不在场需自行补速');
+            }
+            if(_v13TwMv)_v13note.push('速度来自本卡保留的顺风(366)提速 ×2，故本卡不投速度；顺风回合结束后需自行补速');
+            if(_v13Light)_v13note.push('速度来自轻装特性（道具消耗后速度 ×2），故本卡不投速度；轻装未触发（道具未消耗/被移除）时需自行补速');
+            if(_v13Scarf)_v13note.push('速度来自讲究围巾 ×1.5，故本卡不投速度；摘下围巾后需自行补速');
+            if(_v13note.length){
+              b.v13MultNote=_v13note.join('；');
+              (b.mv.main||[]).forEach(function(x){if(x&&x.why)x.why=x.why.concat([b.v13MultNote])});
+            }
           }
         }
         b.v13SourceChecked=true;
