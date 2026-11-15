@@ -1,15 +1,14 @@
-# README 追加 v4.375 特性段落与截图（bare LF）
-P = r"D:\game\elite-redux\README.md"
-d = open(P, "rb").read()
-
-anchor = "![急速折返招式弹层](docs/shots/v374_mvmodal.png)\n\n---\n".encode("utf-8")
-assert d.count(anchor) == 1, "readme anchor not unique"
-
-new = ("![急速折返招式弹层](docs/shots/v374_mvmodal.png)\n\n"
-"- **招族判定补全：箭/角/空/锤/投掷/钻头/光线七族入表**。有些特性只对特定招族的招式增伤（如巨翼强化空中招、强大之角强化角类招、超级重击者强化锤类招），旧的招族表缺了这七族，相关特性理论上会「永不触发」。现在按游戏源码把七族全部补齐，12 个对应增伤特性也接入同一判定：实配有对应招族就加一分、显示真实倍率（多数 1.3，灵魂粉碎者 1.1、锤拳 1.25、岩石载荷/恶作剧礼物 1.5），没有就降权提示换特性。\n\n"
-"![喷火龙答案卡：巨翼特性按招族判定](docs/shots/v4375_mvflag.png)\n\n"
-"---\n")
-
-d = d.replace(anchor, new.encode("utf-8"))
-open(P, "wb").write(d)
-print("README updated, CRLF", d.count(b"\r\n"), "bareLF", d.count(b"\n") - d.count(b"\r\n"))
+# -*- coding: utf-8 -*-
+import io
+P=r'D:\game\elite-redux\README.md'
+t=io.open(P,encoding='utf-8',newline='').read()
+anchor="![超级黑鲁加 晴增伤清场答案卡](docs/shots/v4378_houndoom_fix.png)\n"
+assert t.count(anchor)==1
+bullet=(
+"- **速攻手不手动开天气/场地，队伍级辅助交给队友**。有玩家指出：黑鲁加是玻璃大炮，回合金贵，没有多余回合手动开晴天；没有队友给它开，它宁愿不带这个体系。这是队伍级的配队思维，本版举一反三覆盖全部速攻手——天气/场地这类队伍级辅助由队友提供，没有队友就不依赖，而不是自己花回合开。工具会自动把手动天气/场地招换成补盲攻击招、把残留的晴免蓄力招（日光束/日光刃）换掉、把依赖天气的特性换成常驻特性（如黑鲁加换「燃烧」，火招常驻×1.5），并去掉流派名里的天气前缀；恶作剧之心和自身特性自动开天气为例外。全库 40 条速攻流派收口，换出常驻特性 25 条，带常驻效果的特性（如沙之守卫反先制、北风入场极光幕）不会误删。\n"
+"\n"
+"![超级黑鲁加 不再手动开晴天答案卡](docs/shots/v4379_houndoom_no_weather.png)\n"
+)
+t=t.replace(anchor, anchor+bullet, 1)
+io.open(P,'w',encoding='utf-8',newline='').write(t)
+print('updated, CRLF',t.count('\r\n'),'bareLF',t.count('\n')-t.count('\r\n'))

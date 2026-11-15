@@ -1,19 +1,17 @@
-# VERSIONS.md 追加 v4.375 条目（CRLF）
-P = r"D:\game\elite-redux\docs\changelog\VERSIONS.md"
-d = open(P, "rb").read()
-
-paras = [
-"- **v4.375**（2026-11-15）：**补全 MV_FLAG 缺失招族——arrow/horn/air/hammer/throwing/drill/light 七族入表，依赖招族判定的特性不再因 flag 缺项而静默「永不触发」**。",
-"    源码考古：include\\abilities.hh 的 MoveFlag 枚举只有 7 项（PUNCH/KICK/SOUND/MEGA_LAUNCHER/DANCE/KEEN_EDGE/BONE），真正承载更多招族的是 include\\pokemon.h 战斗招结构体的位域布尔（arrowBased/hornBased/airBased/hammerBased/throwingBased/drill/light），位域在 proto\\MoveList.textproto 以 snake_case 提供，招式 id 见 MoveEnum.proto。",
-"    从 MoveList.textproto 解析 1041 个有 id 招式按位域归集，再与引擎 MV 表（shard 仅含 id 0–1031 连续 1032 条）取交集，MV_FLAG 新增 7 键：arrow 19、horn 22、air 36、hammer 32、throwing 23、drill 5、light 21。",
-"    famAbiRuleOf 接入 12 个真正的增伤特性（用物种实际用名而非能力表规范名）：巨翼→air、强大之角→horn、弓箭手→arrow、超级重击者→hammer、神话之箭→arrow、能量角→horn、穿刺者→horn、灵魂粉碎者→hammer（mul1.1）、岩石载荷→岩石/投掷（mul1.5）、恶作剧礼物→冰/投掷（mul1.5）、锤拳→拳/锤（mul1.25）、巨型钻头→horn/drill。非增伤特性（形态/命中/吸收/受击/亲子/降防/烧伤）不接入；light 无 shard 内消费特性（Photokinesis1063/Photon Burst1064 超 shard 上限）。",
-"    why 文案原硬编码 ×1.3 改为读取规则 mul（默认 1.3），1.1/1.25/1.5 特性文案准确，现有 1.3 特性文案不变。",
-"    关键发现：全库扫描确认这 12 个特性从未成为任何流派的首推 abi[0]，总为次位选项，故门禁数字与基线完全一致（无回归）；补丁价值在数据完整性（MV_FLAG 成为源码招族的完整镜像）与未来安全网。",
-"    1,981,187 B / `7A4EC47F9E44F851525E2A977D9F00F5F5BA7223`，待线上核验，物种 1906、流派 4328、fatal0 / dup0 / itemsOver0 / defOrb0 / badMove1（#862 历史遗留），offHist 与基线逐项一致，6 段语法 OK、smoke 33/33、行尾 CRLF 22647 / bare LF 51。",
-]
-block = "\r\n\r\n".join(paras) + "\r\n"
-if not d.endswith(b"\r\n"):
-    d += b"\r\n"
-d += block.encode("utf-8")
-open(P, "wb").write(d)
-print("VERSIONS appended, CRLF", d.count(b"\r\n"), "bareLF", d.count(b"\n") - d.count(b"\r\n"))
+# -*- coding: utf-8 -*-
+import io
+P=r'D:\game\elite-redux\docs\changelog\VERSIONS.md'
+t=io.open(P,encoding='utf-8',newline='').read()
+anchor="行尾 CRLF 22687 / bare LF 51。\r\n"
+assert t.count(anchor)==1,t.count(anchor)
+entry=(
+"- **v4.379**（2026-11-15）：**队伍级配队思维收口——速攻手/玻璃大炮不手动开天气/场地，举一反三覆盖全部速攻手**。用户在黑鲁加修复后仍带大晴天时指出：玻璃大炮回合金贵，没有多余回合手动开队伍级辅助；应由队友提供，没有队友则宁可不依赖该体系，而不是自己手动开。\r\n"
+"探针量化（空队 deriveBuilds）：进攻流派手动带天气/场地 8 招（求雨240/大晴天241/沙暴201/冰雹258/青草580/薄雾581/电气604/精神641）共 125 条，其中速≥100 且非恶作剧之心 32 条；慢速(<100)93 条；func 槽 0 条。架构澄清：18029 行「队伍有 setter 则手动天气 return null」位于 MECH_COMBO 组合挖掘（仅展示），不影响实际配招；实测带晴天设置手#37 六尾时黑鲁加仍带大晴天，证明 build 生成路径不按队友 setter 移除手动招；B⑥-4 文案与答案卡概念不一致，本版让答案卡对齐同一原则。\r\n"
+"门控范围：初版只在 roleTag∈{增伤,输出} 触发，但#1043 热带蕉龙、#1542 超级烈咬陆鲨各有 role=强化 流派仍手动开天气（probe_combos 确认 8 条遗漏），最终门控改为 side∈{物理,特殊,双刀} 且 role∈{增伤,输出,强化}，目标总数 32+8=40。\r\n"
+"最终规则（当①速≥100②进攻 side+role③非恶作剧之心④ownAutoSys 为空时）：①定位 setup 招，从 pickAttacks 补槽，优先异属性、非蓄力（CHARGE_REG）、威力≥70、命中≥90 的补盲招，次选任意非蓄力未用招；②第二遍替换残留晴免蓄力招 SOLAR 集{76 日光束,632 日光刃}（无晴变2回合，雨/沙/雪更该换）；③换特性：触发=原特性 abiSysOf 非空且非设置手，或描述含天气词+增益词，候选从 pickAbiFor 挑第一个无体系/设置且非坏的；④混合能力放行 hasConstantPart（含「对方无法…先制/免疫/反弹/出场时/入场时/吸引/替身」等常驻效果时即使提天气也不判死）；⑤改名：名首∈雨晴沙雪则去前缀。\r\n"
+"关键能力（按 id，展示名与规范名常不一致）：#1520 超级黑鲁加 过热/日食/诡计/污泥波+燃烧 id512（火招常驻×1.5）；普通黑鲁加#229 同招+熔岩 id357（火招对岩石效果绝佳）；#2672 超级沙奈朵R 悠游自如→埋伏 id435（上场首回合必会心）。映射坑：空中飞人=id606 高空杂技、强大之角=id390 大角、水合=id315 水之皮肤（非 Hydration）、压制=id328 压倒、杀戮之颚=id438 屠杀之牙、炮术=id377 炮手、神秘刀锋=id505 神秘之刃、冰冷反击=id383 冰冷回击、烈焰之魂=id351 燃烧之魂、冰霜之魂=id362 冰冻之魂。描述含天气词但 abiSysOf 表未分类的特性共 102 个（如雪隐 id81、暴风雨 id935），故能力过滤必须按 id 取描述。\r\n"
+"40 条目标：换出常驻特性 25 条；不变的均为常驻特性（大地束缚 id299、速度之力 id355、穿透、龙颚、破格、魔法防守、北风 id348 混合）或无好备选（#1090 拨雪）。EV/性格沿用速攻模板无需改。1,989,476 B / `D92D220FD9B2241FBB1BD564B5BE7981B0E4B7F6`，待线上核验，物种 1906、流派 4192（4193-1，#947 怖纳噬草两流派换招后同玩法合并 2→1）、fatal0 / dup0 / itemsOver0 / defOrb0 / badMove1、速攻进攻流派残留天气/场地招 0，6 段语法 OK、smoke 33/33、#1520 答案卡「速攻强化清场」（过热/日食/诡计/污泥波，燃烧+弱点保险+胆小，4HP/252特攻/252速，无大晴天，队友建议含天气手）、截图 docs/shots/v4379_houndoom_no_weather.png、行尾 CRLF 22760 / bare LF 51。\r\n"
+)
+t=t.replace(anchor, anchor+entry, 1)
+io.open(P,'w',encoding='utf-8',newline='').write(t)
+print('appended, CRLF',t.count('\r\n'),'bareLF',t.count('\n')-t.count('\r\n'))
