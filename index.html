@@ -2924,7 +2924,7 @@ function anRender(R){
       sprImg(b.id,'spinl')+'<b>'+esc(b.zh)+'</b>（#'+b.id+'）· '+esc(b.name)+'　<span class="badge">'+esc(b.roleTag||'')+'/'+esc(b.side||'')+'</span>'+
       '<div>配招：'+esc(b.movesZh.join(' / '))+'</div>'+
       '<div>特性：'+esc(b.abi||'—')+'　道具：'+esc(b.item||'—')+'</div>'+
-      '<div>EV：'+esc(b.ev?b.ev.join('/'):'—')+'（'+esc(b.evTpl||'')+'）　性格：'+esc(b.nat||'—')+'</div>'+
+      '<div>EV：'+esc(b.ev?b.ev.join('/'):'—')+'（'+esc(evTplDisp(b.evTpl||''))+'）　性格：'+esc(b.nat||'—')+'</div>'+
       (b.why?'<div class="tip">'+esc(b.why)+'</div>':'')+'</div>');
   });
   h+=anSecMark('d4','④ 联动叙事','成对因果与可判定字段');
@@ -3632,7 +3632,7 @@ function roleCard5Html(s,bd,R){
     h+='<br>';
     var evStr=(bd.ev&&bd.ev.alloc)?bd.ev.alloc.join('/'):'-';
     h+='<b>③ 典型用法：</b>'+((bd.nat&&bd.nat[0])?('性格「'+bd.nat[0][0]+'」'):'')+' · EV '+evStr+'（HP/攻/防/特攻/特防/速）'+
-      ((bd.ev&&bd.ev.template)?(' · 模板「'+bd.ev.template+'」'):'')+' · 速度 P'+pct+' 节奏。<br>';
+      ((bd.ev&&bd.ev.template)?(' · 模板「'+evTplDisp(bd.ev.template)+'」'):'')+' · 速度 P'+pct+' 节奏。<br>';
     var limBits=[];
     if(wks.length)limBits.push('弱点 '+wks.map(function(t){return tlabel(t)}).join(' '));
     if(bd.warn)limBits.push(String(bd.warn));
@@ -14092,14 +14092,13 @@ function finalizeBuildInPlace(s,b){
          速度前提由队友顺风提供。 */
       try{
         var _v11sp=+((s.base||[])[5]||0),_v11side=String(b.side||''),_v11role=String(b.roleTag||'');
-        var _v11off=(_v11side==='物理'||_v11side==='特殊'||_v11side==='双刀')&&(_v11role==='增伤'||_v11role==='输出'||_v11role==='强化');
         var _v11prank=!!(b.abi&&b.abi[0]&&/恶作剧之心/.test(b.abi[0].n));
         var _v11auto=[];try{_v11auto=ownAutoSys(s)||[]}catch(eV11a){_v11auto=[]}
         /* v4.378 教训：per-build 标记变量块开头显式赋初值（undefined 守卫，不覆盖前序块已写值） */
         if(b.tailwindTeamRemoved===undefined)b.tailwindTeamRemoved=null;
         if(b.tailwindTeamNew===undefined)b.tailwindTeamNew=null;
         if(b.tailwindByTeammate===undefined)b.tailwindByTeammate=false;
-        if(b.score!==99&&_v11sp>=100&&_v11off&&!_v11prank&&!_v11auto.length&&isGlassCannon(s)){
+        if(b.score!==99&&_v11sp>=100&&!_v11prank&&!_v11auto.length&&isGlassCannon(s)){
           var _v11main=b.mv.main||[];
           var _v11TW=366,_v11PIV=[369,521];
           var _v11TWO=[566];   /* 两回合蓄力（潜灵奇袭 Phantom Force），不进速攻手补槽 */
@@ -14204,6 +14203,48 @@ function finalizeBuildInPlace(s,b){
           }
         }
       }catch(eV4381b){eV4381b.name}
+      /* v4.382 速度轴 self-centric 收尾：按最终实战招式复核自身速度来源。
+         · 无任何当场生效速度来源（种族<100、无天气提速特性、实战无顺风366、无轻装、无讲究围巾、无速度型强化招）
+           却仍冠「速攻」名 → 去速攻冠名，改输出/清场定位；
+         · 基础速度≥100 但 EV 0 投入且无自有倍率：倍率收敛残留（顺风/天气前缀后置剥离所致），本版不重排 EV/性格，
+           同样去速攻冠名（按耐久输出定位），why 注明；
+         · 仍保留自有倍率来源（天气提速/保留顺风/轻装/围巾）的速度收敛卡属既定模板，保留并登记为例外。 */
+      try{
+        var _v13sp=+((s.base||[])[5]||0);
+        if(b.v13SourceChecked===undefined)b.v13SourceChecked=false;
+        if(b.v13Demoted===undefined)b.v13Demoted=null;
+        if(b.v13EvStale===undefined)b.v13EvStale=false;
+        var _v13mv=(b.mv.main||[]).concat(b.mv.func||[]).map(function(x){return +x.id});
+        var _v13Wx=1;try{_v13Wx=pvWeatherSpeedMul(s)||1}catch(eV13w){_v13Wx=1}
+        var _v13Light=((s.abis||[]).indexOf('轻装')>-1)||((s.inns||[]).indexOf('轻装')>-1);
+        var _v13Scarf=String(itemMainZh(b)).indexOf('讲究围巾')>-1;
+        var _v13TwMv=_v13mv.indexOf(366)>=0;
+        var _v13Boost=_v13mv.some(function(id){return [349,483,504,187,526].indexOf(id)>=0});
+        var _v13Mult=(_v13Wx>1)||_v13TwMv||_v13Light||_v13Scarf;
+        var _v13SrcOk=(_v13sp>=100)||_v13Mult||_v13Boost;
+        var _v13nm=String(b.name||'');
+        if(/速攻/.test(_v13nm)){
+          if(!_v13SrcOk){
+            var _v13New=_v13nm.replace(/速攻强化清场/,'强化清场').replace(/速攻压制/,'主力输出压制').replace(/轻装速攻流/,'主力输出压制').replace(/速攻流/,'主力输出压制');
+            if(_v13New!==_v13nm){
+              b.name=_v13New;b.v13Demoted=_v13nm+'→'+_v13New;
+              b.nameMismatch=(b.nameMismatch?b.nameMismatch+'；':'')+'无自身当场生效速度来源 → 去速攻冠名（改输出/清场定位）';
+              var _v13why='自身无当场生效速度来源（速度种族<100、无天气提速/顺风/轻装/围巾/速度强化招）→ 不作速攻定位';
+              (b.mv.main||[]).forEach(function(x){if(x&&x.why)x.why=x.why.concat([_v13why])});
+            }
+          }else if(!_v13Mult&&_v13sp>=100&&+((b.ev||{}).alloc||[])[5]===0){
+            b.v13EvStale=true;
+            var _v13New2=_v13nm.replace(/速攻强化清场/,'强化清场').replace(/速攻压制/,'主力输出压制').replace(/轻装速攻流/,'主力输出压制').replace(/速攻流/,'主力输出压制');
+            if(_v13New2!==_v13nm){
+              b.name=_v13New2;b.v13Demoted=_v13nm+'→'+_v13New2;
+              b.nameMismatch=(b.nameMismatch?b.nameMismatch+'；':'')+'原速度依赖已移除（顺风/天气/轻装来源已不在实战招组内）→ 按耐久输出定位，不再冠速度名';
+            }
+            var _v13why2='原速度依赖已移除（顺风/天气/轻装来源已不在实战招组内），本卡按耐久输出定位，不再冠速度名；速度 EV 未投入，本版未重排 EV/性格，速度线可在详情页速度滑块手动调整';
+            (b.mv.main||[]).forEach(function(x){if(x&&x.why)x.why=x.why.concat([_v13why2])});
+          }
+        }
+        b.v13SourceChecked=true;
+      }catch(eV4382){eV4382.name}
     }
   }catch(e){}
   return b;
@@ -15920,6 +15961,20 @@ function mechPrefix(p){
   if(p.ab.im.length||p.ab.hf.length)return '免疫';
   return '';
 }
+/* v4.382：速度轴 self-centric 判据——本物种自身当场生效速度来源，折算有效速度 ≥ SPEED_HIGH(100)。
+   ① 种族速度 ≥100；② 自有提速体系：天气提速特性 ×1.5（与 EV 层 pvWeatherSpeedMul 同口径）/ 自开顺风 ×2 /
+   轻装消耗后 ×2。队友高速、队友开天气不计入本判据（只进 sc/drivenBy）。 */
+function selfSpeedSource(s,p){
+  var spd=(p&&p.du&&p.du.spd!=null)?p.du.spd:spdOf(s);
+  var mul=1,notes=[];
+  if(spd>=NEED_CFG.SPEED_HIGH)return {ok:true,mul:1,eff:spd,notes:['种族速度 '+spd+' ≥'+NEED_CFG.SPEED_HIGH]};
+  try{var _wm=pvWeatherSpeedMul(s)||1;if(_wm>1){mul*=_wm;notes.push('天气提速特性 ×'+_wm)}}catch(eSs1){eSs1.name}
+  if(p&&p.fn&&p.fn.tw){mul*=2;notes.push('自开顺风 ×2')}
+  var _lb=((s.abis||[]).indexOf('轻装')>-1)||((s.inns||[]).indexOf('轻装')>-1);
+  if(_lb){mul*=2;notes.push('轻装消耗后 ×2')}
+  var eff=Math.round(spd*mul);
+  return {ok:eff>=NEED_CFG.SPEED_HIGH,mul:mul,eff:eff,notes:notes};
+}
 /* 破盾路线互斥择优（R07-35）：强化 / 双刀 / 拍落削道具 / 消耗磨血 —— 只取 1 条，双刀不默认生成 */
 function bestBreakingRoute(p){
   var cand=[],sc;
@@ -16093,15 +16148,17 @@ function _deriveBuildsCore(s,team){
   var pref=mechPrefix(p),cand=[];
   /* 破盾路线互斥择优（07 §4.6.3 ⑤；R07-35）——提前计算：⑥ 增伤轴 tag 要据此避重 */
   var route=bestBreakingRoute(p);
-  /* ① 输出侧（R07-30）：高速个体 ≥2 且力度达标 */
-  if(fastCount>=2&&p.ok)cand.push({key:'speed',base:(p.hasBoost?'速攻强化清场':'速攻压制'),tag:'输出',sc:6+fastCount,
-    drivenBy:['速度 '+p.du.spd.toFixed(0)+'（≥'+NEED_CFG.SPEED_HIGH+' 高线）','高速个体 '+fastCount+' 只','力度 '+p.power+' 达标']});
+  /* ① 输出侧（R07-30，v4.382 self-centric）：本物种自身具备当场生效速度来源（折算有效速度 ≥100）才生成；
+     队友高速只进 sc/drivenBy，不作生成条件；「空间」前缀与速攻语义互斥，空间核不进速度轴。 */
+  var _v13ss=null;try{_v13ss=selfSpeedSource(s,p)}catch(eV13s){_v13ss={ok:false,eff:p.du.spd||0,notes:[]}}
+  if(_v13ss.ok&&p.ok&&pref!=='空间')cand.push({key:'speed',base:(p.hasBoost?'速攻强化清场':'速攻压制'),tag:'输出',sc:6+fastCount,
+    drivenBy:['自身有效速度 '+_v13ss.eff+'（≥'+NEED_CFG.SPEED_HIGH+' 高线）'+(_v13ss.notes&&_v13ss.notes.length?'，'+_v13ss.notes.join('/'):''),'队内高速 '+fastCount+' 只','力度 '+p.power+' 达标']});
   /* ② 强化侧（R07-31）：强化招命中且耐久够站场 */
   if(p.hasBoost&&p.du.bulk>=NEED_CFG.BULK_MID)cand.push({key:'boost',base:'强化清场',tag:'强化',sc:5+(p.bulky?2:1),
     drivenBy:['可学强化招','耐久三角 '+p.du.bulk+'（≥'+NEED_CFG.BULK_MID+' 可站场强化）']});
-  /* ③ 空间侧（R07-32）：低速个体 ≥2 且队内有戏法空间 */
-  if(slowCount>=2&&p.ok&&trSetter)cand.push({key:'tr',base:'慢速重炮',tag:'输出',sc:5+slowCount,
-    drivenBy:['低速个体 '+slowCount+' 只（≤'+NEED_CFG.SPEED_LOW+'）','队内含戏法空间','力度 '+p.power+' 高']});
+  /* ③ 空间侧（R07-32，v4.382 self-centric）：只认自身低速（≤60）；队内空间手/低速个体只提分，不作生成条件 */
+  if(p.slow&&p.ok&&trSetter)cand.push({key:'tr',base:'慢速重炮',tag:'输出',sc:5+slowCount,
+    drivenBy:['自身速度 '+p.du.spd+'（≤'+NEED_CFG.SPEED_LOW+' 低速）','队内含戏法空间','力度 '+p.power+' 高']});
   /* ③b 慢速耐久重炮（v4.365）：低速+高耐久+力度达标，自身即站场重炮，不强制队内戏法空间 */
   if(p.slow&&p.bulky&&p.ok&&p.side!=='双刀')cand.push({key:'main',base:'慢速重炮',tag:'输出',sc:5,
     drivenBy:['速度 '+p.du.spd.toFixed(0)+'（≤'+NEED_CFG.SPEED_LOW+' 低速）','耐久三角 '+p.du.bulk+' 可站场','力度 '+p.power+' 达标']});
@@ -20660,7 +20717,8 @@ function evNatureLinkV437(s,b){
   var cls=pp?pp.cls:'',cover=!!(pp&&pp.coverMain),actual=!!(pp&&pp.actual);
   var sub=!!(b&&b._r450_subOnly);   /* v4.50 路线甲：子区路径标记（deriveBuilds→finalize 链不设，4680 零变化） */
   var B1=(base5>=110&&roleTag==='输出');
-  var tailwind=/顺风/.test(name+roleTag);
+  var _twMv4382=(b.mv.main||[]).concat(b.mv.func||[]).some(function(x){return +x.id===366});
+  var tailwind=_twMv4382;   /* v4.382：顺风倍率按实战招式判定，不再读名称前缀（前缀可来自可学集误判） */
   var scarf=String(itemMainZh(b)).indexOf('讲究围巾')>-1;
   var wxMul=1;try{wxMul=pvWeatherSpeedMul(s,sub)}catch(e2){wxMul=1}
   var wsm=Math.max(1,+b.wantSpeedMul||1);   /* v4.38 B1-2：轻装 ×2 等机制速度倍率（与天气/顺风/围巾同口径降档） */
@@ -20864,8 +20922,9 @@ function buildEvs(s,side,roleTag,buildName,buildObj){
   if(buildObj){buildObj.ev=out;try{evNatureLinkV437(s,buildObj)}catch(e2){}}   /* v4.37：S1~S4 联动（幂等） */
   return buildObj?buildObj.ev:out;
 }
+function evTplDisp(t){return t==='速攻'?'高速线':String(t||'');}
 function evWhyTxt(t){
-  if(t==='速攻')return '速攻模板：252 速度抢线 + 252 主输出 + 4 余量（HP）。先把先手权拿到手，个别关键速度线可再微调。';
+  if(t==='速攻')return '高速线模板：252 速度抢线 + 252 主输出 + 4 余量（HP）。先把先手权拿到手，个别关键速度线可再微调。';
   if(t==='耐久')return '耐久模板：252 HP + 252 主防（物防 / 特防按定位动态取）+ 4 余量（另一防）。目标是稳定吃住关键一击后反击。';
   if(t==='空间低速')return '空间低速模板：252 HP + 252 主输出 + 4 余量（防御）。速度归零仅为建议，服务铃等机制可提速，请按自己队伍的调速需求再定。';
   if(t==='先制集约')return '先制集约模板（v4.37）：先制类特性已无条件覆盖主输出 → 速度 EV 归零，252 输出 + 252 HP + 4 主防。把速度预算换到生存与力度上，先手权由特性提供。';
@@ -20925,7 +20984,7 @@ function evBarHtml(bd){
     var sumParts=[];for(k=0;k<6;k++){if(+a[k]>0)sumParts.push(a[k]+evName(k));}
     sumTxt=sumParts.join(' / ');
   }
-  h+='<div class="evsum">'+esc(sumTxt)+'　·　数值（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　模板：<b>'+esc(ev.template)+'</b></div>';
+  h+='<div class="evsum">'+esc(sumTxt)+'　·　数值（HP/攻/防/特攻/特防/速）<b>'+a.join('/')+'</b>　·　模板：<b>'+esc(evTplDisp(ev.template))+'</b></div>';
   h+='<button class="evtap" type="button" aria-expanded="false" onclick="evWhy(this)" title="展开/收起这套努力值的分配依据">';
   h+='<span class="evsegs">'+segs+'</span><span class="evv">分配依据 ▸</span></button>';
   h+='<div class="evwhy" hidden>'+esc(evWhyTxt(ev.template))+'</div></div>';
@@ -21022,10 +21081,10 @@ function natModalZh(name){
 function evModalBd(bd){
   if(!bd||!bd.ev){toast('暂无努力值信息');return}
   var a=bd.ev.alloc||[];
-  var full='<div style="margin-bottom:6px"><b>'+esc(bd.ev.template)+'</b>　<span class="dim">'+esc(bd.ev.summary)+'</span></div>'+
+  var full='<div style="margin-bottom:6px"><b>'+esc(evTplDisp(bd.ev.template))+'</b>　<span class="dim">'+esc(bd.ev.summary)+'</span></div>'+
     '<div style="margin:4px 0">'+a.map(function(v,i){return v?('<span class="chip" style="min-height:0;padding:2px 10px">'+esc(evName(i))+' '+v+'</span>'):''}).join('')+'</div>'+
     '<div class="ruleline">'+esc(evWhyTxt(bd.ev.template))+'</div>';
-  l1Modal('努力值 · '+bd.ev.template,full);
+  l1Modal('努力值 · '+evTplDisp(bd.ev.template),full);
 }
 function ansEvModal(SID,k){var ctx=window._ansCtx&&window._ansCtx[SID];if(!ctx||!ctx.showList)return;evModalBd(ctx.showList[k]);}
 /* L1 属性克制：攻（本系打谁有效，读 ERDATA.matchup，与「属性」页 renderAtk 同源）
@@ -21131,7 +21190,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.381';
+var ER_ENGINE_VER='v4.382';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21871,7 +21930,7 @@ function renderCore(s){
       (bd.why?('<br><b>打法原则</b>（P1–P5 同层）：'+esc(bd.why)):'')+
       ((bd.drivenBy||[]).length?('<br><b>触发依据</b>：'+esc(bd.drivenBy.join('；'))):'')+
       (bd.breakingRoute?('<br><b>破盾路线择优</b>：'+esc(bd.breakingRoute)+'（与强化/双刀/拍落/消耗互斥，只取 1 条）'):'')+
-      '<br><span class="dim">流派原始描述：'+esc(bd.desc)+'</span></div>';
+      '<br><span class="dim">流派原始描述'+(bd.v13Demoted?'（历史名）':'')+'：'+esc(bd.desc)+'</span></div>';
     /* 特性匹配分（原玩家层数值，降级到引擎层） */
     eng+='<div class="dim">特性匹配分：'+bd.abi.map(function(a){return esc(a.n)+'='+a.sc}).join('、')+'</div>';
     /* v4.11 F1：道具引擎原文（克制…；代价…｜原则 P…）——L2 ⑦ 已改玩家话术，此处保留可溯源（只降级不删除） */
