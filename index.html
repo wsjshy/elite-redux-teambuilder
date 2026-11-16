@@ -18258,6 +18258,60 @@ function _deriveBuildsCore(s,team){
       b.name=_v391new;
     });
   }catch(eV4391){eV4391.name}
+  /* v4.392 战术词「骚扰消耗」按本卡配置口径准入（判据原则的另一半）：
+     v4.383 兜底桶 _v383route()（17834 起）最后一档 `return '受队消耗'` 不看招组 —— 只要卡既不属性免疫、
+     又不满足「dmg>=2 且攻/特攻 EV>=120」、也没有折返招，就一律叫「受队消耗」；v4.389 R1 再把未过耐久门的
+     改「骚扰消耗」。于是「骚扰」这个战术词被发给了招组里根本没有骚扰手段的卡。
+     实测（deriveBuilds 逐卡扫全库 1906 只，六人队 [26,65,96,80,37,208] / 空队 []）：
+       「骚扰消耗」852（六人）/ 68（空）；其中招组无任何骚扰手段 = 423（六人）/ 0（空）——
+       空队为 0 是因为 immCount 阈值不同、这些卡根本不进兜底桶。
+     本块只改名：无骚扰手段者按本卡实配落既有词（不新造词），EV / 性格 / 道具 / 招组 / side / roleTag / 排序全部不动。
+     骚扰手段集（三族）：
+       钉   191 撒菱 / 390 毒菱 / 446 隐形岩 / 564 黏黏网
+       状态 86 电磁波 / 92 剧毒 / 261 磷火 / 137 大蛇瞪眼 / 599 毒液陷阱
+       削弱与逼换 73 寄生种子 / 282 拍落 / 269 挑衅 / 46 吼叫 / 18 吹飞 / 525 龙尾 / 114 黑雾 / 499 清除之烟 / 317 岩石封锁
+     落词规则（顺序判定）：
+       ① 带强化招且伤害招>=1 → 强化清场（强化后清场；0 伤害招的纯强化/墙卡不在此列）
+       ② 无①且伤害招>=2、火力 max(攻,特攻)>=NEED_CFG.POWER_OK(95) → 主力输出压制（过 v4.391 打手门）
+       ③ 无①且伤害招>=2、火力<95 → 输出压制（v4.391 口径下「非主力」的落点，底子<95 / 伤害招>=2 两条自洽）
+       ④ 伤害招<=1、带墙 113/115/657 → 双墙辅助流（该名 411 张 100% 带墙）
+       ⑤ 其余 → 稳健联防（引擎自身即用此名做低伤防守兜底，成员含 bulk 100 的卡）
+     实测落词：强化清场 276 / 主力输出压制 45 / 输出压制 38 / 双墙辅助流 29 / 稳健联防 35 = 423。 */
+
+  try{
+    var _v392HAZ=[191,390,446,564],_v392STA=[86,92,261,137,599],
+        _v392WK=[73,282,269,46,18,525,114,499,317],_v392WALL=[113,115,657],
+        _v392BST=/剑舞|龙之舞|蝶舞|冥想|诡计|诅咒|健美|巨大化|破壳|腹鼓|磨爪|铁壁|集气|自我激励|生长|宇宙力量/;
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var _v392nm=String(b.name);
+      if(_v392nm.indexOf('骚扰消耗')<0)return;
+      var _v392ids=(b.mv.main||[]).concat(b.mv.func||[]).map(function(x){return +x.id;});
+      var _v392h=false,_v392i,_v392id;
+      for(_v392i=0;_v392i<_v392ids.length;_v392i++){
+        _v392id=_v392ids[_v392i];
+        if(_v392HAZ.indexOf(_v392id)>=0||_v392STA.indexOf(_v392id)>=0||_v392WK.indexOf(_v392id)>=0){_v392h=true;break;}
+      }
+      if(_v392h)return;                       /* 真带骚扰手段 → 名字成立，保留 */
+      var _v392d=0,_v392bo=false,_v392wa=false,_v392r;
+      for(_v392i=0;_v392i<_v392ids.length;_v392i++){
+        _v392id=_v392ids[_v392i];_v392r=MV[_v392id];if(!_v392r)continue;
+        if(_v392r[4]!=='变化')_v392d++;
+        if(_v392BST.test(String(_v392r[1]||'')))_v392bo=true;
+        if(_v392WALL.indexOf(_v392id)>=0)_v392wa=true;
+      }
+      var _v392f=Math.max(+s.base[1],+s.base[3]);
+      var _v392t;
+      if(_v392bo&&_v392d>=1)_v392t='强化清场';
+      else if(_v392d>=2)_v392t=(_v392f>=NEED_CFG.POWER_OK?'主力输出压制':'输出压制');
+      else if(_v392wa)_v392t='双墙辅助流';
+      else _v392t='稳健联防';
+      var _v392new=_v392nm.replace('骚扰消耗',_v392t);
+      if(b._v392OldName===undefined)b._v392OldName=_v392nm;
+      if(b._v392Rename===undefined)b._v392Rename=_v392new;
+      b.name=_v392new;
+    });
+  }catch(eV4392){eV4392.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -21692,7 +21746,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.391';
+var ER_ENGINE_VER='v4.392';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
