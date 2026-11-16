@@ -17021,6 +17021,35 @@ function _deriveBuildsCore(s,team){
       }
     });
   }catch(eV4389){eV4389.name}
+  /* v4.391：名含「主力输出压制」必须过引擎自己的打手门 max(攻,特攻)>=NEED_CFG.POWER_OK(95)。
+     判据结构沿用 v4.390：属性词（主力 / 输出）按底子绝对档准入，战术词才看本卡配置。
+     本版修的是同一指标两个答案：速攻候选（16155 附近 ok:atkBest(s)>=POWER_OK）判「能不能当打手」，
+     而兜底推 main 候选（16186）没复用这条门 → 六人队 299 张「主力输出压制」里 185 张 max(攻,特攻)<95
+     （最低 #790 科斯莫姆 base 攻 29 也叫主力输出压制），空队 203/388 同病。
+     本版只去掉「主力」二字（改「输出压制」）：主力是队内第一输出的属性承诺，输出只说明这张卡在打；
+     EV / 招组 / 道具 / 特性 / side / roleTag / 排序全部不动。洛托姆五形态(1643-1647)火力 115 过门，按键名不误伤。 */
+  try{
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var _v391nm=String(b.name);
+      if(_v391nm.indexOf('主力输出压制')<0)return;
+      var _v391a=Math.max(+s.base[1],+s.base[3]);
+      if(_v391a>=NEED_CFG.POWER_OK)return;
+      var _v391new=_v391nm.replace('主力输出压制','输出压制');
+      /* 个案（全库两口径各 1 张：#605 小灰怪 空间主力输出压制）：去掉「主力」仍不足以称「输出」——
+         实配只有 1 条伤害招（神通力），其余是反射壁 / 冥想 / 戏法空间。带强化招回既有「强化清场」，
+         连强化招也没有才回「骚扰消耗」；不新造词。 */
+      var _v391ids=(b.mv.main||[]).concat(b.mv.func||[]).map(function(x){return +x.id;});
+      var _v391dmg=_v391ids.filter(function(id){var r=MV[id];return r&&r[4]!=='变化';}).length;
+      if(_v391dmg<2){
+        var _v391bst=_v391ids.some(function(id){var r=MV[id];return r&&/剑舞|龙之舞|蝶舞|冥想|诡计|诅咒|健美|巨大化|破壳|腹鼓|磨爪|铁壁|集气|自我激励|生长|宇宙力量/.test(String(r[1]||''));});
+        _v391new=_v391nm.replace('主力输出压制',_v391bst?'强化清场':'骚扰消耗');
+      }
+      if(b._v391OldName===undefined)b._v391OldName=_v391nm;
+      if(b._v391Rename===undefined)b._v391Rename=_v391new;
+      b.name=_v391new;
+    });
+  }catch(eV4391){eV4391.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20455,7 +20484,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.390';
+var ER_ENGINE_VER='v4.391';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

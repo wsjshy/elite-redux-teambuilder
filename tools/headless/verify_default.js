@@ -117,7 +117,13 @@ function diffAgainst(base, now, tag) {
     bs.forEach((r, i) => {
       const c = ns[i];
       if (ex ? (sig2(r) !== sig2(c)) : (stableSig(r) !== stableSig(c))) diff.push({ tag, id, zh: c.zh, name: c.name, why: ex ? '结构漂移(本版命中组)' : '稳定签名不一致', old: r, now: c });
-      if (!ex && !renameIds.has(id) && JSON.stringify(r.name) !== JSON.stringify(c.name)) diff.push({ tag, id, zh: c.zh, why: '非改名物种 name 漂移', oldName: r.name, nowName: c.name });
+      // v4.391：名含「主力输出压制」按底子打手门改名（→输出压制；个案 #605 →强化清场），只豁免 name 一项
+      const _nmOk391 = (o, n) => {
+        const s0 = String(o);
+        if (s0.indexOf('主力输出压制') < 0) return false;
+        return n === s0.split('主力输出压制').join('输出压制') || n === s0.split('主力输出压制').join('强化清场') || n === s0.split('主力输出压制').join('骚扰消耗');
+      };
+      if (!ex && !renameIds.has(id) && JSON.stringify(r.name) !== JSON.stringify(c.name) && !_nmOk391(r.name, c.name)) diff.push({ tag, id, zh: c.zh, why: '非改名物种 name 漂移', oldName: r.name, nowName: c.name });
       if (!swapIds.has(id) && JSON.stringify(r.mv) !== JSON.stringify(c.mv)) diff.push({ tag, id, zh: c.zh, name: c.name, why: '非换招物种 mv 漂移', oldMv: r.mv, nowMv: c.mv });
     });
   });

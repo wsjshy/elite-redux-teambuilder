@@ -42,7 +42,7 @@ const snapKeys = (tag) => {
 let fail = 0;
 function scan(team, tag) {
   const SK = snapKeys(tag);
-  let stall = 0, harass = 0, tank = 0, r2hit = 0, r3hit = 0, other = 0;
+  let stall = 0, harass = 0, tank = 0, r2hit = 0, r3hit = 0, other = 0, v391 = 0;
   const b1 = [], b2 = [], b3 = [], b4 = [], b5 = [], b6 = [];
   ERDATA.species.forEach(s => {
     let bs; try { bs = deriveBuilds(s, team); } catch (e) { return; }
@@ -78,6 +78,8 @@ function scan(team, tag) {
       }
       if (dmg === 0 && (DEF_ROLE[String(b.roleTag || '')] || DEF_NAME.test(nm)) && !OFF_NAT[nat0(b)]) r3hit++;
       // ⑤ 零漂移：未命中（非 r1/r2/r3）的卡 name/alloc/nat 必须与快照一致
+      //    v4.391：「主力输出压制」按底子打手门改名（→输出压制 / 个案 #605 →强化清场），只允许改 name，
+      //    alloc / nat 仍逐项比对，改名卡改 EV 或性格一律记差异（严格零漂移另见 verify_v4391_off.js）
       const k = String(s.id) + '#' + idx;
       const e = SK.seen[k];
       if (!e) { other++; return; }
@@ -86,6 +88,11 @@ function scan(team, tag) {
       const diffName = (String(e.name) !== nm);
       const diffEv = JSON.stringify(e.alloc) !== JSON.stringify(al);
       const diffNat = JSON.stringify(e.nat) !== JSON.stringify((b.nat || []).map(x => Array.isArray(x) ? String(x[0]) : String(x)));
+      if (diffName && String(e.name).indexOf('主力输出压制') >= 0) {
+        if (diffEv || diffNat) b5.push(`${tag} #${s.id} ${s.zh}[${idx}] v4.391 改名卡不得改 EV/性格 ev:${JSON.stringify(e.alloc)}→${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}→${JSON.stringify((b.nat || []).map(x => Array.isArray(x) ? String(x[0]) : String(x)))}`);
+        else v391++;
+        return;
+      }
       if (diffName || diffEv || diffNat) b5.push(`${tag} #${s.id} ${s.zh}[${idx}] name:${e.name}→${nm} ev:${JSON.stringify(e.alloc)}→${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}→${JSON.stringify((b.nat || []).map(x => Array.isArray(x) ? String(x[0]) : String(x)))}`);
     });
   });
@@ -96,7 +103,7 @@ function scan(team, tag) {
   console.log(' ②b 耐久压制却bulk<270 / 骚扰消耗却bulk≥300:', b6.length === 0 ? '0 ✓' : b6.length + ' ✗');
   console.log(' ③ 零伤害招防守卡 nat[0] 进攻项:', b3.length === 0 ? '0 ✓' : b3.length + ' ✗');
   console.log(' ④ 骚扰消耗且速种≥100 且速EV=0:', b4.length === 0 ? '0 ✓' : b4.length + ' ✗', `（已加满速度 ${r2hit}）`);
-  console.log(' ⑤ 未命中卡快照差异:', b5.length === 0 ? '0 ✓' : b5.length + ' ✗');
+  console.log(' ⑤ 未命中卡快照差异:', b5.length === 0 ? '0 ✓' : b5.length + ' ✗', `（v4.391 按底子门只改名 ${v391}）`);
   [b1, b2, b3, b4, b5, b6].forEach(arr => arr.slice(0, 6).forEach(x => console.log('   ✗', x)));
   fail += b1.length + b2.length + b3.length + b4.length + b5.length + b6.length;
 }

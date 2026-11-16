@@ -34,7 +34,10 @@ function speedSrc(s, b) {
 }
 function dnIdx(nat) { const e = NATURES[nat]; if (!e) return -1; const dn = String(e[1] || ''); return Object.prototype.hasOwnProperty.call(DN_IDX, dn) ? DN_IDX[dn] : -1; }
 function clash(b) { const a = alloc(b); const di = dnIdx(nat0(b)); if (di < 0) return false; return (+a[di] || 0) >= 252; }
-const keyOf = c => [c.id, c.name, c.side, c.roleTag].join('|');
+// v4.391：名含「主力输出压制」按底子打手门改名（→输出压制；个案 #605 →强化清场），属预期改名
+//   → 分组键按改名后口径归一（alloc / nat 仍逐条比对，改名不是改配置的许可证）
+const normN = n => String(n).split('主力输出压制').join('输出压制');
+const keyOf = c => [c.id, normN(c.name), c.side, c.roleTag].join('|');
 const sigOf = c => c.nat + '||' + JSON.stringify(c.alloc);
 
 const A1 = [], A2 = [], A3 = [], A4 = [];
@@ -81,7 +84,7 @@ const hitSp = new Set();
   Object.keys(V389[t].builds).forEach(sid => V389[t].builds[sid].forEach(e => { if (e.origStall) hitSp.add(String(e.id)); }));
   (V389[t].r2 || []).concat(V389[t].r3 || []).forEach(e => hitSp.add(String(e.id)));
 });
-const RENAME_IDS = { '636': 1, '871': 1, '2290': 1, '1729': 1, '1643': 1, '1644': 1, '1645': 1, '1646': 1, '1647': 1 };
+const RENAME_IDS = { '636': 1, '871': 1, '2290': 1, '1729': 1, '1643': 1, '1644': 1, '1645': 1, '1646': 1, '1647': 1, '605': 1 };
 function diffAgainst(base, now, tag) {
   // 改名物种整组豁免（name 键变化属预期）；其余按原 name 键多重集配对（v4.385 口径）。
   const baseG = new Map(), nowG = new Map();

@@ -3,6 +3,8 @@
 //   A 名称：旧名含「耐久压制」→ 同名位置换「骚扰消耗」（前缀保留，其它字符不动）
 //   B EV：A 命中卡且速种>=100 时，R2 生效 → alloc 必须精确等于 [252,0,0,0,4,252]
 //   C 性格：B 命中卡 → nat[0] 必须是加速性格（胆小/爽朗）
+//   D（v4.391 追加）名称：旧名含「主力输出压制」→ 同名位置换「输出压制」（个案 #605 换强化清场/骚扰消耗），
+//     此类卡 EV / 性格 / 招组 / 道具 / role / side 一律不得变
 // 其余字段（items / ids / role / side / bulk）一律不得改变；任何未解释差异即 FAIL。
 const H = require('./harness.js');
 const { ERDATA, deriveBuilds, MV } = H;
@@ -17,7 +19,7 @@ const idsOf = b => (b.mv.main || []).concat(b.mv.func || []).map(x => +x.id);
 let fail = 0;
 function scan(team, tag) {
   const base = SNAP[tag].builds;
-  const c = { A: 0, B: 0, C: 0, same: 0 };
+  const c = { A: 0, B: 0, C: 0, D: 0, same: 0 };
   const bad = [];
   let cur = 0;
   ERDATA.species.forEach(s => {
@@ -46,15 +48,22 @@ function scan(team, tag) {
         return;
       }
       if (!dName && !dEv && !dNat) { c.same++; return; }
-      // A：名称
+      // A：名称（v4.390 耐久压制→骚扰消耗）
+      // D：名称（v4.391 主力输出压制→输出压制；个案 #605 去「主力」后伤害招<2 改强化清场/骚扰消耗，EV/性格/招组零变化）
+      let isA = false;
       if (dName) {
-        const exp = String(e.name).split('耐久压制').join('骚扰消耗');
-        if (String(e.name).indexOf('耐久压制') < 0 || exp !== nm) {
+        const expA = String(e.name).split('耐久压制').join('骚扰消耗');
+        const expD1 = String(e.name).split('主力输出压制').join('输出压制');
+        const expD2 = String(e.name).split('主力输出压制').join('强化清场');
+        const expD3 = String(e.name).split('主力输出压制').join('骚扰消耗');
+        if (String(e.name).indexOf('耐久压制') >= 0 && expA === nm) { c.A++; isA = true; }
+        else if (String(e.name).indexOf('主力输出压制') >= 0 && (nm === expD1 || nm === expD2 || nm === expD3)) { c.D++; }
+        else {
           bad.push(`#${s.id} ${s.zh}[${idx}] 未预期改名 ${e.name} -> ${nm}`);
           return;
         }
-        c.A++;
       }
+      if (dEv && !isA) { bad.push(`#${s.id} ${s.zh}[${idx}] D 类改名不得改 EV ${JSON.stringify(e.alloc)} -> ${JSON.stringify(al)}`); return; }
       // B：EV（仅 A 命中且速种>=100）
       if (dEv) {
         const spd = +s.base[5];
@@ -73,7 +82,7 @@ function scan(team, tag) {
   });
   const notSeen = Object.keys(base).filter(k => !ERDATA.species.some(s => String(s.id) === k));
   console.log(`\n=== ${tag} === 当前卡 ${cur} / 基线卡 ${Object.keys(base).reduce((a, k) => a + base[k].length, 0)}`);
-  console.log(` 改名(A) ${c.A} | 改名并改EV(B) ${c.B} | 改名改EV改性格(C) ${c.C} | 完全一致 ${c.same}`);
+  console.log(` 改名(A) ${c.A} | 改名并改EV(B) ${c.B} | 改名改EV改性格(C) ${c.C} | 仅改名(D v4.391) ${c.D} | 完全一致 ${c.same}`);
   console.log(' 未解释差异:', bad.length === 0 ? '0 ✓' : bad.length + ' ✗');
   if (notSeen.length) console.log(' 基线有但当前无物种:', notSeen.length);
   bad.slice(0, 10).forEach(x => console.log('   ✗', x));
