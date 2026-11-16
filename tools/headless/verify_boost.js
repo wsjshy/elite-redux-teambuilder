@@ -13,10 +13,10 @@ const allTeam = [by(26), by(65), by(96), by(80), by(37), by(208)];
 
 const BOOST = [14,187,334,339,347,349,417,468,483,504,526];
 const SETUP = [240,241,201,258,580,581,604,641];
-const REC_MV=[105,202,234,235,236,303,355,409,156,215,361,456,505,532,631,72,71];
+const REC_MV=[105,202,234,235,236,303,355,409,156,456,532,631,72,71,837,73,135,208,275,392,622,744,915];   // v4.389 与引擎 _v389REC_MV 同源（含 135/208/275/392/622/744/915/837/73）
 const WEAR_MV=[73,92,261,174,227];
 const PROT_MV=[164,182];
-const REC_ITEM=['剩饭','黑色污泥'];
+const REC_ITEM=[];   // v4.389：剩饭/黑色污泥不再算回复手段（道具只是被动续航，不是真回复）
 const REC_ABI={'144':1,'90':1};
 const PRE=['精神场地','薄雾场地','场地','电场','晴','雨','沙','雪'];
 const SETTER={晴:[241],雨:[240],沙:[201],雪:[258],场地:[580,581,604,641],精神场地:[641],薄雾场地:[581],电场:[604]};
@@ -44,7 +44,7 @@ function stabCount(s,ids){const st=new Set([s.t1,s.t2]);return ids.filter(id=>{c
 function offEv(b){const a=b.ev&&(b.ev.alloc||b.ev)||[0,0,0,0,0,0];return Math.max(a[1]||0,a[3]||0);}
 function offGate(s,b,ids){return dmgCount(ids)>=2&&offEv(b)>=120&&stabCount(s,ids)>=1;}
 
-const A=[], B=[], C6=[], CE=[], E=[];
+const A=[], B=[], B2=[], C6=[], CE=[], E=[];
 
 function scan(team, lab){
   for(const s of ERDATA.species){
@@ -59,10 +59,11 @@ function scan(team, lab){
         const source=autoSrc(s)||hasSetup||cSrc(s,pre);
         if(!source)A.push({id:s.id,zh:s.zh,name:n,pre,ids});
       }
-      // ② 受队消耗 neither
+      // ② 受队消耗 neither（v4.389 判据：bulk≥300 或 (bulk≥270 且有真回复)；真回复只认回血招/回复特性）
       const A_=REC_ITEM.some(x=>it0.indexOf(x)>=0)||abiIds(s).some(id=>REC_ABI[id])||REC_MV.some(id=>ids.indexOf(id)>=0);
-      const B_=bulk>=300&&(WEAR_MV.some(id=>ids.indexOf(id)>=0)||PROT_MV.some(id=>ids.indexOf(id)>=0));
-      if(n.indexOf('受队消耗')>=0&&!(A_||B_))B.push({id:s.id,zh:s.zh,name:n,bulk,ids});
+      if(n.indexOf('受队消耗')>=0&&!(bulk>=300||(bulk>=270&&A_)))B.push({id:s.id,zh:s.zh,name:n,bulk,ids});
+      // ②b v4.389 反向：名含骚扰消耗/耐久压制 却满足「bulk≥300 且有真回复」= 不该改名的被改了
+      if((n.indexOf('骚扰消耗')>=0||n.indexOf('耐久压制')>=0)&&bulk>=300&&A_)B2.push({id:s.id,zh:s.zh,name:n,bulk,ids});
       // ③④ 322 bulk≥300 首位
       if(it0==='弱点保险'&&bulk>=300){ (lab==='six'?C6:CE).push({id:s.id,zh:s.zh,name:n,bulk}); }
       // ⑤ 本版降级到进攻名必须过门
@@ -79,6 +80,8 @@ console.log('① 体系前缀增伤清场 但自身无来源:', A.length, A.leng
 A.forEach(r=>console.log('   FAIL #'+r.id,r.zh,r.name,'pre='+r.pre,JSON.stringify(r.ids)));
 console.log('② 名含受队消耗 但 neither(无回复 且 非高耐久+消耗/保命):', B.length, B.length===0?'PASS':'FAIL');
 B.forEach(r=>console.log('   FAIL #'+r.id,r.zh,r.name,'bulk='+r.bulk,JSON.stringify(r.ids)));
+console.log('②b 名含骚扰消耗/耐久压制 却(bulk≥300 且有真回复):', B2.length, B2.length===0?'PASS':'FAIL');
+B2.forEach(r=>console.log('   FAIL #'+r.id,r.zh,r.name,'bulk='+r.bulk,JSON.stringify(r.ids)));
 console.log('③ 六人队 bulk≥300 首位弱点保险:', C6.length, C6.length===0?'PASS':'FAIL');
 C6.forEach(r=>console.log('   FAIL #'+r.id,r.zh,r.name,'bulk='+r.bulk));
 console.log('④ 空队 bulk≥300 首位弱点保险:', CE.length, CE.length===0?'PASS':'FAIL');
@@ -86,6 +89,6 @@ CE.forEach(r=>console.log('   FAIL #'+r.id,r.zh,r.name,'bulk='+r.bulk));
 console.log('⑤ 本版降级落进攻名但未过三条件门:', E.length, E.length===0?'PASS':'FAIL');
 E.forEach(r=>console.log('   FAIL #'+r.id,r.zh,r.name,'dmg='+r.dmg,'stab='+r.stab,'offEv='+r.offEv,JSON.stringify(r.ids)));
 
-const fail=A.length+B.length+C6.length+CE.length+E.length;
+const fail=A.length+B.length+B2.length+C6.length+CE.length+E.length;
 console.log('\n=== 断言结果:', fail===0?'ALL PASS':fail+' 项 FAIL','===');
 process.exit(fail===0?0:1);

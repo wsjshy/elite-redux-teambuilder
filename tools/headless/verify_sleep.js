@@ -35,7 +35,7 @@ function scan(team, tag) {
       if (allowOf(s)) { allow++; return; }
       repl++;
       const isDream = DREAM[String(s.id)] && kit.indexOf(138) >= 0;
-      const isStall = STALL[String(s.id)] && /受队消耗/.test(String(b.name || ''));
+      const isStall = STALL[String(s.id)] && /受队消耗|骚扰消耗|耐久压制/.test(String(b.name || ''));
       if (isDream) { keepDream++; return; }
       if (isStall) { keepStall++; return; }
       bad.push(`${tag} #${s.id} ${s.zh} ${b.name} 不满足判据但仍带睡觉且未登记持有`);

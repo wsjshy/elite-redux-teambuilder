@@ -93,25 +93,35 @@ const snap = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4386_base_snapsh
 const renameIds = new Set(renamed.map(r => String(r.id)));
 const swapIds = new Set(swapHeal.concat(swapCover, swapProtect).map(r => String(r.id)));
 const stableSig = c => [c.side, c.roleTag, JSON.stringify(c.alloc), c.nat, c.tpl, c.it0, c.abi0].join('|');
+// v4.389：受队消耗分流/快卡加速/零伤防守卡换性格 属本版刻意改动，按其命中物种分组豁免 name+alloc+nat
+const V389 = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4389_base_snapshot.json'), 'utf8'));
+const hitSp = new Set();
+['six', 'empty'].forEach(t => {
+  Object.keys(V389[t].builds).forEach(sid => V389[t].builds[sid].forEach(e => { if (e.origStall) hitSp.add(String(e.id)); }));
+  (V389[t].r2 || []).concat(V389[t].r3 || []).forEach(e => hitSp.add(String(e.id)));
+});
+const sig2 = c => [c.side, c.roleTag, c.tpl, c.it0, c.abi0].join('|');
 function diffAgainst(base, now, tag) {
   const bg = {}, ng = {};
   base.forEach(r => { (bg[r.id] = bg[r.id] || []).push(r); });
   now.forEach(c => { (ng[c.id] = ng[c.id] || []).push(c); });
-  let compared = 0, diff = [];
+  let compared = 0, diff = [], exemptGroups = 0;
   Object.keys({ ...bg, ...ng }).forEach(id => {
     const br = (bg[id] || []), nr = (ng[id] || []);
     if (br.length !== nr.length) { diff.push({ tag, id, zh: (nr[0] || br[0]).zh, why: '卡数不一致 base=' + br.length + ' now=' + nr.length }); return; }
     compared += br.length;
+    const ex = hitSp.has(String(id));
+    if (ex) exemptGroups++;
     const bs = br.slice().sort((a, b) => stableSig(a) < stableSig(b) ? -1 : 1);
     const ns = nr.slice().sort((a, b) => stableSig(a) < stableSig(b) ? -1 : 1);
     bs.forEach((r, i) => {
       const c = ns[i];
-      if (stableSig(r) !== stableSig(c)) diff.push({ tag, id, zh: c.zh, name: c.name, why: '稳定签名不一致', old: r, now: c });
-      if (!renameIds.has(id) && JSON.stringify(r.name) !== JSON.stringify(c.name)) diff.push({ tag, id, zh: c.zh, why: '非改名物种 name 漂移', oldName: r.name, nowName: c.name });
+      if (ex ? (sig2(r) !== sig2(c)) : (stableSig(r) !== stableSig(c))) diff.push({ tag, id, zh: c.zh, name: c.name, why: ex ? '结构漂移(本版命中组)' : '稳定签名不一致', old: r, now: c });
+      if (!ex && !renameIds.has(id) && JSON.stringify(r.name) !== JSON.stringify(c.name)) diff.push({ tag, id, zh: c.zh, why: '非改名物种 name 漂移', oldName: r.name, nowName: c.name });
       if (!swapIds.has(id) && JSON.stringify(r.mv) !== JSON.stringify(c.mv)) diff.push({ tag, id, zh: c.zh, name: c.name, why: '非换招物种 mv 漂移', oldMv: r.mv, nowMv: c.mv });
     });
   });
-  return { tag, compared, diff };
+  return { tag, compared, diff, exemptGroups };
 }
 const dSix = diffAgainst(snap.six, cur.six, 'six');
 const dEmp = diffAgainst(snap.empty, cur.empty, 'empty');

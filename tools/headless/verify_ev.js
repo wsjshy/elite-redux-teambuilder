@@ -59,7 +59,9 @@ function scan(team, tag) {
       if (isDefRole && offEv >= 252 && bulk < 252)
         A2.push({ id: s.id, zh: s.zh, name: n, role, side, ev: a });
       // ③ 性格矛盾 / 防守挂加速（已登记 uncertain 拿不准卡除外，单列上报）
-      if (!b._v385Uncertain && (clash(b) || (isDefRole && SPD_NAT[nat0(b)])))
+      //    v4.389：骚击/耐久压制＝快卡先手撒状态，加速性格是设计而非矛盾，故豁免「防守挂加速」一句
+      const _v389Fast = /骚扰消耗|耐久压制/.test(n);
+      if (!b._v385Uncertain && (clash(b) || (isDefRole && !_v389Fast && SPD_NAT[nat0(b)])))
         A3.push({ id: s.id, zh: s.zh, name: n, role, nat: nat0(b), ev: a });
       // ④ EV 结构
       const bad = !Array.isArray(a) || a.length !== 6 || a.some(v => !Number.isInteger(+v) || +v < 0 || +v > 252) || a.reduce((x, y) => x + (+y || 0), 0) > 510;
@@ -72,17 +74,25 @@ scan(allTeam, 'six'); scan([], 'empty');
 
 // ⑤ 快照逐条比对（v4.386 起按物种 id 分组多重集配对；改名物种豁免 name 键错位，alloc/nat 仍比对）
 const snap = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4385_base_snapshot.json'), 'utf8'));
+// v4.389：受队消耗分流 / 快卡加满速度 / 零伤防守卡换性格 = 本版刻意改动，按命中物种分组豁免 alloc+nat 比对
+const V389 = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4389_base_snapshot.json'), 'utf8'));
+const hitSp = new Set();
+['six', 'empty'].forEach(t => {
+  Object.keys(V389[t].builds).forEach(sid => V389[t].builds[sid].forEach(e => { if (e.origStall) hitSp.add(String(e.id)); }));
+  (V389[t].r2 || []).concat(V389[t].r3 || []).forEach(e => hitSp.add(String(e.id)));
+});
 const RENAME_IDS = { '636': 1, '871': 1, '2290': 1, '1729': 1, '1643': 1, '1644': 1, '1645': 1, '1646': 1, '1647': 1 };
 function diffAgainst(base, now, tag) {
   // 改名物种整组豁免（name 键变化属预期）；其余按原 name 键多重集配对（v4.385 口径）。
   const baseG = new Map(), nowG = new Map();
   base.forEach(r => { if (RENAME_IDS[r.id]) return; const k = keyOf(r); if (!baseG.has(k)) baseG.set(k, []); baseG.get(k).push(r); });
   now.forEach(c => { if (RENAME_IDS[c.id]) return; const k = keyOf(c); if (!nowG.has(k)) nowG.set(k, []); nowG.get(k).push(c); });
-  let compared = 0, diff = [], diffFixed = [];
+  let compared = 0, diff = [], diffFixed = [], exempt = 0;
   const keys = new Set([...baseG.keys(), ...nowG.keys()]);
   keys.forEach(k => {
     const br = (baseG.get(k) || []).slice().sort((a, b) => sigOf(a) < sigOf(b) ? -1 : 1);
     const nr = (nowG.get(k) || []).slice().sort((a, b) => sigOf(a) < sigOf(b) ? -1 : 1);
+    if (hitSp.has(String(k.split('|')[0]))) { exempt += br.length; return; }   // v4.389 命中物种整组豁免（改名会改分组键）
     if (br.length !== nr.length) {
       diff.push({ tag, k, why: '卡数不一致 base=' + br.length + ' now=' + nr.length });
       return;
@@ -97,7 +107,7 @@ function diffAgainst(base, now, tag) {
       }
     });
   });
-  return { tag, compared, diff, diffFixed };
+  return { tag, compared, diff, diffFixed, exempt };
 }
 const dSix = diffAgainst(snap.six, cur.six, 'six');
 const dEmp = diffAgainst(snap.empty, cur.empty, 'empty');
@@ -114,7 +124,7 @@ console.log('③ 性格×主投资矛盾:', A3.length, A3.length === 0 ? 'PASS' 
 A3.forEach(r => console.log('   FAIL #' + r.id, r.zh, r.name, r.role, r.nat, '[', r.ev.join(','), ']'));
 console.log('④ EV 单项>252 / 结构非法:', A4.length, A4.length === 0 ? 'PASS' : 'FAIL');
 A4.forEach(r => console.log('   FAIL #' + r.id, r.zh, r.name, '[', r.ev.join(','), ']'));
-console.log('⑤ 快照比对 six: 比对', dSix.compared, '条, 差异', dSix.diff.length, '条(其中本版 fixed', dSix.diffFixed.length, '); empty: 比对', dEmp.compared, '条, 差异', dEmp.diff.length, '条(其中 fixed', dEmp.diffFixed.length, ')');
+console.log('⑤ 快照比对 six: 比对', dSix.compared, '条(本版命中组豁免', dSix.exempt, '条), 差异', dSix.diff.length, '条(其中本版 fixed', dSix.diffFixed.length, '); empty: 比对', dEmp.compared, '条(豁免', dEmp.exempt, '条), 差异', dEmp.diff.length, '条(其中 fixed', dEmp.diffFixed.length, ')');
 nonFixedDiff.forEach(r => console.log('   NONFIXED DIFF #' + r.id, r.zh, r.name, 'fixed=' + r.fixed, 'ledger=' + r.ledger));
 console.log('⑤ 未命中卡差异(必须 0):', nonFixedDiff.length, nonFixedDiff.length === 0 ? 'PASS' : 'FAIL');
 
