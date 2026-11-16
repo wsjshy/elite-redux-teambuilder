@@ -9,6 +9,7 @@ const H = require('./harness.js');
 const { ERDATA, deriveBuilds, MV } = H;
 const fs = require('fs'), path = require('path');
 const SNAP = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4391_base_snapshot.json'), 'utf8'));
+const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [26, 65, 96, 80, 37, 208].map(by);
 const POWER_OK = 95;
@@ -47,14 +48,30 @@ function scan(team, tag) {
       if (nm.indexOf('主力输出压制') >= 0 && ab < POWER_OK) { c.a1++; bad.push(`① #${s.id} ${s.zh}[${idx}] 主力输出压制却 atkBest=${ab}`); }
       if (nm.indexOf('输出压制') >= 0 && nm.indexOf('主力输出压制') < 0 && ab >= POWER_OK) { c.a2++; bad.push(`② #${s.id} ${s.zh}[${idx}] 输出压制却 atkBest=${ab}`); }
       if (nm.indexOf('输出压制') >= 0 && dmgOf(idsOf(b)) < 2) { c.a3++; bad.push(`③ #${s.id} ${s.zh}[${idx}] 输出压制却实配伤害招<2（${idsOf(b)}）`); }
-      // ④ 漂移
+      // ④ 漂移（v4.393：对齐卡 role/alloc/nat 由 verify_v4393 校验，豁免；ids/item/side 严格）
       const e = arr[idx];
       const al = (b.ev && b.ev.alloc) || [];
       const na = natArr(b), idc = idsOf(b);
       const dName = String(e.name) !== nm;
-      const dOther = JSON.stringify(e.alloc) !== JSON.stringify(al) || JSON.stringify(e.nat) !== JSON.stringify(na) ||
-        JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '') ||
-        String(e.role) !== String(b.roleTag || '') || String(e.side) !== String(b.side || '');
+      const _v393ex = !!b._v393RoleAlign;
+      const _key = s.id + '[' + idx + ']';
+      const _consIO = CONS_ALLOW[tag].itemOnly.indexOf(_key) >= 0;
+      const _consRT = CONS_ALLOW[tag].route.indexOf(_key) >= 0;
+      // CONS_ITEM 修复：itemOnly 允许 item 变（可能叠加本脚本认可的改名）；ids/side/role 不得变；route 允许联动
+      if (_consIO) {
+        if (JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.side) !== String(b.side) ||
+          String(e.role) !== String(b.roleTag)) bad.push(`④ ${_key} CONS itemOnly 口径不符 ids/side/role`);
+        c.same++;
+        if (!dName) return;
+      } else if (_consRT) {
+        if (JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.side) !== String(b.side)) bad.push(`④ ${_key} CONS route ids/side 变化`);
+        return;
+      }
+      const dFixed = !_v393ex && (JSON.stringify(e.alloc) !== JSON.stringify(al) || JSON.stringify(e.nat) !== JSON.stringify(na) ||
+        String(e.role) !== String(b.roleTag || ''));
+      const dOther = dFixed ||
+        JSON.stringify(e.ids) !== JSON.stringify(idc) || (!_consIO && String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '')) ||
+        String(e.side) !== String(b.side || '');
       if (dOther) { bad.push(`④ #${s.id} ${s.zh}[${idx}] 非名称字段变化 item:${e.item}->${(b.it && b.it[0] && b.it[0][0])} role:${e.role}->${b.roleTag} side:${e.side}->${b.side} ev:${JSON.stringify(e.alloc)}->${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}->${JSON.stringify(na)} ids:${JSON.stringify(e.ids)}->${JSON.stringify(idc)}`); return; }
       if (!dName) {
         // 基线本来不该动的卡，名称也必须逐字一致

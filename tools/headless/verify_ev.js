@@ -70,7 +70,7 @@ function scan(team, tag) {
       // ④ EV 结构
       const bad = !Array.isArray(a) || a.length !== 6 || a.some(v => !Number.isInteger(+v) || +v < 0 || +v > 252) || a.reduce((x, y) => x + (+y || 0), 0) > 510;
       if (bad) A4.push({ id: s.id, zh: s.zh, name: n, ev: a });
-      cur[tag].push({ id: String(s.id), zh: s.zh, name: n, side, roleTag: role, nat: natStr(b), alloc: a, fixed: !!b._v385EvNatureFixed, uncertain: !!b._v385Uncertain, ledger: !!b._v385StallLedger });
+      cur[tag].push({ id: String(s.id), zh: s.zh, name: n, side, roleTag: role, nat: natStr(b), alloc: a, fixed: !!b._v385EvNatureFixed, uncertain: !!b._v385Uncertain, ledger: !!b._v385StallLedger, v393: !!b._v393RoleAlign });
     }
   }
 }
@@ -86,6 +86,9 @@ const hitSp = new Set();
   (V389[t].r2 || []).concat(V389[t].r3 || []).forEach(e => hitSp.add(String(e.id)));
 });
 const RENAME_IDS = { '636': 1, '871': 1, '2290': 1, '1729': 1, '1643': 1, '1644': 1, '1645': 1, '1646': 1, '1647': 1, '605': 1 };
+// v4.393：角色对齐卡的 role/alloc/nat 变化由 verify_v4393 校验，此处整组豁免
+const v393Ids = new Set();
+cur.six.concat(cur.empty).forEach(r => { if (r.v393) v393Ids.add(r.id); });
 function diffAgainst(base, now, tag) {
   // 改名物种整组豁免（name 键变化属预期）；其余按原 name 键多重集配对（v4.385 口径）。
   const baseG = new Map(), nowG = new Map();
@@ -97,6 +100,7 @@ function diffAgainst(base, now, tag) {
     const br = (baseG.get(k) || []).slice().sort((a, b) => sigOf(a) < sigOf(b) ? -1 : 1);
     const nr = (nowG.get(k) || []).slice().sort((a, b) => sigOf(a) < sigOf(b) ? -1 : 1);
     if (hitSp.has(String(k.split('|')[0]))) { exempt += br.length; return; }   // v4.389 命中物种整组豁免（改名会改分组键）
+    if (v393Ids.has(String(k.split('|')[0]))) { exempt += br.length; return; }  // v4.393 角色对齐卡整组豁免（verify_v4393 校验）
     if (br.length !== nr.length) {
       diff.push({ tag, k, why: '卡数不一致 base=' + br.length + ' now=' + nr.length });
       return;

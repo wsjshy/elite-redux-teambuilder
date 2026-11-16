@@ -14078,7 +14078,7 @@ function threatPriorLine(){
 var RESIST_BERRY={'火':105,'水':106,'电':107,'草':108,'冰':109,'格斗':110,'毒':111,'地面':112,'飞行':113,'超能':114,'虫':115,'岩石':116,'幽灵':117,'龙':118,'恶':119,'钢':120,'妖精':122,'一般':121};
 var _thrMemo={},_spAllMemo=null,_medSpeMemo=null;
 function spAll(){if(!ERDATA.species||!ERDATA.species.length)return [];if(!_spAllMemo)_spAllMemo=ERDATA.species.filter(function(x){return isValidSp(x)});return _spAllMemo}
-function medSpe(){if(_medSpeMemo===null){var a=spAll().map(function(x){return x.base[5]}).sort(function(x,y){return x-y});_medSpeMemo=a[Math.floor(a.length/2)]||80}return _medSpeMemo}
+function medSpe(){if(_medSpeMemo===null){var a=spAll().map(function(x){return x.base[5]}).sort(function(x,y){return x-y});if(!a.length)return 80;_medSpeMemo=a[Math.floor(a.length/2)]||80}return _medSpeMemo}
 /* 可学某类招者的占比（代理口径：无使用率数据） */
 function thrFrac(ids){
   var k='f'+ids.join(',');
@@ -14835,7 +14835,7 @@ function bestBreakingRoute(p){
    原则标签由职责四轴投影主导轴 + 显式补充（P5 协同/P2 多功能/P4 环境） */
 var PLAY_KIND={speed:'attack',boost:'boost',tr:'attack',stall:'wear',pivot:'pivot',wx:'weather',imm:'protect',mix:'cover',main:'attack',def:'rec'};
 var PLAY_WHY={
-  speed:{beat:'超速环境（速度中位 '+medSpe()+'）先手压制、抢节奏',cost:'怕先制招与被耐久反打',prin:['P1','P4']},
+  speed:{beat:'超速环境（速度中位 __MEDSPE__）先手压制、抢节奏',cost:'怕先制招与被耐久反打',prin:['P1','P4']},
   boost:{beat:'站场强化后一次清场（对位=逼换空档）',cost:'强化回合先被打，需耐久/掩护',prin:['P1']},
   tr   :{beat:'戏法空间内低速重炮先手（对位=高速队）',cost:'依赖空间窗口（'+WCONF.trickroomTurns+' 回合）与空间手存活',prin:['P1','P2']},
   stall:{beat:'钉子+回复双确认的长线消耗（对位=慢速队/换人成本）',cost:'主动节奏慢，怕高爆发与除钉',prin:['P3','P4']},
@@ -15093,7 +15093,8 @@ function _deriveBuildsCore(s,team){
     b.basis=basis.slice(0,5);b.drivenBy=c.drivenBy||[];b.score=c.sc;b.prio=i+1;b.id='P'+(i+1);b.prof=p;b._candKey=c.key;
     /* v4.5：流派 why = 同一原则层格式（克制 X；代价 Y｜原则 P…） */
     var _pw=PLAY_WHY[c.key]||PLAY_WHY[(c.key==='wx'?'wx':(c.key==='mix'?'mix':'main'))];
-    b.why=mvWhyStd(PLAY_KIND[c.key]||'attack',roleTag,{beat:_pw.beat,cost:_pw.cost,prin:_pw.prin});
+    var _beatX=(_pw.beat.indexOf('__MEDSPE__')>=0)?_pw.beat.replace('__MEDSPE__',medSpe()):_pw.beat;
+    b.why=mvWhyStd(PLAY_KIND[c.key]||'attack',roleTag,{beat:_beatX,cost:_pw.cost,prin:_pw.prin});
     /* ---- v45-2：流派命名 × 实际招组对齐 ----
        触发：roleTag=强化 但 4 槽无强化招（如凤王「顺风强化清场」：可学强化仅冥想=特殊侧，物理侧无）
        ① 本侧有可学强化招 → 补入槽（替换末位功能槽）；② 无 → **改名不称「强化」**（增伤/主力）+ role 与 why 同步 */
@@ -15318,9 +15319,9 @@ function _deriveBuildsCore(s,team){
   try{
     if(typeof CONS_ITEM==='undefined'){
       window.CONS_ITEM={};
-      [332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349].forEach(function(id){var z=itemZhName(id,'');if(z)CONS_ITEM[z]=1});
-      [76,78,79,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,125,129,130,131].forEach(function(id){var z=itemZhName(id,'');if(z)CONS_ITEM[z]=1});
-      ['白色香草','心灵香草','力量香草','气球','气势披带','弱点保险','属性减伤果'].forEach(function(z){CONS_ITEM[z]=1});
+      [332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349].forEach(function(id){var z=itemZhName(id,'');if(z)window.CONS_ITEM[z]=1});
+      [76,78,79,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,125,129,130,131].forEach(function(id){var z=itemZhName(id,'');if(z)window.CONS_ITEM[z]=1});
+      ['白色香草','心灵香草','力量香草','气球','气势披带','弱点保险','属性减伤果'].forEach(function(z){window.CONS_ITEM[z]=1});
     }
   }catch(eCons){eCons.name}
   try{
@@ -15330,7 +15331,7 @@ function _deriveBuildsCore(s,team){
         if(!its.length)return;
         var mains=(b.mv&&b.mv.main)||[];
         var abiZ=(b.abi||[]).map(function(a){return String(a&&a.n)}).join('|');
-        var _isCons=function(x){return !!(x&&CONS_ITEM[x[0]])};
+        var _isCons=function(x){return !!(x&&window.CONS_ITEM[x[0]])};
         var _clean=function(t){return String(t||'').replace(/。$/,'')};
         var _gem=(function(){var g=GEM_TYPE[String(s.t1)]||0;return g?itemZhName(g,''):''})();
         /* ① 异常系道具（先落位，后面若被判为消耗路线会让位） */
@@ -17104,6 +17105,38 @@ function _deriveBuildsCore(s,team){
       b.name=_v392new;
     });
   }catch(eV4392){eV4392.name}
+  /* v4.393：攻击/轮转名却挂肉盾 roleTag 的角色对齐——仅当重算 roleTag→EV→性格零矛盾时回写，
+     边缘卡（双刀/减速性格/特例）保留并登记；招组/道具/特性/side 不动（沿用 v4.385 只动 EV/nat 纪律）。 */
+  try{
+    var _v393IDX={'攻击':1,'防御':2,'特攻':3,'特防':4,'速度':5};
+    var _v393sIdx=function(t){var m=String(t).match(/攻击|防御|特攻|特防|速度/);return m?_v393IDX[m[0]]:-1;};
+    var _v393role=function(nm){
+      if(nm.indexOf('强化清场')>=0)return '强化';
+      if(nm.indexOf('轮转补盲')>=0)return '轮转';
+      if(nm.indexOf('主力输出压制')>=0||nm.indexOf('输出压制')>=0)return '输出';
+      return null;
+    };
+    var _v393clean=function(alloc,n0){
+      var pair=NATURES[n0];if(!pair)return false;
+      var bI=_v393sIdx(pair[0]),rI=_v393sIdx(pair[1]);
+      if(rI>=0&&(+alloc[rI]||0)>=252)return false;
+      if(bI>=0&&(+alloc[bI]||0)===0)return false;
+      return true;
+    };
+    var _v393n=0,_v393edge=0;
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      if(String(b.roleTag||'')!=='肉盾')return;
+      var _v393nm=String(b.name),_v393sd=String(b.side||'');
+      var _v393nr=_v393role(_v393nm);if(!_v393nr)return;
+      var _v393ev;try{_v393ev=buildEvs(s,_v393sd,_v393nr,_v393nm);}catch(eE){return;}
+      var _v393nat;try{_v393nat=buildNature(s,_v393sd,_v393nr,{name:_v393nm,ev:_v393ev});}catch(eN){return;}
+      var _v393n0=(_v393nat[0]&&_v393nat[0][0])||'';
+      if(!_v393clean(_v393ev.alloc,_v393n0)){_v393edge++;if(b._v393Edge===undefined)b._v393Edge=_v393nr;return;}
+      if(b._v393OldRole===undefined)b._v393OldRole=b.roleTag;
+      b.roleTag=_v393nr;b.ev=_v393ev;b.nat=_v393nat;b._v393RoleAlign=1;_v393n++;
+    });
+  }catch(eV4393){eV4393.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20538,7 +20571,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.392';
+var ER_ENGINE_VER='v4.393';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

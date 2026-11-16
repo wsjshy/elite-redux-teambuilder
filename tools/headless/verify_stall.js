@@ -83,6 +83,7 @@ function scan(team, tag) {
       const k = String(s.id) + '#' + idx;
       const e = SK.seen[k];
       if (!e) { other++; return; }
+      if (b._v393RoleAlign) return;   /* v4.393 角色对齐卡：role/ev/nat 由 verify_v4393 校验，豁免漂移 */
       if (SK.r1[k] || SK.r2[k] || SK.r3[k]) return;
       other++;
       const diffName = (String(e.name) !== nm);

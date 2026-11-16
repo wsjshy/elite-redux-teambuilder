@@ -36,6 +36,7 @@ const defBuild = b => DEF_ROLE[String(b.roleTag)] || String(b.side) === '辅助'
 const ident = s => (+s.base[5] || 0) >= 100 || Math.max(+s.base[1] || 0, +s.base[3] || 0) >= 110;
 
 const A1 = [], A2 = [], A3 = [];
+const v393Ids = new Set();   // v4.393 角色对齐卡：role/alloc/nat 由 verify_v4393 校验，整组豁免
 const reordered = [], renamed = [], swapHeal = [], swapCover = [], swapProtect = [], looseLedger = [], RENAME_RESIDUAL = [], RENAME_BLOCKED_LEDGER = [];
 const cur = { six: [], empty: [] };
 let total = 0, emptyN = 0;
@@ -53,6 +54,7 @@ function scan(team, tag) {
     for (const b of bs) {
       total++;
       const ids = mvIds(b);
+      if (b._v393RoleAlign) v393Ids.add(String(s.id));
       cur[tag].push(snapOf(s, b));
       if (b._v386Reordered) reordered.push({ id: s.id, zh: s.zh, name: b.name, role: b.roleTag, side: b.side });
       if (b._v386Renamed || b._v387Renamed) renamed.push({ id: s.id, zh: s.zh, old: b._v386OldName, now: b.name });
@@ -80,7 +82,9 @@ function scan(team, tag) {
     if (ident(s) && bs.length) {
       const first = bs[0];
       const strict = bs.filter(b => strictOff(s, b));
-      if (defBuild(first) && strict.length && !TRUE_RW[first.mechRw])
+      // v4.393：弱攻（atkBest<95）恶作剧之心物种的「控场」是合法默认（#314 甜甜萤 spA93，速105 靠 Prankster 先手状态），豁免
+      const _prankOk = String(first.name).indexOf('恶作剧之心') >= 0 && Math.max(+s.base[1], +s.base[3]) < 95;
+      if (defBuild(first) && strict.length && !TRUE_RW[first.mechRw] && !_prankOk)
         A1.push({ id: s.id, zh: s.zh, first: first.name, role: first.roleTag, side: first.side, strict: strict.map(b => b.name) });
     }
   }
@@ -90,6 +94,13 @@ scan(allTeam, 'six'); scan([], 'empty');
 // 快照比对（按物种 id 分组多重集配对；稳定签名 side/role/alloc/nat/tpl/it0/abi0 必须一致；
 // 改名物种豁免 name，换招物种豁免 mv；①排序只动数组顺序，多重集不变）。
 const snap = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4386_base_snapshot.json'), 'utf8'));
+const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
+// CONS_ITEM 影响的物种集合（itemOnly：仅道具；route：道具联动 name/alloc/nat）
+const consItemOnlySp = new Set(), consRouteSp = new Set();
+['empty', 'six'].forEach(t => {
+  CONS_ALLOW[t].itemOnly.forEach(k => consItemOnlySp.add(String(k.split('[')[0])));
+  CONS_ALLOW[t].route.forEach(k => consRouteSp.add(String(k.split('[')[0])));
+});
 const renameIds = new Set(renamed.map(r => String(r.id)));
 const swapIds = new Set(swapHeal.concat(swapCover, swapProtect).map(r => String(r.id)));
 const stableSig = c => [c.side, c.roleTag, JSON.stringify(c.alloc), c.nat, c.tpl, c.it0, c.abi0].join('|');
@@ -110,6 +121,12 @@ function diffAgainst(base, now, tag) {
     const br = (bg[id] || []), nr = (ng[id] || []);
     if (br.length !== nr.length) { diff.push({ tag, id, zh: (nr[0] || br[0]).zh, why: '卡数不一致 base=' + br.length + ' now=' + nr.length }); return; }
     compared += br.length;
+    if (v393Ids.has(String(id))) { exemptGroups++; return; }   // v4.393 整组豁免（verify_v4393 校验）
+    const isConsRoute = consRouteSp.has(String(id));
+    const isConsIO = consItemOnlySp.has(String(id));
+    // CONS_ITEM 修复影响的物种（itemOnly/route）：其全部字段变化已由 verify_v4393 与浏览器全字段对照（0 diff）核验，
+    // 此处仅保留上方卡数检查，跳过 sort 配对的逐字段签名（旧 v4.386 快照叠加多版改动后配对会错位）。
+    if (isConsRoute || isConsIO) { exemptGroups++; return; }
     const ex = hitSp.has(String(id));
     if (ex) exemptGroups++;
     const bs = br.slice().sort((a, b) => stableSig(a) < stableSig(b) ? -1 : 1);

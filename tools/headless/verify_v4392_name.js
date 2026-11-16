@@ -9,6 +9,7 @@ const H = require('./harness.js');
 const { ERDATA, deriveBuilds, MV } = H;
 const fs = require('fs'), path = require('path');
 const SNAP = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4392_base_snapshot.json'), 'utf8'));
+const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [26, 65, 96, 80, 37, 208].map(by);
 const HAZ = [191, 390, 446, 564], STA = [86, 92, 261, 137, 599];
@@ -29,7 +30,9 @@ function rule(s, ids) {
   return '稳健联防';
 }
 
-const EXPECT = { six: 423, empty: 0 };
+// v4.393 CONS_ITEM 修复后：588[1]/2524[4] 失去回复件（剩饭→宝石）不再落强化清场，改名数 423→421
+const EXPECT = { six: 421, empty: 0 };
+const EXPECT_DIST = { '输出压制': 38, '主力输出压制': 45, '强化清场': 274, '稳健联防': 35, '双墙辅助流': 29 };
 let fail = 0;
 function scan(team, tag) {
   const base = SNAP[tag].builds;
@@ -57,11 +60,28 @@ function scan(team, tag) {
         if (rule(s, ids) !== nm) { c.a2++; bad.push(`② #${s.id} ${s.zh}[${idx}] 重算 ${rule(s, ids)} ≠ 实际 ${nm}`); }
         if (!b._v392OldName || String(b._v392OldName).indexOf('骚扰消耗') < 0) { c.a2++; bad.push(`② #${s.id} ${s.zh}[${idx}] _v392OldName 异常 ${b._v392OldName}`); }
       } else if (nm.indexOf('骚扰消耗') >= 0 && !har) { c.a3++; }
-      // ⑤ 漂移
+      // ⑤ 漂移（v4.393：对齐卡的 role/alloc/nat 变化由 verify_v4393 校验，此处豁免；ids/item/side 仍严格）
       const al = (b.ev && b.ev.alloc) || [], na = natArr(b), idc = ids;
-      const dOther = JSON.stringify(e.alloc) !== JSON.stringify(al) || JSON.stringify(e.nat) !== JSON.stringify(na) ||
-        JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '') ||
-        String(e.role) !== String(b.roleTag || '') || String(e.side) !== String(b.side || '');
+      const _v393ex = !!b._v393RoleAlign;
+      const _key = s.id + '[' + idx + ']';
+      const _consIO = CONS_ALLOW[tag].itemOnly.indexOf(_key) >= 0;
+      const _consRT = CONS_ALLOW[tag].route.indexOf(_key) >= 0;
+      // CONS_ITEM 修复：itemOnly 允许 item 变（可能叠加 v4.392 改名）；ids/side/role 不得变；route 允许联动
+      if (_consIO) {
+        if (JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.side) !== String(b.side) ||
+          String(e.role) !== String(b.roleTag)) bad.push(`⑤ ${_key} CONS itemOnly 口径不符 ids/side/role`);
+        c.same++;
+        if (String(e.name) === nm) return;
+        // 名称也变了：落入下方「骚扰消耗→规则词」校验
+      } else if (_consRT) {
+        if (JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.side) !== String(b.side)) bad.push(`⑤ ${_key} CONS route ids/side 变化`);
+        return;
+      }
+      const dFixed = !_v393ex && (JSON.stringify(e.alloc) !== JSON.stringify(al) || JSON.stringify(e.nat) !== JSON.stringify(na) ||
+        String(e.role) !== String(b.roleTag || ''));
+      const dOther = dFixed ||
+        JSON.stringify(e.ids) !== JSON.stringify(idc) || (!_consIO && String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '')) ||
+        String(e.side) !== String(b.side || '');
       if (dOther) { bad.push(`⑤ #${s.id} ${s.zh}[${idx}] 非名称字段变化 item:${e.item}->${(b.it && b.it[0] && b.it[0][0])} role:${e.role}->${b.roleTag} side:${e.side}->${b.side} ev:${JSON.stringify(e.alloc)}->${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}->${JSON.stringify(na)} ids:${JSON.stringify(e.ids)}->${JSON.stringify(idc)}`); return; }
       if (String(e.name) === nm) { c.same++; return; }
       // 名称变了：只允许「骚扰消耗 → 规则词」
@@ -71,7 +91,8 @@ function scan(team, tag) {
   console.log(`\n=== ${tag} === 当前卡 ${cur} / 基线卡 ${Object.keys(base).reduce((a, k) => a + base[k].length, 0)}`);
   console.log(` ① 骚扰消耗却无骚扰手段 ${c.a1} | ② 改名与规则不一致 ${c.a2} | ③ 残留无标记 ${c.a3}`);
   console.log(` ③ 保留「骚扰消耗」且真带骚扰手段 ${c.kept} | ⑤ 改名 ${c.rename} | 完全一致 ${c.same} | 未解释差异 ${bad.length === 0 ? '0 ✓' : bad.length + ' ✗'}`);
-  console.log(` ④ 落词分布 ${JSON.stringify(c.dist)}（期望 423 于 six / 0 于 empty）`);
+  console.log(` ④ 落词分布 ${JSON.stringify(c.dist)}（期望改名 ${EXPECT[tag]} 于 ${tag}）`);
+  if (tag === 'six' && JSON.stringify(c.dist) !== JSON.stringify(EXPECT_DIST)) bad.push(`④ six 落词分布不符 ${JSON.stringify(c.dist)}`);
   if (tag === 'six' && c.rename !== EXPECT.six) { bad.push(`④ six 改名数 ${c.rename} ≠ ${EXPECT.six}`); }
   if (tag === 'empty' && c.rename !== EXPECT.empty) { bad.push(`④ empty 改名数 ${c.rename} ≠ ${EXPECT.empty}`); }
   bad.slice(0, 12).forEach(x => console.log('   ✗', x));

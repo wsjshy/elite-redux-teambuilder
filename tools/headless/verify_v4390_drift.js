@@ -10,6 +10,7 @@ const H = require('./harness.js');
 const { ERDATA, deriveBuilds, MV } = H;
 const fs = require('fs'), path = require('path');
 const SNAP = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4390_base_snapshot.json'), 'utf8'));
+const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [26, 65, 96, 80, 37, 208].map(by);
 const ACC = { '胆小': 1, '爽朗': 1 };
@@ -31,7 +32,7 @@ function ruleWord(s, ids){
 let fail = 0;
 function scan(team, tag) {
   const base = SNAP[tag].builds;
-  const c = { A: 0, B: 0, C: 0, D: 0, E: 0, same: 0 };
+  const c = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0, same: 0 };
   const bad = [];
   let cur = 0;
   ERDATA.species.forEach(s => {
@@ -55,10 +56,28 @@ function scan(team, tag) {
       const dItem = String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '');
       const dRole = String(e.role) !== String(b.roleTag || '');
       const dSide = String(e.side) !== String(b.side || '');
-      if (dIds || dItem || dRole || dSide) {
+      const _v393ex = !!b._v393RoleAlign;   /* v4.393 对齐卡：role/ev/nat 由 verify_v4393 校验，豁免；ids/item/side/name 严格 */
+      const _key = s.id + '[' + idx + ']';
+      const _consIO = CONS_ALLOW[tag].itemOnly.indexOf(_key) >= 0;
+      const _consRT = CONS_ALLOW[tag].route.indexOf(_key) >= 0;
+      /* G（v4.393 CONS_ITEM 可移植性修复）：
+         - itemOnly：允许 item 变（旧快照下可能还叠加本脚本已认可的 name/ev/nat 改名）；ids/side 不得变，role 不得变
+         - route：允许 item 联动的 name/role/ev/nat 变化；ids/side 不得变
+         两类均已与浏览器逐字段核对一致。 */
+      if (_consIO) {
+        if (dIds || dSide || dRole) bad.push(`#${s.id} ${s.zh}[${idx}] CONS itemOnly 口径不符 ids/side/role`);
+        c.G++;
+        // 仍走下方改名/EV/性格逻辑，仅豁免 item；若没有改名则直接结束
+        if (!dName && !dEv && !dNat) return;
+      } else if (_consRT) {
+        if (dIds || dSide) bad.push(`#${s.id} ${s.zh}[${idx}] CONS route 出现 ids/side 变化`);
+        c.G++; return;
+      }
+      if (dIds || (dItem && !_consIO) || dSide || (dRole && !_v393ex)) {
         bad.push(`#${s.id} ${s.zh}[${idx}] 非名称字段变化 item:${e.item}->${(b.it && b.it[0] && b.it[0][0])} role:${e.role}->${b.roleTag} side:${e.side}->${b.side} ids:${e.ids}->${idc}`);
         return;
       }
+      if (_v393ex && !_consIO) { c.F++; return; }
       if (!dName && !dEv && !dNat) { c.same++; return; }
       // A：名称（v4.390 耐久压制→骚扰消耗）
       // D：名称（v4.391 主力输出压制→输出压制；个案 #605 去「主力」后伤害招<2 改强化清场/骚扰消耗，EV/性格/招组零变化）
@@ -97,7 +116,7 @@ function scan(team, tag) {
   });
   const notSeen = Object.keys(base).filter(k => !ERDATA.species.some(s => String(s.id) === k));
   console.log(`\n=== ${tag} === 当前卡 ${cur} / 基线卡 ${Object.keys(base).reduce((a, k) => a + base[k].length, 0)}`);
-  console.log(` 改名(A) ${c.A} | 改名并改EV(B) ${c.B} | 改名改EV改性格(C) ${c.C} | 仅改名(D v4.391) ${c.D} | 仅改名(E v4.392) ${c.E} | 完全一致 ${c.same}`);
+  console.log(` 改名(A) ${c.A} | 改名并改EV(B) ${c.B} | 改名改EV改性格(C) ${c.C} | 仅改名(D v4.391) ${c.D} | 仅改名(E v4.392) ${c.E} | 角色对齐(F v4.393) ${c.F} | CONS_ITEM修复(G v4.393) ${c.G} | 完全一致 ${c.same}`);
   console.log(' 未解释差异:', bad.length === 0 ? '0 ✓' : bad.length + ' ✗');
   if (notSeen.length) console.log(' 基线有但当前无物种:', notSeen.length);
   bad.slice(0, 10).forEach(x => console.log('   ✗', x));

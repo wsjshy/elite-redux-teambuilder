@@ -1,0 +1,118 @@
+# v4.393 「roleTag 名实对齐」：攻击向流派不该再挂肉盾跑耐久
+
+> 维护模式**第五次破例**（依据仍是同一条：发现新的事实性错误才破例）。**不是收口二轮**。
+> 版本：v4.393｜日期：2026-11-17｜产物 2,057,188 B / SHA1 `0E8224E7844A8B45060EE924FEDEE2AA8D2926C4`
+> 前序：v4.389 消耗三档、v4.390 耐久撤档、v4.391 主力输出准入、v4.392 骚扰消耗战术词准入
+
+---
+
+## 一、立项：改名块一路只改 name，roleTag 留在候选期
+
+v4.392 把「骚扰消耗」按本卡配置纠正（423 张无骚扰手段卡改名），但从 v4.389 到 v4.392 的所有下游改名块都明确写着同一句话：**roleTag 不动**。
+
+候选生成（`_deriveBuildsCore`）里，`roleTag` 来自候选对象的 `c.tag`：
+
+- 免疫/减伤候选 `imm`（base「减伤轴」）→ `tag:'肉盾'`；
+- 防守兜底 `def`（base「稳健联防」）→ `tag:'肉盾'`；
+- 消耗 stall → `'受队'`；速攻/空间/重炮 → `'输出'`；强化 → `'强化'`；节奏 → `'轮转'`；机制 → `'增伤'/'输出'`。
+
+随后 v4.383 兜底 `_v383route()`（末行硬 `return '受队消耗'`）、v4.389 R1（受队消耗→骚扰消耗）、v4.391（主力输出压制→输出压制）、v4.392（骚扰消耗→5 个既有词）逐层改名，**只改 `b.name`，不回写 `b.roleTag`**。于是一张最终叫「强化清场」、走特殊 side、满特攻满速的卡，引擎字段里仍写着 `roleTag='肉盾'`，并沿用候选期的耐久 EV。
+
+## 二、量化（改前基线）
+
+探针 `probe4393*.js`，用 `deriveBuilds` 逐卡扫全库 1906 只，两口径（六人队 `[26,65,96,80,37,208]` / 空队 `[]`）。
+
+**全库 roleTag 分布**（六人队 total 5645 / 空队 total 4205）：
+
+| 口径 | 肉盾 | 输出 | 受队 | 强化 | 辅助 | 轮转 | 增伤 |
+|---|---|---|---|---|---|---|---|
+| 六人队 | 1637 | 2049 | 809 | 535 | 316 | 223 | 76 |
+| 空队 | 444 | 2037 | 627 | 666 | 316 | – | 115 |
+
+**肉盾按耐久分桶**（bulk = base[0]+base[2]+base[4]）：六人队 1637 中 bulk<270 占 1228、270–299 占 333、≥300 仅 76；空队 444 中 <270 占 427、≥300 占 14。
+
+**攻击/轮转名 + 肉盾（六人队 584，空队 0）**：
+
+- 按名：强化清场 297 / 轮转补盲 189 / 主力输出压制 52 / 输出压制 46；
+- 按 side：物理 328 / 特殊 229 / 双刀 27（无辅助 side）；
+- 按伤害招数：1 招 204 / 2 招 289 / 3 招 84 / 4 招 7。
+
+空队为 0：空队肉盾卡名全是「稳健联防」变体，没有攻击向名字。
+
+## 三、两项前置修复（harness 与浏览器的环境差异）
+
+### 3.1 CONS_ITEM 可移植性
+
+`make_harness.py` 的 STUB 里，`window` 是一个 Proxy，target 是独立空对象，**不是 node 全局**；浏览器里 `window===globalThis`，node harness 里 bare 全局与 `window.X` 分离。
+
+v345 块原本用 bare `CONS_ITEM` 初始化，在 harness 中对未解析基对象的属性赋值会抛 ReferenceError，被外层 catch 静默吞掉，留下空的 `window.CONS_ITEM`，导致 v345 道具处理对受影响 build 静默中止、保留旧回复件。
+
+修复（方案 A）：v345 块内 4 处 bare `CONS_ITEM` 统一为 `window.CONS_ITEM`，保留 16527 的 bare `typeof CONS_ITEM` 守卫（改 window 会因 Proxy `_any` 的 typeof='function' 误跳过初始化）。方案 B（Proxy set 同步 globalThis）经实验副本出现 256 处差异、过宽，已否决。
+
+量化（`_cons_item_allow.json`，对比 v4.392 快照）：
+
+- 空队：itemOnly 44、route 0；
+- 六队：itemOnly 54、route 8。
+
+8 张 route 卡 = 4 张对齐卡同时道具变化（`253[3]森林蜥蜴、254[2]蜥蜴王、424[2]双尾怪手、620[6]师父鼬`，快照名均「轮转补盲」，现仍同名只换宝石）+ 4 张非对齐卡（`588[1]盖盖虫、684[0]绵绵泡芙、944[4]滋汁鼹、2524[4]爆香猿R`，快照名「骚扰消耗」，道具修正后失去回复件、改落「稳健联防」）。
+
+机制：旧 harness 下 v345 中止，这些卡保留剩饭/黑色污泥并被路由到依赖回复件的强化清场/骚扰消耗；修复后 v345 正确给宝石/抗性果，失去回复件即落稳健联防。
+
+### 3.2 medSpe 初始化顺序
+
+`medSpe()` 取全库速度种族中位数：`spAll().map(x=>x.base[5]).sort()`，`a[Math.floor(a.length/2)]||80`。`spAll()` 无数据时 early `return []` 且不写 memo。
+
+loader 中 data_lite 同步 document.write，data_species/data_adv 是 window load 后 800ms 延迟 async 分片。顶层 `var PLAY_WHY={speed:{beat:'...'+medSpe()+'...'}}` 在脚本解析期立即调 medSpe()——此时 ERDATA.species 为空 → `a[0]`=undefined → `undefined||80`=80 被永久 memoize。
+
+修复（字节级）：① medSpe 加 `if(!a.length)return 80;`（空数据不写 memo，就绪后才算真实中位数）；② PLAY_WHY.speed.beat 把 `'+medSpe()+'` 改占位符 `__MEDSPE__`，避免解析期触发；③ b.why 构建处（数据就绪后）替换占位符。
+
+真实速度中位数 = **75**（spAll 1905 只，median idx 952）。修复前浏览器误 memo 80，经 883 物种的道具链（outsped burst+0.20）放大成道具排序差异。
+
+## 四、引擎 v4.393 块：干净才对齐，边缘保留肉盾
+
+在 v4.392 块（catch 锚点 `}catch(eV4392){eV4392.name}`）与 `return out;}` 之间插入自包块，对每张 roleTag 肉盾卡：
+
+1. 按名算新 role（`_v393role`）：名含强化清场→`强化`；轮转补盲→`轮转`；主力输出压制/输出压制→`输出`；
+2. 4 参调 buildEvs（不传 buildObj，不 mutate）+ 调 buildNature（传 `{name,ev}`）；
+3. 用本地 `_v393clean()`（减项不满投、正项不零投）校验；
+4. 干净才回写 `b.roleTag/b.ev/b.nat` 并标 `b._v393RoleAlign=1`；不净则标 `b._v393Edge` 保留肉盾。
+
+moves/items/abilities/side 不动。块自包 `try{...}catch(eV4393){eV4393.name}`。
+
+dry-run 结论：584 命中 `{输出98,强化297,轮转189}`，EV 变化 545、性格首选变化 265；体检后 549 一致、35 矛盾（双刀+强化 11、减速性格却满速 22、正项零投 2）。CONS 修复后干净子集为 547，边缘保留 35。
+
+## 五、落地数字与浏览器三重核对
+
+| 口径 | 总卡 | aligned | edge | 浏览器 aligned |
+|---|---|---|---|---|
+| 六人队 | 5645 | 547 | 35 | 547 |
+| 空队 | 4205 | 0 | 0 | 0 |
+
+浏览器三重核对（硬刷新后）：
+
+1. 集合比对：head 与 browser 均 547，onlyHead=[]、onlyBrowser=[]，**IDENTICAL**；
+2. 全字段对照：5645 卡比 10 字段（name/role/side/ev/tpl/nat/item/aligned/edge/mv），**total field diffs=0**；
+3. 物种 883 三 build 逐字段一致（[0] 稳健联防/肉盾/耐久 [252,0,252,0,4,0]，medSpe=75）。
+
+## 六、#314 甜甜萤窄豁免
+
+甜甜萤 base `[80,47,85,93,90,105]`（速105、atkBest=93<95），[2] 对齐后 role 肉盾→输出、offEv 0→252 成为 strict 进攻卡触发默认 ①。
+
+在 ① 加窄豁免 `_prankOk`：首卡名含「恶作剧之心」且 atkBest<95 时，认定弱攻 Prankster 物种控场为合法默认，仅命中甜甜萤 1 例。
+
+## 七、门禁与不变量
+
+- gate.js（空队）：species 1906 / total 4205 / badMove1 / dup0 / itemsOver0 / defOrb0；offHist 与 v4.392 完全相同：`0:275-1:799-2:552-3:224-4:48-5:7-7:1`。
+- smoke.js：**33/33**（package.json 同步 4.393.0）。
+- verify_v4393_role.js：empty aligned0/edge0/漂移0；six aligned547/edge35/矛盾0/规则不符0/漂移0，全 PASS。
+- verify_v4392_name.js：期望改 421、落词强化清场 274（588[1]/2524[4] 失回复件不再落强化清场），全 PASS。
+- verify_default.js：CONS 物种整组豁免逐卡签名、仅留卡数（其变化已由 verify_v4393 与浏览器全字段对照覆盖），ALL PASS。
+- verify_ev / verify_stall / verify_v4390_drift / verify_v4391_off：全 PASS。
+
+工程：CRLF 23,657、bare LF 51（+0）；六段 node --check 全过；harness 重生成 4,069,481 B。
+
+## 八、边界与后续轴（本版不动）
+
+- 35 边缘卡最终保留肉盾，不再特判全量对齐。
+- `_v383route()` 兜底桶根因（336 量级）未动；主力清场 six14/empty26（未过门4）；速攻族 535/522（速种<100 的 104/90）；同物种重名 122 只。
+- 结构性不可修（永不再查）：#2215 超级炎武王、#110 双弹瓦斯、#1643–1647 洛托姆五形态。
