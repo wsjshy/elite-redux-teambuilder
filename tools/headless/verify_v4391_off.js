@@ -16,6 +16,18 @@ const atkBest = s => Math.max(+s.base[1], +s.base[3]);
 const natArr = b => (b.nat || []).map(x => Array.isArray(x) ? String(x[0]) : String(x));
 const idsOf = b => (b.mv.main || []).concat(b.mv.func || []).map(x => +x.id);
 const dmgOf = ids => ids.filter(id => { const r = MV[id]; return r && r[4] !== '变化'; }).length;
+const _V392_HAZ=[191,390,446,564],_V392_STA=[86,92,261,137,599],_V392_WK=[73,282,269,46,18,525,114,499,317],_V392_WALL=[113,115,657];
+const _V392_BST=/剑舞|龙之舞|蝶舞|冥想|诡计|诅咒|健美|巨大化|破壳|腹鼓|磨爪|铁壁|集气|自我激励|生长|宇宙力量/;
+function ruleWord(s, ids){
+  if(ids.some(function(id){return _V392_HAZ.indexOf(id)>=0||_V392_STA.indexOf(id)>=0||_V392_WK.indexOf(id)>=0;}))return null;
+  var d=0,bo=false,wa=false;
+  ids.forEach(function(id){var r=MV[id];if(!r)return;if(r[4]!=='变化')d++;if(_V392_BST.test(String(r[1]||'')))bo=true;if(_V392_WALL.indexOf(id)>=0)wa=true;});
+  if(bo&&d>=1)return '强化清场';
+  if(d>=2)return (Math.max(+s.base[1],+s.base[3])>=95?'主力输出压制':'输出压制');
+  if(wa)return '双墙辅助流';
+  return '稳健联防';
+}
+
 
 let fail = 0;
 function scan(team, tag) {
@@ -48,6 +60,8 @@ function scan(team, tag) {
         // 基线本来不该动的卡，名称也必须逐字一致
         c.same++; return;
       }
+      /* v4.392：名含「骚扰消耗」而招组无骚扰手段的卡按本卡配置改名（链路：v4.389 受队消耗→骚扰消耗 → 本版落既有词）。 */
+      if (String(e.name).indexOf('骚扰消耗') >= 0 && ruleWord(s, idc) === nm) { c.rename++; return; }
       const exp = String(e.name).split('主力输出压制').join('输出压制');
       const expB = String(e.name).split('主力输出压制').join('强化清场');   // 个案：实配伤害招<2，带强化招
       const expS = String(e.name).split('主力输出压制').join('骚扰消耗');   // 个案：实配伤害招<2，无强化招

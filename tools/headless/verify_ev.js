@@ -63,7 +63,8 @@ function scan(team, tag) {
         A2.push({ id: s.id, zh: s.zh, name: n, role, side, ev: a });
       // ③ 性格矛盾 / 防守挂加速（已登记 uncertain 拿不准卡除外，单列上报）
       //    v4.389：骚击/耐久压制＝快卡先手撒状态，加速性格是设计而非矛盾，故豁免「防守挂加速」一句
-      const _v389Fast = /骚扰消耗|耐久压制/.test(n);
+      /* v4.392：本版只改名（b._v392Rename）——这些卡的 252 速 EV + 加速性格来自 v4.389 R2「快卡加满速度」，改名后已不匹配旧名白名单，豁免改按 EV 来源判，不按旧名判。 */
+      const _v389Fast = /骚扰消耗|耐久压制/.test(n) || !!b._v392Rename;
       if (!b._v385Uncertain && (clash(b) || (isDefRole && !_v389Fast && SPD_NAT[nat0(b)])))
         A3.push({ id: s.id, zh: s.zh, name: n, role, nat: nat0(b), ev: a });
       // ④ EV 结构

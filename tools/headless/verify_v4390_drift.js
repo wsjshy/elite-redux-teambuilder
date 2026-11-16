@@ -15,11 +15,23 @@ const allTeam = [26, 65, 96, 80, 37, 208].map(by);
 const ACC = { '胆小': 1, '爽朗': 1 };
 const natArr = b => (b.nat || []).map(x => Array.isArray(x) ? String(x[0]) : String(x));
 const idsOf = b => (b.mv.main || []).concat(b.mv.func || []).map(x => +x.id);
+const _V392_HAZ=[191,390,446,564],_V392_STA=[86,92,261,137,599],_V392_WK=[73,282,269,46,18,525,114,499,317],_V392_WALL=[113,115,657];
+const _V392_BST=/剑舞|龙之舞|蝶舞|冥想|诡计|诅咒|健美|巨大化|破壳|腹鼓|磨爪|铁壁|集气|自我激励|生长|宇宙力量/;
+function ruleWord(s, ids){
+  if(ids.some(function(id){return _V392_HAZ.indexOf(id)>=0||_V392_STA.indexOf(id)>=0||_V392_WK.indexOf(id)>=0;}))return null;
+  var d=0,bo=false,wa=false;
+  ids.forEach(function(id){var r=MV[id];if(!r)return;if(r[4]!=='变化')d++;if(_V392_BST.test(String(r[1]||'')))bo=true;if(_V392_WALL.indexOf(id)>=0)wa=true;});
+  if(bo&&d>=1)return '强化清场';
+  if(d>=2)return (Math.max(+s.base[1],+s.base[3])>=95?'主力输出压制':'输出压制');
+  if(wa)return '双墙辅助流';
+  return '稳健联防';
+}
+
 
 let fail = 0;
 function scan(team, tag) {
   const base = SNAP[tag].builds;
-  const c = { A: 0, B: 0, C: 0, D: 0, same: 0 };
+  const c = { A: 0, B: 0, C: 0, D: 0, E: 0, same: 0 };
   const bad = [];
   let cur = 0;
   ERDATA.species.forEach(s => {
@@ -58,6 +70,9 @@ function scan(team, tag) {
         const expD3 = String(e.name).split('主力输出压制').join('骚扰消耗');
         if (String(e.name).indexOf('耐久压制') >= 0 && expA === nm) { c.A++; isA = true; }
         else if (String(e.name).indexOf('主力输出压制') >= 0 && (nm === expD1 || nm === expD2 || nm === expD3)) { c.D++; }
+        /* E（v4.392 追加）：旧名含「耐久压制/受队消耗」→ 本版按本卡配置落既有词（骚扰消耗 已由 v4.392 块接走）。
+           只改名；EV 若变仍必须落在 B 的 R2 口径（快卡加满速度），性格沿用 C 口径。 */
+        else if ((String(e.name).indexOf('耐久压制') >= 0 || String(e.name).indexOf('受队消耗') >= 0 || String(e.name).indexOf('骚扰消耗') >= 0) && ruleWord(s, idc) === nm) { c.E++; isA = true; }
         else {
           bad.push(`#${s.id} ${s.zh}[${idx}] 未预期改名 ${e.name} -> ${nm}`);
           return;
@@ -82,7 +97,7 @@ function scan(team, tag) {
   });
   const notSeen = Object.keys(base).filter(k => !ERDATA.species.some(s => String(s.id) === k));
   console.log(`\n=== ${tag} === 当前卡 ${cur} / 基线卡 ${Object.keys(base).reduce((a, k) => a + base[k].length, 0)}`);
-  console.log(` 改名(A) ${c.A} | 改名并改EV(B) ${c.B} | 改名改EV改性格(C) ${c.C} | 仅改名(D v4.391) ${c.D} | 完全一致 ${c.same}`);
+  console.log(` 改名(A) ${c.A} | 改名并改EV(B) ${c.B} | 改名改EV改性格(C) ${c.C} | 仅改名(D v4.391) ${c.D} | 仅改名(E v4.392) ${c.E} | 完全一致 ${c.same}`);
   console.log(' 未解释差异:', bad.length === 0 ? '0 ✓' : bad.length + ' ✗');
   if (notSeen.length) console.log(' 基线有但当前无物种:', notSeen.length);
   bad.slice(0, 10).forEach(x => console.log('   ✗', x));
