@@ -1,6 +1,8 @@
 // v4.389 verify_stall：受队消耗/骚扰消耗/耐久压制 名实一致 + 零伤害卡性格选侧 + 零漂移
 // 断言①受队消耗且(bulk<270 或无真回复)=0 ②骚扰消耗/耐久压制却(bulk≥300 且有真回复)=0
 //      ③零伤害招防守卡 nat[0] 进攻项=0 ④骚扰消耗且速种≥100 且速EV=0 =0 ⑤未命中卡快照差异=0
+// v4.390 追加 ②b「耐久压制」却 bulk<BULK_MID(270)=0 —— 脆皮不得冠「耐久」（v4.389 第三档滥用）。
+//      v4.390 的严格逐卡零漂移另见 verify_v4390_drift.js（对 v4.389 快照，改名/EV/性格三类差异逐条解释）。
 const H = require('./harness.js');
 const { ERDATA, deriveBuilds, MV } = H;
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
@@ -41,7 +43,7 @@ let fail = 0;
 function scan(team, tag) {
   const SK = snapKeys(tag);
   let stall = 0, harass = 0, tank = 0, r2hit = 0, r3hit = 0, other = 0;
-  const b1 = [], b2 = [], b3 = [], b4 = [], b5 = [];
+  const b1 = [], b2 = [], b3 = [], b4 = [], b5 = [], b6 = [];
   ERDATA.species.forEach(s => {
     let bs; try { bs = deriveBuilds(s, team); } catch (e) { return; }
     bs.forEach((b, idx) => {
@@ -61,6 +63,8 @@ function scan(team, tag) {
       if (isH || isT) {
         if (isH) harass++; else tank++;
         if (bulk >= 300 && rec) b2.push(`${tag} #${s.id} ${s.zh} ${nm} bulk=${bulk}`);
+        if (isT && bulk < 270) b6.push(`${tag} #${s.id} ${s.zh} ${nm} 耐久压制却 bulk=${bulk} dmg=${dmg}`);
+        if (isH && bulk >= 300) b6.push(`${tag} #${s.id} ${s.zh} ${nm} 骚扰消耗却 bulk=${bulk}（真耐久不该挂骚扰）`);
       }
       // ③ 零伤害招防守卡 nat[0] 进攻项
       if (dmg === 0 && (DEF_ROLE[String(b.roleTag || '')] || DEF_NAME.test(nm))) {
@@ -89,11 +93,12 @@ function scan(team, tag) {
   console.log(` 受队消耗 ${stall} | 骚扰消耗 ${harass} | 耐久压制 ${tank} | 未命中卡 ${other}`);
   console.log(' ① 受队消耗但(bulk<270 或无真回复):', b1.length === 0 ? '0 ✓' : b1.length + ' ✗');
   console.log(' ② 骚扰消耗/耐久压制却(bulk≥300 且有真回复):', b2.length === 0 ? '0 ✓' : b2.length + ' ✗');
+  console.log(' ②b 耐久压制却bulk<270 / 骚扰消耗却bulk≥300:', b6.length === 0 ? '0 ✓' : b6.length + ' ✗');
   console.log(' ③ 零伤害招防守卡 nat[0] 进攻项:', b3.length === 0 ? '0 ✓' : b3.length + ' ✗');
   console.log(' ④ 骚扰消耗且速种≥100 且速EV=0:', b4.length === 0 ? '0 ✓' : b4.length + ' ✗', `（已加满速度 ${r2hit}）`);
   console.log(' ⑤ 未命中卡快照差异:', b5.length === 0 ? '0 ✓' : b5.length + ' ✗');
-  [b1, b2, b3, b4, b5].forEach(arr => arr.slice(0, 6).forEach(x => console.log('   ✗', x)));
-  fail += b1.length + b2.length + b3.length + b4.length + b5.length;
+  [b1, b2, b3, b4, b5, b6].forEach(arr => arr.slice(0, 6).forEach(x => console.log('   ✗', x)));
+  fail += b1.length + b2.length + b3.length + b4.length + b5.length + b6.length;
 }
 
 scan([], 'empty');

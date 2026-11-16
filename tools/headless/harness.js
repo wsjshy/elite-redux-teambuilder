@@ -16981,7 +16981,9 @@ function _deriveBuildsCore(s,team){
       if(_nm.indexOf('受队消耗')>=0){
         var _keepStall=(_bulk>=NEED_CFG.BULK_HIGH)||(_bulk>=NEED_CFG.BULK_MID&&_rec);
         if(!_keepStall){
-          var _newNm=_nm.replace('受队消耗',(_dmg<=1?'骚扰消耗':'耐久压制'));
+          /* v4.390：撤掉 v4.389 擅自追加的第三档「耐久压制」—— 属性词（耐久）按底子绝对档准入 bulk>=BULK_HIGH(300)，全库 P82；而 R1 的输入恰是没通过该门槛的卡，故该档零合格住户（实测残留 33/10 张全无真回复），直接撤档 */
+          var _newNm=_nm.replace('受队消耗','骚扰消耗');
+          /* _dmg 仍记入台账，用于事后按「实配伤害招条数」核对分流是否符合预期 */
           b.name=_newNm;
           b._v389Rename=_nm+'→'+_newNm+'（bulk '+_bulk+( _rec?'，有真回复':'，无真回复')+'，实配伤害招 '+_dmg+' 条）';
           _nm=_newNm;
@@ -20453,7 +20455,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.388';
+var ER_ENGINE_VER='v4.390';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
