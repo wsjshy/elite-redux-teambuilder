@@ -3424,4 +3424,4 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 - 落地（六人队 / 空队）：**aligned 547 / 0、edge 35 / 0**（35 边缘含双刀+强化 11、减速性格却满速 22、正项零投 2）。浏览器三重核对：总卡 5645、edge35、aligned 两边均 547 且集合 IDENTICAL、全卡 10 字段 total field diffs=0。
 - #314 甜甜萤窄豁免：对齐后 [2] 成 strict 进攻卡触发默认 ①，加 _prankOk（首卡名含恶作剧之心且 atkBest<95 认定弱攻 Prankster 控场合法，仅命中甜甜萤 1 例）。
 - 验收：gate Δ=0（offHist 与 v4.392 逐项同值）；smoke **33/33**（package.json 同步 4.393.0）；verify_v4393_role 全 PASS；verify_v4392_name 期望改 421、落词强化清场 274（588[1]/2524[4] 失回复件不再落强化清场）；verify_default 对 CONS 物种整组豁免仅留卡数；verify_ev / verify_stall / verify_v4390_drift / verify_v4391_off 全 PASS；CRLF 23,657 / bare LF 51（+0）；六段语法全过；harness 重生成 4,069,481 B。
-- 发布：待提交部署与线上核验。正文 `docs/test-reports/v4393_roleTag名实对齐.md`。
+- 发布：提交 `cb9df32`（开发分支 `fix/abi-dedup-detail-20261108`，已 push）→ gh-pages `536d42a`（增量、未删线上任何文件）。线上四文件逐字节核验 Length/SHA1 全 MATCH：index 2,057,188 `0E8224E7844A` / data_lite 385,739 `F06488048CEA` / species 1,362,446 `B0E4B6994721` / adv 575,962 `0CA1813D0167`。正文 `docs/test-reports/v4393_roleTag名实对齐.md`。
