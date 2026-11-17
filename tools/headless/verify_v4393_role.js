@@ -12,6 +12,7 @@
 const H = require('./harness.js');
 const { ERDATA, deriveBuilds, NATURES } = H;
 const fs = require('fs'), path = require('path');
+const ALLOW = require('./_v4395_allow.js');   // v4.394/v4.395 命中卡字段允许集（本版叠加豁免）
 const SNAP = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4393_base_snapshot.json'), 'utf8'));
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [26, 65, 96, 80, 37, 208].map(by);
@@ -71,26 +72,17 @@ function scan(team, tag) {
       if (JSON.stringify(e.ids) !== JSON.stringify(idc)) changed.push('ids');
       if (String(e.item) !== item) changed.push('item');
       if (changed.length) {
-        const hard = changed.filter(k => k === 'side' || k === 'ids');
         const allowRoute = CONS_ROUTE[key] === 1;
-        let ok = true;
-        if (hard.length) ok = false;
-        if (isAligned) {
-          // 允许 role/alloc/nat/item；name 不允许
-          if (changed.indexOf('name') >= 0) ok = false;
-          if (changed.some(k => k !== 'role' && k !== 'alloc' && k !== 'nat' && k !== 'item')) ok = false;
-          if (changed.indexOf('role') < 0) ok = false; // role 必变
-        } else if (isEdge) {
-          // 仅允许 item
-          if (changed.some(k => k !== 'item')) ok = false;
-        } else if (allowRoute) {
-          // 已知 CONS_ITEM 路由卡：允许 name/role/alloc/nat/item 联动（side/ids 已在 hard 排除）
-          if (changed.some(k => k === 'side' || k === 'ids')) ok = false;
-        } else {
-          // 其余普通卡：仅允许 item
-          if (changed.some(k => k !== 'item')) ok = false;
-        }
-        if (!ok) { c.drift++; bad.push(`④ #${s.id} ${s.zh}[${idx}] 未解释变化 ${changed.join(',')}`); }
+        // 按 v4.393 自身口径先算「允许字段集」，再与 v4.394/v4.395/v4.395b 的命中集取并集
+        const allowed = { item: 1 };   // CONS_ITEM 修复：所有卡允许 item 变
+        if (isAligned) { allowed.role = 1; allowed.alloc = 1; allowed.nat = 1; }
+        else if (allowRoute) { allowed.role = 1; allowed.alloc = 1; allowed.nat = 1; allowed.name = 1; }
+        const _al = ALLOW.allowOf(key) || {};
+        Object.keys(_al).forEach(k => { allowed[k] = 1; });
+        const _badCh = changed.filter(k => !allowed[k]);
+        // 对齐卡 role 必须变（v4.393 断言本身）
+        if (isAligned && changed.indexOf('role') < 0) _badCh.push('role未变');
+        if (_badCh.length) { c.drift++; bad.push(`④ #${s.id} ${s.zh}[${idx}] 未解释变化 ${_badCh.join(',')}（原本 ${changed.join(',')}）`); }
       }
     });
   });

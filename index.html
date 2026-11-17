@@ -18345,6 +18345,256 @@ function _deriveBuildsCore(s,team){
       b.roleTag=_v393nr;b.ev=_v393ev;b.nat=_v393nat;b._v393RoleAlign=1;_v393n++;
     });
   }catch(eV4393){eV4393.name}
+  /* v4.394：名含「强化清场」但四个招式槽位没有一个强化招 —— 名字的承诺没兑现。
+     根因：强化候选按「物种可学强化招（p.hasBoost＝fn.boost）」命名（16209），
+     但选招时第 4 槽常被 替身/守住/顺风/求雨/撒菱/光合作用 等战术功能招占走，
+     于是「能学」被写成了「会带」。玩家点开一看，四个招里一个强化招都没有。
+     处置：按引擎自己在 v4.392 定的落词序（①强化 ②主力输出压制 ③输出压制 ④双墙辅助流 ⑤稳健联防）
+     把「（速攻）强化清场」整段换成落词，前缀（雨/晴/顺风/场地/钉子/空间）保留；
+     roleTag 仅当按新名字重算 EV/性格零矛盾时回写（沿用 v4.393 纪律），
+     落「双墙辅助流」/「稳健联防」的只改名不动 EV，避免改配置。 */
+  try{
+    var _v394BST=/剑舞|龙之舞|蝶舞|冥想|诡计|诅咒|健美|巨大化|破壳|腹鼓|磨爪|铁壁|集气|自我激励|生长|宇宙力量/,
+        _v394WALL=[113,115,657],
+        _v394POK=(NEED_CFG&&NEED_CFG.POWER_OK)?NEED_CFG.POWER_OK:95,
+        _v394XI={'攻击':1,'防御':2,'特攻':3,'特防':4,'速度':5};
+    var _v394ix=function(t){var m=String(t).match(/攻击|防御|特攻|特防|速度/);return m?_v394XI[m[0]]:-1;};
+    var _v394cl=function(alloc,n0){
+      var pr=NATURES[n0];if(!pr)return false;
+      var bi=_v394ix(pr[0]),ri=_v394ix(pr[1]);
+      if(ri>=0&&(+alloc[ri]||0)>=252)return false;
+      if(bi>=0&&(+alloc[bi]||0)===0)return false;
+      return true;
+    };
+    var _v394n=0,_v394roleN=0,_v394edge=0;
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var _nm=String(b.name);
+      if(_nm.indexOf('强化清场')<0)return;
+      var _ids=(b.mv.main||[]).concat(b.mv.func||[]).map(function(x){return +x.id;}),
+          _i=0,_id,_r,_d=0,_bo=false,_wa=false;
+      for(_i=0;_i<_ids.length;_i++){
+        _id=_ids[_i];_r=MV[_id];if(!_r)continue;
+        if(_r[4]!=='变化')_d++;
+        if(_v394BST.test(String(_r[1]||'')))_bo=true;
+        if(_v394WALL.indexOf(_id)>=0)_wa=true;
+      }
+      if(_bo)return;                                  /* 真带强化招 → 名字成立，一字不动 */
+      var _f=Math.max(+s.base[1],+s.base[3]),_t;
+      if(_d>=2)_t=(_f>=_v394POK?'主力输出压制':'输出压制');
+      else if(_wa)_t='双墙辅助流';
+      else _t='稳健联防';
+      var _new=_nm.replace(/速攻强化清场|强化清场/,_t);
+      if(_new===_nm)return;
+      if(b._v394OldName===undefined)b._v394OldName=_nm;
+      b.name=_new;_v394n++;
+      /* roleTag 对齐：只对攻击向落词回写，且必须重算干净 */
+      if(_t!=='主力输出压制'&&_t!=='输出压制'){b._v394Edge=1;_v394edge++;return;}
+      if(String(b.roleTag||'')==='输出')return;        /* 已是输出，名实已一致 */
+      var _ev;try{_ev=buildEvs(s,String(b.side||''),'输出',_new);}catch(eEv1){_ev=null;}
+      if(!_ev){b._v394Edge=1;_v394edge++;return;}
+      var _nat;try{_nat=buildNature(s,String(b.side||''),'输出',{name:_new,ev:_ev});}catch(eEv2){_nat=null;}
+      if(!_nat){b._v394Edge=1;_v394edge++;return;}
+      var _n0=(_nat[0]&&_nat[0][0])||'';
+      if(!_v394cl(_ev.alloc,_n0)){b._v394Edge=1;_v394edge++;return;}
+      if(b._v394OldRole===undefined)b._v394OldRole=b.roleTag;
+      b.roleTag='输出';b.ev=_ev;b.nat=_nat;_v394roleN++;
+    });
+  }catch(eV4394){eV4394.name}
+  /* v4.395 手动天气招清理：单卡推荐层不默认带手动天气（241大晴天/240求雨/201沙暴/258冰雹）。
+     天气是队伍级资源，单卡看不见队友；「没有天气手就不要玩天气队」——真正需要天气的队伍该由
+     特性自带天气的成员承担，让受益者自己花一格开天气，是把最贵的资源（技能格）花在最不确定的地方。
+     豁免只剩一类：恶作剧之心（变化招 +1 先制，出场当回合天气在对手动手前落地，属资格而非机会成本）。
+     「特性本身是天气手」的卡也删 —— 特性已免费开天气，手动招同效重复，纯占技能格。
+     处置：删招后按流派补槽（名字兑现 墙/钉子/空间/顺风 → 进攻向补盲 → 耐久向功能槽 → 兜底变化招），
+     连带处理天气专属招（删晴→日光束76/日光刃632 废；删雪→极光幕657 废），持「叶绿体」者 76/632 整体豁免；
+     卡名去「晴/雨/沙/雪」前缀，与同物种其它卡重名则保留原名。
+     roleTag / EV / 性格 / 道具 / 特性 / side / 排序 / 候选 一律不动。 */
+  try{
+    var _v395WK={241:'晴',240:'雨',201:'沙',258:'雪'},
+        _v395DEP={76:['晴'],632:['晴'],657:['雪']},
+        _v395SELF={'晴':['日照','干旱','绯红脉动'],'雨':['降雨','积雨云'],'沙':['扬沙','沙漠之魂','沙漠意志'],'雪':['降雪']},
+        _v395CHG=/飞翔|挖洞|潜水|日光束|日光刃|气象球|弹跳|自由落体|破坏光线|终极冲击|影子之力/,
+        _v395WXSET=[240,241,201,258,580,581,604,641,1006,950,366,433],
+        _v395FMV={rec:(FUNC_MV.rec||[]).concat(FUNC_MV_REC_EXT||[]),
+          wear:FUNC_MV.wear||[],hazard:FUNC_MV.hazard||[],removal:FUNC_MV.removal||[],
+          speed:FUNC_MV.speed||[],protect:FUNC_MV.protect||[],pivot:FUNC_MV.pivot||[],
+          brk:[114,499,18,46,525],wall:[113,115]};
+    var _v395need=0,_v395okN=0,_v395failN=0,_v395fillN=0,_v395depN=0,_v395nmN=0,_v395kpN=0;
+    var _v395ty=function(_id){var _m=MV[_id];return _m?_m[3]:'';};
+    var _v395strip=function(_s){return (/^[雨晴沙雪]/.test(_s)?_s.slice(1):_s);};
+    var _v395nmCat=function(_s){_s=String(_s||'');
+      if(/双墙|墙/.test(_s))return 'wall';
+      if(/钉子/.test(_s))return 'hazard';
+      if(/空间/.test(_s))return 'tr';
+      if(/顺风/.test(_s))return 'tw';
+      return null;};
+    var _v395ord=function(_r){
+      if(_r==='肉盾'||_r==='受队')return ['rec','wear','hazard','protect','removal','speed','brk'];
+      if(_r==='辅助')return ['protect','rec','speed','hazard','wear','removal'];
+      if(_r==='轮转')return ['pivot','rec','speed','hazard','wear','removal'];
+      return ['rec','wear','hazard','protect','removal','speed'];};
+    var _v395SLP=function(_s){if(typeof isGlassCannon==='function'&&isGlassCannon(_s))return false;var _n=((_s.abis||[]).concat(_s.inns||[])).join('');
+      return /梦话|自然回复|早起|不眠|活力/.test(_n);};
+    var _v395p1=function(_s,_used,_types,_role,_side,_isAtk,_nCat){
+      var _L=[];try{_L=learnOf(_s)||[]}catch(eL){_L=[]}
+      var _ok=function(_x){return _L.indexOf(_x)>-1&&!_used[''+_x];};
+      var _i=0,_o,_M;
+      if(_nCat==='wall'){for(_i=0;_i<_v395FMV.wall.length;_i++){if(_ok(_v395FMV.wall[_i]))return{id:_v395FMV.wall[_i],k:'名:墙'}}}
+      if(_nCat==='hazard'){for(_i=0;_i<_v395FMV.hazard.length;_i++){if(_ok(_v395FMV.hazard[_i]))return{id:_v395FMV.hazard[_i],k:'名:钉子'}}}
+      if(_nCat==='tr'&&_ok(433))return{id:433,k:'名:空间'};
+      if(_nCat==='tw'&&_ok(366))return{id:366,k:'名:顺风'};
+      if(_isAtk){
+        var _pool=[];try{_pool=pickAttacks(_s,_side,40,_role)}catch(eP){_pool=[]}
+        for(_i=0;_i<_pool.length;_i++){_o=_pool[_i];if(!_o||_used[''+_o.id])continue;
+          var _t=_v395ty(+_o.id);if(_t&&_types[_t])continue;
+          _M=MV[+_o.id];
+          if(_M&&(+_M[5]||0)>=70&&(+_M[6]||0)>=90&&!_v395CHG.test(String(_M[1]||'')))return{id:+_o.id,k:'补盲'};}
+        for(_i=0;_i<_pool.length;_i++){_o=_pool[_i];if(!_o||_used[''+_o.id])continue;
+          _M=MV[+_o.id];if(_M&&!_v395CHG.test(String(_M[1]||'')))return{id:+_o.id,k:'补盲(次选)'};}
+      }
+      var _hp=!!(_used['164']||_used['182']),_ord=_v395ord(_role),_c,_arr,_j,_p;
+      for(_c=0;_c<_ord.length;_c++){var _cat=_ord[_c];if(_cat==='protect'&&_hp)continue;
+        _arr=_v395FMV[_cat]||[];
+        for(_j=0;_j<_arr.length;_j++){_p=_arr[_j];
+          if(_p===156&&!_v395SLP(_s))continue;
+          if(_ok(_p))return{id:_p,k:'功能:'+_cat};}}
+      var _cd=[];
+      for(_i=0;_i<_L.length;_i++){var _v=_L[_i];if(!_ok(_v))continue;if(_v395WXSET.indexOf(_v)>-1)continue;
+        var _Mr=MV[_v];if(!_Mr||_Mr[4]!=='变化')continue;_cd.push(_v);}
+      if(_cd.length){_cd.sort(function(a,b){return a-b;});return{id:_cd[0],k:'兜底:变化'};}
+      return null;
+    };
+    var _v395put=function(_b,_oid,_nw){
+      var _ms=[_b.mv.main||[],_b.mv.func||[]],_a,_i,_arr;
+      for(_a=0;_a<2;_a++){_arr=_ms[_a];
+        for(_i=0;_i<_arr.length;_i++){
+          if(+_arr[_i].id!==_oid)continue;
+          var _k2='';try{_k2=mvKindOf(_nw.id)}catch(eK){_k2=''}
+          _arr[_i]={id:_nw.id,kind:_k2,tag:_nw.tag,
+            why:['手动天气招占技能格：天气是队伍级资源（该由特性自带天气的成员承担），此槽改「'+_nw.tag+'」']};
+          return true;}}
+      return false;
+    };
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var _main=b.mv.main||[],_func=b.mv.func||[],_all=_main.concat(_func),_hi=-1,_wid=0,_k='',_i;
+      for(_i=0;_i<_all.length;_i++){var _hid=+_all[_i].id;if(_v395WK[_hid]){_hi=_i;_wid=_hid;_k=_v395WK[_hid];break}}
+      if(_hi<0)return;
+      _v395need++;
+      var _an=[];try{_an=(s.abis||[]).concat(s.inns||[])}catch(eA){_an=[]}
+      var _isSetter=false;
+      var _sw=_v395SELF[_k]||[];
+      for(var _x=0;_x<_sw.length;_x++){if(_isSetter)break;
+        for(var _z=0;_z<_an.length;_z++){if(String(_an[_z]).indexOf(_sw[_x])>-1){_isSetter=true;break}}}
+      if(_isSetter){b._v395Keep='setter';return}
+      var _prank=false;
+      (b.abi||[]).forEach(function(_ab){if(String(_ab&&_ab.n||'').indexOf('恶作剧')>-1)_prank=true});
+      if(_prank){b._v395Keep='prank';return}
+      if(b.score===99){b._v395Keep='score99';return}
+      var _role=String(b.roleTag||''),_side=String(b.side||'');
+      var _isAtk=(_side!=='辅助')&&(_role==='输出'||_role==='增伤'||_role==='强化');
+      var _used={},_types={};
+      _all.forEach(function(_mv){_used[''+_mv.id]=1;var _t2=_v395ty(+_mv.id);if(_t2)_types[_t2]=1;});
+      var _w=_v395p1(s,_used,_types,_role,_side,_isAtk,_v395nmCat(b.name));
+      if(!_w){b._v395Fail=1;_v395failN++;return}
+      _v395put(b,_wid,_w);_used[''+_w.id]=1;_v395fillN++;b.weatherSelfRemoved=true;
+      var _chlo=false;
+      for(var _y=0;_y<_an.length;_y++){if(String(_an[_y]).indexOf('叶绿体')>-1){_chlo=true;break}}
+      if(!_chlo){
+        for(var _d=0;_d<_all.length;_d++){
+          var _did=+_all[_d].id;
+          if(_did===_wid)continue;
+          var _nd=_v395DEP[_did];
+          if(!_nd||_nd.indexOf(_k)<0)continue;
+          if(_used[''+_did+'D'])continue;
+          _used[''+_did]=1;_used[''+_did+'D']=1;
+          var _w2=_v395p1(s,_used,_types,_role,_side,_isAtk,null);
+          if(!_w2)continue;
+          _v395put(b,_did,_w2);_used[''+_w2.id]=1;_v395depN++;b.namedByMoves=true;
+        }
+      }
+      var _nm0=String(b.name),_ch0=_nm0.charAt(0);
+      if('雨晴沙雪'.indexOf(_ch0)>-1){
+        var _nm1=_nm0.slice(1),_dup=false;
+        out.forEach(function(_o){if(_o&&_o!==b&&_o.name&&_v395strip(String(_o.name))===_nm1)_dup=true;});
+        if(_dup){b._v395NameKeep=1;_v395kpN++}
+        else{if(b._v395OldName===undefined)b._v395OldName=_nm0;b.name=_nm1;b.namedByMoves=true;_v395nmN++}
+      }
+      _v395okN++;
+    });
+    /* v4.395b 三处名实/死招修正（在 v4.395 逐卡清理之后执行，复用同一批局部函数）。
+       ①「双墙」名实：全库 851 张「双墙辅助流」里有 848 张只带一面墙（4 格放不下两面，属常见叫法，不动）；
+         完全一面墙都没有的 10 张是硬性名实不符 → 「双墙辅助流」改「稳健联防」，前缀（钉子等）保留。
+       ② 天气前缀无来源：v4.379 按「速攻手不手动开队伍级辅助」清过一批，v4.395 又删了全部手动天气招；
+         剩下的这批卡名首字还是 晴/雨/沙/雪，但卡内既无对应手动天气招、所选特性也不是天气手（干旱=日照70、
+         始源之海、扬沙、降雪…按特性 id 判，展示名不能当数据名用）——名字悬空，去首字；同物种重名则保留原名。
+       ③ 极光幕 657 死招：极光幕只在雪天生效。自身没有开雪能力（降雪117/雪怒666/圣代929/北极光291/
+         极北之风348/熔核870，或卡内带冰雹258）却带 657，就是纯占一格 → 换功能招
+         （先试光墙113/反射壁115，学不到再按流派功能池补，最后兜底变化招）。
+       ②③ 名字改动一律记 _v395OldName，role/EV/性格/道具/特性/side 不动。 */
+    try{
+      var _v395bWK={'晴':241,'雨':240,'沙':201,'雪':258},
+          _v395bSET={'晴':[70,584,190,871],'雨':[2,989,867,189],'沙':[45,604,245],'雪':[117,666,929,291,348,870,493]},
+          _v395bD=0,_v395bN=0,_v395bP=0,_v395bK=0;
+      var _v395bA=function(_b){var _r=[];try{(_b.abi||[]).forEach(function(_x){_r.push(+_x.id)})}catch(eBA){eBA.name}return _r;};
+      var _v395bDup=function(_self,_name){var _d=false;
+        out.forEach(function(_o){if(_o&&_o!==_self&&_o.name&&String(_o.name)===_name)_d=true;});return _d;};
+      out.forEach(function(b){
+        if(!b||!b.name)return;
+        var _all0=(b.mv.main||[]).concat(b.mv.func||[]);
+        var _role=String(b.roleTag||''),_side=String(b.side||'');
+        var _isAtk=(_side!=='辅助')&&(_role==='输出'||_role==='增伤'||_role==='强化');
+        var _aid=_v395bA(b),_i,_ids=[];
+        _all0.forEach(function(_m){_ids.push(+_m.id)});
+        var _snow=_v395bSET['雪'].some(function(_x){return _aid.indexOf(_x)>-1});
+        if(!_snow&&_ids.indexOf(258)>-1)_snow=true;
+        /* ③ 极光幕 657 死招 */
+        if(_ids.indexOf(657)>-1&&!_snow){
+          var _used={},_types={};
+          _all0.forEach(function(_mv){_used[''+_mv.id]=1;var _t2=_v395ty(+_mv.id);if(_t2)_types[_t2]=1;});
+          var _w=_v395p1(s,_used,_types,_role,_side,_isAtk,'wall')||_v395p1(s,_used,_types,_role,_side,_isAtk,null);
+          if(_w&&+_w.id!==657){
+            var _arrs=[b.mv.main||[],b.mv.func||[]],_aa,_ii,_done=false;
+            for(_aa=0;_aa<2&&!_done;_aa++){
+              for(_ii=0;_ii<_arrs[_aa].length;_ii++){
+                if(+_arrs[_aa][_ii].id!==657)continue;
+                var _k2='';try{_k2=mvKindOf(+_w.id)}catch(eK){_k2=''}
+                _arrs[_aa][_ii]={id:+_w.id,kind:_k2,tag:'补槽',
+                  why:['极光幕只在雪天生效，本卡自身没有开雪来源 → 死招占格，此槽改「'+(_w.k||'补槽')+'」']};
+                _v395bD++;b._v395bDep=1;b.namedByMoves=true;_done=true;break;
+              }
+            }
+            _ids=[];(b.mv.main||[]).concat(b.mv.func||[]).forEach(function(_m){_ids.push(+_m.id)});
+          }
+        }
+        /* ①「双墙」名实 */
+        var _nm=String(b.name);
+        if(_nm.indexOf('双墙')>-1&&_ids.indexOf(113)<0&&_ids.indexOf(115)<0){
+          var _nn=_nm.split('双墙辅助流').join('稳健联防').split('双墙').join('');
+          if(_nn&&_nn!==_nm){
+            if(_v395bDup(b,_nn)){b._v395NameKeep=1;_v395bK++}
+            else{if(b._v395OldName===undefined)b._v395OldName=_nm;b.name=_nn;b._v395bName=1;_v395bN++}
+          }
+        }
+        /* ② 天气前缀无来源 */
+        var _nm2=String(b.name),_ch=_nm2.charAt(0);
+        if('雨晴沙雪'.indexOf(_ch)>-1){
+          var _has=(_ids.indexOf(_v395bWK[_ch])>-1),_t3,_tmp=_v395bSET[_ch]||[];
+          for(_t3=0;_t3<_tmp.length;_t3++){if(_aid.indexOf(_tmp[_t3])>-1){_has=true;break}}
+          if(!_has){
+            var _nn2=_nm2.slice(1);
+            if(_nn2){
+              if(_v395bDup(b,_nn2)){b._v395NameKeep=1;_v395bK++}
+              else{if(b._v395OldName===undefined)b._v395OldName=_nm2;b.name=_nn2;b._v395bName2=1;_v395bP++}
+            }
+          }
+        }
+      });
+      try{window._v395bStat={dep:_v395bD,name:_v395bN,prefix:_v395bP,keep:_v395bK};}catch(eBS){eBS.name}
+    }catch(eV4395b){eV4395b.name}
+    try{window._v395Stat={need:_v395need,ok:_v395okN,fail:_v395failN,fill:_v395fillN,dep:_v395depN,name:_v395nmN,keep:_v395kpN};}catch(eS){eS.name}
+  }catch(eV4395){eV4395.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -21779,7 +22029,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.393';
+var ER_ENGINE_VER='v4.395';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

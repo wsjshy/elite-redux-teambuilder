@@ -3,6 +3,7 @@
 // 另：快照逐条比对未命中卡 name/side/roleTag/nat/alloc/tpl/mv/it0/abi0 零漂移（机器可读 N 条 / 差异 0）。
 const H = require('./harness.js');
 const fs = require('fs'), path = require('path');
+const ALLOW = require('./_v4395_allow.js');   // v4.394/v4.395 命中卡字段允许集（本版叠加豁免）
 const { ERDATA, deriveBuilds, learnOf, MV, isGlassCannon, NATURES } = H;
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [by(26), by(65), by(96), by(80), by(37), by(208)];
@@ -95,6 +96,19 @@ scan(allTeam, 'six'); scan([], 'empty');
 // 改名物种豁免 name，换招物种豁免 mv；①排序只动数组顺序，多重集不变）。
 const snap = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4386_base_snapshot.json'), 'utf8'));
 const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
+// v4.394：role 回写会重算 EV/性格并可能改变同物种同质化去重结果（卡序与个别槽位连带变化）→ 整组豁免
+const A394 = require('./_v4394_allow.json');
+const v4394Sp = new Set();
+['six', 'empty'].forEach(t => { (A394[t] || []).forEach(r => v4394Sp.add(String(r.id))); });
+// v4.395 / v4.395b：删手动天气招 / 换极光幕会改变同物种卡的相似度，触发同质化去重与卡序连带变化
+// （与 v4.394 的「role 回写连带改同物种其它卡」同类）→ 命中物种整组豁免，卡内细节由 verify_v4395 / v4395b 逐卡校验
+const P395 = require('./_v4395_plan.json');
+const B395 = require('./_v4395b_hit.json');
+const v4395Sp = new Set();
+['six', 'empty'].forEach(t => {
+  (P395[t] || []).forEach(r => v4395Sp.add(String(r.id)));
+  (B395[t] || []).forEach(r => v4395Sp.add(String(r.id)));
+});
 // CONS_ITEM 影响的物种集合（itemOnly：仅道具；route：道具联动 name/alloc/nat）
 const consItemOnlySp = new Set(), consRouteSp = new Set();
 ['empty', 'six'].forEach(t => {
@@ -122,6 +136,8 @@ function diffAgainst(base, now, tag) {
     if (br.length !== nr.length) { diff.push({ tag, id, zh: (nr[0] || br[0]).zh, why: '卡数不一致 base=' + br.length + ' now=' + nr.length }); return; }
     compared += br.length;
     if (v393Ids.has(String(id))) { exemptGroups++; return; }   // v4.393 整组豁免（verify_v4393 校验）
+    if (v4394Sp.has(String(id))) { exemptGroups++; return; }   // v4.394 命中物种整组豁免（role 回写连带 EV/去重）
+    if (v4395Sp.has(String(id))) { exemptGroups++; return; }   // v4.395/v4.395b 命中物种整组豁免（删天气招/换极光幕连带去重）
     const isConsRoute = consRouteSp.has(String(id));
     const isConsIO = consItemOnlySp.has(String(id));
     // CONS_ITEM 修复影响的物种（itemOnly/route）：其全部字段变化已由 verify_v4393 与浏览器全字段对照（0 diff）核验，
@@ -129,10 +145,13 @@ function diffAgainst(base, now, tag) {
     if (isConsRoute || isConsIO) { exemptGroups++; return; }
     const ex = hitSp.has(String(id));
     if (ex) exemptGroups++;
-    const bs = br.slice().sort((a, b) => stableSig(a) < stableSig(b) ? -1 : 1);
-    const ns = nr.slice().sort((a, b) => stableSig(a) < stableSig(b) ? -1 : 1);
+    // v4.394/v4.395 命中卡：物种内有命中卡时按引擎原位置配对（本版不动排序），命中卡逐张跳过字段比对
+    const hasHit395 = br.some((r, i) => ALLOW.allowOf(id + '[' + i + ']'));
+    const bs = hasHit395 ? br : br.slice().sort((a, b) => stableSig(a) < stableSig(b) ? -1 : 1);
+    const ns = hasHit395 ? nr : nr.slice().sort((a, b) => stableSig(a) < stableSig(b) ? -1 : 1);
     bs.forEach((r, i) => {
       const c = ns[i];
+      if (ALLOW.allowOf(id + '[' + i + ']')) return;   // 命中卡：招组/名变化由 verify_v4395 / verify_v4393 专项校验
       if (ex ? (sig2(r) !== sig2(c)) : (stableSig(r) !== stableSig(c))) diff.push({ tag, id, zh: c.zh, name: c.name, why: ex ? '结构漂移(本版命中组)' : '稳定签名不一致', old: r, now: c });
       // v4.391：名含「主力输出压制」按底子打手门改名（→输出压制；个案 #605 →强化清场），只豁免 name 一项
       const _nmOk391 = (o, n) => {

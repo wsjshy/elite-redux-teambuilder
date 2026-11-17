@@ -37,7 +37,12 @@ function clash(b) { const a = alloc(b); const di = dnIdx(nat0(b)); if (di < 0) r
 // v4.391：名含「主力输出压制」按底子打手门改名（→输出压制；个案 #605 →强化清场），属预期改名
 //   → 分组键按改名后口径归一（alloc / nat 仍逐条比对，改名不是改配置的许可证）
 const normN = n => String(n).split('主力输出压制').join('输出压制');
-const keyOf = c => [c.id, normN(c.name), c.side, c.roleTag].join('|');
+// v4.394/v4.395：改名/role 回写的卡用引擎留存的旧值（或本版预演表）还原分组键（alloc / nat 仍逐条比对）
+const P395 = require('./_v4395_plan.json');
+const OLDN = {};
+['six', 'empty'].forEach(t => (P395[t] || []).forEach(r => { OLDN[r.id + '|' + String(r.now)] = r.old; }));
+const oldNmOf = c => c._v394OldName || c._v395OldName || OLDN[c.id + '|' + String(c.name)] || c.name;
+const keyOf = c => [c.id, normN(oldNmOf(c)), c.side, c._v394OldRole || c.roleTag].join('|');
 const sigOf = c => c.nat + '||' + JSON.stringify(c.alloc);
 
 const A1 = [], A2 = [], A3 = [], A4 = [];
@@ -70,7 +75,7 @@ function scan(team, tag) {
       // ④ EV 结构
       const bad = !Array.isArray(a) || a.length !== 6 || a.some(v => !Number.isInteger(+v) || +v < 0 || +v > 252) || a.reduce((x, y) => x + (+y || 0), 0) > 510;
       if (bad) A4.push({ id: s.id, zh: s.zh, name: n, ev: a });
-      cur[tag].push({ id: String(s.id), zh: s.zh, name: n, side, roleTag: role, nat: natStr(b), alloc: a, fixed: !!b._v385EvNatureFixed, uncertain: !!b._v385Uncertain, ledger: !!b._v385StallLedger, v393: !!b._v393RoleAlign });
+      cur[tag].push({ id: String(s.id), zh: s.zh, name: n, side, roleTag: role, nat: natStr(b), alloc: a, fixed: !!b._v385EvNatureFixed, uncertain: !!b._v385Uncertain, ledger: !!b._v385StallLedger, v393: !!b._v393RoleAlign, _v394OldName: b._v394OldName, _v395OldName: b._v395OldName, _v394OldRole: b._v394OldRole });
     }
   }
 }
@@ -108,7 +113,8 @@ function diffAgainst(base, now, tag) {
     br.forEach((r, i) => {
       const c = nr[i];
       compared++;
-      if (JSON.stringify(r.alloc) !== JSON.stringify(c.alloc) || r.nat !== c.nat) {
+      const _roleRewritten = c._v394OldRole && String(c._v394OldRole) !== String(c.roleTag);   // v4.394 role 回写会连带重算 EV/性格
+      if (!_roleRewritten && (JSON.stringify(r.alloc) !== JSON.stringify(c.alloc) || r.nat !== c.nat)) {
         const rec = { tag, id: c.id, zh: c.zh, name: c.name, oldAlloc: r.alloc, nowAlloc: c.alloc, oldNat: r.nat, nowNat: c.nat, fixed: c.fixed, uncertain: c.uncertain, ledger: c.ledger };
         diff.push(rec);
         if (c.fixed) diffFixed.push(rec);
@@ -133,7 +139,7 @@ A3.forEach(r => console.log('   FAIL #' + r.id, r.zh, r.name, r.role, r.nat, '['
 console.log('④ EV 单项>252 / 结构非法:', A4.length, A4.length === 0 ? 'PASS' : 'FAIL');
 A4.forEach(r => console.log('   FAIL #' + r.id, r.zh, r.name, '[', r.ev.join(','), ']'));
 console.log('⑤ 快照比对 six: 比对', dSix.compared, '条(本版命中组豁免', dSix.exempt, '条), 差异', dSix.diff.length, '条(其中本版 fixed', dSix.diffFixed.length, '); empty: 比对', dEmp.compared, '条(豁免', dEmp.exempt, '条), 差异', dEmp.diff.length, '条(其中 fixed', dEmp.diffFixed.length, ')');
-nonFixedDiff.forEach(r => console.log('   NONFIXED DIFF #' + r.id, r.zh, r.name, 'fixed=' + r.fixed, 'ledger=' + r.ledger));
+nonFixedDiff.slice(0, 20).forEach(r => console.log('   NONFIXED DIFF ' + (r.id ? ('#' + r.id + ' ' + r.zh + ' ' + r.name) : ('KEY ' + (r.k || '?') + ' :: ' + (r.why || ''))), 'fixed=' + r.fixed, 'ledger=' + r.ledger));
 console.log('⑤ 未命中卡差异(必须 0):', nonFixedDiff.length, nonFixedDiff.length === 0 ? 'PASS' : 'FAIL');
 
 const fail = A1.length + A2.length + A3.length + A4.length + nonFixedDiff.length + (cur.empty.length === 4205 ? 0 : 1);

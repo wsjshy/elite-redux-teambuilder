@@ -9,6 +9,7 @@ const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [26, 65, 96, 80, 37, 208].map(by);
 const fs = require('fs');
 const path = require('path');
+const ALLOW = require('./_v4395_allow.js');   // v4.394/v4.395 命中卡字段允许集（本版叠加豁免）
 
 // 与引擎 _v389REC_MV / _v389REC_ABI 同源：回血招（不含治疗队友类 215/361/505）与回复特性
 const REC_MV = { 105: 1, 202: 1, 234: 1, 235: 1, 236: 1, 303: 1, 355: 1, 409: 1, 156: 1, 456: 1, 532: 1, 631: 1, 72: 1, 71: 1, 837: 1, 73: 1, 135: 1, 208: 1, 275: 1, 392: 1, 622: 1, 744: 1, 915: 1 };
@@ -89,6 +90,7 @@ function scan(team, tag) {
       const diffName = (String(e.name) !== nm);
       const diffEv = JSON.stringify(e.alloc) !== JSON.stringify(al);
       const diffNat = JSON.stringify(e.nat) !== JSON.stringify((b.nat || []).map(x => Array.isArray(x) ? String(x[0]) : String(x)));
+      if (ALLOW.allowOf(String(s.id) + '[' + idx + ']')) return;   // v4.394/v4.395 命中卡：名/招组/EV 变化由专项 verify 校验
       if (diffName && String(e.name).indexOf('主力输出压制') >= 0) {
         if (diffEv || diffNat) b5.push(`${tag} #${s.id} ${s.zh}[${idx}] v4.391 改名卡不得改 EV/性格 ev:${JSON.stringify(e.alloc)}→${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}→${JSON.stringify((b.nat || []).map(x => Array.isArray(x) ? String(x[0]) : String(x)))}`);
         else v391++;

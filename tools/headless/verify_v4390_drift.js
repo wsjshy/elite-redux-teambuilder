@@ -11,6 +11,7 @@ const { ERDATA, deriveBuilds, MV } = H;
 const fs = require('fs'), path = require('path');
 const SNAP = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4390_base_snapshot.json'), 'utf8'));
 const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
+const ALLOW = require('./_v4395_allow.js');   // v4.394/v4.395 命中卡字段允许集（本版叠加豁免）
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [26, 65, 96, 80, 37, 208].map(by);
 const ACC = { '胆小': 1, '爽朗': 1 };
@@ -64,14 +65,21 @@ function scan(team, tag) {
          - itemOnly：允许 item 变（旧快照下可能还叠加本脚本已认可的 name/ev/nat 改名）；ids/side 不得变，role 不得变
          - route：允许 item 联动的 name/role/ev/nat 变化；ids/side 不得变
          两类均已与浏览器逐字段核对一致。 */
-      if (_consIO) {
+      if (_consIO && !ALLOW.allowOf(_key)) {
         if (dIds || dSide || dRole) bad.push(`#${s.id} ${s.zh}[${idx}] CONS itemOnly 口径不符 ids/side/role`);
         c.G++;
         // 仍走下方改名/EV/性格逻辑，仅豁免 item；若没有改名则直接结束
         if (!dName && !dEv && !dNat) return;
-      } else if (_consRT) {
+      } else if (_consRT && !ALLOW.allowOf(_key)) {
         if (dIds || dSide) bad.push(`#${s.id} ${s.zh}[${idx}] CONS route 出现 ids/side 变化`);
         c.G++; return;
+      }
+      const _al395 = ALLOW.allowOf(_key);
+      if (_al395) {
+        // v4.394/v4.395 命中卡：name/ids/role/alloc/nat 变化由 verify_v4395 / verify_v4393 专项校验；side/item 仍严格
+        if (dSide) bad.push(`#${s.id} ${s.zh}[${idx}] 命中卡 side 变化 ${e.side}->${b.side}`);
+        if (dItem && !_consIO) bad.push(`#${s.id} ${s.zh}[${idx}] 命中卡 item 变化 ${e.item}->${(b.it && b.it[0] && b.it[0][0])}`);
+        c.F++; return;
       }
       if (dIds || (dItem && !_consIO) || dSide || (dRole && !_v393ex)) {
         bad.push(`#${s.id} ${s.zh}[${idx}] 非名称字段变化 item:${e.item}->${(b.it && b.it[0] && b.it[0][0])} role:${e.role}->${b.roleTag} side:${e.side}->${b.side} ids:${e.ids}->${idc}`);

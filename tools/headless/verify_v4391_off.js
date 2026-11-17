@@ -10,6 +10,7 @@ const { ERDATA, deriveBuilds, MV } = H;
 const fs = require('fs'), path = require('path');
 const SNAP = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4391_base_snapshot.json'), 'utf8'));
 const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
+const ALLOW = require('./_v4395_allow.js');   // v4.394/v4.395 命中卡字段允许集（本版叠加豁免）
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const allTeam = [26, 65, 96, 80, 37, 208].map(by);
 const POWER_OK = 95;
@@ -58,12 +59,12 @@ function scan(team, tag) {
       const _consIO = CONS_ALLOW[tag].itemOnly.indexOf(_key) >= 0;
       const _consRT = CONS_ALLOW[tag].route.indexOf(_key) >= 0;
       // CONS_ITEM 修复：itemOnly 允许 item 变（可能叠加本脚本认可的改名）；ids/side/role 不得变；route 允许联动
-      if (_consIO) {
+      if (_consIO && !ALLOW.allowOf(_key)) {
         if (JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.side) !== String(b.side) ||
           String(e.role) !== String(b.roleTag)) bad.push(`④ ${_key} CONS itemOnly 口径不符 ids/side/role`);
         c.same++;
         if (!dName) return;
-      } else if (_consRT) {
+      } else if (_consRT && !ALLOW.allowOf(_key)) {
         if (JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.side) !== String(b.side)) bad.push(`④ ${_key} CONS route ids/side 变化`);
         return;
       }
@@ -72,6 +73,13 @@ function scan(team, tag) {
       const dOther = dFixed ||
         JSON.stringify(e.ids) !== JSON.stringify(idc) || (!_consIO && String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '')) ||
         String(e.side) !== String(b.side || '');
+      const _al395 = ALLOW.allowOf(_key);
+      if (_al395) {
+        // v4.394/v4.395 命中卡：name/ids/role/alloc/nat 变化由 verify_v4395 / verify_v4393 专项校验；side/item 仍严格
+        if (String(e.side) !== String(b.side || '')) bad.push(`④ #${s.id} ${s.zh}[${idx}] 命中卡 side 变化 ${e.side}->${b.side}`);
+        if (!_consIO && String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '')) bad.push(`④ #${s.id} ${s.zh}[${idx}] 命中卡 item 变化`);
+        c.rename++; return;
+      }
       if (dOther) { bad.push(`④ #${s.id} ${s.zh}[${idx}] 非名称字段变化 item:${e.item}->${(b.it && b.it[0] && b.it[0][0])} role:${e.role}->${b.roleTag} side:${e.side}->${b.side} ev:${JSON.stringify(e.alloc)}->${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}->${JSON.stringify(na)} ids:${JSON.stringify(e.ids)}->${JSON.stringify(idc)}`); return; }
       if (!dName) {
         // 基线本来不该动的卡，名称也必须逐字一致

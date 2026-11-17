@@ -8,6 +8,7 @@
 const H = require('./harness.js');
 const { ERDATA, deriveBuilds, MV } = H;
 const fs = require('fs'), path = require('path');
+const ALLOW = require('./_v4395_allow.js');   // v4.394/v4.395 命中卡字段允许集（本版叠加豁免）
 const SNAP = JSON.parse(fs.readFileSync(path.join(__dirname, '_v4392_base_snapshot.json'), 'utf8'));
 const CONS_ALLOW = JSON.parse(fs.readFileSync(path.join(__dirname, '_cons_item_allow.json'), 'utf8'));
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
@@ -48,28 +49,35 @@ function scan(team, tag) {
       const nm = String(b.name || '');
       const ids = idsOf(b);
       const e = arr[idx];
+      const _key = s.id + '[' + idx + ']';
+      const _al395 = ALLOW.allowOf(_key);   // v4.394/v4.395/v4.395b 命中卡
       const har = hasAny(ids, HAZ) || hasAny(ids, STA) || hasAny(ids, WEAK);
       // ① 名实
       if (nm.indexOf('骚扰消耗') >= 0) {
         if (!har) { c.a1++; bad.push(`① #${s.id} ${s.zh}[${idx}] 骚扰消耗却无骚扰手段（${ids}）`); }
         else c.kept++;                                   // ③
       }
-      // ② 由本块改名者与规则重算一致
+      // ② 由本块改名者与规则重算一致（v4.394/v4.395/v4.395b 命中卡后续被再改名，由专项 verify 接管）
+      const _reRename = b._v392Rename !== undefined && !(_al395 && _al395.name);
       if (b._v392Rename !== undefined) {
-        c.rename++; c.dist[rule(s, ids)] = (c.dist[rule(s, ids)] || 0) + 1;
-        if (rule(s, ids) !== nm) { c.a2++; bad.push(`② #${s.id} ${s.zh}[${idx}] 重算 ${rule(s, ids)} ≠ 实际 ${nm}`); }
-        if (!b._v392OldName || String(b._v392OldName).indexOf('骚扰消耗') < 0) { c.a2++; bad.push(`② #${s.id} ${s.zh}[${idx}] _v392OldName 异常 ${b._v392OldName}`); }
+        c.rename++;
+        if (_reRename) {
+          c.dist[rule(s, ids)] = (c.dist[rule(s, ids)] || 0) + 1;
+          if (rule(s, ids) !== nm) { c.a2++; bad.push(`② #${s.id} ${s.zh}[${idx}] 重算 ${rule(s, ids)} ≠ 实际 ${nm}`); }
+          if (!b._v392OldName || String(b._v392OldName).indexOf('骚扰消耗') < 0) { c.a2++; bad.push(`② #${s.id} ${s.zh}[${idx}] _v392OldName 异常 ${b._v392OldName}`); }
+        }
       } else if (nm.indexOf('骚扰消耗') >= 0 && !har) { c.a3++; }
       // ⑤ 漂移（v4.393：对齐卡的 role/alloc/nat 变化由 verify_v4393 校验，此处豁免；ids/item/side 仍严格）
       const al = (b.ev && b.ev.alloc) || [], na = natArr(b), idc = ids;
       const _v393ex = !!b._v393RoleAlign;
-      const _key = s.id + '[' + idx + ']';
       const _consIO = CONS_ALLOW[tag].itemOnly.indexOf(_key) >= 0;
       const _consRT = CONS_ALLOW[tag].route.indexOf(_key) >= 0;
-      // CONS_ITEM 修复：itemOnly 允许 item 变（可能叠加 v4.392 改名）；ids/side/role 不得变；route 允许联动
+      // CONS_ITEM 修复：itemOnly 允许 item 变（可能叠加后续版本动作）；ids/side/role 若有后续版本豁免则一并放行
       if (_consIO) {
-        if (JSON.stringify(e.ids) !== JSON.stringify(idc) || String(e.side) !== String(b.side) ||
-          String(e.role) !== String(b.roleTag)) bad.push(`⑤ ${_key} CONS itemOnly 口径不符 ids/side/role`);
+        const _idsOk = JSON.stringify(e.ids) === JSON.stringify(idc) || (_al395 && _al395.ids);
+        const _sdOk = (String(e.side) === String(b.side) || (_al395 && _al395.side));
+        const _rlOk = (String(e.role) === String(b.roleTag) || (_al395 && _al395.role));
+        if (!_idsOk || !_sdOk || !_rlOk) bad.push(`⑤ ${_key} CONS itemOnly 口径不符 ids/side/role`);
         c.same++;
         if (String(e.name) === nm) return;
         // 名称也变了：落入下方「骚扰消耗→规则词」校验
@@ -82,8 +90,17 @@ function scan(team, tag) {
       const dOther = dFixed ||
         JSON.stringify(e.ids) !== JSON.stringify(idc) || (!_consIO && String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '')) ||
         String(e.side) !== String(b.side || '');
-      if (dOther) { bad.push(`⑤ #${s.id} ${s.zh}[${idx}] 非名称字段变化 item:${e.item}->${(b.it && b.it[0] && b.it[0][0])} role:${e.role}->${b.roleTag} side:${e.side}->${b.side} ev:${JSON.stringify(e.alloc)}->${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}->${JSON.stringify(na)} ids:${JSON.stringify(e.ids)}->${JSON.stringify(idc)}`); return; }
+      // v4.394/v4.395 命中卡：字段全落在本版允许集内则不计差异（由 verify_v4395/verify_v4393 专项校验）
+      const _hit395 = _al395 && ['name'].concat(
+        dFixed ? ['role', 'alloc', 'nat'] : [],
+        JSON.stringify(e.ids) !== JSON.stringify(idc) ? ['ids'] : [],
+        (!_consIO && String(e.item) !== String((b.it && b.it[0] && b.it[0][0]) || '')) ? ['item'] : [],
+        String(e.side) !== String(b.side || '') ? ['side'] : []
+      ).every(k => _al395[k]);
+      if (dOther && !_hit395) { bad.push(`⑤ #${s.id} ${s.zh}[${idx}] 非名称字段变化 item:${e.item}->${(b.it && b.it[0] && b.it[0][0])} role:${e.role}->${b.roleTag} side:${e.side}->${b.side} ev:${JSON.stringify(e.alloc)}->${JSON.stringify(al)} nat:${JSON.stringify(e.nat)}->${JSON.stringify(na)} ids:${JSON.stringify(e.ids)}->${JSON.stringify(idc)}`); return; }
       if (String(e.name) === nm) { c.same++; return; }
+      // v4.394/v4.395 命中卡改名（去雨晴沙雪前缀 / 强化清场→主力输出压制）由专项 verify 校验
+      if (_al395 && _al395.name) { return; }
       // 名称变了：只允许「骚扰消耗 → 规则词」
       if (String(e.name).indexOf('骚扰消耗') < 0 || rule(s, ids) !== nm) { bad.push(`⑤ #${s.id} ${s.zh}[${idx}] 未预期改名 ${e.name} -> ${nm}`); }
     });
@@ -91,8 +108,11 @@ function scan(team, tag) {
   console.log(`\n=== ${tag} === 当前卡 ${cur} / 基线卡 ${Object.keys(base).reduce((a, k) => a + base[k].length, 0)}`);
   console.log(` ① 骚扰消耗却无骚扰手段 ${c.a1} | ② 改名与规则不一致 ${c.a2} | ③ 残留无标记 ${c.a3}`);
   console.log(` ③ 保留「骚扰消耗」且真带骚扰手段 ${c.kept} | ⑤ 改名 ${c.rename} | 完全一致 ${c.same} | 未解释差异 ${bad.length === 0 ? '0 ✓' : bad.length + ' ✗'}`);
-  console.log(` ④ 落词分布 ${JSON.stringify(c.dist)}（期望改名 ${EXPECT[tag]} 于 ${tag}）`);
-  if (tag === 'six' && JSON.stringify(c.dist) !== JSON.stringify(EXPECT_DIST)) bad.push(`④ six 落词分布不符 ${JSON.stringify(c.dist)}`);
+  console.log(` ④ 落词分布 ${JSON.stringify(c.dist)}（可重算子集 / 改名总数 ${c.rename}，期望 ${EXPECT[tag]} 于 ${tag}）`);
+  // v4.392 的精确落词分布已被 v4.393/v4.394/v4.395 三轮改名覆盖，不再作为硬断言；
+  // 改为：可重算子集的落词必须全部落在 5 个合法词内，且总数与基线一致。
+  const LEGAL = ['强化清场', '主力输出压制', '输出压制', '双墙辅助流', '稳健联防'];
+  Object.keys(c.dist).forEach(k => { if (LEGAL.indexOf(k) < 0) bad.push(`④ six 出现非法落词 ${k}`); });
   if (tag === 'six' && c.rename !== EXPECT.six) { bad.push(`④ six 改名数 ${c.rename} ≠ ${EXPECT.six}`); }
   if (tag === 'empty' && c.rename !== EXPECT.empty) { bad.push(`④ empty 改名数 ${c.rename} ≠ ${EXPECT.empty}`); }
   bad.slice(0, 12).forEach(x => console.log('   ✗', x));
