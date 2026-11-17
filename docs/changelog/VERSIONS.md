@@ -3444,3 +3444,10 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 - 顺手补了上一版漏记的 7 张连带：5 张名字顶着雨/晴/雪前缀却没来源的（蚊香蛙皇 / 莲叶童子 / 莲帽小童 / 光蚪仔 / 冰蛛霸）去前缀；2 张带极光幕却开不出雪天的（冻脊龙 / 暴雪王-圣诞老人）换掉 —— 它们的「冰天雪地」「雪之精神」都是**在冰雹里受益**、并不产生冰雹。
 - 验收：gate Δ=0（1906/4205、offHist 逐项不变）；smoke **33/33**（package.json 同步 4.396.0；静默 catch **390** 未增）；六段语法 6/6；新增 `verify_v4396.js` 五条全 PASS；`verify_default` / `verify_ev` / `verify_v4395_wx` / `verify_v4395b` / `verify_stall` / `verify_v4391_off` / `verify_v4390_drift` / `verify_v4392_name` / `verify_v4393_role` 全部 0 失败；CRLF 23,907→**23,969**（+62）、bare LF **51**（+0）；harness 4,090,119 B。
 - 发布：提交 `2f2147e`（开发分支 `fix/abi-dedup-detail-20261108`）→ gh-pages **`98f7e61`**；线上四文件逐字节核验一致（index 2,077,826 `E88E7B27`）。正文 `docs/test-reports/v4396_日光束无晴源收口.md`。
+
+
+- **v4.397**（2026-11-17）：**技术债收口 —— 同一张 id 表不再各写一遍**（玩家无感知，行为零变化）。
+- 起因是一句担心：「后面很多时候都是在打补丁，这种做法会不会让代码整体性降低」。先量化，再动手：全文件 1535 张数字数组表里只有 **14 张**被重复定义；真正的问题不是表多，而是 **L11624 的单一真源 `FUNC_MV`（11 个键）早就在，后来的补丁块却绕过它各抄一份** —— 墙表被抄 6 次、折返招 9 次、钉子 4 次。
+- 本版做纯等价替换 **31 处**：把字面量副本改成引用已有键（`FUNC_MV.wall` 6 / `pivot` 9 / `hazard` 4 / `removal` 3 / `rec` 3 / `speed` 1 / `boostSpec` 2 / `protect` 1 / `rainPerfect` 4 / 晴源 1）；新增 `FUNC_MV.wall` 与 `FUNC_MV.rainPerfect` 两个此前缺失的键。带运算的追加表达式（如 `FUNC_MV.boost.concat([504,526])`）与跨脚本段兜底（`SPEED_CTRL`）一律不动。
+- 验收（**零漂移**是本版核心证据）：全卡快照 six 5645 / empty 4205，与 v4.396 基线逐卡逐字段比对 **差异 0**、顺序也一致；gate 六项与 offHist 逐项不变（1906/4205、`0:275-1:799-2:552-3:224-4:48-5:7-7:1`）；smoke **33/33**（静默 catch 仍 390）；六段语法 6/6；`verify_v4396`（153）与 `verify_default` / `verify_ev` / `verify_stall` / `verify_v4392_name` / `verify_v4391_off` / `verify_v4390_drift` / `verify_v4393_role` / `verify_v4395_wx` / `verify_v4395b` 全部 PASS 或未解释差异 0。CRLF 23,969→**23,971**、bare LF **51**。
+- 正文 `docs/test-reports/v4397_id表收口到FUNC_MV.md`。
