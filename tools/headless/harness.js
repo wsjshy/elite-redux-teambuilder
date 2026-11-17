@@ -17214,6 +17214,10 @@ function _deriveBuildsCore(s,team){
           wear:FUNC_MV.wear||[],hazard:FUNC_MV.hazard||[],removal:FUNC_MV.removal||[],
           speed:FUNC_MV.speed||[],protect:FUNC_MV.protect||[],pivot:FUNC_MV.pivot||[],
           brk:[114,499,18,46,525],wall:[113,115]};
+    /* v4.401：补槽若落「纯降对手能力」的变化招（威力 0、只降对手一项数值），等于白占一格。
+       _v401LO 是这类招的黑名单，_v401PRI 是按功能价值排序的替选白名单。
+       **本定义被两处引用**（_v395p1 兜底末段 / v4.396 自强化替换），改一处即两处同时生效。 */
+    var _v401LO=[39,43,108,204,213],_v401PRI=[92,86,261,269,312,215,113,115,657,73];
     var _v395need=0,_v395okN=0,_v395failN=0,_v395fillN=0,_v395depN=0,_v395nmN=0,_v395kpN=0;
     var _v395ty=function(_id){var _m=MV[_id];return _m?_m[3]:'';};
     var _v395strip=function(_s){return (/^[雨晴沙雪]/.test(_s)?_s.slice(1):_s);};
@@ -17256,7 +17260,11 @@ function _deriveBuildsCore(s,team){
       var _cd=[];
       for(_i=0;_i<_L.length;_i++){var _v=_L[_i];if(!_ok(_v))continue;if(_v395WXSET.indexOf(_v)>-1)continue;
         var _Mr=MV[_v];if(!_Mr||_Mr[4]!=='变化')continue;_cd.push(_v);}
-      if(_cd.length){_cd.sort(function(a,b){return a-b;});return{id:_cd[0],k:'兜底:变化'};}
+      if(_cd.length){_cd.sort(function(a,b){return a-b;});
+        if(_v401LO.indexOf(_cd[0])>-1){
+          for(_i=0;_i<_v401PRI.length;_i++){if(_ok(_v401PRI[_i]))return{id:_v401PRI[_i],k:'兜底:功能'};}
+        }
+        return{id:_cd[0],k:'兜底:变化'};}
       return null;
     };
     var _v395put=function(_b,_oid,_nw){
@@ -17435,7 +17443,14 @@ function _deriveBuildsCore(s,team){
             for(var _q9=0;_q9<_L9.length;_q9++){var _m9=_L9[_q9];
               if(_used[""+_m9]||_v396SELF.indexOf(_m9)>-1||_v395WXSET.indexOf(_m9)>-1)continue;
               var _o9=MV[_m9];if(_o9&&_o9[4]==="变化")_cd9.push(_m9);}
-            if(_cd9.length){_cd9.sort(function(_x9,_y9){return _x9-_y9;});_v396Alt=_cd9[0];}
+            if(_cd9.length){_cd9.sort(function(_x9,_y9){return _x9-_y9;});_v396Alt=_cd9[0];
+              /* v4.401：同样不能按 id 升序落纯减益招（43 瞪眼 id 小），改按功能价值白名单 */
+              if(_v401LO.indexOf(_cd9[0])>-1){
+                for(var _q9b=0;_q9b<_v401PRI.length;_q9b++){
+                  var _c9b=_v401PRI[_q9b];
+                  if(_used[''+_c9b]||_L9.indexOf(_c9b)<0||_v395WXSET.indexOf(_c9b)>-1)continue;
+                  _v396Alt=_c9b;break;}
+              }}
           }catch(eZ9){eZ9.name}
           if(_v396Alt!=null)_w={id:_v396Alt,k:_w.k,tag:_w.tag};
         }

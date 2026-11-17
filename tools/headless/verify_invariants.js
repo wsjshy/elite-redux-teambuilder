@@ -180,6 +180,25 @@ def('INV15', '名含「接棒」→ 必带接棒226 或换人招（FUNC_MV.pivot
   return ok ? null : '名含接棒但无接棒/换人招 ' + c.ids.join(',');
 }, c => c.name.indexOf('接棒') >= 0);
 
+// ---- v4.401：补槽不得落「纯降对手能力」的招 ----
+// 瞪眼43 / 摇尾巴39 / 烟幕108 / 撒娇204 / 迷人213：威力 0、只降对手一项数值，占掉一格。
+// 根因是补槽兜底按「招式 id 升序取最小」，这五招 id 都小，会把池里真正有用的
+// 磷火261(烧伤物攻减半) / 芳香治疗312(解全队异常) / 挑衅269(封变化招) 挤掉。
+// 引擎已在两处出口统一修正（v4.395 补槽兜底 / v4.396 自强化替换），本条做回归守护：
+// 只有当该物种**确实能学到**白名单里的某个更优招、且本卡没带时才算违规 ——
+// 池里只有纯减益招的物种（无可奈何）不算缺陷。
+const LO_MV = [39, 43, 108, 204, 213];
+const PRI_MV = [92, 86, 261, 269, 312, 215, 113, 115, 657, 73];
+def('INV16', '补槽不得落纯减益变化招（瞪眼/摇尾巴/烟幕/撒娇/迷人）；池里有更优功能招时必用', c => {
+  const hitLO = inter(c.ids, LO_MV);
+  if (!hitLO.length) return null;
+  let L = []; try { L = H.learnOf(c.s) || []; } catch (e) { return null; }
+  const better = PRI_MV.filter(x => L.indexOf(x) >= 0 && c.ids.indexOf(x) < 0);
+  if (!better.length) return null;
+  const nm = hitLO.map(id => String((MV[id] || [])[1] || id)).join('/');
+  return '带纯减益招 ' + nm + '，但池里有更优未带 ' + better.map(id => String((MV[id] || [])[1] || id)).join('/');
+}, c => true);
+
 // ---- 执行 ----
 const probe = process.argv.indexOf('--probe') >= 0;
 // 中文按 2 宽补齐（Node 的 console.log 不支持 %-58s 这类 printf 填充）
