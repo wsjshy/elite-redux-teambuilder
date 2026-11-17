@@ -163,6 +163,23 @@ def('INV13', 'v4.393 已对齐卡：性格×EV 零矛盾（减项不满投 / 正
   return null;
 }, c => !!c.b._v393RoleAlign);
 
+// ---- v4.400：机制前缀名实（mechPrefix 按「物种能学」判前缀，前缀却贴在流派卡上 → 能学≠会带）----
+// INV01 已覆盖「强化清场」形态；INV14 兜住「强化」前缀的其余全部形态
+// （强化轮转补盲 / 强化受队消耗 / 强化稳健联防 / 强化主力输出压制 …）。
+// 口径与 INV01 完全一致（FUNC_MV.boost ∪ BSTR 名字），避免同一指标两处矛盾。
+def('INV14', '名含「强化」→ 必带强化招（覆盖非「强化清场」形态）', c => {
+  if (c.name.indexOf('强化') < 0) return null;
+  const bySet = inter(c.ids, G.boost).length > 0;
+  const byName = c.ids.some(id => { const m = MV[id]; return m && BSTR.test(String(m[1] || '')); });
+  return (bySet || byName) ? null : '名含强化但四招无强化招 ' + c.ids.join(',');
+}, c => c.name.indexOf('强化') >= 0);
+
+def('INV15', '名含「接棒」→ 必带接棒226 或换人招（FUNC_MV.pivot 369/521）', c => {
+  if (c.name.indexOf('接棒') < 0) return null;
+  const ok = c.ids.some(id => id === 226 || G.pivot.indexOf(id) >= 0);
+  return ok ? null : '名含接棒但无接棒/换人招 ' + c.ids.join(',');
+}, c => c.name.indexOf('接棒') >= 0);
+
 // ---- 执行 ----
 const probe = process.argv.indexOf('--probe') >= 0;
 // 中文按 2 宽补齐（Node 的 console.log 不支持 %-58s 这类 printf 填充）

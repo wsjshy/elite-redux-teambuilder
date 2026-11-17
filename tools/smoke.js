@@ -188,6 +188,20 @@ check('静默 catch 数量（基线 361，不应显著增长）', () => {
   if (n > 390) throw new Error('静默 catch 增至 ' + n + '（基线 361）');
   return n + ' 处';
 });
+check('强化招名正则单一真源（v4.400 起多处副本须同字面）', () => {
+  // v4.391 _v391bst / v4.392 _v392BST / v4.394 _v394BST / v4.400 _v400BST 是同一判据的四处副本，
+  // 均为块内局部变量（作用域互不可见）故无法直接引用。此处锁死字面一致，防止某处单独漂移
+  // 造成「同一指标两处矛盾」（v4.391 已踩过 POWER_OK 同名门槛漏门）。
+  // 注意：引擎另有不同用途的强化词表（如 /剑舞|腹鼓|健美|龙舞|.../ 17 项旧表、/剑舞|龙舞|舞|成长|冥想/），
+  // 它们不是本判据副本，故此处只锁以「剑舞|龙之舞|蝶舞|冥想|诡计|诅咒」开头的这一种字面。
+  const t = read('index.html');
+  const re = /\/剑舞\|龙之舞\|蝶舞\|冥想\|诡计\|诅咒[^\/\r\n]*\//g;
+  const found = t.match(re) || [];
+  const uniq = Array.from(new Set(found));
+  if (found.length !== 4) throw new Error('强化招 16 词正则应出现 4 处（v4.391/v4.392/v4.394/v4.400），实际 ' + found.length);
+  if (uniq.length !== 1) throw new Error('四处副本字面不一致：' + uniq.join(' || '));
+  return found.length + ' 处 / 1 种字面';
+});
 check('零引用函数（只允许历史保留白名单，禁止新增）', () => {
   const t = read('index.html');
   // 2026-11-07 口径修正：这些函数在 v4.179 中已零调用，但属于项目历史功能

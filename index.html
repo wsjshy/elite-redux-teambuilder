@@ -18659,6 +18659,49 @@ function _deriveBuildsCore(s,team){
       });
       try{window._v396Stat={need:_v396N,fill:_v396Fill,keep:_v396Keep,fail:_v396Fail};}catch(eS6){eS6.name}
     }catch(eV4396){eV4396.name}
+  /* v4.400：机制前缀「强化」「接棒」名实校验。
+     根因是**两层错位**：
+     ① mechPrefix(p) 按**物种**判前缀（p.hasBoost = 能学强化招 / p.hasPass = 能学接棒），
+        而前缀贴在的是**某一张流派卡**上 —— 「能学≠会带」。一个物种能学剑舞，
+        它名下**所有**候选（含「轮转补盲」「受队消耗」）都被冠上「强化」
+        （六人队名含「强化」1571 张，其中 70 张四招无任何强化招）。
+     ② 引擎本来有校验（v45-2，L16311）：if(roleTag==='强化') 才查，且五招无强化招时**优先补招**。
+        roleTag 为「轮转」「受队」的卡完全绕过；而 v4.393 的重算 roleTag 排在其后，
+        连 roleTag 为强化的卡也可能被漏（#1788「替身强化流」roleTag=强化，
+        四招 替身/守住/电磁波/蹭蹭脸颊 无一条强化招）。
+     本块口径与 v4.394「强化清场」一致：名字承诺的机制必须在四招里兑现，否则去前缀。
+     **不补招** —— 补招等于把「能学」变成「硬带」，正是 v4.371 用户拍板否决的「平铺近同流派」。
+     判据：强化 = 招式名命中 16 词正则（与 v4.391 的 _v391bst / v4.394 的 _v394BST **同字面**，
+           不取 FUNC_MV.boost —— 后者 11 项是选招权重口径，缺 生长74/瑜伽96/诅咒174/宇宙力量322）；
+           接棒 = 接棒 226 或 FUNC_MV.pivot（369 急速折返 / 521 伏特替换，引用真源不手抄）。
+     去前缀后若落「主力输出压制」，复用 v4.391 的两道门（底子 POWER_OK≥95 / 实配伤害招≥2），
+     避免同一指标两处矛盾。side / roleTag / 招组 / EV / 道具 / 特性 / 排序一律不动，只改 name。自包作用域。 */
+  try{
+    var _v400BST=/剑舞|龙之舞|蝶舞|冥想|诡计|诅咒|健美|巨大化|破壳|腹鼓|磨爪|铁壁|集气|自我激励|生长|宇宙力量/;
+    function _v400Ids(b){return ((b.mv&&b.mv.main)||[]).map(function(x){return +x.id})}
+    function _v400HasB(b){return _v400Ids(b).some(function(id){var r=MV[id];return !!(r&&_v400BST.test(String(r[1]||'')));})}
+    function _v400HasP(b){return _v400Ids(b).some(function(id){return id===226||(FUNC_MV.pivot||[]).indexOf(id)>=0})}
+    var _v400R=[];
+    out.forEach(function(b){
+      if(!b||!b.name)return;
+      var _nm=String(b.name),_nw=_nm,_hit=false;
+      if(_nm.indexOf('强化')>=0&&!_v400HasB(b)){_nw=_nw.replace('强化','');_hit=true}
+      if(_nm.indexOf('接棒')>=0&&!_v400HasP(b)){_nw=_nw.replace('接棒','');_hit=true}
+      if(!_hit||!_nw)return;
+      if(_nw.indexOf('主力输出压制')>=0){
+        var _bs=(s&&s.base)?s.base:[];
+        var _ab=Math.max(+(_bs[1]||0),+(_bs[3]||0));
+        if(_ab<NEED_CFG.POWER_OK){_nw=_nw.replace('主力输出压制','输出压制')}
+        else{
+          var _dg=0;((b.mv&&b.mv.main)||[]).forEach(function(x){var r=MV[+x.id];if(r&&r[4]!=='变化')_dg++});
+          if(_dg<2)_nw=_nw.replace('主力输出压制','骚扰消耗');
+        }
+      }
+      if(b._v400OldName===undefined)b._v400OldName=_nm;
+      b.name=_nw;_v400R.push(_nm+'=>'+_nw);
+    });
+    try{window._v400Prefix={renamed:_v400R.length,list:_v400R.slice(0,30)};}catch(eS0){eS0.name}
+  }catch(eV4400){eV4400.name}
   /* v4.399：后处理链末尾「完全重复」复查。
      v4.371 的同玩法去重跑在链中间，它之后还有 eX372 / eV4386 / eV4393 / eV4396 等块会改招，
      那些块可能把两张原本不同的卡改成四招完全相同 —— 去重门就此失效（实测 8 对配置全同却并列两张卡）。
@@ -22140,7 +22183,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.399';
+var ER_ENGINE_VER='v4.400';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
