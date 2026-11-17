@@ -17451,6 +17451,53 @@ function _deriveBuildsCore(s,team){
       });
       try{window._v396Stat={need:_v396N,fill:_v396Fill,keep:_v396Keep,fail:_v396Fail};}catch(eS6){eS6.name}
     }catch(eV4396){eV4396.name}
+  /* v4.399：后处理链末尾「完全重复」复查。
+     v4.371 的同玩法去重跑在链中间，它之后还有 eX372 / eV4386 / eV4393 / eV4396 等块会改招，
+     那些块可能把两张原本不同的卡改成四招完全相同 —— 去重门就此失效（实测 8 对配置全同却并列两张卡）。
+     本块判据比 v4.371 严：四招集合必须完全相同（Jaccard=1.0），且 side / 特性[0] / 道具[0] / EV 模板全同；
+     roleTag 与 name 不参与判定——名字不同但配置全同，对用户仍是同一张卡。
+     每组只保留 score 最高一条（并列取先出现）。自包作用域。 */
+  try{
+    function _v399It(b){var v=(b.it&&b.it[0])?b.it[0][0]:'';return String(v||'')}
+    function _v399Abi(b){var a=(b.abi&&b.abi[0])?b.abi[0].n:'';return String(a||'')}
+    function _v399Ids(b){return (b.mv&&b.mv.main||[]).map(function(x){return +x.id})}
+    function _v399Same(a,c){
+      if(String(a.side)!==String(c.side))return false;
+      if(_v399Abi(a)!==_v399Abi(c))return false;
+      if(_v399It(a)!==_v399It(c))return false;
+      var ta=(a.ev&&a.ev.template)||'',tc=(c.ev&&c.ev.template)||'';
+      if(ta!==tc)return false;
+      var ia=_v399Ids(a),ic=_v399Ids(c);
+      if(ia.length!==4||ic.length!==4)return false;
+      var A={},C={},k;
+      for(k=0;k<4;k++){A[''+ia[k]]=1;C[''+ic[k]]=1}
+      for(k=0;k<4;k++){if(!C[''+ia[k]])return false}
+      return true;
+    }
+    var _v399Pos=[],_v399K=0;
+    out.forEach(function(b,i){if(b&&b.mv&&(b.mv.main||[]).length===4)_v399Pos.push(i)});
+    if(_v399Pos.length>=2){
+      var _v399Par=_v399Pos.map(function(_,j){return j});
+      function _v399Find(x){while(_v399Par[x]!==x){_v399Par[x]=_v399Par[_v399Par[x]];x=_v399Par[x]}return x}
+      function _v399Uni(p,q){var ra=_v399Find(p),rb=_v399Find(q);if(ra!==rb)_v399Par[rb]=ra}
+      for(var _v399i=0;_v399i<_v399Pos.length;_v399i++){
+        for(var _v399j=_v399i+1;_v399j<_v399Pos.length;_v399j++){
+          if(_v399Same(out[_v399Pos[_v399i]],out[_v399Pos[_v399j]]))_v399Uni(_v399i,_v399j);
+        }
+      }
+      var _v399G={};
+      _v399Pos.forEach(function(_,j){var r=_v399Find(j);(_v399G[r]=_v399G[r]||[]).push(j)});
+      var _v399Drop={};
+      for(var _v399g in _v399G){var _mem399=_v399G[_v399g];if(_mem399.length<2)continue;
+        var _keep399=_mem399.slice().sort(function(x,y){
+          var sx=+(out[_v399Pos[x]].score)||0,sy=+(out[_v399Pos[y]].score)||0;
+          if(sy!==sx)return sy-sx;return x-y;})[0];
+        _mem399.forEach(function(j){if(j!==_keep399){_v399Drop[_v399Pos[j]]=1;_v399K++}});
+      }
+      if(Object.keys(_v399Drop).length)out=out.filter(function(_,i){return !_v399Drop[i]});
+      try{window._v399Dedup={merged:_v399K};}catch(eS9){eS9.name}
+    }
+  }catch(eV4399){eV4399.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20885,7 +20932,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.398';
+var ER_ENGINE_VER='v4.399';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
