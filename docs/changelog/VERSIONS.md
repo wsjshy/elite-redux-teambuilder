@@ -3500,4 +3500,5 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 - **零漂移**：六人队 5637→5637、空队 4205→4205，消失 0 / 新增 0；`side/role/alloc/nat/tpl/it/mv/abi/abiIds/score` 十字段逐卡比对差异 **0**；同配置重复组 **0**（v4.399 成果保持）。
 - **门禁**：gate 1906/4205、badMove 1 / dup 0 / itemsOver 0 / defOrb 0、offHist 逐项不变；smoke **34/34**（新增「强化招名正则单一真源」检查）；`verify_invariants` 新增 **INV14/INV15**，15 条违规合计 **0**；六段语法 **6/6**；CRLF 24,018→**24,061**、bare LF **51**。
 - **「场地」124/124 是假阳性**：`if(f.length)return '场地'` 的 `p.field` 是物种**能开的体系**（特性口径，如电气制造者），不是「自带场地招」，皮卡丘带伏特攻击确有电场增伤 —— 语义准确，不改。
+- **发布**：提交 `2be48e6`（开发分支 `fix/abi-dedup-detail-20261108`）→ gh-pages **`e5b27da`**（增量部署，未删线上任何文件）。线上四文件 python 原始字节逐字节核验全部 MATCH（index 2,084,606 `1DE8CCBD202D…` / data_lite 385,739 / data_species 1,362,446 / data_adv 575,962）。
 - 正文 `docs/test-reports/v4400_机制前缀名实.md`。
