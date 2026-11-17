@@ -18625,10 +18625,10 @@ function _deriveBuildsCore(s,team){
         for(_p=0;_p<_abiIds.length;_p++){if(_v396SUN.indexOf(_abiIds[_p])>-1){_sun=true;break}}
         for(_p=0;_p<_all.length;_p++){if(+_all[_p].id===241){_sun=true;break}}
         if(_sun){b._v396Keep="sun";_v396Keep++;return}
-        if(b.score===99){
-          var _v396C9=[];try{(b.core||[]).forEach(function(_c9){if(/^\d+$/.test(String(_c9)))_v396C9.push(+_c9)})}catch(eC9){_v396C9=[]}
-          if(_v396C9.indexOf(_dv)>-1){b._v396Keep="score99";_v396Keep++;return}
-        }
+        /* v4.398：删去 v4.396 的「score99 且 core 点名日光 → 保留」豁免。
+           core 点名日光束/日光刃只表示「这张卡的机制思路与日光有关」，不等于它具备免蓄力条件。
+           实测无叶绿体却带日光招的卡：蔓藤怪[0]（叶绿素不免蓄力）/ 猛恶菇[1] / 森林蜥蜴[1]（轻装速攻手）。
+           真正的保留条件在本函数上方已判过：_isChl（叶绿体/耀斑/巨大树叶）或 _sun（晴天特性/大晴天招式）。 */
         var _role=String(b.roleTag||""),_side=String(b.side||"");
         var _isAtk=(_side!=="辅助")&&(_role==="输出"||_role==="增伤"||_role==="强化");
         var _used={},_types={};
@@ -18636,7 +18636,7 @@ function _deriveBuildsCore(s,team){
         var _w=null;try{_w=_v395p1(s,_used,_types,_role,_side,_isAtk,_v395nmCat(b.name))}catch(eW){_w=null}
         if(!_w){b._v396Fail=1;_v396Fail++;return}
         /* 兜底若落「只强化自己」的变化招（辅助/肉盾卡上名实不符），在本版内换一个非自我强化的变化招 */
-        var _v396SELF=[14,74,96,157,13,105,264,515];
+        var _v396SELF=[14,74,96,174,187,322,334,339,347,349,417,468,483,504,526];
         if(_w&&_v396SELF.indexOf(+_w.id)>-1){
           var _v396Alt=null;try{
             var _L9=learnOf(s)||[],_cd9=[];
@@ -22093,7 +22093,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.397';
+var ER_ENGINE_VER='v4.398';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
