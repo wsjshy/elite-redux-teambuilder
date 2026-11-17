@@ -17387,6 +17387,68 @@ function _deriveBuildsCore(s,team){
     }catch(eV4395b){eV4395b.name}
     try{window._v395Stat={need:_v395need,ok:_v395okN,fail:_v395failN,fill:_v395fillN,dep:_v395depN,name:_v395nmN,keep:_v395kpN};}catch(eS){eS.name}
   }catch(eV4395){eV4395.name}
+    /* v4.396 日光束/日光刃「无晴源」全库收口（源码依据：
+       battle_script_commands.c:10942  EFFECT_SOLARBEAM 需 IsBattlerWeatherAffected(WEATHER_SUN_ANY) 或 HasChloroplast() 才免蓄力一回合；
+       battle_util.c:7149            冰雹/沙暴/雨天/雾天 且非 HasChloroplast → 威力 ×0.5；
+       abilities.cc:3639/4649/4758  chloroplast flag = 叶绿体(268) / 耀斑(366) / 巨大树叶(374)。
+       v4.395 只在「本身带手动天气招」的卡上连带换 76/632，不带天气招的卡从未普查 → 本版补齐，并修正豁免判据（原名正则只含「叶绿体」）。 */
+    try{
+      var _v396DEP=[76,632];
+      var _v396SUN=[70,584,190,871];
+      var _v396CHL=[268,366,374];
+      var _v396CHGN=/叶绿体|耀斑|巨大树叶|Mega Sol/;
+      var _v396N=0,_v396Fill=0,_v396Keep=0,_v396Fail=0;
+      out.forEach(function(b){
+        if(!b||!b.name)return;
+        var _main=b.mv.main||[],_func=b.mv.func||[],_all=_main.concat(_func);
+        var _di=-1,_dv=0,_i;
+        for(_i=0;_i<_all.length;_i++){var _x=+_all[_i].id;if(_v396DEP.indexOf(_x)>-1){_di=_i;_dv=_x;break}}
+        if(_di<0)return;
+        _v396N++;
+        var _pool=[];try{_pool=(s.abis||[]).concat(s.inns||[])}catch(eP){_pool=[]}
+        var _isChl=false,_p;
+        for(_p=0;_p<_pool.length;_p++){if(_v396CHGN.test(String(_pool[_p]||""))){_isChl=true;break}}
+        var _abiIds=[];(b.abi||[]).forEach(function(_a){var _q=+((_a&&_a.id==null)?"":_a.id);if(_q)_abiIds.push(_q)});
+        for(_p=0;_p<_abiIds.length;_p++){if(_v396CHL.indexOf(_abiIds[_p])>-1){_isChl=true;break}}
+        if(_isChl){b._v396Keep="chloroplast";_v396Keep++;return}
+        var _sun=false;
+        for(_p=0;_p<_abiIds.length;_p++){if(_v396SUN.indexOf(_abiIds[_p])>-1){_sun=true;break}}
+        for(_p=0;_p<_all.length;_p++){if(+_all[_p].id===241){_sun=true;break}}
+        if(_sun){b._v396Keep="sun";_v396Keep++;return}
+        if(b.score===99){
+          var _v396C9=[];try{(b.core||[]).forEach(function(_c9){if(/^\d+$/.test(String(_c9)))_v396C9.push(+_c9)})}catch(eC9){_v396C9=[]}
+          if(_v396C9.indexOf(_dv)>-1){b._v396Keep="score99";_v396Keep++;return}
+        }
+        var _role=String(b.roleTag||""),_side=String(b.side||"");
+        var _isAtk=(_side!=="辅助")&&(_role==="输出"||_role==="增伤"||_role==="强化");
+        var _used={},_types={};
+        _all.forEach(function(_mv){_used[""+_mv.id]=1;var _t=_v395ty(+_mv.id);if(_t)_types[_t]=1;});
+        var _w=null;try{_w=_v395p1(s,_used,_types,_role,_side,_isAtk,_v395nmCat(b.name))}catch(eW){_w=null}
+        if(!_w){b._v396Fail=1;_v396Fail++;return}
+        /* 兜底若落「只强化自己」的变化招（辅助/肉盾卡上名实不符），在本版内换一个非自我强化的变化招 */
+        var _v396SELF=[14,74,96,157,13,105,264,515];
+        if(_w&&_v396SELF.indexOf(+_w.id)>-1){
+          var _v396Alt=null;try{
+            var _L9=learnOf(s)||[],_cd9=[];
+            for(var _q9=0;_q9<_L9.length;_q9++){var _m9=_L9[_q9];
+              if(_used[""+_m9]||_v396SELF.indexOf(_m9)>-1||_v395WXSET.indexOf(_m9)>-1)continue;
+              var _o9=MV[_m9];if(_o9&&_o9[4]==="变化")_cd9.push(_m9);}
+            if(_cd9.length){_cd9.sort(function(_x9,_y9){return _x9-_y9;});_v396Alt=_cd9[0];}
+          }catch(eZ9){eZ9.name}
+          if(_v396Alt!=null)_w={id:_v396Alt,k:_w.k,tag:_w.tag};
+        }
+        var _ms=[_main,_func],_a,_arr,_j,_nmv=(_dv===76)?"日光束":"日光刃";
+        for(_a=0;_a<2;_a++){_arr=_ms[_a];
+          for(_j=0;_j<_arr.length;_j++){if(+_arr[_j].id!==_dv)continue;
+            var _k2="";try{_k2=mvKindOf(_w.id)}catch(eK){_k2=""}
+            _arr[_j]={id:_w.id,kind:_k2,tag:_w.tag,
+              why:[_nmv+"在无晴天时需蓄力一回合（只有晴天或叶绿体类特性才免蓄力），且沙暴/雨天/冰雹/雾天下威力×0.5；本卡没有产生晴天的特性或招式 → 此槽改「"+_w.tag+"」"]};
+            _v396Fill++;
+          }
+        }
+      });
+      try{window._v396Stat={need:_v396N,fill:_v396Fill,keep:_v396Keep,fail:_v396Fail};}catch(eS6){eS6.name}
+    }catch(eV4396){eV4396.name}
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -20821,7 +20883,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.395';
+var ER_ENGINE_VER='v4.396';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

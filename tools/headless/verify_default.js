@@ -109,6 +109,11 @@ const v4395Sp = new Set();
   (P395[t] || []).forEach(r => v4395Sp.add(String(r.id)));
   (B395[t] || []).forEach(r => v4395Sp.add(String(r.id)));
 });
+// v4.396：日光束/日光刃无晴源换招同样会改变同物种卡相似度（同质化去重连带）→ 命中物种整组豁免，
+// 卡内细节由 verify_v4396 逐卡校验（该脚本实测只动 mv，name/EV/性格/道具/特性零漂移）
+const H396 = require('./_v4396_hit.json');
+const v4396Sp = new Set();
+['six', 'empty'].forEach(t => { (H396[t] || []).forEach(r => v4396Sp.add(String(r.id))); });
 // CONS_ITEM 影响的物种集合（itemOnly：仅道具；route：道具联动 name/alloc/nat）
 const consItemOnlySp = new Set(), consRouteSp = new Set();
 ['empty', 'six'].forEach(t => {
@@ -137,7 +142,8 @@ function diffAgainst(base, now, tag) {
     compared += br.length;
     if (v393Ids.has(String(id))) { exemptGroups++; return; }   // v4.393 整组豁免（verify_v4393 校验）
     if (v4394Sp.has(String(id))) { exemptGroups++; return; }   // v4.394 命中物种整组豁免（role 回写连带 EV/去重）
-    if (v4395Sp.has(String(id))) { exemptGroups++; return; }   // v4.395/v4.395b 命中物种整组豁免（删天气招/换极光幕连带去重）
+    if (v4395Sp.has(String(id)) && process.env.V395_NOGROUP !== '1') { exemptGroups++; return; }   // 探针开关：V395_NOGROUP=1 时禁用本组整组豁免，用于核查非命中卡是否零漂移   // v4.395/v4.395b 命中物种整组豁免（删天气招/换极光幕连带去重）
+    if (v4396Sp.has(String(id))) { exemptGroups++; return; }   // v4.396 命中物种整组豁免（日光束/日光刃换招连带去重）
     const isConsRoute = consRouteSp.has(String(id));
     const isConsIO = consItemOnlySp.has(String(id));
     // CONS_ITEM 修复影响的物种（itemOnly/route）：其全部字段变化已由 verify_v4393 与浏览器全字段对照（0 diff）核验，

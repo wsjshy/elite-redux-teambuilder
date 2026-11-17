@@ -9,6 +9,10 @@ const plan = require('D:/game/elite-redux/tools/headless/_v4395_plan.json');
 // v4.395b 又在 plan 之外的三个维度动了同一批卡（657 死招换招 / 双墙改名 / 天气前缀）→ 这些卡不再按 v4.395 预演比对
 const B395 = require('D:/game/elite-redux/tools/headless/_v4395b_hit.json');
 const B_HIT = new Set((B395.six || []).concat(B395.empty || []).map(r => r.id + '[' + r.idx + ']'));
+// v4.396：日光束 76 / 日光刃 632 在无晴源且无 chloroplast 的卡上换招 —— 这些卡不再按 v4.395 预演比对
+// （预演是 v4.395 时点的静态清单，当时卡内可能还带晴天招；该批已由 verify_v4396 五条专项接管）
+const H396F = require('D:/game/elite-redux/tools/headless/_v4396_hit.json');
+const H396_HIT = new Set((H396F.six || []).concat(H396F.empty || []).map(r => r.id + '[' + r.i + ']'));
 const planKey = (tag) => { const m = {}; plan[tag].forEach(r => m[r.id + '[' + r.idx + ']'] = r); return m };
 const PK = { six: planKey('six'), empty: planKey('empty') };
 
@@ -38,7 +42,7 @@ function scan(tm, tag) {
       const key = (+s.id) + '[' + i + ']';
       const p = PK[tag][key];
       if (!p) return;
-      if (B_HIT.has(key)) { res.ok++; return; }   // v4.395b 后续改动的卡由 verify_v4395b 校验
+      if (B_HIT.has(key) || H396_HIT.has(key)) { res.ok++; return; }   // v4.395b / v4.396 后续改动的卡由各自专项校验
       const now = String(b.name);
       if (now !== p.now) res.diffs.push(`${key} ${p.zh} name 期望「${p.now}」实际「${now}」`);
       const ids = (b.mv.main || []).concat(b.mv.func || []).map(x => (MV[+x.id] || [])[1]);
