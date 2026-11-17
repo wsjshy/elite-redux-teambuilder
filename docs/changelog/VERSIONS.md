@@ -3450,4 +3450,6 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 - 起因是一句担心：「后面很多时候都是在打补丁，这种做法会不会让代码整体性降低」。先量化，再动手：全文件 1535 张数字数组表里只有 **14 张**被重复定义；真正的问题不是表多，而是 **L11624 的单一真源 `FUNC_MV`（11 个键）早就在，后来的补丁块却绕过它各抄一份** —— 墙表被抄 6 次、折返招 9 次、钉子 4 次。
 - 本版做纯等价替换 **31 处**：把字面量副本改成引用已有键（`FUNC_MV.wall` 6 / `pivot` 9 / `hazard` 4 / `removal` 3 / `rec` 3 / `speed` 1 / `boostSpec` 2 / `protect` 1 / `rainPerfect` 4 / 晴源 1）；新增 `FUNC_MV.wall` 与 `FUNC_MV.rainPerfect` 两个此前缺失的键。带运算的追加表达式（如 `FUNC_MV.boost.concat([504,526])`）与跨脚本段兜底（`SPEED_CTRL`）一律不动。
 - 验收（**零漂移**是本版核心证据）：全卡快照 six 5645 / empty 4205，与 v4.396 基线逐卡逐字段比对 **差异 0**、顺序也一致；gate 六项与 offHist 逐项不变（1906/4205、`0:275-1:799-2:552-3:224-4:48-5:7-7:1`）；smoke **33/33**（静默 catch 仍 390）；六段语法 6/6；`verify_v4396`（153）与 `verify_default` / `verify_ev` / `verify_stall` / `verify_v4392_name` / `verify_v4391_off` / `verify_v4390_drift` / `verify_v4393_role` / `verify_v4395_wx` / `verify_v4395b` 全部 PASS 或未解释差异 0。CRLF 23,969→**23,971**、bare LF **51**。
+
+- 发布：提交 `f041447`（开发分支 `fix/abi-dedup-detail-20261108`）→ gh-pages **`249d573`**（增量、未删线上任何文件）。线上四文件 python 原始字节逐字节核验 Length/SHA1 全 MATCH：index 2,078,089 `7216ADA1B880` / data_lite 385,739 `F06488048CEA` / species 1,362,446 `B0E4B6994721` / adv 575,962 `0CA1813D0167`。
 - 正文 `docs/test-reports/v4397_id表收口到FUNC_MV.md`。
