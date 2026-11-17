@@ -3453,3 +3453,10 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 
 - 发布：提交 `f041447`（开发分支 `fix/abi-dedup-detail-20261108`）→ gh-pages **`249d573`**（增量、未删线上任何文件）。线上四文件 python 原始字节逐字节核验 Length/SHA1 全 MATCH：index 2,078,089 `7216ADA1B880` / data_lite 385,739 `F06488048CEA` / species 1,362,446 `B0E4B6994721` / adv 575,962 `0CA1813D0167`。
 - 正文 `docs/test-reports/v4397_id表收口到FUNC_MV.md`。
+
+- **工具：verify_invariants.js 名实不变量统一入口**（2026-11-17，**不改引擎、不 bump 版本号**，引擎仍 v4.397）。
+- 承接 v4.397 同一条线：id 表已收回 `FUNC_MV` 单一真源，但**名实断言仍散在 9 个 `verify_v43xx_*.js` 里** —— 每加一条规则就多一个脚本 + 多一块补丁。
+- 新增 `tools/headless/verify_invariants.js`：一次 `deriveBuilds` 采集全库 **9850 张卡**，**13 条不变量**共用；全 0 才 `exit 0`，`--probe` 只报告；发布前必跑（不进 smoke，smoke 要保持秒级）。
+- **判据修正过程值得记**：首版探测 3291 违规，逐条核实后 3280 条是判据过宽而非代码有问题。最典型的误判是把「流派名 → roleTag」当成全库映射 —— 引擎 v4.393 的守卫是「只处理肉盾挂攻击向名」，`#3 妙蛙花[0]「速攻强化清场」role=输出` 是合法的（名字=战术打法，roleTag=队伍站位）。「双墙」同理只要 ≥1 面墙（831 张误报，四格放不下两面墙）。
+- 最终：INV01–INV10、INV12 全库适用 **0 违规**；INV11/INV13 限 `_v393RoleAlign`，**适用 547 张 / 0 违规**（与 v4.393 的 aligned 547 一致，证明断言真在跑而非空转）。
+- 产物：`tools/headless/verify_invariants.js`（新建）、`AGENTS.md` 工具索引、`.../references/engine-map.md` 一节、正文 `docs/test-reports/verify_invariants_名实不变量入口.md`。
