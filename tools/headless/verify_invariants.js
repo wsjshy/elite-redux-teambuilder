@@ -9,31 +9,25 @@ const { ERDATA, deriveBuilds, MV, NATURES } = H;
 const by = id => ERDATA.species.find(s => String(s.id) === String(id));
 const TEAM = [26, 65, 96, 80, 37, 208].map(by);
 
-// ---- id 表（与引擎 FUNC_MV 同值；真源在 index.html L11624）----
-const G = {
-  rec: [105, 202, 234, 235, 236, 303, 355, 409],
-  boost: [14, 187, 334, 339, 347, 349, 417, 468, 483, 504, 526],
-  boostSpec: [347, 417, 483],
-  hazard: [191, 390, 446, 564],
-  removal: [229, 432],
-  speed: [86, 317, 366, 433],
-  protect: [164, 182],
-  pivot: [369, 521],
-  wall: [113, 115, 657],
-  rainPerfect: [87, 542],
-};
-const STA = [86, 92, 261, 137, 599];
-const WEAK = [73, 282, 269, 46, 18, 525, 114, 499, 317];
-const WSET = [201, 240, 241, 258, 580, 581, 604, 641, 950];
-const SUN_ABI = ['70', '584', '190', '871'];
-const SNOW_ABI = ['117', '666', '929', '291', '348', '870', '493'];
+// ---- 全部 id 表从引擎真源读，不再手抄 ----
+// engine_consts.js 解析 index.html 的 FUNC_MV / WEATHER_MV / _v395bSET / _v392STA / _v392WK / _v392BST。
+// 引擎改了表，断言自动跟着变；解析失败会 throw，不会静默假绿。
+const C = require('./engine_consts.js');
+const G = C.FUNC_MV;              // 13 键（rec/boost/boostSpec/hazard/removal/speed/protect/pivot/wear/weather/wall/rainPerfect）
+const STA = C.STA;                // [86,92,261,137,599]
+const WEAK = C.WEAK;              // [73,282,269,46,18,525,114,499,317]
+const WSET = C.WSET;              // 天气招 201/240/241/258/580/581/604/641/950
+const SUN_ABI = C.SUN_ABI;        // [70,584,190,871]
+const SNOW_ABI = C.SNOW_ABI;      // [117,666,929,291,348,870,493]
+const RAIN_ABI = C.RAIN_ABI;      // [2,989,867,189]
+const SAND_ABI = C.SAND_ABI;      // [45,604,245]
+// chloroplast flag 只存在于游戏源码（abilities.cc），引擎没有顶层变量，故仍为字面量
 const CHL_ABI = ['268', '366', '374'];
 const POWER_OK = 95;
 const SASH_ABI = /玻璃大炮/;
 const PRANK = /恶作剧之心/;
 const SLEEP = [156];
-// 强化招名正则（v4.392 口径）：FUNC_MV.boost 之外还有 74 生长 等按名字认定的强化招
-const BSTR = /剑舞|龙之舞|蝶舞|冥想|诡计|诅咒|健美|巨大化|破壳|腹鼓|磨爪|铁壁|集气|自我激励|生长|宇宙力量/;
+const BSTR = C.BSTR;
 
 const idsOf = b => (b.mv.main || []).concat(b.mv.func || []).map(x => +x.id);
 const abiIds = b => (b.abi || []).map(a => String(a.id == null ? '' : a.id)).filter(Boolean);

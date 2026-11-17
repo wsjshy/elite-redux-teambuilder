@@ -88,7 +88,7 @@ D:\game\elite-redux\
 │   ├── build_sprites.py             ← ★精灵图生成器（gameData NAME → sp<id>.png，四层匹配，可重复运行）
 │   ├── sprites_map.csv              ← 映射记录（id,name,NAME,sprite_file,layer）
 │   └── sprites_report.md            ← 统计与缺失清单（缺失仅 SPECIES_NONE 占位）
-├── tools\headless\                     ← ★node 无头门禁/审计（2026-11-14 新增，开发工具不部署）：make_harness.py 由 index.html+三分片生成 harness.js（Proxy 桩+中和顶层自动 UI），gate.js 约16s 跑全库且与浏览器门禁逐值一致，audit_name.js 名实相符（0 缺陷）、audit_default.js 并列机制首推参考；**verify_invariants.js** 13 条名实不变量常驻入口（发布前必跑，全 0 才放行；`--probe` 只报告；加规则就加一条 INV，不要再新建 verify_v43xx 脚本）；批量审计可按物种区间拆多进程/子代理并行，不占浏览器会话
+├── tools\headless\                     ← ★node 无头门禁/审计（2026-11-14 新增，开发工具不部署）：make_harness.py 由 index.html+三分片生成 harness.js（Proxy 桩+中和顶层自动 UI），gate.js 约16s 跑全库且与浏览器门禁逐值一致，audit_name.js 名实相符（0 缺陷）、audit_default.js 并列机制首推参考；**verify_invariants.js** 13 条名实不变量常驻入口（发布前必跑，全 0 才放行；`--probe` 只报告；加规则就加一条 INV，不要再新建 verify_v43xx 脚本）；**engine_consts.js** 断言层真源（从 index.html 直接解析 FUNC_MV/WEATHER_MV/_v395bSET/_v395bWK/_v392STA/_v392WK/_v392BST，解析失败 throw 而非返回空表）；**contract_map.py** 后处理链扫描器，`python tools/headless/contract_map.py` 覆盖写 `docs/dev/引擎后处理链顺序契约.md`，行号推移时重跑即更新。**新写/改 verify 脚本一律 require engine_consts，禁止再手抄 id 表**（v4.397 收口前实测墙表被 15 个脚本各抄一份）。批量审计可按物种区间拆多进程/子代理并行，不占浏览器会话
 ├── tools\probe_abi_coldstart.py       ← 特性反查冷启动探针（零依赖，headless Chrome --virtual-time-budget + --dump-dom；断言 A 冷启动不得全 0 / B 冷启动态==toggle 后态逐卡一致 / C _hidN 自洽；--root 指任意快照目录做 before/after 对拍；exit 0=PASS）
 ├── 招式表_特性.csv                  ← ★特性中文新源（999 条 BOM；data.js↔gameData 反推，与网页同源；xlsm 已丢失）
 ├── 招式表_可学总表.csv              ← ★配招核心数据：112,580 行（宝可梦×招式×获得方式，含种族/特性/招式数值）
