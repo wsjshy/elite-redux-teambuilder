@@ -3443,4 +3443,4 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 - 守住一个反例：`3[2] 妙蛙花` 带日光束，但特性是叶绿体 —— 晴天免蓄力，合法，保留；顺带修掉上一版的误伤：`1501 超级妙蛙花Y` 特性是巨大树叶（同属 chloroplast），上一版按名称匹配漏判被换掉，本版按特性 id 判，不再误伤。
 - 顺手补了上一版漏记的 7 张连带：5 张名字顶着雨/晴/雪前缀却没来源的（蚊香蛙皇 / 莲叶童子 / 莲帽小童 / 光蚪仔 / 冰蛛霸）去前缀；2 张带极光幕却开不出雪天的（冻脊龙 / 暴雪王-圣诞老人）换掉 —— 它们的「冰天雪地」「雪之精神」都是**在冰雹里受益**、并不产生冰雹。
 - 验收：gate Δ=0（1906/4205、offHist 逐项不变）；smoke **33/33**（package.json 同步 4.396.0；静默 catch **390** 未增）；六段语法 6/6；新增 `verify_v4396.js` 五条全 PASS；`verify_default` / `verify_ev` / `verify_v4395_wx` / `verify_v4395b` / `verify_stall` / `verify_v4391_off` / `verify_v4390_drift` / `verify_v4392_name` / `verify_v4393_role` 全部 0 失败；CRLF 23,907→**23,969**（+62）、bare LF **51**（+0）；harness 4,090,119 B。
-- 发布：提交 `<回填>`（开发分支 `fix/abi-dedup-detail-20261108`）→ gh-pages **`<回填>`**；线上四文件逐字节核验见回填。正文 `docs/test-reports/v4396_日光束无晴源收口.md`。
+- 发布：提交 `2f2147e`（开发分支 `fix/abi-dedup-detail-20261108`）→ gh-pages **`98f7e61`**；线上四文件逐字节核验一致（index 2,077,826 `E88E7B27`）。正文 `docs/test-reports/v4396_日光束无晴源收口.md`。
