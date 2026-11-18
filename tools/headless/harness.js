@@ -20990,7 +20990,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.402';
+var ER_ENGINE_VER='v4.403';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21256,6 +21256,69 @@ function mateCard(r,pool,isMain,cands,teamCtx){
     }).join('')+'</div>'):'')+
     candHtml+'</div>';
 }
+/* ============ v4.403 队友副弹窗预览（不离开当前核心）============
+   玩家反馈：答案卡「带这 5 只」点队友词条会把核心直接换掉，回不到原来那只。
+   改为副弹窗：先看这只在本队定位下的完整配置（特性/道具/性格/EV/四招+为什么带它），
+   想换核心再点弹窗里的按钮二次确认；转换时记录来源核心，详情页顶部出现返回条。 */
+function mateQuickModal(qk){
+  var it=(window._MQ||{})[String(qk)];
+  if(!it||!it.r||!it.r.s){toast('未找到该队友信息，请重新点一次');return}
+  var r=it.r,s2=r.s,core=it.core||null;
+  var team=null;
+  try{
+    team=[];
+    if(core)team.push(core);
+    (it.mates||[]).forEach(function(x){if(x&&x.s&&String(x.s.id)!==String(s2.id)&&team.indexOf(x.s)<0)team.push(x.s)});
+    if(!team.length)team=null;
+  }catch(eT1){team=null}
+  var sys=[];try{sys=coreSys(core||s2)}catch(eS1){sys=[]}
+  var asm=null;try{asm=mateAssemble(r,team,sys)}catch(eA1){asm=null}
+  var role=(asm&&asm.priRole)||r.priRole||'';
+  var why='';
+  try{
+    var _nr=mateWhyNarr(core,s2,r,{team:team,sys:sys});
+    why=_nr.length?_nr.slice(0,2).join('。'):((r.why||[]).slice(0,3).join('；'));
+  }catch(eW1){why=(r.why||[]).slice(0,2).join('；')}
+  var body='<div style="margin-bottom:6px"><b>'+esc(s2.zh)+'</b>'+
+    ((s2.en&&s2.en!==s2.zh)?('（'+esc(s2.en)+'）'):'')+
+    ' <span class="badge badge-neu">#'+esc(String(s2.id))+'</span>'+
+    (role?(' <span class="roltag">'+esc(role)+'</span>'):'')+'</div>';
+  body+='<div>'+tlabel(s2.t1)+(s2.t2&&s2.t2!==s2.t1?(' '+tlabel(s2.t2)):'')+'</div>';
+  if(why)body+='<div class="ruleline" style="margin-top:8px"><b>为什么带它</b>：'+esc(why)+'</div>';
+  var cfg=[];
+  if(asm){
+    if(asm.abiName)cfg.push('特性 <b>'+esc(asm.abiName)+'</b>');
+    if(asm.item)cfg.push('道具 <b>'+esc(asm.item)+'</b>');
+    if(asm.nat)cfg.push('性格 <b>'+esc(asm.nat)+'</b>');
+    if(asm.ev&&asm.ev.summary)cfg.push('努力值 <b>'+esc(asm.ev.summary)+'</b>');
+  }
+  if(cfg.length)body+='<div style="margin-top:6px">'+cfg.join('　·　')+'</div>';
+  var mvs=(asm&&asm.moves)||[];
+  if(mvs.length)body+='<div style="margin-top:8px"><b>本队定位下的四招</b><div class="ansmv" style="margin-top:4px">'+
+    mvs.map(function(x,i){return '<span class="ansm ansclk" title="点开看招式详情" onclick="mvModalById('+x.id+')"><i>'+(i+1)+'</i>'+tlabel(x.ty)+' '+esc(x.zh)+'</span>'}).join('')+'</div></div>';
+  body+='<div class="ansbtns" style="margin-top:12px">'+
+    '<button class="btn-mini" type="button" onclick="coreJumpMate('+jsl(String(qk))+')">🎯 以它为主核心重配</button>'+
+    '<span class="dim">直接关掉就留在当前这只</span></div>';
+  l1Modal('队友 · '+s2.zh,body);
+}
+/* 从副弹窗确认「换成这只」：记下来源核心，详情页顶部据此给返回条 */
+function coreJumpMate(qk){
+  var it=(window._MQ||{})[String(qk)];
+  if(!it||!it.core||!it.r||!it.r.s){toast('未找到该队友信息，请重新点一次');return}
+  var c=it.core,m=it.r.s;
+  closeL1Modal();
+  window._coreReturn={id:c.id,zh:c.zh||'',name:'',k:it.k};
+  window._keepCoreReturn=1;
+  try{selectCore(m.id)}catch(eJ){window._keepCoreReturn=0;throw eJ}
+  window._keepCoreReturn=0;
+}
+/* 详情页顶部「← 回到原来那只」 */
+function coreBackReturn(){
+  var b=window._coreReturn;
+  if(!b||b.id==null)return;
+  window._coreReturn=null;window._keepCoreReturn=0;
+  selectCore(b.id);
+}
 /* L2② 设计亮点（1–3 条，支持数组；带可展开溯源） */
 function basisList(bd){
   var out=[];
@@ -21482,7 +21545,9 @@ function renderCore(s){
       h+='<div class="ansrow"><b>特性</b><span class="ansclk" title="点开看特性详情" onclick="abiModal('+jsl(_abN)+',\'特性\')">'+esc(abi0)+'</span><b>道具</b><span class="ansclk" title="点开看道具详情" onclick="itemModalZh('+jsl(it0)+')">'+esc(it0)+'</span><b>性格</b><span class="ansclk" title="点开看性格效果" onclick="natModalZh('+jsl(nat0)+')">'+esc(nat0)+'</span></div>';
       h+='<div class="ansrow"><b>努力值</b><span class="ansclk" title="点开看努力值分配理由" onclick="ansEvModal('+SID+','+k+')">'+esc(ev0)+'</span></div>';
       h+='<div class="ansmv"><b>四招</b>'+((bd.mv&&bd.mv.main&&bd.mv.main.length)?bd.mv.main.map(function(x,i){var _nm=MV[x.id]?MV[x.id][1]:x.id;return '<span class="ansm ansclk" title="点开看招式详情" onclick="mvModalById('+x.id+')"><i>'+(i+1)+'</i>'+esc(_nm)+'</span>'}).join(''):'—')+'</div>';
-      if(mm0.length)h+='<div class="ansmate"><b>带这 5 只</b>'+mm0.map(function(r){var _id=(r&&r.s)?r.s.id:'';return '<span class="ansp ansclk" title="点开看这只的完整配置" onclick="selectCore('+jsl(String(_id))+')">'+esc((r&&r.s&&r.s.zh)||'')+'<em>'+esc((r&&r.priRole)||'')+'</em></span>'}).join('')+'</div>';
+      /* v4.403：队友词条不再直接换核心（会丢失当前这只），改为副弹窗预览；要换核心需在弹窗里二次确认 */
+      window._MQ={};
+      if(mm0.length)h+='<div class="ansmate"><b>带这 5 只</b>'+mm0.map(function(r){var _id=(r&&r.s)?r.s.id:'';var _mk=String(SID)+'|'+k+'|'+String(_id);window._MQ[_mk]={r:r,core:s,mates:mm0,k:k};return '<span class="ansp ansclk" title="点开预览这只在本队的完整配置（弹窗，不离开当前核心）" onclick="mateQuickModal('+jsl(_mk)+')">'+esc((r&&r.s&&r.s.zh)||'')+'<em>'+esc((r&&r.priRole)||'')+'</em></span>'}).join('')+'</div>';
       h+='<div class="ansbtns"><button class="btn-mini" type="button" onclick="coreApplyAll()">🧩 就用这套（6 只一键配齐）</button><span class="dim">下方为「为什么」，按需再看</span></div>';
       return h;
     }
@@ -21831,6 +21896,15 @@ function renderCore(s){
   window._ER_ENG_FN={};window._ER_ENG_FN[SID]=_engFn;
   html+='<details class="acc eng" id="engView_'+SID+'" ontoggle="_erEngFill('+SID+')"><summary>引擎视角 ▸（口径 / 依据 / 溯源；默认收起，展开时才计算）</summary><div class="engbd" id="engBd_'+SID+'"><div class="dim" style="padding:8px">展开即计算（约 0.2 秒），算完就地显示，不遮挡上方内容</div></div></details>';
   /* 注：机制口径完整折叠块由独立容器 #ruleBoxCore 渲染 —— 不在此重复追加，避免出现两遍 */
+    /* v4.403：从队友副弹窗跳转过来时，顶部给「回到原来那只」入口（不改变任何推荐内容） */
+  try{
+    var _crv=window._coreReturn;
+    if(_crv&&_crv.id!=null&&String(_crv.id)!==String(SID)){
+      html='<div class="tmans" style="margin:0 0 8px"><b>你刚是从「'+esc(_crv.zh||('#'+_crv.id))+'」的队友跳过来的</b>'+
+        ' <button class="btn-mini" type="button" onclick="coreBackReturn()">← 回到 '+esc(_crv.zh||('#'+_crv.id))+'</button>'+
+        ' <span class="dim">点这里回到原来那只，不会丢配置</span></div>'+html;
+    }
+  }catch(eBK){eBK.name}
   $('coreOut').innerHTML=html;
 }
 /* v4.331：引擎层展开时补算（默认收起，算完没人看 → 挪到用户真的要看的时刻） */
@@ -21880,6 +21954,8 @@ function myPhase(m,noscroll){
 }
 var coreSel=null;
 function selectCore(id){
+  /* v4.403：非「从队友副弹窗跳转」时清掉返回条，避免残留 */
+  try{if(!window._keepCoreReturn)window._coreReturn=null}catch(eCR){eCR.name}
   var s=ERDATA.species.filter(function(x){return x.id==id})[0];
   if(!s)return;
   coreSel=s;
