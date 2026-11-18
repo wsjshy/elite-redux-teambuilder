@@ -20990,7 +20990,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.403';
+var ER_ENGINE_VER='v4.404';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21260,6 +21260,37 @@ function mateCard(r,pool,isMain,cands,teamCtx){
    玩家反馈：答案卡「带这 5 只」点队友词条会把核心直接换掉，回不到原来那只。
    改为副弹窗：先看这只在本队定位下的完整配置（特性/道具/性格/EV/四招+为什么带它），
    想换核心再点弹窗里的按钮二次确认；转换时记录来源核心，详情页顶部出现返回条。 */
+/* ===== v4.404 队友副弹窗二级层：详情在上层另开一窗，一级弹窗保留 ===== */
+function mqEnsure(){
+  var m=$('mqModal');
+  if(m)return m;
+  m=document.createElement('div');m.id='mqModal';m.className='mqm';
+  m.innerHTML='<div class="mqbox" role="dialog" aria-modal="true" aria-label="详情">'+
+    '<div class="mhd"><b id="mqModalT">详情</b><button class="close" type="button" onclick="mqClose()" aria-label="关闭">×</button></div>'+
+    '<div id="mqModalB"></div></div>';
+  if(document.body&&document.body.appendChild)document.body.appendChild(m);
+  if(m.addEventListener)m.addEventListener('click',function(ev){if(ev.target===m)mqClose()});
+  return m;
+}
+function mqClose(){var m=$('mqModal');if(m&&m.classList)m.classList.remove('open')}
+/* 把一次 l1Modal 调用重定向到上层 mqModal（调用完立刻还原，不影响其他弹窗） */
+function mqOpen(backLabel,fn){
+  var m=mqEnsure(),orig=window.l1Modal,done={v:0};
+  if(typeof orig!=='function'||typeof fn!=='function')return;
+  window.l1Modal=function(title,htmlStr){
+    done.v=1;
+    var t2=$('mqModalT');if(t2)t2.textContent=String(title==null?'详情':title);
+    var b2=$('mqModalB');
+    if(b2)b2.innerHTML='<div class="mqback" role="button" onclick="mqClose()">← 返回 '+esc(backLabel||'上一步')+'</div>'+String(htmlStr==null?'':htmlStr);
+    if(m.classList)m.classList.add('open');
+  };
+  try{fn()}finally{window.l1Modal=orig}
+  if(!done.v)toast('这条没有可看的详情');
+}
+function mqAbi(name,label){mqOpen(label,function(){abiModal(name,'特性')})}
+function mqItem(name,label){mqOpen(label,function(){itemModalZh(name)})}
+function mqNat(name,label){mqOpen(label,function(){natModalZh(name)})}
+function mqMv(id,label){mqOpen(label,function(){mvModalById(id)})}
 function mateQuickModal(qk){
   var it=(window._MQ||{})[String(qk)];
   if(!it||!it.r||!it.r.s){toast('未找到该队友信息，请重新点一次');return}
@@ -21274,32 +21305,49 @@ function mateQuickModal(qk){
   var sys=[];try{sys=coreSys(core||s2)}catch(eS1){sys=[]}
   var asm=null;try{asm=mateAssemble(r,team,sys)}catch(eA1){asm=null}
   var role=(asm&&asm.priRole)||r.priRole||'';
+  var label='队友 · '+s2.zh;
   var why='';
   try{
     var _nr=mateWhyNarr(core,s2,r,{team:team,sys:sys});
-    why=_nr.length?_nr.slice(0,2).join('。'):((r.why||[]).slice(0,3).join('；'));
-  }catch(eW1){why=(r.why||[]).slice(0,2).join('；')}
-  var body='<div style="margin-bottom:6px"><b>'+esc(s2.zh)+'</b>'+
+    why=_nr.length?_nr.slice(0,3).join('。'):((r.why||[]).slice(0,3).join('；'));
+  }catch(eW1){why=(r.why||[]).slice(0,3).join('；')}
+  var body='';
+  body+='<div style="margin-bottom:4px"><b>'+esc(s2.zh)+'</b>'+
     ((s2.en&&s2.en!==s2.zh)?('（'+esc(s2.en)+'）'):'')+
     ' <span class="badge badge-neu">#'+esc(String(s2.id))+'</span>'+
     (role?(' <span class="roltag">'+esc(role)+'</span>'):'')+'</div>';
-  body+='<div>'+tlabel(s2.t1)+(s2.t2&&s2.t2!==s2.t1?(' '+tlabel(s2.t2)):'')+'</div>';
+  body+='<div>'+tlabel(s2.t1)+(s2.t2&&s2.t2!==s2.t1?(' '+tlabel(s2.t2)):'')+
+    (core?('<span class="dim" style="margin-left:8px">配在「'+esc(core.zh||'')+'」队里</span>'):'')+'</div>';
   if(why)body+='<div class="ruleline" style="margin-top:8px"><b>为什么带它</b>：'+esc(why)+'</div>';
+  /* 配置四件套：每一项都能点开看详情（上层另开，本窗保留） */
   var cfg=[];
-  if(asm){
-    if(asm.abiName)cfg.push('特性 <b>'+esc(asm.abiName)+'</b>');
-    if(asm.item)cfg.push('道具 <b>'+esc(asm.item)+'</b>');
-    if(asm.nat)cfg.push('性格 <b>'+esc(asm.nat)+'</b>');
-    if(asm.ev&&asm.ev.summary)cfg.push('努力值 <b>'+esc(asm.ev.summary)+'</b>');
+  if(asm&&asm.abiName)cfg.push('<span class="chip ansclk" title="看特性详情" onclick="mqAbi('+jsl(asm.abiName)+','+jsl(label)+')">特性 <b>'+esc(asm.abiName)+'</b></span>');
+  if(asm&&asm.item)cfg.push('<span class="chip ansclk" title="看道具详情" onclick="mqItem('+jsl(asm.item)+','+jsl(label)+')">道具 <b>'+esc(asm.item)+'</b></span>');
+  if(asm&&asm.nat)cfg.push('<span class="chip ansclk" title="看性格修正" onclick="mqNat('+jsl(asm.nat)+','+jsl(label)+')">性格 <b>'+esc(asm.nat)+'</b></span>');
+  if(cfg.length)body+='<div class="ansmv" style="margin-top:6px">'+cfg.join('')+'</div>';
+  /* 努力值：模板名 + 六项明细 */
+  var eva=(asm&&asm.ev&&asm.ev.alloc)||null;
+  if(eva&&eva.length){
+    var evc=eva.map(function(v,i){return v?('<span class="chip" style="min-height:0;padding:2px 9px">'+esc(evName(i))+' '+v+'</span>'):''}).join('');
+    body+='<div style="margin-top:6px"><b>努力值</b> <span class="dim">'+esc((asm.ev&&asm.ev.summary)||'')+(asm.itemWhy?('　·　'+esc(asm.itemWhy)):'')+'</span>'+
+      '<div class="ansmv" style="margin-top:4px">'+evc+'</div></div>';
+  }else if(asm&&asm.ev&&asm.ev.summary){
+    body+='<div style="margin-top:6px"><b>努力值</b> <b>'+esc(asm.ev.summary)+'</b></div>';
   }
-  if(cfg.length)body+='<div style="margin-top:6px">'+cfg.join('　·　')+'</div>';
+  /* 四招：带属性色标与威力，点开是招式详情（上层） */
   var mvs=(asm&&asm.moves)||[];
   if(mvs.length)body+='<div style="margin-top:8px"><b>本队定位下的四招</b><div class="ansmv" style="margin-top:4px">'+
-    mvs.map(function(x,i){return '<span class="ansm ansclk" title="点开看招式详情" onclick="mvModalById('+x.id+')"><i>'+(i+1)+'</i>'+tlabel(x.ty)+' '+esc(x.zh)+'</span>'}).join('')+'</div></div>';
-  body+='<div class="ansbtns" style="margin-top:12px">'+
+    mvs.map(function(x,i){
+      var m=MV[x.id]||null;
+      var pw='';
+      if(m){ pw=(m[5]===0||m[5]==null)?'变化':('威力 '+m[5]); }
+      return '<span class="ansm ansclk" title="看招式详情（上层弹窗，队友窗不关）" onclick="mqMv('+x.id+','+jsl(label)+')"><i>'+(i+1)+'</i>'+tlabel(x.ty)+' '+esc(x.zh)+(pw?(' <span class="dim">'+esc(pw)+'</span>'):'')+'</span>';
+    }).join('')+'</div></div>';
+  body+='<div class="ansbtns" style="margin-top:12px;position:sticky;bottom:-2px;background:var(--card);padding:8px 0 2px;box-shadow:0 -8px 10px -8px rgba(0,0,0,.22)">'+
     '<button class="btn-mini" type="button" onclick="coreJumpMate('+jsl(String(qk))+')">🎯 以它为主核心重配</button>'+
-    '<span class="dim">直接关掉就留在当前这只</span></div>';
-  l1Modal('队友 · '+s2.zh,body);
+    '<span class="dim">×/空白只关本窗，窗内元素点开另起一层</span></div>';
+  l1Modal(label,body);
+
 }
 /* 从副弹窗确认「换成这只」：记下来源核心，详情页顶部据此给返回条 */
 function coreJumpMate(qk){
