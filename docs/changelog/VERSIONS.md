@@ -3538,6 +3538,6 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 - **零漂移**：只动展示与交互层，**没碰任何流派 / 选招 / EV / 道具 / 特性判定**。gate 1906/4205、badMove 1 / dup 0 / itemsOver 0 / defOrb 0、offHist 逐项同基线；verify_invariants 16 条违规 0；smoke 34/34；六段语法 6/6；harness 4,113,234 B；index.html 2,085,652→**2,090,272 B**。
 - **浏览器实测（本地 8123，#1503 超级喷火龙Y）**：点「席多蓝恩」词条 → 弹出 队友·席多蓝恩 / 属性 火·钢 / 为什么带它 / 日照·剩饭·内敛·252HP·4防·252特攻 / 四招 睡觉·替身·喷火·铁蹄光线；× 与灰底关闭核心不变；点「以它为主核心重配」→ 席多蓝恩卡＋顶部返回条；点返回条 → 回到超级喷火龙Y，返回条消失。截图 `docs/shots/v4403_mate_preview.png`。
 - **踩坑**：首版四招属性标写成 `esc(tlabel(x.ty))`，`tlabel` 本身返回 HTML，二次转义后整段显示成 `<span class="t-t 超能力">超能力</span>` 源码并把底部按钮挤出可视区；改为直接拼 `tlabel` 后恢复正常。
-- **发布**：提交待填 → gh-pages 待填（增量部署，零删除）。线上四文件逐字节核验待填。
+- **发布**：提交 `9ba77d3`（push 开发分支 `b12a9a2..9ba77d3`）→ gh-pages **`71b4ab7`**（增量部署，零删除）。线上四文件逐字节核验全部 MATCH（index 2,090,272 `59D092C8CE9F…` / data_lite 396,402 `CBD1F10B8C19…` / data_species 1,362,442 `1BCC62913969…` / data_adv 575,972 `40FEE8A4E3D6…`）。
 - 正文 `docs/test-reports/v4403_队友副弹窗.md`。
 
