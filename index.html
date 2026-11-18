@@ -22210,7 +22210,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.404';
+var ER_ENGINE_VER='v4.405';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -22494,16 +22494,18 @@ function mqEnsure(){
 }
 function mqClose(){var m=$('mqModal');if(m&&m.classList)m.classList.remove('open')}
 /* 把一次 l1Modal 调用重定向到上层 mqModal（调用完立刻还原，不影响其他弹窗） */
+function mqPaint(title,htmlStr,backLabel){
+  var m=mqEnsure();
+  var t2=$('mqModalT');if(t2)t2.textContent=String(title==null?'详情':title);
+  var b2=$('mqModalB');
+  if(b2)b2.innerHTML='<div class="mqback" role="button" onclick="mqClose()">← 返回 '+esc(backLabel||'上一步')+'</div>'+String(htmlStr==null?'':htmlStr);
+  if(m.classList)m.classList.add('open');
+}
 function mqOpen(backLabel,fn){
-  var m=mqEnsure(),orig=window.l1Modal,done={v:0};
+  var orig=window.l1Modal,done={v:0};
   if(typeof orig!=='function'||typeof fn!=='function')return;
-  window.l1Modal=function(title,htmlStr){
-    done.v=1;
-    var t2=$('mqModalT');if(t2)t2.textContent=String(title==null?'详情':title);
-    var b2=$('mqModalB');
-    if(b2)b2.innerHTML='<div class="mqback" role="button" onclick="mqClose()">← 返回 '+esc(backLabel||'上一步')+'</div>'+String(htmlStr==null?'':htmlStr);
-    if(m.classList)m.classList.add('open');
-  };
+  mqEnsure();
+  window.l1Modal=function(title,htmlStr){done.v=1;mqPaint(title,htmlStr,backLabel)};
   try{fn()}finally{window.l1Modal=orig}
   if(!done.v)toast('这条没有可看的详情');
 }
@@ -22511,6 +22513,28 @@ function mqAbi(name,label){mqOpen(label,function(){abiModal(name,'特性')})}
 function mqItem(name,label){mqOpen(label,function(){itemModalZh(name)})}
 function mqNat(name,label){mqOpen(label,function(){natModalZh(name)})}
 function mqMv(id,label){mqOpen(label,function(){mvModalById(id)})}
+/* v4.405 属性对位（同源 defCellTrio）*/
+function mqWk(spId,label){
+  var sp=null;
+  try{sp=(ERDATA.species||[]).filter(function(x){return String(x.id)===String(spId)})[0]}catch(eWk0){sp=null}
+  if(!sp){toast('没找到这只的相性数据');return}
+  var rows=[];
+  (ERDATA.types||[]).forEach(function(tt){
+    var r=null;try{r=defCellTrio(sp,tt)}catch(eWk1){r=null}
+    if(!r)return;
+    rows.push({t:tt,b:+r.base||0,n:+r.inn||0,o:+r.opt||0});
+  });
+  var h='<div class="dim" style="margin-bottom:6px;line-height:1.5">倍率越大越怕。前数=<b>含天性</b>（= 详情页「防守视角」弱点/抵抗）、箭头后=<b>再含特性</b>；纯属性层见悬停提示。</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;margin-top:2px">';
+  rows.forEach(function(x){
+    var n=x.n,o=x.o,pt=x.b,col=(n>=4?'#b3261e':(n>=2?'#c2410c':(n<1?'#1d6b3f':'#374151')));
+    var dis=(n===0?'免疫':(n%1?('×'+n.toFixed(2)):('×'+n)));
+    var tail=(o!==n)?(' <span class="dim">→'+esc(o===0?'免':(o%1?String(+o.toFixed(2)):o))+'</span>'):'';
+    h+='<span class="chip" style="padding:0 6px;min-height:0;font-size:13px;line-height:1.9;justify-content:center;white-space:nowrap;overflow:hidden" title="'+esc(x.t+' 属性：纯属性层 ×'+pt+'；含天性 '+n+'；含特性 '+o)+'">'+tlabel(x.t)+' <b style="color:'+col+'">'+esc(dis)+'</b>'+tail+'</span>';
+  });
+  h+='</div>';
+  mqPaint('属性对位 · '+sp.zh,h,label);
+}
 function mateQuickModal(qk){
   var it=(window._MQ||{})[String(qk)];
   if(!it||!it.r||!it.r.s){toast('未找到该队友信息，请重新点一次');return}
@@ -22548,11 +22572,33 @@ function mateQuickModal(qk){
   /* 努力值：模板名 + 六项明细 */
   var eva=(asm&&asm.ev&&asm.ev.alloc)||null;
   if(eva&&eva.length){
-    var evc=eva.map(function(v,i){return v?('<span class="chip" style="min-height:0;padding:2px 9px">'+esc(evName(i))+' '+v+'</span>'):''}).join('');
-    body+='<div style="margin-top:6px"><b>努力值</b> <span class="dim">'+esc((asm.ev&&asm.ev.summary)||'')+(asm.itemWhy?('　·　'+esc(asm.itemWhy)):'')+'</span>'+
-      '<div class="ansmv" style="margin-top:4px">'+evc+'</div></div>';
+    body+='<div style="margin-top:6px"><b>努力值</b> <span class="dim">'+esc((asm.ev&&asm.ev.summary)||'')+(asm.itemWhy?('　·　'+esc(asm.itemWhy)):'')+'</span></div>';
   }else if(asm&&asm.ev&&asm.ev.summary){
     body+='<div style="margin-top:6px"><b>努力值</b> <b>'+esc(asm.ev.summary)+'</b></div>';
+  }
+  /* v4.405 决策数字（同源 speedStat/defCellTrio）*/
+  var spdTxt='',wkLst=[];
+  try{
+    var _ncat='中性';try{_ncat=spdNatCatOf(asm&&asm.nat)}catch(eV1){_ncat='中性'}
+    var _ev5=(eva&&eva[5])||0;
+    var _spd=speedStat((s2.base||[])[5],_ev5,31,_ncat==='加速');
+    spdTxt=String(_spd)+(_ncat==='加速'?'·性格加速':(_ncat==='减速'?'·性格减速':''));
+  }catch(eV2){spdTxt=''}
+  try{
+    var _w4=[],_w2=[];
+    (ERDATA.types||[]).forEach(function(tt){
+      var b=0;try{b=+defCellTrio(s2,tt).inn||0}catch(eV3){b=0}
+      if(b>=4)_w4.push(tt+'×4');else if(b>=2)_w2.push(tt+'×2');
+    });
+    wkLst=_w4.concat(_w2).slice(0,3);
+  }catch(eV4){wkLst=[]}
+  if(spdTxt||wkLst.length){
+    body+='<div class="ansmv" style="margin-top:6px">'+
+      (spdTxt?('<span class="chip" style="min-height:0;padding:2px 9px">速度 <b>'+esc(spdTxt)+'</b></span>'):'')+
+      wkLst.map(function(x,i){
+        return '<span class="chip ansclk" style="min-height:0;padding:2px 9px" title="点开看 21 属性完整对位（属性层 / 含特性）" onclick="mqWk('+jsl(String(s2.id))+','+jsl(label)+')">'+(i===0?'怕 ':'')+'<b>'+esc(x)+'</b></span>';
+      }).join('')+
+      '</div>';
   }
   /* 四招：带属性色标与威力，点开是招式详情（上层） */
   var mvs=(asm&&asm.moves)||[];
