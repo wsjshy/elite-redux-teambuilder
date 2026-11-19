@@ -22104,6 +22104,22 @@ function evModalBd(bd){
   l1Modal('努力值 · '+evTplDisp(bd.ev.template),full);
 }
 function ansEvModal(SID,k){var ctx=window._ansCtx&&window._ansCtx[SID];if(!ctx||!ctx.showList)return;evModalBd(ctx.showList[k]);}
+/* v4.408 进攻视角单一真源：本系属性招式 → 打谁 2× / 0.5×（含 3 倍档）/ 0×（读 ERDATA.matchup，
+   与「属性」页 renderAtk 同源）。l1AtkDef（详情页折叠）与 mqWk（队友弹窗·属性对位）共用，禁止各自重算 */
+function atkViewOf(s){
+  var out=[];
+  if(!s||typeof ERDATA==='undefined'||!ERDATA.matchup||!ERDATA.types)return out;
+  var mine=[s.t1];if(s.t2&&s.t2!==s.t1)mine.push(s.t2);
+  mine.forEach(function(t){
+    var i=tIdx(t),k=[],h5=[],z=[];
+    ERDATA.types.forEach(function(d,j){
+      var v=ERDATA.matchup[j][i];
+      if(v===2)k.push(d);else if(v===0.5||v===3)h5.push(d);else if(v===0)z.push(d);
+    });
+    out.push({t:t,ok:k,res:h5,imm:z});
+  });
+  return out;
+}
 /* L1 属性克制：攻（本系打谁有效，读 ERDATA.matchup，与「属性」页 renderAtk 同源）
    / 防（对手打你，读 defCellTrio，与「弱点（天性口径）」同源）两视角就地展开（懒渲染） */
 function l1AtkDef(boxId,spId,btn){
@@ -22114,18 +22130,12 @@ function l1AtkDef(boxId,spId,btn){
   box.style.display='block';if(btn&&btn.setAttribute)btn.setAttribute('aria-expanded','true');
   if(box.getAttribute&&box.getAttribute('data-filled'))return;
   var s=speciesById(spId);if(!s){box.innerHTML='<div class="dim">无该属性数据</div>';return}
-  var mine=[s.t1];if(s.t2&&s.t2!==s.t1)mine.push(s.t2);
   var h='<div class="accbd"><b>🔱 进攻视角</b> <span class="dim">本系属性招式打谁有效</span>';
-  mine.forEach(function(t){
-    var i=tIdx(t),k=[],h5=[],z=[];
-    ERDATA.types.forEach(function(d,j){
-      var v=ERDATA.matchup[j][i];
-      if(v===2)k.push(d);else if(v===0.5||v===3)h5.push(d);else if(v===0)z.push(d);
-    });
-    h+='<div style="margin:3px 0"><b>'+tlabel(t)+'</b>：'+
-      '<span style="color:var(--ok)">2× 克制 '+(k.map(tlabel).join(' ')||'无')+'</span>　'+
-      '<span class="dim">0.5× 抵抗 '+(h5.map(tlabel).join(' ')||'无')+'</span>　'+
-      '<span class="dim">0× 无效 '+(z.map(tlabel).join(' ')||'无')+'</span></div>';
+  atkViewOf(s).forEach(function(x){
+    h+='<div style="margin:3px 0"><b>'+tlabel(x.t)+'</b>：'+
+      '<span style="color:var(--ok)">2× 克制 '+(x.ok.map(tlabel).join(' ')||'无')+'</span>　'+
+      '<span class="dim">0.5× 抵抗 '+(x.res.map(tlabel).join(' ')||'无')+'</span>　'+
+      '<span class="dim">0× 无效 '+(x.imm.map(tlabel).join(' ')||'无')+'</span></div>';
   });
   h+='</div>';
   var wA=[],rA=[],iA=[];
@@ -22207,7 +22217,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.407';
+var ER_ENGINE_VER='v4.408';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -22530,6 +22540,18 @@ function mqWk(spId,label){
     h+='<span class="chip" style="padding:0 6px;min-height:0;font-size:13px;line-height:1.9;justify-content:center;white-space:nowrap;overflow:hidden" title="'+esc(x.t+' 属性：纯属性层 ×'+pt+'；含天性 '+n+'；含特性 '+o)+'">'+tlabel(x.t)+' <b style="color:'+col+'">'+esc(dis)+'</b>'+tail+'</span>';
   });
   h+='</div>';
+  /* v4.408 进攻侧：与详情页折叠 l1AtkDef 同源（atkViewOf），不再第二份重算 */
+  var av=atkViewOf(sp);
+  if(av.length){
+    h+='<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:13px;line-height:1.6"><b>🔱 顺带看看：本系打谁疼</b> <span class="dim">纯属性层，不含对手特性</span>';
+    av.forEach(function(x){
+      h+='<div style="margin-top:3px"><b>'+esc(x.t)+'</b>：<span style="color:var(--ok)">2× 克制</span> '+
+        (esc(x.ok.join(' '))||'无')+
+        (x.res.length?('　<span class="dim">0.5× 抵抗 '+esc(x.res.join(' '))+'</span>'):'')+
+        (x.imm.length?('　<span class="dim">0× 无效 '+esc(x.imm.join(' '))+'</span>'):'')+'</div>';
+    });
+    h+='</div>';
+  }
   mqPaint('属性对位 · '+sp.zh,h,label);
 }
 /* v4.406 速度档位（同源 speedStat；分母=全库各物种 252EV/31IV/加速性格满速）*/
@@ -22598,7 +22620,7 @@ function mateQuickModal(qk){
     body+='<div class="ansmv" style="margin-top:6px">'+
       (spdTxt?('<span class="chip" style="min-height:0;padding:2px 9px;flex-shrink:0" title="档位按全库极速档排序'+(spdRank?('；该速度 P'+spdRank.pct+'（全库 '+spdRank.total+' 只）'):'')+'">速度 <b>'+esc(spdTxt)+'</b>'+(spdRank?(' <span class="dim">'+esc(spdRank.tag)+'</span>'):'')+'</span>'):'')+
       wkLst.map(function(x,i){
-        return '<span class="chip ansclk" style="min-height:0;padding:2px 9px" title="点开看 21 属性完整对位（属性层 / 含特性）" onclick="mqWk('+jsl(String(s2.id))+','+jsl(label)+')">'+(i===0?'怕 ':'')+'<b>'+esc(x)+'</b></span>';
+        return '<span class="chip ansclk" style="min-height:0;padding:2px 9px" title="点开看 攻（本系打谁疼）/ 防（21 属性完整对位）" onclick="mqWk('+jsl(String(s2.id))+','+jsl(label)+')">'+(i===0?'怕 ':'')+'<b>'+esc(x)+'</b></span>';
       }).join('')+
       '</div>';
   }
