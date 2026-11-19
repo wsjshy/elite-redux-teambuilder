@@ -22217,7 +22217,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.408';
+var ER_ENGINE_VER='v4.409';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -22472,7 +22472,15 @@ function mateCard(r,pool,isMain,cands,teamCtx){
       }).join(' / ')+'</div>';
     }
   }catch(e9){candHtml=''}
-  return '<div class="mate'+(isMain?' main':'')+'" onclick="openSpById('+s2.id+')" role="button" tabindex="0" title="点击查看详情：'+escq(why)+'">'+
+  /* v4.409 大卡片点开改副弹窗（与答案卡「带这 5 只」词条一致；原先直接跳资料页，会离开当前核心） */
+  var _qk='';
+  try{
+    var _ct=(teamCtx&&teamCtx.team)||null,_cc=(_ct&&_ct.length)?_ct[0]:null;
+    _qk='MC|'+String(s2.id)+'|'+String(_cc?_cc.id:'');
+    window._MQ=window._MQ||{};
+    window._MQ[_qk]={r:r,core:_cc,mates:(_ct||[]).slice(1).map(function(x){return {s:x};}),k:null};
+  }catch(eQ409){_qk=''}
+  return '<div class="mate'+(isMain?' main':'')+'" onclick="'+(_qk?('mateQuickModal('+jsl(_qk)+')'):('openSpById('+s2.id+')'))+'" role="button" tabindex="0" title="'+(_qk?'点开预览这只在本队的完整配置（弹窗，不离开当前核心）':('点击查看详情：'+escq(why)))+'">'+
     sprImgMid(s2.id)+
     '<div class="mn">'+esc(s2.zh)+roleHtml+ownBadge(s2,pool)+(isMain?'<span class="own yes">主推</span>':'<span class="own no">备选</span>')+'</div>'+
     '<div class="dim">'+tlabel(s2.t1)+(s2.t2&&s2.t2!==s2.t1?(' '+tlabel(s2.t2)):'')+'</div>'+
@@ -22634,10 +22642,19 @@ function mateQuickModal(qk){
       return '<span class="ansm ansclk" title="看招式详情（上层弹窗，队友窗不关）" onclick="mqMv('+x.id+','+jsl(label)+')"><i>'+(i+1)+'</i>'+tlabel(x.ty)+' '+esc(x.zh)+(pw?(' <span class="dim">'+esc(pw)+'</span>'):'')+'</span>';
     }).join('')+'</div></div>';
   body+='<div class="ansbtns" style="margin-top:12px;position:sticky;bottom:-2px;background:var(--card);padding:8px 0 2px;box-shadow:0 -8px 10px -8px rgba(0,0,0,.22)">'+
+    '<button class="btn-mini" type="button" onclick="mqFullSp('+jsl(String(qk))+')">📖 看完整资料页</button>'+
     '<button class="btn-mini" type="button" onclick="coreJumpMate('+jsl(String(qk))+')">🎯 以它为主核心重配</button>'+
     '<span class="dim">×/空白只关本窗，窗内元素点开另起一层</span></div>';
   l1Modal(label,body);
 
+}
+/* v4.409 从副弹窗进入完整资料页（关本窗再跳，资料页顶端有返回条） */
+function mqFullSp(qk){
+  var it=(window._MQ||{})[String(qk)];
+  if(!it||!it.r||!it.r.s){toast('未找到该队友信息，请重新点一次');return}
+  var id=it.r.s.id;
+  closeL1Modal();
+  try{openSpById(id)}catch(eF409){toast('打开资料页失败：'+eF409.name)}
 }
 /* 从副弹窗确认「换成这只」：记下来源核心，详情页顶部据此给返回条 */
 function coreJumpMate(qk){
