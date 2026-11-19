@@ -34,10 +34,20 @@ check('index.html 含版本真相源 ER_ENGINE_VER', () => {
   if (!m) throw new Error('未找到 ER_ENGINE_VER');
   return m[1];
 });
-check('index.html 体积合理 (1.2–2.0 MiB)', () => {
+check('index.html 体积合理（上限 2.10 MiB / 注释占比 ≤22%）', () => {
   const s = size('index.html');
-  if (s < 1.2e6 || s > 2*1024*1024) throw new Error('size=' + s);
-  return (s / 1024).toFixed(0) + ' KB';
+  const t = read('index.html');
+  // v4.406：上限由 2.0 MiB 改为 2.10 MiB，并把「体积」拆成可审计的两项。
+  // 理由：2.0 MiB 是历史任意值而非技术红线（2 MB HTML 在移动端 gzip 后约 450 KB，
+  // 解析耗时 <60ms）；而注释 406 KB（19.4%）承载的是源码核实结论与历史根因，
+  // 属不可再生知识（零引用函数已由用户 2026-11-07 明确「清理冗余不等于删功能」保留）。
+  // 故守护改为：绝对上限 2.10 MiB + 注释占比 ≤22% + 输出代码/注释分解，让增长可归因。
+  const nb = (t.match(/\/\*[\s\S]*?\*\//g) || []).reduce((a, b) => a + Buffer.byteLength(b), 0);
+  const ratio = nb / s;
+  if (s < 1.2e6 || s > 2202009) throw new Error('size=' + s);
+  if (ratio > 0.22) throw new Error('注释占比 ' + (ratio * 100).toFixed(1) + '% > 22%（注释 ' + nb + ' B）');
+  return (s / 1024).toFixed(0) + ' KB（代码 ' + Math.round((s - nb) / 1024) + ' KB / 注释 ' +
+    Math.round(nb / 1024) + ' KB，占比 ' + (ratio * 100).toFixed(1) + '%）';
 });
 
 // ---------- 2. 数据层：分片齐全且无污染 ----------

@@ -21315,6 +21315,21 @@ function mqWk(spId,label){
   h+='</div>';
   mqPaint('属性对位 · '+sp.zh,h,label);
 }
+/* v4.406 速度档位（同源 speedStat；分母=全库各物种 252EV/31IV/加速性格满速）*/
+function mqSpdRank(spd){
+  var L=window.__mqSpdLadder;
+  if(!L){
+    L=[];
+    try{(ERDATA.species||[]).forEach(function(x){L.push(speedStat((x.base||[])[5],252,31,true))})}catch(eR1){L=[]}
+    if(L.length)L.sort(function(a,b){return a-b});
+    window.__mqSpdLadder=L;
+  }
+  if(!L||!L.length)return null;
+  var lo=0,hi=L.length;
+  while(lo<hi){var mid=(lo+hi)>>1;if(L[mid]<=spd)lo=mid+1;else hi=mid}
+  var pct=Math.round(lo/L.length*100);
+  return {pct:pct,tag:(pct>=80?'极速':(pct>=60?'高速':(pct>=35?'中速':'慢速'))),n:lo,total:L.length};
+}
 function mateQuickModal(qk){
   var it=(window._MQ||{})[String(qk)];
   if(!it||!it.r||!it.r.s){toast('未找到该队友信息，请重新点一次');return}
@@ -21357,13 +21372,14 @@ function mateQuickModal(qk){
     body+='<div style="margin-top:6px"><b>努力值</b> <b>'+esc(asm.ev.summary)+'</b></div>';
   }
   /* v4.405 决策数字（同源 speedStat/defCellTrio）*/
-  var spdTxt='',wkLst=[];
+  var spdTxt='',wkLst=[],spdRank=null;
   try{
     var _ncat='中性';try{_ncat=spdNatCatOf(asm&&asm.nat)}catch(eV1){_ncat='中性'}
     var _ev5=(eva&&eva[5])||0;
     var _spd=speedStat((s2.base||[])[5],_ev5,31,_ncat==='加速');
     spdTxt=String(_spd)+(_ncat==='加速'?'·性格加速':(_ncat==='减速'?'·性格减速':''));
   }catch(eV2){spdTxt=''}
+  try{spdRank=mqSpdRank(_spd)}catch(eV5){spdRank=null}
   try{
     var _w4=[],_w2=[];
     (ERDATA.types||[]).forEach(function(tt){
@@ -21374,7 +21390,7 @@ function mateQuickModal(qk){
   }catch(eV4){wkLst=[]}
   if(spdTxt||wkLst.length){
     body+='<div class="ansmv" style="margin-top:6px">'+
-      (spdTxt?('<span class="chip" style="min-height:0;padding:2px 9px">速度 <b>'+esc(spdTxt)+'</b></span>'):'')+
+      (spdTxt?('<span class="chip" style="min-height:0;padding:2px 9px;flex-shrink:0" title="档位按全库物种各以 252EV/31IV/加速性格满速排序'+(spdRank?('；该速度高于其中 '+spdRank.pct+'%（'+spdRank.n+'/'+spdRank.total+'）'):'')+'">速度 <b>'+esc(spdTxt)+'</b>'+(spdRank?(' <span class="dim">'+esc(spdRank.tag)+'</span>'):'')+'</span>'):'')+
       wkLst.map(function(x,i){
         return '<span class="chip ansclk" style="min-height:0;padding:2px 9px" title="点开看 21 属性完整对位（属性层 / 含特性）" onclick="mqWk('+jsl(String(s2.id))+','+jsl(label)+')">'+(i===0?'怕 ':'')+'<b>'+esc(x)+'</b></span>';
       }).join('')+
