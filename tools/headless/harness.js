@@ -20997,7 +20997,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.409';
+var ER_ENGINE_VER='v4.410';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21159,9 +21159,10 @@ var MATE_NARR=[
     if(!(tplAbiHit(m,'威吓')||(((m.base&&m.base[2])||0)>=110)))return null;
     return '队友 '+m.zh+'把对手物攻压住，你这位扑击手（物防 '+d+'）才有空间堆防御——物防越高压制越强'}},
  {id:'N-03',corePri:1,src:'https://www.smogon.com/dex/sv/pokemon/pelipper/',
-  f:function(c,m){if(!c)return null;var sy=null;try{sy=isSetterAny(c)}catch(e){}
+  f:function(c,m,r,tc,ctx){if(!c)return null;var sy=null;try{sy=isSetterAny(c)}catch(e){}
     if(!sy)return null;
     if((spSys(m)||[]).indexOf(sy)<0)return null;
+    if(ctx)ctx.st=sy;
     return '你开'+sy+'，'+m.zh+'的本系直接吃'+sy+'增伤——同一张牌两个人吃'}},
  {id:'N-08',corePri:1,src:'https://bulbapedia.bulbagarden.net/wiki/Terrain_Extender',
   f:function(c,m){var nm=null;['青草制造者','电气制造者','精神制造者','薄雾制造者'].forEach(function(x){if(!nm&&tplAbiHit(m,x))nm=x});
@@ -21171,9 +21172,10 @@ var MATE_NARR=[
     if(p<120)return null;
     return '队友 '+m.zh+'铺'+ter+'（延展器可达 '+WCONF.terrainExtenderTurns+' 回合），你的高威力本系吃到 ×'+WCONF.terrainBoost}},
  {id:'N-04',corePri:1,src:'https://www.smogon.com/dex/sv/pokemon/excadrill/',
-  f:function(c,m){var st=null;try{st=isSetterAny(m)}catch(e){}
+  f:function(c,m,r,tc,ctx){var st=null;try{st=isSetterAny(m)}catch(e){}
     if(!st||!isWxSys(st))return null;
     if((spSys(c)||[]).indexOf(st)<0)return null;
+    if(ctx)ctx.st=st;
     var nm='';try{nm=sysSetterName(m,st)||''}catch(e){}
     return '队友 '+m.zh+(nm?('（'+nm+'）'):'')+'替你把'+st+'铺开，你的'+st+'受益特性才有用（窗口 '+WCONF.abilityDurTurns+' 回合）'}},
  {id:'N-02',corePri:0,src:'https://bulbapedia.bulbagarden.net/wiki/Intimidate_(Ability)',
@@ -21198,15 +21200,30 @@ var MATE_NARR=[
     return '队友 '+m.zh+'先手开「'+w+'」（光之黏土 5→'+WCONF.lightClayTurns.moveScreens.clay+' 回合），你这只薄皮打手顶一轮就能安全成形'}}
 ];
 function mateWhyNarr(coreS,mateS,r,teamCtx){
-  var out=[];
+  var out=[],meta=[];
   try{
     if(!mateS)return out;
     var ord=MATE_NARR.filter(function(x){return x.corePri}).concat(MATE_NARR.filter(function(x){return !x.corePri}));
     for(var i=0;i<ord.length;i++){
       if(out.length>=2)break;
-      var n=ord[i],txt=null;
-      try{txt=n.f(coreS,mateS,r,teamCtx)}catch(e){txt=null}
-      if(txt&&out.indexOf(txt)<0)out.push(txt);
+      var n=ord[i],txt=null,ctx={};
+      try{txt=n.f(coreS,mateS,r,teamCtx,ctx)}catch(e){txt=null}
+      if(txt&&out.indexOf(txt)<0){
+        /* v4.410 同系统双向收口：core 与 mate 都能开同一天气、也都吃它的增伤时，
+           N-03（你开 X，队友吃）与 N-04（队友开 X，你吃）各自成立却主语相反，
+           两句并排会让玩家读不出到底谁开。合并成一句，信息不减、矛盾消失。
+           判定沿用 N-03/N-04 自己写入 ctx.st，不新增第二份条件判断。 */
+        var _mg410=false;
+        if(n.id==='N-04'&&ctx.st){
+          for(var j=0;j<out.length;j++){
+            if(meta[j]&&meta[j].id==='N-03'&&meta[j].st===ctx.st){
+              out[j]='你和'+mateS.zh+'都能开'+ctx.st+'、也都能吃'+ctx.st+'增伤——谁先上场谁铺，窗口 '+WCONF.abilityDurTurns+' 回合';
+              meta[j].id='N-BOTH';_mg410=true;break;
+            }
+          }
+        }
+        if(!_mg410){out.push(txt);meta.push({id:n.id,st:ctx.st||''});}
+      }
     }
   }catch(e){}
   return out;
