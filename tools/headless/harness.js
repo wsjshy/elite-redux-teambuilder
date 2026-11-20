@@ -20997,7 +20997,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.410';
+var ER_ENGINE_VER='v4.411';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21184,7 +21184,7 @@ var MATE_NARR=[
     return '威吓 × 折返可反复削攻：'+m.zh+'每次换入都再降对手物攻 1 级'}},
  {id:'N-06',corePri:0,src:'https://bulbapedia.bulbagarden.net/wiki/Trick_Room_(move)',
   f:function(c,m){if(!learnHasAnyId(m,[433]))return null;
-    var slow='';try{if(c&&spdOf(c)<=60)slow=c.zh;else if(m&&spdOf(m)<=60)slow=m.zh}catch(e){}
+    var slow='';try{if(c&&spdOf(c)<=60)slow=c.zh;else if(m&&spdOf(m)<=60)slow='自身'}catch(e){}
     if(!slow)return null;
     return '队友 '+m.zh+'先开戏法空间（'+WCONF.trickroomTurns+' 时段），'+slow+'的低速重炮先手且威力翻档'}},
  {id:'N-09',corePri:0,src:'ER 组合素材补登（引擎内；钉伤按 WCONF.hazardRules）',
@@ -21223,6 +21223,16 @@ function mateWhyNarr(coreS,mateS,r,teamCtx){
           }
         }
         if(!_mg410){out.push(txt);meta.push({id:n.id,st:ctx.st||''});}
+      }
+    }
+    /* v4.411 指代收口：前文已经点过这只队友的名，后续句子再说「队友 X」就是重复。
+       仅当这句只提一次且后面不是「（特性名）」时改成「它」——带了特性括注的保留全名，避免「它（干旱）」这种怪句。 */
+    if(out.length>1){
+      for(var q=1;q<out.length;q++){
+        var _pn='队友 '+mateS.zh;
+        if(out[q].indexOf(_pn)===0&&out[q].charAt(_pn.length)!=='（'&&out.slice(0,q).join('').indexOf(mateS.zh)>=0){
+          out[q]='它'+out[q].slice(_pn.length);
+        }
       }
     }
   }catch(e){}
