@@ -22217,7 +22217,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.411';
+var ER_ENGINE_VER='v4.412';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -22593,6 +22593,54 @@ function mqWk(spId,label){
 function mqSpdRank(spd){   /* v4.407：分位走 spdRankOfVal、档位走 spdTierOf，不再自建二分（v4.406 边界差 1 分位） */
   try{var pct=spdRankOfVal(spd);return {pct:pct,tag:spdTierOf(pct),total:spdPctileArr().length}}catch(eR1){return null}
 }
+/* v4.412 全队速度线：与队友弹窗的速度 chip 同源（speedStat / spdNatCatOf / mqSpdRank），
+   不另算一套；核心与队友都走 spdStatOf，区别只在 ev / 性格从哪取（核心取 bd，队友取 mateAssemble）。 */
+function spdStatOf(s,ev5,natName){
+  var cat='中性';try{cat=spdNatCatOf(natName)}catch(eS412){cat='中性'}
+  var ev=(ev5===null||ev5===undefined)?0:ev5;
+  return {spd:speedStat((s.base||[])[5],ev,31,cat==='加速'),cat:cat};
+}
+function teamSpdLine(qk){
+  var it=(window._SL||{})[String(qk)];
+  if(!it||!it.core){toast('没找到这一队的信息，请重新点一次');return}
+  var rows=[],core=it.core,team=it.team||[],sys=it.sys||'';
+  var bd=it.bd||{},eva=(bd.ev&&bd.ev.alloc)?bd.ev.alloc:null;
+  var o0=spdStatOf(core,eva?(+eva[5]||0):null,(bd.nat&&bd.nat[0]&&bd.nat[0][0])||'');
+  rows.push({zh:core.zh,id:core.id,spd:o0.spd,cat:o0.cat,ev5:eva?(+eva[5]||0):null,mine:1});
+  (it.mates||[]).forEach(function(r){
+    if(!r||!r.s)return;
+    var asm=null;try{asm=mateAssemble(r,team,sys)}catch(eT412){asm=null}
+    if(!asm)return;
+    var ev=(asm.ev&&asm.ev.alloc)?asm.ev.alloc:null;
+    var o=spdStatOf(r.s,ev?(+ev[5]||0):null,asm.nat);
+    rows.push({zh:r.s.zh,id:r.s.id,spd:o.spd,cat:o.cat,ev5:ev?(+ev[5]||0):null,mine:0});
+  });
+  rows.sort(function(a,b){return b.spd-a.spd});
+  var c=null,fr=0,sl=0,frN=[];
+  rows.forEach(function(x){if(x.mine)c=x});
+  rows.forEach(function(x){
+    if(!c||x.mine)return;
+    if(x.spd>c.spd){fr++;frN.push(x.zh)}
+    else if(x.spd<c.spd)sl++;
+  });
+  var h='<div class="dim" style="margin-bottom:6px;line-height:1.5">按这一队的实际配置算（性格 + 努力值都算进去），从快到慢；档位 = 全库满速排序的分位。</div>';
+  rows.forEach(function(x,i){
+    var rk=null;try{rk=mqSpdRank(x.spd)}catch(eR412){rk=null}
+    var col=(x.spd>=300?'#b3261e':(x.spd>=200?'#c2410c':'#374151'));
+    h+='<div style="display:flex;gap:7px;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--line)">'+
+      '<span class="dim" style="width:18px;text-align:right">'+(x.mine?'⭐':(i+1))+'</span>'+
+      '<b>'+esc(x.zh)+'</b>'+
+      '<span style="color:'+col+';font-weight:700">'+x.spd+'</span>'+
+      '<span class="dim">'+(rk?esc(rk.tag):'')+(x.cat==='中性'?'':(' · 性格'+x.cat))+(x.ev5?(' · 速 '+x.ev5+' EV'):'')+'</span>'+
+      (x.mine?'<span class="dim">本轮核心</span>':'')+
+      '</div>';
+  });
+  if(c){
+    h+='<div class="ruleline" style="margin-top:8px">核心 <b>'+esc(core.zh)+'</b> 速度 <b>'+c.spd+'</b>：本队比它快的 '+fr+' 只'+(fr?('（'+esc(frN.join('/'))+'）'):'')+'、比它慢的 '+sl+' 只'+
+      (fr?(sl?'。它不占先手权——上面那几只更快，它靠先制招、戏法空间或轮转出手':'。它是本队垫底的一档——先手权不归它，靠先制招、戏法空间或轮转'):'（它是本队最快，可直接作压制位）')+'</div>';
+  }
+  l1Modal('全队速度线 · '+core.zh,h);
+}
 function mateQuickModal(qk){
   var it=(window._MQ||{})[String(qk)];
   if(!it||!it.r||!it.r.s){toast('未找到该队友信息，请重新点一次');return}
@@ -22637,10 +22685,9 @@ function mateQuickModal(qk){
   /* v4.405 决策数字（同源 speedStat/defCellTrio）*/
   var spdTxt='',wkLst=[],spdRank=null;
   try{
-    var _ncat='中性';try{_ncat=spdNatCatOf(asm&&asm.nat)}catch(eV1){_ncat='中性'}
-    var _ev5=(eva&&eva[5])||0;
-    var _spd=speedStat((s2.base||[])[5],_ev5,31,_ncat==='加速');
-    spdTxt=String(_spd)+(_ncat==='加速'?'·性格加速':(_ncat==='减速'?'·性格减速':''));
+    var _o412m=spdStatOf(s2,(eva&&eva[5])||0,asm&&asm.nat);
+    var _spd=_o412m.spd;
+    spdTxt=String(_spd)+(_o412m.cat==='加速'?'·性格加速':(_o412m.cat==='减速'?'·性格减速':''));
   }catch(eV2){spdTxt=''}
   try{spdRank=mqSpdRank(_spd)}catch(eV5){spdRank=null}
   try{
@@ -22925,10 +22972,22 @@ function renderCore(s){
       h+='</div>';
       var _abN=(bd.abi&&bd.abi[0])?bd.abi[0].n:'';
       h+='<div class="ansrow"><b>特性</b><span class="ansclk" title="点开看特性详情" onclick="abiModal('+jsl(_abN)+',\'特性\')">'+esc(abi0)+'</span><b>道具</b><span class="ansclk" title="点开看道具详情" onclick="itemModalZh('+jsl(it0)+')">'+esc(it0)+'</span><b>性格</b><span class="ansclk" title="点开看性格效果" onclick="natModalZh('+jsl(nat0)+')">'+esc(nat0)+'</span></div>';
-      h+='<div class="ansrow"><b>努力值</b><span class="ansclk" title="点开看努力值分配理由" onclick="ansEvModal('+SID+','+k+')">'+esc(ev0)+'</span></div>';
+      h+='<div class="ansrow"><b>努力值</b><span class="ansclk" title="点开看努力值分配理由" onclick="ansEvModal('+SID+','+k+')">'+esc(ev0)+'</span>';
+      var _o412=null;
+      try{_o412=spdStatOf(s,(bd.ev&&bd.ev.alloc)?(+bd.ev.alloc[5]||0):null,(bd.nat&&bd.nat[0]&&bd.nat[0][0])||'')}catch(eC412){_o412=null}
+      if(_o412){
+        var _tr412='';try{_tr412=mqSpdRank(_o412.spd).tag}catch(eT412b){_tr412=''}
+        var _sk412=String(SID)+'|'+k;
+        h+='<b>速度值</b><span class="ansclk" title="点开看全队 6 只速度线（同一套算法）" onclick="teamSpdLine('+jsl(_sk412)+')"><b>'+_o412.spd+'</b>'+
+          (_o412.cat==='中性'?'':(' <span class="dim">性格'+esc(_o412.cat)+'</span>'))+
+          (_tr412?(' <span class="dim">'+esc(_tr412)+'</span>'):'')+'</span>';
+      }
+      h+='</div>';
       h+='<div class="ansmv"><b>四招</b>'+((bd.mv&&bd.mv.main&&bd.mv.main.length)?bd.mv.main.map(function(x,i){var _nm=MV[x.id]?MV[x.id][1]:x.id;return '<span class="ansm ansclk" title="点开看招式详情" onclick="mvModalById('+x.id+')"><i>'+(i+1)+'</i>'+esc(_nm)+'</span>'}).join(''):'—')+'</div>';
       /* v4.403：队友词条不再直接换核心（会丢失当前这只），改为副弹窗预览；要换核心需在弹窗里二次确认 */
-      window._MQ={};
+      window._MQ={};window._SL=window._SL||{};
+      window._SL[String(SID)+'|'+k]={core:s,bd:bd,mates:mm0,team:[s].concat(mm0.map(function(x){return x&&x.s})).filter(Boolean),
+        sys:(function(){try{return coreSys(s)}catch(eS412b){return ''}})()};
       if(mm0.length)h+='<div class="ansmate"><b>带这 5 只</b>'+mm0.map(function(r){var _id=(r&&r.s)?r.s.id:'';var _mk=String(SID)+'|'+k+'|'+String(_id);window._MQ[_mk]={r:r,core:s,mates:mm0,k:k};return '<span class="ansp ansclk" title="点开预览这只在本队的完整配置（弹窗，不离开当前核心）" onclick="mateQuickModal('+jsl(_mk)+')">'+esc((r&&r.s&&r.s.zh)||'')+'<em>'+esc((r&&r.priRole)||'')+'</em></span>'}).join('')+'</div>';
       h+='<div class="ansbtns"><button class="btn-mini" type="button" onclick="coreApplyAll()">🧩 就用这套（6 只一键配齐）</button><span class="dim">下方为「为什么」，按需再看</span></div>';
       return h;
