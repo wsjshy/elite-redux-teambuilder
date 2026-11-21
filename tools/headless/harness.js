@@ -7625,8 +7625,9 @@ function teamIntentOf(tm){
   var fastN=sig.filter(function(g){return g.sp>=P.P75}).length;
   var gcN=sig.filter(function(g){return g.gc}).length;
   var slowN=sig.filter(function(g){return g.b5<=50}).length;
+  var spaceRoleN=sig.filter(function(g){return g.role.indexOf('空间')>=0}).length;
   var stance='平衡';
-  if(slowN>=Math.ceil(n/2)&&wallN<2&&offN>=slowN)stance='空间';
+  if(slowN>=Math.ceil(n/2)&&spaceRoleN>=Math.ceil(n/2)&&wallN<2)stance='空间';
   else if(wallN>=2&&offN<wallN)stance='受队';
   else if(wallN===0&&(offN>=Math.ceil(n/2)||(fastN+gcN)>=Math.ceil(n/2)))stance='强攻';
   var coreIds=[],ancIds=[];
@@ -7719,11 +7720,16 @@ var T=_tcTypes();
     if(over.length){
       var hard=over.filter(function(x){return !x.imm});
       if(hard.length){
-        add(_tcThemeWk(hard.map(function(x){return x.tp}))?3:2,"<b style='color:var(--warnred)'>弱点超标（同一弱点超过 "+TC_WKCAP+" 只）</b>："
-          +hard.map(function(x){return x.tp+"×"+x.n}).join("、")
-          +"——这几种属性只要对手带一个通用招（比如地震、岩崩、冰光）就能连着打穿。"
-          +"要么把它们分散到不同属性，要么补一只免疫 "
-          +hard.map(function(x){return x.tp}).join("/")+" 的队友。");
+        var hardTypes=hard.map(function(x){return x.tp});
+        var wkHead="<b style='color:var(--warnred)'>弱点超标（同一弱点超过 "+TC_WKCAP+" 只）</b>："
+          +hard.map(function(x){return x.tp+"×"+x.n}).join("、");
+        if(_tcThemeWk(hardTypes)){
+          add(3,wkHead+"——这是「"+INTENT.themeLabel+"」体系的固有共通弱点，本就靠体系内手段处理"
+            +"（先手秒掉对应属性、免疫/引水/避雷针队友、先制补刀），默认接受、不建议为此拆核心；只有这些手段都缺位时才需要处理。");
+        }else{
+          add(2,wkHead+"——这几种属性只要对手带一个通用招（比如地震、岩崩、冰光）就能连着打穿。"
+            +"要么把它们分散到不同属性，要么补一只免疫 "+hardTypes.join("/")+" 的队友。");
+        }
       }else{
         add(0,"<span style='color:var(--ok,var(--ok))'>弱点集中但有硬解</span>："
           +over.map(function(x){return x.tp+"×"+x.n}).join("、")+"——队里有免疫，可以靠换人接住，不算硬伤。");
@@ -21099,7 +21105,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.416';
+var ER_ENGINE_VER='v4.418';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21799,14 +21805,14 @@ function renderCore(s){
     if(_mpp.mechs.length)_mpB=mechBadgeHtml([_mpp.mechs[0]]);
     else if(_mw.length)_mpB=mechBadgeHtml([{rewrite:_mw[0].zh,why:_mw[0].why||_mw[0].zh}]);}
   var builds=deriveBuilds(s,(typeof team!=='undefined'&&team&&team.length)?team:null);
-  var _cls=classifyBuilds(s,builds);
-  var _mainReps=[],_foldReps=[],_mergeFroms=[];
-  _cls.groups.forEach(function(g,gi){
-    for(var mi=1;mi<g.members.length;mi++)_mergeFroms.push(g.members[mi]);
-    if(gi===0){_mainReps.push(g.rep);return}
-    var fk=(g.rep._candKey==='main'||g.rep._candKey==='def');
-    if(fk)_foldReps.push(g.rep);else _mainReps.push(g.rep);
-  });
+  var _cls=classifyBuilds(s,builds);
+  var _mainReps=[],_foldReps=[],_mergeFroms=[];
+  _cls.groups.forEach(function(g,gi){
+    for(var mi=1;mi<g.members.length;mi++)_mergeFroms.push(g.members[mi]);
+    if(gi===0){_mainReps.push(g.rep);return}
+    var fk=(g.rep._candKey==='main'||g.rep._candKey==='def');
+    if(fk)_foldReps.push(g.rep);else _mainReps.push(g.rep);
+  });
   var showList=_mainReps.concat(_foldReps).concat(_mergeFroms);
   /* v4.386 ⑤ 展示层默认位锚定：classifyBuilds 内部按 score 降序分组的结果保留，但默认首卡/首 tab 锚定引擎 builds[0]
      （① 后置 pass 已把 strict 进攻卡移到 out[0]；白名单机制卡引擎 [0] 本就是机制卡，身份不变）。
@@ -21822,7 +21828,7 @@ function renderCore(s){
       else{var _v386gi=_mergeFroms.indexOf(_v386eng);if(_v386gi>=0){_mergeFroms.splice(_v386gi,1);_mainReps.unshift(_v386eng);}}
     }
     showList=_mainReps.concat(_foldReps).concat(_mergeFroms);
-  })();}catch(eV386d){eV386d.name}
+  })();}catch(eV386d){eV386d.name}
   var in0c=coreIntensity(s);
   var tags=coreTags(s);
   var SID=s.id;
@@ -21959,15 +21965,15 @@ function renderCore(s){
 
   /* ==================== L2 流派玩法层（tab 一次一卡，每卡固定 8 字段） ==================== */
   html+='<div class="sec"><h3>为什么这么配（对应上面选的玩法）</h3>';
-  if(_foldReps.length||_mergeFroms.length){
-    var _fcnt=_foldReps.length+_mergeFroms.length;
-    html+='<details class="bkmorefold"><summary>其他兜底/微调玩法（'+_fcnt+' 条 · 非推荐，想看再展开）</summary><div class="bktabs bkfoldtabs" role="group">';
-    var _fk=_mainReps.length;
-    _foldReps.forEach(function(bd){html+='<button type="button" class="bktab bkfoldtab" role="tab" id="'+wId+'t'+_fk+'" aria-selected="false" tabindex="-1" onclick="ansSwitch('+SID+','+_fk+')">'+esc(bd.name)+'</button>';_fk++});
-    _mergeFroms.forEach(function(bd){html+='<button type="button" class="bktab bkfoldtab" role="tab" id="'+wId+'t'+_fk+'" aria-selected="false" tabindex="-1" onclick="ansSwitch('+SID+','+_fk+')">'+esc(bd.name)+'</button>';_fk++});
-    html+='</div></details>';
-  }
-  html+='<div id="'+wId+'">';
+  if(_foldReps.length||_mergeFroms.length){
+    var _fcnt=_foldReps.length+_mergeFroms.length;
+    html+='<details class="bkmorefold"><summary>其他兜底/微调玩法（'+_fcnt+' 条 · 非推荐，想看再展开）</summary><div class="bktabs bkfoldtabs" role="group">';
+    var _fk=_mainReps.length;
+    _foldReps.forEach(function(bd){html+='<button type="button" class="bktab bkfoldtab" role="tab" id="'+wId+'t'+_fk+'" aria-selected="false" tabindex="-1" onclick="ansSwitch('+SID+','+_fk+')">'+esc(bd.name)+'</button>';_fk++});
+    _mergeFroms.forEach(function(bd){html+='<button type="button" class="bktab bkfoldtab" role="tab" id="'+wId+'t'+_fk+'" aria-selected="false" tabindex="-1" onclick="ansSwitch('+SID+','+_fk+')">'+esc(bd.name)+'</button>';_fk++});
+    html+='</div></details>';
+  }
+  html+='<div id="'+wId+'">';
   showList.forEach(function(bd,k){
     var bSet=(bd.abi&&bd.abi[0]&&bd.abi[0].n)?((bd.abi[0].id!=null&&bd.abi[0].id!==''&&ABI[bd.abi[0].id])?(ABI[bd.abi[0].id][2]||ABI[bd.abi[0].id][1]||('#'+bd.abi[0].id)):abiChipName(bd.abi[0].n)):'—';   /* v4.50 P0：推荐特性名优先平行 id 反查 ABI 规范中文 */
     var tms=ftC(s,bd.side,bd.roleTag);
