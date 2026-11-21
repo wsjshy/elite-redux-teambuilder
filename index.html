@@ -22501,7 +22501,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.420';
+var ER_ENGINE_VER='v4.421';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -23708,7 +23708,7 @@ function _initCoreList(){
         /* 交集筛选：宝可梦仅双属性，最多保留 2 个选中 */
         var on=ERDATA.types.filter(function(x){return coreFilter.types[x]});
         if(on.length>2)delete coreFilter.types[on[0]];
-        renderCoreTypes();draw();
+        renderCoreTypes();draw(true);
       });
       box.appendChild(b);
     });
@@ -23720,7 +23720,7 @@ function _initCoreList(){
     optFinalOnly=false;optMegaOnly=false;
     var f=$('coreFinal');if(f)f.checked=false;
     var m=$('coreMega');if(m)m.checked=false;
-    renderCoreTypes();draw();
+    renderCoreTypes();draw(true);
   }
   window.coreClear=coreClear;
   function coreMatch(s,skipForm){
@@ -23743,7 +23743,8 @@ function _initCoreList(){
     if(abi){var names=s.abis.concat(s.inns);if(!names.some(function(n){return n.toLowerCase().indexOf(abi)>-1}))return false}
     return true;
   }
-  function draw(){
+  var coreShown=0, coreStep=60;
+  function coreArr(){
     var arr=ERDATA.species.filter(function(s){return coreMatch(s)}); /* v4.48 fix: filter 回调会传 (el,idx,arr)，直接传 coreMatch 会把 index 塞进 skipForm，导致除第 1 只外全部绕过形态过滤 */
     /* v4.33 N11：纯数字查询时精确编号命中者置顶（输入 1 → #1 在最前，不再 #1/#10/#11 混排） */
     var _q=String($('coreSearch').value||'').trim();
@@ -23751,9 +23752,16 @@ function _initCoreList(){
       var exact=null;arr.forEach(function(s){if(String(s.id)===_q&&!exact)exact=s});
       if(exact){arr=arr.filter(function(s){return s!==exact});arr.unshift(exact);}
     }
-    arr=sortedSp(arr,$('coreSort').value);
-    var box=$('coreGrid');box.innerHTML='';
-    arr.slice(0,60).forEach(function(s){
+    return sortedSp(arr,$('coreSort').value);
+  }
+  function draw(reset){
+    var arr=coreArr();
+    var box=$('coreGrid');
+    if(reset){coreShown=0;box.innerHTML='';}
+    else if(coreShown>=arr.length)return; /* 已全部显示，滚动重复触发时不做 DOM 改动 */
+    var take=arr.slice(coreShown,coreShown+coreStep);
+    coreShown+=take.length;
+    take.forEach(function(s){
       var c=document.createElement('div');c.className='card';c.style.position='relative';   /* v4.142：右上角已入队角标定位 */
       var _inTeam=team.indexOf(s)>-1;
       c.innerHTML=(_inTeam?'<span style="position:absolute;top:2px;right:2px;background:var(--accent);color:#fff;font-size:14px;padding:1px 6px;border-radius:8px;z-index:1">已入队</span>':'')+
@@ -23767,7 +23775,6 @@ function _initCoreList(){
     });
     /* v4.43 P2-A③：空洞口径修复 —— 「图鉴总数」与「当前筛选命中」分离显示；
        零命中时给出可执行提示，并显式披露「被形态开关（仅最终形态 / Mega 优先）隐藏」的只数。 */
-    var _allN=ERDATA.species.filter(isValidSp).length;
     var _nIgnoreForm=ERDATA.species.filter(function(sp){return coreMatch(sp,true)}).length;
     var _hidForm=Math.max(0,_nIgnoreForm-arr.length);
     var _more=$('coreMore');
@@ -23777,20 +23784,31 @@ function _initCoreList(){
           +(_hidForm>0?('<br><span style="color:var(--link)">其中 '+_hidForm+' 只被「仅最终形态 / Mega 形态优先」开关隐藏</span> —— 取消勾选即可看到')
                      :'<br>换个搜索词，或点「清空筛选」');
       }else{
-        _more.innerHTML='当前筛选命中 <b>'+arr.length+'</b> 只 · '+spCountLabel()
-          +(arr.length>60?'（列表显示前 60 · 可缩小筛选）':'')
-          +(_hidForm>0?('<br><span style="color:var(--sub)">另有 '+_hidForm+' 只被「仅最终形态 / Mega 形态优先」开关隐藏</span>'):'');
+        var _remain=arr.length-coreShown;
+        var _h='当前筛选命中 <b>'+arr.length+'</b> 只 · 已显示 <b>'+coreShown+'</b> 只 · '+spCountLabel();
+        if(_remain>0)_h+='<br><button class="btn" type="button" id="coreLoadMore" style="margin-top:8px">加载更多（还有 '+_remain+' 只）</button>';
+        if(_hidForm>0)_h+='<br><span style="color:var(--sub)">另有 '+_hidForm+' 只被「仅最终形态 / Mega 形态优先」开关隐藏</span>';
+        _more.innerHTML=_h;
+        var _lb=$('coreLoadMore');if(_lb)_lb.onclick=function(){draw(false);};
       }
     }
   }
-  window.drawCoreList=draw;
-  $('coreSearch').oninput=draw;
-  $('coreSort').onchange=draw;
-  $('coreRole').onchange=draw;
-  $('coreMv').oninput=draw;
-  $('coreAbi').oninput=draw;
+  window.drawCoreList=function(){draw(true)};
+  function coreResetDraw(){draw(true)}
+  $('coreSearch').oninput=coreResetDraw;
+  $('coreSort').onchange=coreResetDraw;
+  $('coreRole').onchange=coreResetDraw;
+  $('coreMv').oninput=coreResetDraw;
+  $('coreAbi').oninput=coreResetDraw;
+  function _scCore(){
+    if(!$('tab-core').classList.contains('active'))return;
+    var m=document.querySelector('main');if(!m)return;
+    if(m.scrollTop+m.clientHeight>m.scrollHeight-400)draw(false);
+  }
+  var _cm=document.querySelector('main');if(_cm)_cm.addEventListener('scroll',_scCore);
+  window.addEventListener('scroll',_scCore);
   renderCoreTypes();
-  draw();
+  draw(true);
 })();
 }
 if(window.__erReady){_initCoreList()}else{document.addEventListener('er-ready',function(){setTimeout(_initCoreList,100)})}
