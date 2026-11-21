@@ -9284,29 +9284,30 @@ function teamDefHeatHtml(R){
     return '<b>联防聚合</b>（18 属性 × 全队承受倍率；红=≥3只同弱 蓝=免疫点 绿=多抗）<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:3px;margin-top:4px">'+cells+'</div>';
   }catch(e){return ''}
 }
-/* v4.79 P1：队伍六维能力分组条形图（纯展示，O(6×6)，同源 R.members[].s.base，禁第二套口径）。
-   六行（HP/攻/防/特攻/特防/速），每行 6 条（每只一色，宽度=该只该项/种族上限），手机端不横向滚动（列 flex 自适应）。 */
+/* v4.416：六维能力紧凑表（纯展示，同源 R.members[].s.base 种族值，禁第二套口径）。
+   每只一行（精灵+全名），六项数字+归一化条（上限 180）；flex-wrap 自适应，手机端不横向滚动。 */
 function teamStatsChartHtml(R){
   try{
     var mem=(R&&R.members)||[];if(!mem.length)return '';
     var cols=['HP','攻','防','特攻','特防','速'];
-    var PAL=['var(--acc)','var(--fg-green2)','#f57c00','var(--fg-purple)','var(--fg-pink)','var(--fg-teal)'];
-    var MAX=180;   /* 种族值单项展示上限 */
+    var MAX=180;   /* 种族值单项归一化上限 */
     var rowsH='';
-    for(var k=0;k<6;k++){
-      var bars='';
-      mem.forEach(function(m,i){
-        var s=null;try{s=speciesById(m.id)}catch(e0){s=null}
-        if(!s||!s.base)return;   /* 空壳防御：成员数据缺失则跳过该只（非空壳卡） */
-        var v=s.base[k];var w=Math.round(Math.min(v,MAX)*100/MAX);
-        bars+='<div style="display:flex;align-items:center;gap:2px;margin:1px 0">'+
-          '<span style="width:34px;font-size:13px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.zh)+'</span>'+
-          '<div style="flex:1;height:9px;background:var(--bg-track);border-radius:2px"><div style="width:'+w+'%;height:100%;background:'+PAL[i%PAL.length]+';border-radius:2px"></div></div>'+
-          '<span style="width:24px;font-size:14px;text-align:right">'+v+'</span></div>';
-      });
-      rowsH+='<div style="margin-bottom:3px"><div style="font-size:14.5px;font-weight:600">'+cols[k]+'</div>'+bars+'</div>';
-    }
-    return '<b>六维能力分布</b>（同源种族值 base；每行一只一条，<b>每只一色</b>=跨只对比色板 · 速度类条形为蓝系定位色板）<div style="margin-top:4px">'+rowsH+'</div>';
+    mem.forEach(function(m){
+      var s=null;try{s=speciesById(m.id)}catch(e0){s=null}
+      if(!s||!s.base)return;   /* 空壳防御：成员数据缺失则跳过该只 */
+      var cells='';
+      for(var k=0;k<6;k++){
+        var v=s.base[k],w=Math.round(Math.min(v,MAX)*100/MAX);
+        cells+='<span class="ts6-c"><span class="ts6-top"><span class="ts6-lab">'+cols[k]+
+          '</span><span class="ts6-num">'+v+'</span></span>'+
+          '<span class="ts6-track"><span class="ts6-fill" style="width:'+w+'%"></span></span></span>';
+      }
+      rowsH+='<div class="ts6-row"><span class="ts6-name" title="'+esc(s.zh)+'">'+sprRaw(m.id,'spthumb')+
+        '<span style="overflow:hidden;text-overflow:ellipsis">'+esc(s.zh)+'</span></span>'+
+        '<span class="ts6-cells">'+cells+'</span></div>';
+    });
+    return '<b>六维能力（种族值）</b><span class="tip" style="margin-left:6px">每只一行，数字=种族值，条=相对上限 180</span>'+
+      '<div class="ts6">'+rowsH+'</div>';
   }catch(e){return ''}
 }
 /* v4.74 P1：队伍级速度结构卡（纯展示，O(6)，只读当前 team 全局，禁止全链派生） */
@@ -20992,7 +20993,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.414';
+var ER_ENGINE_VER='v4.415';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
