@@ -3289,6 +3289,7 @@ function mvLearnersOf(m){
   });
   return out;
 }
+var _mvLkStep=60;
 function mvLookupRender(fromUI){
   var m=_mvCur,box=$('mvLearners');if(!m||!box)return;
   if(fromUI){   /* 仅由开关 onchange 读 UI（初始渲染走状态默认值，Node 打桩环境下也确定） */
@@ -3296,23 +3297,37 @@ function mvLookupRender(fromUI){
     if(f)optMvFinal=!!f.checked;
     if(g)optMvMega=!!g.checked;
   }
-  var list=mvLearnersOf(m),h='';
-  if(!list.length)h+='<div style="color:var(--sub)">该招式没有宝可梦可学（可能仅限特定形态/事件；也可能已被上方开关过滤）</div>';
+  var list=mvLearnersOf(m);
+  box.innerHTML='';
+  if(!list.length)box.innerHTML='<div style="color:var(--sub)">该招式没有宝可梦可学（可能仅限特定形态/事件；也可能已被上方开关过滤）</div>';
   else{
-    h+='<div class="mxgrid" style="max-height:320px;overflow:auto">';
-    list.slice(0,60).forEach(function(o){
-      var s=o.s,tp=s.t1+(s.t2&&s.t2!==s.t1?'·'+s.t2:'');
-      var way=(o.lv>-1?'Lv'+o.lv:'')+(o.tut?(o.lv>-1?'/':'')+'教学':'');
-      h+='<div class="mxc lkcard" data-sid="'+s.id+'" title="'+escq(s.zh+' #'+s.id+' '+s.t1+(s.t2&&s.t2!==s.t1?'/'+s.t2:'')+' · '+(o.lv>-1?'升级 Lv'+o.lv:'')+(o.tut?(o.lv>-1?' / ':'')+'教学':''))+'">'+
-        sprRaw(s.id)+'<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(tp)+'</div><div class="mcx2">'+esc(way)+'</div></div>';
-    });
-    h+='</div>';
-    if(list.length>60)h+='<div class="mini" style="color:var(--sub)">已显示前 60 只 · 共 '+list.length+' 只（可用上方开关收窄）</div>';
+    /* v4.422：不再 60 硬顶——容器内滚动触底自动追加，底部另给「加载更多」按钮兜底（与核心/图鉴同口径） */
+    var grid=document.createElement('div');grid.className='mxgrid';grid.style.cssText='max-height:320px;overflow:auto';
+    var foot=document.createElement('div');foot.style.cssText='text-align:center;padding:4px 0';
+    var shown=0;
+    function fill(){
+      var take=list.slice(shown,shown+_mvLkStep);
+      shown+=take.length;
+      take.forEach(function(o){
+        var s=o.s,tp=s.t1+(s.t2&&s.t2!==s.t1?'·'+s.t2:'');
+        var way=(o.lv>-1?'Lv'+o.lv:'')+(o.tut?(o.lv>-1?'/':'')+'教学':'');
+        var el=document.createElement('div');
+        el.className='mxc lkcard';el.setAttribute('data-sid',s.id);
+        el.title=s.zh+' #'+s.id+' '+s.t1+(s.t2&&s.t2!==s.t1?'/'+s.t2:'')+' · '+(o.lv>-1?'升级 Lv'+o.lv:'')+(o.tut?(o.lv>-1?' / ':'')+'教学':'');
+        el.innerHTML=sprRaw(s.id)+'<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(tp)+'</div><div class="mcx2">'+esc(way)+'</div>';
+        el.onclick=function(){var sp=speciesById(el.getAttribute('data-sid'));if(sp){openSp(sp);closeMv()}};
+        grid.appendChild(el);
+      });
+      if(shown>=list.length)foot.innerHTML='<span class="mini" style="color:var(--sub)">共 '+list.length+' 只 · 已全部显示</span>';
+      else{
+        foot.innerHTML='<button class="btn-mini" type="button">加载更多（还有 '+(list.length-shown)+' 只）</button>';
+        if(foot.firstChild)foot.firstChild.onclick=fill;
+      }
+    }
+    grid.onscroll=function(){if(grid.scrollTop+grid.clientHeight>grid.scrollHeight-32)fill()};
+    fill();
+    box.appendChild(grid);box.appendChild(foot);
   }
-  box.innerHTML=h;
-  Array.prototype.forEach.call(box.querySelectorAll('.mxc[data-sid]'),function(el){
-    el.onclick=function(){var s=speciesById(el.getAttribute('data-sid'));if(s){openSp(s);closeMv()}};
-  });
   var c=$('mvLkCnt');if(c)c.textContent='共 '+list.length+' 只';
 }
 /* v4.x UI 定稿：招式详情改居中 modal → 遮罩点击关闭 */
@@ -5763,19 +5778,46 @@ function lkFilter(list,onlyFinal,megaOnly){
   if(!list)return [];
   return list.filter(function(s){return lkKeep(s,onlyFinal,megaOnly)});
 }
-function abiOwnerCol(title,list){
+function abiOwnerCards(arr){
+  return arr.map(function(s){
+    return '<div class="mxc lkcard" data-sid="'+s.id+'" onclick="openSpById(\''+s.id+'\')" title="'+escq(s.zh+' #'+s.id+' '+s.t1+(s.t2&&s.t2!==s.t1?'/'+s.t2:''))+'">'+
+      sprRaw(s.id)+
+      '<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(s.t1+(s.t2&&s.t2!==s.t1?'·'+s.t2:''))+'</div></div>';
+  }).join('');
+}
+/* v4.422：持有者列不再 60 硬顶——列内滚动触底自动追加，另有「加载更多」按钮兜底 */
+function abiOwnerFill(btn){
+  var w=btn&&btn.parentNode&&btn.parentNode.parentNode?btn.parentNode.parentNode:null; /* .ownmore → .abicolw */
+  if(!w||!w.getAttribute)return;
+  var grid=w.querySelector('.owngrid');if(!grid)return;
+  var abid=w.getAttribute('data-abid'),kind=w.getAttribute('data-kind');
+  var own=abiOwners(),g0=own[abid]||{ab:[],inn:[]};
+  var list=lkFilter(kind==='inn'?g0.inn:g0.ab,optAbiFinal,optAbiMega);
+  var shown=parseInt(w.getAttribute('data-shown')||'60',10);if(isNaN(shown))shown=60;
+  var take=list.slice(shown,shown+60);
+  var tmp=document.createElement('div');tmp.innerHTML=abiOwnerCards(take);
+  /* children 是 live collection：边 appendChild 边迭代会漏追加（实测 13 只只进 7 只），必须快照 */
+  var nodes=Array.prototype.slice.call(tmp.children);
+  nodes.forEach(function(x){grid.appendChild(x)});
+  shown+=take.length;w.setAttribute('data-shown',''+shown);
+  var more=w.querySelector('.ownmore');
+  if(more){
+    if(shown>=list.length)more.innerHTML='<span class="mini" style="color:var(--sub)">共 '+list.length+' 只 · 已全部显示</span>';
+    else{
+      more.innerHTML='<button class="btn-mini" type="button">加载更多（还有 '+(list.length-shown)+' 只）</button>';
+      if(more.firstChild)more.firstChild.onclick=function(){abiOwnerFill(this)};
+    }
+  }
+}
+function abiOwnerCol(title,list,abid,kind){
   /* v4.x UI 定稿：持有者用「精灵图 + 中文名 + 属性徽标」紧凑卡片网格（图片优先、少文字），点卡片跳详情 */
-  var h='<div><div style="font-weight:600;font-size:14.5px;margin-bottom:4px">'+esc(title)+' <b>'+list.length+'</b> 只</div>';
+  var _sh=Math.min(60,list.length);
+  var h='<div class="abicolw" data-abid="'+escq(''+abid)+'" data-kind="'+(kind||'')+'" data-shown="'+_sh+'"><div style="font-weight:600;font-size:14.5px;margin-bottom:4px">'+esc(title)+' <b>'+list.length+'</b> 只</div>';
   if(!list.length)h+='<div class="mini" style="color:var(--sub)">（无）</div>';
   else{
-    h+='<div class="mxgrid" style="max-height:260px;overflow:auto">';
-    list.slice(0,60).forEach(function(s){
-      h+='<div class="mxc lkcard" data-sid="'+s.id+'" onclick="openSpById(\''+s.id+'\')" title="'+escq(s.zh+' #'+s.id+' '+s.t1+(s.t2&&s.t2!==s.t1?'/'+s.t2:''))+'">'+
-        sprRaw(s.id)+
-        '<div class="mcnm">'+esc(s.zh)+'</div><div class="mcx">'+esc(s.t1+(s.t2&&s.t2!==s.t1?'·'+s.t2:''))+'</div></div>';
-    });
-    h+='</div>';
-    if(list.length>60)h+='<div class="mini" style="color:var(--sub)">…共 '+list.length+' 只（仅列前 60）</div>';
+    h+='<div class="mxgrid owngrid" style="max-height:260px;overflow:auto">'+abiOwnerCards(list.slice(0,60))+'</div>';
+    if(list.length>60)h+='<div class="ownmore" style="text-align:center;padding:3px 0"><button class="btn-mini" type="button" onclick="abiOwnerFill(this)">加载更多（还有 '+(list.length-60)+' 只）</button></div>';
+    else h+='<div class="ownmore" style="text-align:center;padding:3px 0"><span class="mini" style="color:var(--sub)">共 '+list.length+' 只 · 已全部显示</span></div>';
   }
   return h+'</div>';
 }
@@ -5794,21 +5836,26 @@ function renderAbi(){
     if(mn&&mn.style.display==='block')_open.push(''+((c.dataset&&c.dataset.abid)||''));
   });
   box.innerHTML='';
-  var cnt=0,_hidN=0,own=abiOwners();
+  var own=abiOwners();
+  var matched=[];
   ERDATA.abilities.forEach(function(a){
     var zh=a[2]||'',en=a[1]||'',desc=abiDescZhOf(a[0]);
     if(a[0]==='0')return;
     /* v4.40：搜索词 = 某规范名/别名时，其**全部**候选 id 的卡都算命中（同名特性 1/808 两卡都出）；
        只在原匹配之外加命中，绝不减少（既有搜索行为零回归）。 */
     if(!fzAny(q,[a[0],zh,en,desc])&&!(q&&abiIdList(q).indexOf(''+a[0])>=0))return;
-    if(cnt>=60)return;
-    cnt++;
+    matched.push(a);
+  });
+  var _hidN=0;
+  matched.forEach(function(a){var _g1=own[a[0]]||{ab:[],inn:[]};_hidN+=(_g1.ab.length-lkFilter(_g1.ab,optAbiFinal,optAbiMega).length)+(_g1.inn.length-lkFilter(_g1.inn,optAbiFinal,optAbiMega).length)});
+  /* v4.422：卡片构造抽成函数，首屏只渲染 60 张，其余按需追加（不再「请细化关键词」逼用户收窄） */
+  function _abiCardOf(a){
+    var zh=a[2]||'',en=a[1]||'',desc=abiDescZhOf(a[0]);
     /* v4.41：持有者列表按本区块开关过滤（标题徽标「可选 N / 天性 N」与两列列表同源，故数字随过滤变化） */
     var _g0=own[a[0]]||{ab:[],inn:[]};
     /* v4.252：判断「数据层真的没有任何物种拥有」，与「被开关过滤成 0」区分 */
     var _zeroAll=(_g0.ab.length===0&&_g0.inn.length===0);
     var grp={ab:lkFilter(_g0.ab,optAbiFinal,optAbiMega),inn:lkFilter(_g0.inn,optAbiFinal,optAbiMega)};
-    _hidN+=(_g0.ab.length-grp.ab.length)+(_g0.inn.length-grp.inn.length);
     var tl=[];
     try{tl=abiTagLines(a[0])}catch(e){tl=[];console.warn('abiTagLines('+a[0]+')',e)}var _src=[];try{_src=abiSrcBrief(a[0])}catch(e){_src=[]}
     var card=document.createElement('div');card.className='abicard';
@@ -5825,7 +5872,7 @@ function renderAbi(){
          '<div class="sec" style="margin:8px 0"><h3>计算倍率（工具真正计入伤害的部分）</h3><div style="font-size:14.5px;line-height:1.9">'+
            (_src.length?_src.map(function(x){return '• '+esc(x)}).join('<br>'):'<span style="color:var(--sub)">（不在计算类判定表中：属速度 / 回合 / 命中 / 换场类效果，不产生伤害倍率；速度类见「速度线」页）</span>')+'</div></div>'+
         '<div class="sec" style="margin:8px 0"><h3>持有者（分两列：可选池 / 天性固定）</h3>'+(_zeroAll?'<div style="font-size:14.5px;line-height:1.75;color:#c0392b;margin:6px 0 8px">本作没有任何宝可梦拥有这个特性。源码里有它的实现，但没有分配给任何物种，所以配队、特性反查、速度线、伤害面板都不会出现它。</div>':'')+'<div class="abicol">'+
-          abiOwnerCol('作为特性（可选池）',grp.ab)+abiOwnerCol('作为天性（固定）',grp.inn)+'</div></div>'+
+          abiOwnerCol('作为特性（可选池）',grp.ab,a[0],'ab')+abiOwnerCol('作为天性（固定）',grp.inn,a[0],'inn')+'</div></div>'+
       '</div>';
     card.onclick=function(ev){
       var t=ev&&ev.target;
@@ -5843,21 +5890,38 @@ function renderAbi(){
     card.querySelectorAll('.mxrow[data-sid]').forEach(function(el){
       el.onclick=function(){var s=speciesById(el.dataset.sid);if(s)openSp(s)};
     });
-    box.appendChild(card);
-  });
+    /* v4.422：持有者列内滚动触底 → 自动追加（列内独立滚动，不打断整页） */
+    card.querySelectorAll('.abicolw[data-abid] .owngrid').forEach(function(g){
+      var w=g.parentNode;
+      g.onscroll=function(){if(g.scrollTop+g.clientHeight>g.scrollHeight-32){var b=w&&w.querySelector('.ownmore button');if(b)b.click()}};
+    });
+    return card;
+  }
   /* 注意：这里必须用 DOM 追加（appendChild）而不是对容器 innerHTML 做自增重解析——重解析会重建
      全部子节点，把上面逐卡绑定的 card.onclick / hd.onclick / 持有者卡 onclick 全部丢掉
      （用户实测「点特性无效果」根因）。断言 verify_v4 会检查本函数内不出现自增重解析。 */
-  if(!cnt)box.innerHTML='<div style="color:var(--sub)">无匹配特性</div>';
-  else if(cnt>=60){
-    var note=document.createElement('div');
-    note.style.cssText='color:var(--sub);text-align:center;padding:8px';
-    note.textContent='已显示前 60 个匹配，请细化关键词';
-    box.appendChild(note);
+  if(!matched.length){box.innerHTML='<div style="color:var(--sub)">无匹配特性</div>'}
+  else{
+    var foot=document.createElement('div');
+    foot.style.cssText='color:var(--sub);text-align:center;padding:8px';
+    box.appendChild(foot);
+    var _absN=0;
+    function _abiFill(n){
+      var take=matched.slice(_absN,_absN+n);
+      _absN+=take.length;
+      take.forEach(function(a){box.appendChild(_abiCardOf(a))});
+      if(_absN>=matched.length)foot.innerHTML='<span style="font-size:13.5px">共 '+matched.length+' 个匹配 · 已全部显示</span>';
+      else{
+        foot.innerHTML='<span style="font-size:13.5px">已显示 '+_absN+'/'+matched.length+' 个匹配</span><br><button class="btn-mini" type="button" style="margin-top:6px">加载更多（还有 '+(matched.length-_absN)+' 个）</button>';
+        if(foot.querySelector('button'))foot.querySelector('button').onclick=function(){_abiFill(60)};
+      }
+      if(foot.parentNode===box)box.appendChild(foot);
+    }
+    _abiFill(60);
   }
   /* v4.41：开关条就地统计（匹配卡数 + 被开关隐藏的持有者条目数） */
   var _st=$('abiFiltStat');
-  if(_st)_st.textContent='匹配 '+cnt+' 个特性 · 开关隐藏 '+_hidN+' 个持有者条目';
+  if(_st)_st.textContent='匹配 '+matched.length+' 个特性 · 开关隐藏 '+_hidN+' 个持有者条目';
 }
 /* F⑪：特性详情卡展开/收起（返回展开态；force=true 展开 / false 收起） */
 function abiToggle(card,force){
@@ -21087,7 +21151,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.421';
+var ER_ENGINE_VER='v4.422';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
