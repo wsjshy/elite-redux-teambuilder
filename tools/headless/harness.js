@@ -1285,28 +1285,6 @@ function _ls(k,v){
     localStorage.setItem(k,v);return true;
   }catch(e){return null}
 }
-function erLandingGo(mode){
-  _ls('er_landing_done','1');
-  var L=document.getElementById('erLanding');if(L)L.style.display='none';
-  var P=document.getElementById('corePickWrap');if(P)P.style.display='';
-  var G=document.getElementById('erGuideBar');if(G)G.style.display='';
-  if(mode==='core'){var q=document.getElementById('coreSearch');if(q)q.focus()}
-  else if(mode==='sav'){switchTab('team');var f=document.getElementById('savFile');if(f)f.click()}
-  else if(mode==='rand'){switchTab('team');if(typeof randomTeamGen==='function')randomTeamGen()}
-}
-function erLandingBack(){
-  _ls('er_landing_done',null);
-  var L=document.getElementById('erLanding');if(L)L.style.display='';
-  var P=document.getElementById('corePickWrap');if(P)P.style.display='none';
-  var G=document.getElementById('erGuideBar');if(G)G.style.display='none';
-}
-(function(){
-  if(_ls('er_landing_done')!=='1'){
-    var L=document.getElementById('erLanding');if(L)L.style.display='';
-    var P=document.getElementById('corePickWrap');if(P)P.style.display='none';
-    var G=document.getElementById('erGuideBar');if(G)G.style.display='none';
-  }
-})();
 
 /* ==================== v4.38 C 线：第八 tab「队伍分析」（自组队伍分析器）====================
    规格：ER配招助手_v4.38_自组队伍分析器设计书.md（六区块 §1.2 / 六维 §3 / EV 队伍级 §4.2 / NA-01~12 §5.2 / DIAG-01~10 §6.1）
@@ -21109,7 +21087,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.419';
+var ER_ENGINE_VER='v4.420';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -21789,8 +21767,8 @@ function renderCore(s){
       }else{
         _emp='<div class="tmans" style="margin:8px 0"><b>先弄一支队伍，再谈配法</b>：'+
           '<div style="margin-top:7px;display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button class="btn-mini" type="button" onclick="erLandingGo(\'sav\')">载入存档（最快）</button>'+
-          '<button class="btn-mini" type="button" onclick="erLandingGo(\'rand\')">随便先来一队看看</button>'+
+          '<button class="btn-mini" type="button" onclick="switchTab(\'team\');document.getElementById(\'savFile\').click()">载入存档（最快）</button>'+
+          '<button class="btn-mini" type="button" onclick="switchTab(\'team\');randomTeamGen()">随便先来一队看看</button>'+
           '</div></div>';
       }
     }catch(eE){eE.name}

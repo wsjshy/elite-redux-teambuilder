@@ -111,11 +111,6 @@ nav{display:flex; gap:4px; margin-left:auto; flex-wrap:wrap}
 nav button{border:1px solid var(--line); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:15px}
 nav button.active{background:var(--accent); color:#fff; border-color:var(--link)}
 #navRefRow{flex-basis:100%; gap:4px}
-.landing-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
-.lcard{display:flex;flex-direction:column;gap:8px;padding:22px 18px;border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;text-align:left}
-.lcard:hover{border-color:var(--link);box-shadow:0 2px 12px rgba(0,0,0,.12)}
-.lcard b{font-size:17px}
-.lcard span{color:var(--sub);font-size:14.5px;line-height:1.6}
 #tmGrid .card,#coreGrid .card{content-visibility:auto;contain-intrinsic-size:150px 170px}
 main{max-width:1200px; margin:0 auto; padding:14px; height:calc(100vh - 51px); overflow-y:auto; box-sizing:border-box} /* v4.68 黑盒P2-1：MAIN 独立滚动容器，使 bktabs sticky(top:51) 真实 engage */
 .tab{display:none}
@@ -976,7 +971,6 @@ html[data-theme="dark"] .ansm i{color:#9aa6ba}
 html[data-theme="dark"] .ansp em{color:#93a0b4}
 html[data-theme="dark"] .answtab{background:#2e3848;border-color:#45506a;color:#b8c8e0}
 html[data-theme="dark"] .ansrow .ansclk:hover,html[data-theme="dark"] .ansm.ansclk:hover,html[data-theme="dark"] .ansp.ansclk:hover{background:#3a4760}
-html[data-theme="dark"] .lcard{color:var(--text)}
 html[data-theme="dark"] .close{color:var(--text)}
 html[data-theme="dark"] a:not([class]){color:#8ab8ff}
 html[data-theme="dark"] .rulebox summary,html[data-theme="dark"] .gl,html[data-theme="dark"] .mcx,html[data-theme="dark"] .poolrow b,html[data-theme="dark"] .chip[aria-expanded="true"],html[data-theme="dark"] .spdmain .v,html[data-theme="dark"] .spdNow .val,html[data-theme="dark"] .spdQuick .q:hover,html[data-theme="dark"] .spdAnswer .ansTag,html[data-theme="dark"] .spdAnswer .sp,html[data-theme="dark"] a.cand,html[data-theme="dark"] .ansTag,html[data-theme="dark"] .sp,html[data-theme="dark"] .val,html[data-theme="dark"] .chipopt.on{color:#8ab8ff}
@@ -1292,15 +1286,6 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
 </section>
 <!-- ===== 核心配队 ===== -->
 <section id="tab-core" class="tab active">
-  <div id="erLanding" style="display:none">
-    <h2 style="margin:8px 0 2px">你想做什么？</h2>
-    <div class="mini" style="color:var(--sub)">选一条路，剩下的工具替你做。</div>
-    <div class="landing-cards">
-      <button class="lcard" type="button" onclick="erLandingGo('core')"><b>我有喜欢的宝可梦</b><span>搜一只，给我一套能直接用的完整配队（每只带特性、道具、性格、EV）</span></button>
-      <button class="lcard" type="button" onclick="erLandingGo('sav')"><b>我有存档</b><span>导入 .sav 自动体检，只告诉我最该修的几件事和带配置的修法</span></button>
-      <button class="lcard" type="button" onclick="erLandingGo('rand')"><b>随便看看</b><span>随机来一队，看中了再细看</span></button>
-    </div>
-  </div>
   <div id="erGuideBar" style="display:none;background:var(--guide-bg);border:1px solid var(--guide-edge);border-radius:8px;padding:8px 12px;margin:4px 0;font-size:14.5px;color:var(--fg-blue-dk);animation:erPulse 2s ease-in-out infinite">
     <style>@keyframes erPulse{0%,100%{box-shadow:0 0 0 0 rgba(144,202,249,.4)}50%{box-shadow:0 0 0 6px rgba(144,202,249,0)}}@media(prefers-reduced-motion:reduce){#erGuideBar{animation:none}}/* v4.327 分析页折叠条：默认只留结论，细节点开才看 */
 .anfold{margin:8px 0}
@@ -1379,7 +1364,6 @@ window.addEventListener('unhandledrejection',function(e){try{if(window.__ER_ERRO
     <input type="text" id="coreSearch" placeholder="搜索中文 / 英文 / 编号">
     <button class="btn-mini" type="button" id="coreAdvBtn" onclick="coreAdvToggle()">高级筛选 ▾</button>
     <button class="btn-mini" onclick="coreClear()">清空筛选</button>
-    <button class="btn-mini" type="button" onclick="erLandingBack()" title="回到三入口首页">返回入口</button>
     <span id="coreAdvWrap" style="display:none;gap:4px;align-items:center;flex-wrap:wrap">
     <select id="coreSort">
       <option value="id">编号</option><option value="bst">种族值（总值）</option><option value="spe">速度</option>
@@ -2715,28 +2699,6 @@ function _ls(k,v){
     localStorage.setItem(k,v);return true;
   }catch(e){return null}
 }
-function erLandingGo(mode){
-  _ls('er_landing_done','1');
-  var L=document.getElementById('erLanding');if(L)L.style.display='none';
-  var P=document.getElementById('corePickWrap');if(P)P.style.display='';
-  var G=document.getElementById('erGuideBar');if(G)G.style.display='';
-  if(mode==='core'){var q=document.getElementById('coreSearch');if(q)q.focus()}
-  else if(mode==='sav'){switchTab('team');var f=document.getElementById('savFile');if(f)f.click()}
-  else if(mode==='rand'){switchTab('team');if(typeof randomTeamGen==='function')randomTeamGen()}
-}
-function erLandingBack(){
-  _ls('er_landing_done',null);
-  var L=document.getElementById('erLanding');if(L)L.style.display='';
-  var P=document.getElementById('corePickWrap');if(P)P.style.display='none';
-  var G=document.getElementById('erGuideBar');if(G)G.style.display='none';
-}
-(function(){
-  if(_ls('er_landing_done')!=='1'){
-    var L=document.getElementById('erLanding');if(L)L.style.display='';
-    var P=document.getElementById('corePickWrap');if(P)P.style.display='none';
-    var G=document.getElementById('erGuideBar');if(G)G.style.display='none';
-  }
-})();
 
 /* ==================== v4.38 C 线：第八 tab「队伍分析」（自组队伍分析器）====================
    规格：ER配招助手_v4.38_自组队伍分析器设计书.md（六区块 §1.2 / 六维 §3 / EV 队伍级 §4.2 / NA-01~12 §5.2 / DIAG-01~10 §6.1）
@@ -22539,7 +22501,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.419';
+var ER_ENGINE_VER='v4.420';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -23219,8 +23181,8 @@ function renderCore(s){
       }else{
         _emp='<div class="tmans" style="margin:8px 0"><b>先弄一支队伍，再谈配法</b>：'+
           '<div style="margin-top:7px;display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button class="btn-mini" type="button" onclick="erLandingGo(\'sav\')">载入存档（最快）</button>'+
-          '<button class="btn-mini" type="button" onclick="erLandingGo(\'rand\')">随便先来一队看看</button>'+
+          '<button class="btn-mini" type="button" onclick="switchTab(\'team\');document.getElementById(\'savFile\').click()">载入存档（最快）</button>'+
+          '<button class="btn-mini" type="button" onclick="switchTab(\'team\');randomTeamGen()">随便先来一队看看</button>'+
           '</div></div>';
       }
     }catch(eE){eE.name}
@@ -24574,7 +24536,7 @@ document.addEventListener('toggle',function(e){
 function _restoreFolds(){try{var m=JSON.parse(localStorage.getItem('er_planFold')||'{}');
   document.querySelectorAll('details').forEach(function(d){var k=(d.querySelector('summary')||{textContent:''}).textContent.trim().slice(0,40);if(k&&m[k]!==undefined)d.open=m[k]})}catch(eR){}}
 /* v4.158 ②：新玩家首次打开显示引导条 */
-try{if(!localStorage.getItem('er_guide_v2')){var _gb=document.getElementById('erGuideBar');var _gLd=document.getElementById('erLanding');var _landingOn=!!(_gLd&&_gLd.style.display!=='none');if(_gb&&!_landingOn)_gb.style.display='block';var _gc=document.getElementById('erGuideClose');if(_gc)_gc.addEventListener('click',function(){if(_gb)_gb.style.display='none';try{localStorage.setItem('er_guide_v2','1')}catch(e){}});}}catch(eG){}
+try{if(!localStorage.getItem('er_guide_v2')){var _gb=document.getElementById('erGuideBar');if(_gb)_gb.style.display='block';var _gc=document.getElementById('erGuideClose');if(_gc)_gc.addEventListener('click',function(){if(_gb)_gb.style.display='none';try{localStorage.setItem('er_guide_v2','1')}catch(e){}});}}catch(eG){}
 /* v4.156 Part B：二级页（poke/move/type/abi/tpl/speed）空白区点击返回 core */
 document.addEventListener('click',function(ev){
   if(ev.target!==ev.currentTarget)return;
