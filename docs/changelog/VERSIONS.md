@@ -3550,7 +3550,7 @@ gate：物种 1906 / 流派 4205；empty []、fatal []、badMove 1(#862)、dup 0
 - **审计证据**：全页 WCAG 审计（core/team/analyze/poke 四 Tab、rgba 沿父链合成），修复前 analyze 22 组 r<1.5，修复后四 Tab 全部归零。
 - **数值**：index 2,114,295 → **2,114,003 B（净减 292）**，上限 2,202,009 余约 86 KB，注释占比 19.3%。推荐结果零漂移（species 1906 / total 4205 / badMove 1 / dup 0、offHist 同值）。
 - **门禁**：六段内联语法 ALL PASS、harness 重生成、gate 逐项同 v4.413、verify_invariants 16 条违规 0、smoke 34/34、静默 catch 388、CRLF 24,576 / bare LF 51 未增。
-- **发布（2026-11-21）**：__GH__。
+- **发布（2026-11-21）**：gh-pages `53bcc88`（`669d564..53bcc88` 增量零删除），线上四文件逐字节核验 MATCH —— `index` 2,114,003 `513CEF7BA41F` / `data_lite_v498.js` 396,402 `CBD1F10B8C19` / `data_species_v498.js` 1,362,442 `1BCC62913969` / `data_adv_v498.js` 575,972 `40FEE8A4E3D6`。
 - 正文 `docs/test-reports/v4414_分析信息减负.md`。
 
 ## v4.413 · 深色模式不再有看不清的字（2026-11-21）
