@@ -3321,7 +3321,8 @@ function mvLookupRender(fromUI){
       if(shown>=list.length)foot.innerHTML='<span class="mini" style="color:var(--sub)">共 '+list.length+' 只 · 已全部显示</span>';
       else{
         foot.innerHTML='<button class="btn-mini" type="button">加载更多（还有 '+(list.length-shown)+' 只）</button>';
-        if(foot.firstChild)foot.firstChild.onclick=fill;
+        /* v4.423：点按钮后把网格滚到「新增内容的起点」——否则追加发生在网格底部，用户停在顶部会觉得点了没反应 */
+        if(foot.firstChild)foot.firstChild.onclick=function(){var _h=grid.scrollHeight;fill();try{grid.scrollTop=Math.max(0,_h-6)}catch(e423a){e423a.name}};
       }
     }
     grid.onscroll=function(){if(grid.scrollTop+grid.clientHeight>grid.scrollHeight-32)fill()};
@@ -5795,10 +5796,12 @@ function abiOwnerFill(btn){
   var list=lkFilter(kind==='inn'?g0.inn:g0.ab,optAbiFinal,optAbiMega);
   var shown=parseInt(w.getAttribute('data-shown')||'60',10);if(isNaN(shown))shown=60;
   var take=list.slice(shown,shown+60);
+  var _h0=grid.scrollHeight;   /* v4.423：追加前的总高 = 新增内容起点 */
   var tmp=document.createElement('div');tmp.innerHTML=abiOwnerCards(take);
   /* children 是 live collection：边 appendChild 边迭代会漏追加（实测 13 只只进 7 只），必须快照 */
   var nodes=Array.prototype.slice.call(tmp.children);
   nodes.forEach(function(x){grid.appendChild(x)});
+  try{grid.scrollTop=Math.max(0,_h0-4)}catch(e423b){e423b.name}   /* v4.423：滚动到新增起点 */
   shown+=take.length;w.setAttribute('data-shown',''+shown);
   var more=w.querySelector('.ownmore');
   if(more){
@@ -21151,7 +21154,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.422';
+var ER_ENGINE_VER='v4.423';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
