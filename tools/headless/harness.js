@@ -1665,31 +1665,28 @@ function anRender(R){
     (R.sys.hasSpace?'<span class="badge">空间</span>':'')+(R.sys.hasTailwind?'<span class="badge">顺风</span>':'')+
     (R.sys.hasHazard?'<span class="badge">钉×'+R.sys.hasHazard+'</span>':'')+(R.sys.hasWall?'<span class="badge">墙×'+R.sys.hasWall+'</span>':'')+
     '<div class="tip">天气轴：'+((R.sys.wx||[]).length?esc(R.sys.wx.join('、')):'无')+' ／ 场地：'+((R.sys.field||[]).length?esc(R.sys.field.join('、')):'无')+'</div>');
-  /* v4.67 P1：受队/强化推队独立旗标补全（同源 R.sys/R.roles，命中才贴） */
+  /* v4.414：体系标签 + 细化体系合并为一张卡（原两张卡语义重叠） */
   try{
     var _memZh=(R.members||[]).map(function(m){return esc(m.s?m.s.zh:m.zh||'')});
     var _roles=R.roles||{};
     var _toxic=(R.sys.hasHazard?1:0)+(_roles['钉子']||0)+(_roles['状态']||0);
     var _rec=(_roles['回复']||0)+(_roles['轮转']||0);
     var _tag='',_sysTxt='';
-    /* v4.83 P2-4：消耗受队叙事不再硬编码「毒钉/再生力」具体招式/特性名——黑盒实测命中受队旗标的队伍派生配招无毒钉、特性池无再生力，
-       名实不符。改为按实际计数动态生成（钉子位/回复位/盾位数量），不点名具体招式/特性。 */
     if(_toxic>=2&&_rec>=2&&((_roles['盾']||0)>=1||(_roles['轮转']||0)>=1)){_tag='消耗受队';_sysTxt='状态/钉子压血线（'+(_roles['钉子']||0)+' 钉+'+(_roles['状态']||0)+' 状态）→ 回复轮转拖节奏（'+_rec+' 回复/轮转位）→ 盾位站场消耗（'+(_roles['盾']||0)+' 盾）'}
     else if((_roles['强化']||0)>=2&&(_roles['输出']||0)>=2){_tag='强化推队';_sysTxt='控场创造机会→强化叠层→清场收割'}
     else if(R.sys.hasHazard){_tag='钉子轮转';_sysTxt='撒钉手铺隐形岩/撒菱压血线→吹飞/吼叫强制换人滚钉→回复位续航保钉子→清场收割'}
     else if((R.sys.wx||[]).indexOf('雨')>-1){_tag='雨天速攻';_sysTxt='降雨手开雨天→轻快/悠游自如打手提速→雨必中炮台清场'}
     else if((R.sys.wx||[]).length){_tag='天气体系';_sysTxt='天气手开'+esc((R.sys.wx||[])[0])+'→盾牌站场+打手闭环输出'}
     else if(R.sys.hasWall){_tag='双墙辅助';_sysTxt='反射壁/光墙减伤窗口→墙内安全输出/接力传递'}
-    if(_sysTxt) h+=anCard('<b>体系标签</b>：<span class="badge badge-warnimm">'+esc(_tag)+'</span> <span class="tip">'+_sysTxt+'（成员：'+_memZh.join('、')+'）</span>');
-  }catch(eSys){}
-  /* v4.82 P1：受队/强化推队独立并列副徽章（不改主体系链；同源 R.sys/R.roles/R.speed） */
-  try{
     var _sb='';
     if(R.sys.hasHazard>=1&&R.sys.recN>=2&&((R.roles['盾']||0)>=2))_sb+='<span class="badge">受队</span>';
     var _topSp=(R.speed.list&&R.speed.list[0])?R.speed.list[0].eff:0;
     if((R.roles['强化']||0)>=2&&_topSp>=300)_sb+='<span class="badge">强化推队</span>';
-    if(_sb)h+=anCard('<b>细化体系</b>：'+_sb+' <span class="tip">（受队=钉+回复≥2+盾≥2；强化推队=强化≥2+极速清场）</span>');
-  }catch(eSb){}
+    var _tags='';
+    if(_tag)_tags+='<span class="badge badge-warnimm">'+esc(_tag)+'</span>';
+    if(_sb)_tags+=_sb;
+    if(_tags&&_sysTxt)h+=anCard('<b>体系标签</b>：'+_tags+' <span class="tip">'+_sysTxt+'（成员：'+_memZh.join('、')+'）</span>');
+  }catch(eSys){eSys.name}
   /* v4.39 R-3①：成员一览（带图；点图 = 该只推荐详情。speciesById 未命中时只出文字，不渲染图） */
   if(R.members&&R.members.length){
     h+=anCard('<b>成员一览</b>（点图看该只推荐详情）<div class="anmemline">'+R.members.map(function(m){
@@ -2028,7 +2025,7 @@ function pairDefCardHtml(R){
         if(va>=2&&vb<1)comp.push(tp);
         else if(va>=2&&vb>=2)shared.push(tp);
       });
-      var bg=comp.length>=3?'#c8e6c9':(shared.length>=2?'#ffcdd2':'var(--heat-neutral)');
+      var bg=comp.length>=3?'var(--green-chip)':(shared.length>=2?'var(--red-chip)':'var(--heat-neutral)');
       cells+='<div title="'+esc(sps[i].zh+' ↔ '+sps[j].zh)+'" style="background:'+bg+';border-radius:4px;padding:4px 5px;font-size:14px">'+
         esc(sps[i].zh)+'↔'+esc(sps[j].zh)+'<br><span style="color:var(--ok)">互补'+comp.length+'</span>'+
         (comp.length?'('+esc(comp.slice(0,4).join('/'))+')':'')+' <span style="color:var(--fg-bad2)">共弱'+shared.length+'</span>'+
@@ -2110,7 +2107,7 @@ function anRuleTipSync(){
   else if(src==='manual'){t.innerHTML='💡 队伍分析（手动挑选）：下面用临时挑的 6 只，不动你的正式队伍'}
   else if(!n){t.innerHTML='💡 队伍分析：队伍还是空的。先回「队伍构建」加人，或去「核心配队」点「就用这套」一键配齐'}
   else if(n<6){t.innerHTML='💡 队伍分析：当前队伍 '+n+'/6 只，结论按现有成员算；补齐 6 只再看会更准'}
-  else{t.innerHTML='💡 队伍分析：下面是这 6 只的完整判定——先看硬伤，再看提示；点任意精灵看推荐详情'}
+  else{t.innerHTML='💡 先看硬伤（红），再按需展开提示；点精灵看推荐详情'}
 }
 function renderAnTab(){
   var box=$('anOut');if(!box)return;
@@ -4977,7 +4974,7 @@ function renderAnalyze(){
   });
   html+='</tbody></table></div></div>';
   if(gaps.length)html+='<div class="tip">⚠️ 覆盖缺口（无人克制，仅中性）：'+gaps.map(tlabel).join(' ')+' —— 遇到这些属性的高耐久会很难突破。</div>';
-  if(nos.length)html+='<div class="tip" style="background:var(--soft-bad);border-color:var(--bad);color:#7f1d1d">🚫 完全无法命中：'+nos.map(tlabel).join(' ')+' —— 必须补对应属性招式/宝可梦。</div>';
+  if(nos.length)html+='<div class="tip" style="background:var(--soft-bad);border-color:var(--bad);color:var(--fg-red-dk3)">🚫 完全无法命中：'+nos.map(tlabel).join(' ')+' —— 必须补对应属性招式/宝可梦。</div>';
   /* 特性免疫警示（进攻侧：对手特性可能让本队招式无效） */
   var immWarn=[];
   ERDATA.types.forEach(function(d){
@@ -5027,8 +5024,6 @@ function renderAnalyze(){
   /* 补位建议：共同弱点免疫者 + 覆盖缺口本系者 */
   var needTypes=[];
   ERDATA.types.forEach(function(at){if(dp.agg[at].w>=2)needTypes.push(at)});
-  var ac2=atkCovers();
-  ac2.per.forEach(function(row){});
   ERDATA.types.forEach(function(d){if(!ac.agg[d].has)needTypes.push(d)});
   if(needTypes.length){
     var best=[];
@@ -5066,7 +5061,7 @@ function renderAnalyze(){
   var atkCov={};team.forEach(function(s){var mv=(teamInfo[s.id]&&teamInfo[s.id].moves)||[];mv.forEach(function(m){var mid=anMvId(m);var mv2=MV[mid];if(mv2&&+mv2[5]>0){var t=mv2[3];atkCov[t]=(atkCov[t]||0)+1}})});
   html+='<div style="margin:8px 0"><h3>打击面覆盖（全队攻击招式属性分布）</h3>';
   html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
-  ERDATA.types.forEach(function(t){var n=atkCov[t]||0;var bg=n>0?'#c8e6c9':'#eceff1';var lbl=n>0?t+' ×'+n:t;html+='<span style="font-size:14.5px;padding:2px 8px;border-radius:10px;background:'+bg+'">'+lbl+'</span>'});
+  ERDATA.types.forEach(function(t){var n=atkCov[t]||0;var bg=n>0?'var(--green-chip)':'var(--spbox)';var lbl=n>0?t+' ×'+n:t;html+='<span style="font-size:14.5px;padding:2px 8px;border-radius:10px;background:'+bg+'">'+lbl+'</span>'});
   html+='</div></div>';
   /* v4.182 队检聚合告警接入六队分析器（只增不删）：
      触发链 = 所有队伍增删/替换/点选特性/补位入队路径均汇聚到 renderAnalyze()
@@ -7543,29 +7538,22 @@ function _tcFixHtml(kind,tset){
 }
 
 /* v4.322：体检结论按严重度排好后只摊前 3 条，其余折叠——首屏不再一屏几十行 */
-function _tcVList(V,sevTag,fixOnce){
-  if(!V||!V.length)return "";
+function _tcVList(V,sevTag,fixOnce,rows,methodHtml){
+  /* v4.414：三级信息层——硬伤默认全给；提示整组折叠；速览三行+方法论+参考并入深度折叠 */
   var line=function(x){var fx=x.fix?fixOnce(x.fix):"";return "<div style='margin:3px 0;font-size:14.5px;line-height:1.65'>"+sevTag(x.s)+x.h+fx+"</div>"};
-  /* v4.324：按严重度分组——硬伤全给（紧急不藏），提示先给 2 条其余折叠，参考整组折叠 */
   var g={2:[],1:[],0:[]};
-  V.forEach(function(x){g[(x.s===2)?2:((x.s===1)?1:0)].push(x)});
+  if(V)V.forEach(function(x){g[(x.s===2)?2:((x.s===1)?1:0)].push(x)});
   var out="";
   if(g[2].length)out+=g[2].map(line).join("");
   if(g[1].length){
-    out+="<div style='margin-top:7px;font-size:14px;color:var(--fg-warn);font-weight:700'>提示 "+g[1].length+" 条</div>";
-    if(g[1].length<=2){out+=g[1].map(line).join("")}
-    else{
-      var n1=g[1].length-2;
-      out+=g[1].slice(0,2).map(line).join("")
-        +"<div class='tcMore' data-n='"+n1+"' data-lb='提示' style='display:none'>"+g[1].slice(2).map(line).join("")+"</div>"
-        +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>展开其余 "+n1+" 条提示</button>";
-    }
+    out+="<div class='tcMore' data-n='"+g[1].length+"' data-lb='提示' style='display:none'>"+g[1].map(line).join("")+"</div>"
+      +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>提示 "+g[1].length+" 条（建议优化）</button>";
   }
-  if(g[0].length){
-    out+="<div class='tcMore' data-n='"+g[0].length+"' data-lb='' style='display:none'>"
-      +"<div style='margin:7px 0 2px;font-size:14px;color:var(--sub);font-weight:700'>参考 "+g[0].length+" 条（背景信息，不影响胜负手）</div>"
-      +g[0].map(line).join("")+"</div>"
-      +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>参考 "+g[0].length+" 条（背景信息）</button>";
+  var refN=g[0].length;
+  var deep=(methodHtml||"")+(rows||"")+(refN?("<div style='margin:7px 0 2px;font-size:14px;color:var(--sub);font-weight:700'>参考 "+refN+" 条（背景信息，不影响胜负手）</div>"+g[0].map(line).join("")):"");
+  if(deep){
+    out+="<div class='tcMore' data-n='"+refN+"' data-lb='深度' style='display:none'>"+deep+"</div>"
+      +"<button class='btn-mini' type='button' style='margin-top:4px' onclick='tcToggleMore(this)'>速览与参考（深度数据"+(refN?(" · "+refN+" 条参考"):"")+"）</button>";
   }
   return out;
 }
@@ -7739,9 +7727,10 @@ if(hasPhaze||hasUnaware){
 }else{
   add(2,"<b style='color:var(--warnred)'>对手强化起来没人挡得住</b>：六只的配置里没人能吹走/重置强化（吼叫/吹飞/黑雾/清除之烟/龙尾/巴投），也没有纯朴、挑衅——对方剑舞一次就能一路推，你只能硬拼伤害。","phase");
 }
-/* ⑥ 先制弱点 */
+/* ⑥ 先制弱点（v4.414：同批多只合并条目，避免近乎相同的文案重复） */
 var setupMems=mem.filter(function(x){return TC_SETUP.some(function(n){return x.set[n]})});
 var teamPrio=mem.some(function(x){return TC_PRIO.some(function(p){return x.set[p[0]]})});
+var _prioSash=[],_prioTp=[],_prioHard=[],_prioTip=[];
 setupMems.forEach(function(x){
   var ts=effTypesOf(x.s).base,hits=[];
   TC_PRIO.forEach(function(p){var mm=defMult(ts,p[1]);if(mm>1)hits.push({zh:p[0],m:mm})});
@@ -7750,11 +7739,16 @@ setupMems.forEach(function(x){
   if(!it2){try{var b2=(deriveBuilds(x.s,tm)||[])[0];it2=String((anRowOf(x.s,b2)||{}).item||'')}catch(eI2){it2=''}}
   var sash=it2.indexOf('气势披带')>=0,ownPrio=TC_PRIO.some(function(p){return x.set[p[0]]});
   var desc=hits.map(function(h){return h.zh+'×'+h.m}).join('、');
-  if(sash){add(0,"<span style='color:var(--sub)'>"+x.zh+" 虽弱先制（"+desc+"），但带气势披带</span>：满血能吃下一次先制不死——上场前别被钉子破掉披带。");}
-  else if(teamPrio&&!ownPrio){add(0,"<span style='color:var(--ok,var(--ok))'>"+x.zh+" 弱先制（"+desc+"），但队里有先制队友可反打</span>，不算硬伤。");}
-  else{var sev=hits.some(function(h){return h.m>=4})?2:1;
-    add(sev,(sev===2?"<b style='color:var(--warnred)'>":"<b>")+x.zh+" 弱先制招（"+desc+"）</b>：对手不用拼速度，换一只带先制的就能在你出手前收掉残血的你"+(ownPrio?"；你自己也有先制，可对拼先制手":"")+"。","prio");}
+  var lab=x.zh+"（"+desc+"）";
+  if(sash)_prioSash.push(lab);
+  else if(teamPrio&&!ownPrio)_prioTp.push(lab);
+  else if(hits.some(function(h){return h.m>=4}))_prioHard.push(lab);
+  else _prioTip.push(lab);
 });
+if(_prioSash.length)add(0,"<span style='color:var(--sub)'>弱先制但带气势披带</span>："+_prioSash.join("、")+"——满血能吃下一次先制不死，上场前别被钉子破掉披带。");
+if(_prioTp.length)add(0,"<span style='color:var(--ok,var(--ok))'>弱先制但有先制队友可反打</span>："+_prioTp.join("、")+"，不算硬伤。");
+if(_prioHard.length)add(2,"<b style='color:var(--warnred)'>弱先制招</b>："+_prioHard.join("；")+"——对手不用拼速度，换一只带先制的就能在你出手前收掉残血的你。","prio");
+if(_prioTip.length)add(1,"<b>弱先制招</b>："+_prioTip.join("；")+"——对手不用拼速度，换一只带先制的就能在你出手前收掉残血的你。","prio");
 /* ⑦ 状态答案 */
 var hasCleric=mem.some(function(x){return TC_CLERIC.some(function(n){return x.set[n]})||x.set["神秘守护"]});
 var hasStatusAbi=mem.some(function(x){return TC_STATUS_ABI.indexOf(x.abi)>=0});
@@ -8114,12 +8108,13 @@ V.sort(function(a,b){return (b.s||0)-(a.s||0)});
       return "<span style='color:var(--sub)'>参考</span>　";
     };
     var cntTxt=(hardN?"硬伤 "+hardN+" 条":"无硬伤")+(tipN?" · 提示 "+tipN+" 条":"");
-    return "<div class='sec' style='margin-top:8px'><h3>配队体检（弱点 · 胜负手 · 钉子 · 入场税 · 角色压缩 · 反强化 · 先制 · 状态 · 天气 · 轮转 · 场地 · 续航 · 配置 · 控速 · 破受 · 对手侧对策 · 特性托底）</h3>"
+    var ownNote=(_ownMap()?("已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑。"):"");
+    var methodHtml="<div style='font-size:13px;color:var(--sub);margin:4px 0;line-height:1.6'>"+ownNote
+      +"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>";
+    return "<div class='sec' style='margin-top:8px'><h3>🩺 队伍体检</h3>"
       +"<div style='font-size:13.5px;color:var(--sub);margin-bottom:3px'>"
-      +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,var(--ok))")+";font-weight:700'>"+cntTxt+"</span>"
-      +(_ownMap()?("　<b style='color:var(--ok)'>已读存档 "+_ownCount()+" 种：有实配的按你那四招判，「怎么修」的候选也只在其中挑</b>　"):"　")+"其余按每只的推荐配置判；弱点口径与「联防聚合」同一张相性表；入场税＝岩钉 25%×岩石相性（上限 50%）、撒菱一层 12.5%（理论值，不含剩饭回复）。「怎么修」的候选都带照抄就能上场的配置（特性 / 道具 / 性格 / EV）；它默认四招没带那招时，会写明换第几槽。</div>"
-      +rows
-      +_tcVList(V,sevTag,fixOnce)
+      +"<span style='font-size:15px;color:"+(hardN?"var(--warnred)":"var(--ok,var(--ok))")+";font-weight:700'>"+cntTxt+"</span></div>"
+      +_tcVList(V,sevTag,fixOnce,rows,methodHtml)
       +"</div>";
   }catch(eTC){return ""}
 }
@@ -9281,7 +9276,7 @@ function teamDefHeatHtml(R){
         var v=defCellTrio(s,tp).inn;
         if(v===0)immune++;else if(v<1)resist++;else if(v>1)weak++;else neutral++;
       });
-      var bg=weak>=3?'#ffcdd2':(immune>=2?'#bbdefb':(resist>=3?'#c8e6c9':'var(--heat-neutral)'));
+      var bg=weak>=3?'var(--red-chip)':(immune>=2?'var(--blue-chip)':(resist>=3?'var(--green-chip)':'var(--heat-neutral)'));
       var txt=weak>=3?('W'+weak):(immune?('I'+immune):'')+(resist?('R'+resist):'');
       if(!txt)txt='·';
       cells+='<div title="'+esc(tp)+'：免疫'+immune+' 抗'+resist+' 弱'+weak+'/'+sps.length+'" style="background:'+bg+';border-radius:3px;padding:3px 4px;font-size:13px;text-align:center">'+tlabel(tp).replace(/<[^>]+>/g,'')+'<br><b>'+txt+'</b></div>';
