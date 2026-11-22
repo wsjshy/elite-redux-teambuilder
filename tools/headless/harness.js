@@ -2180,7 +2180,11 @@ function anFoldDom(box){
    · R-3 带图：① 成员一览 / ② 免疫轴逐条 / ④ 卡首 / ⑤ 两端 / ⑥ 候选（只在精灵主体挂点击，不动 anCard 原语）
    · R-4 详情：轻量 modal，D-1~D-7 逐字段复用既有渲染件（abiModal / itemNote / evBarHtml / oneLiner / mateWhyNarr）
    ======================================================================= */
-var anPickSlot=-1,anpFilter={types:[],shown:0,step:60},anRoleCache={},anLastR=null;
+/* v4.424：全站分页器统一步长（原图鉴 120、其余 60，两套口径收口） */
+var LIST_STEP=60;
+/* v4.424：「已全部显示」尾注统一口径，unit 取「只」或「个匹配」 */
+function pagerDoneText(total,unit){return '共 '+total+' '+unit+' · 已全部显示'}
+var anPickSlot=-1,anpFilter={types:[],shown:0,step:LIST_STEP},anRoleCache={},anLastR=null;
 function anSlotRoleOf(s){
   var r='';
   try{var t=spRoleTags(s);if(t&&t.length)r=t[0]}catch(e){}
@@ -2532,7 +2536,7 @@ function anDetailHtml(s,bd,R){
 })();
 
 /* ============ 宝可梦列表 ============ */
-var spFilter={types:{}},spShown=0,spStep=120;
+var spFilter={types:{}},spShown=0,spStep=LIST_STEP;
 /* v4.78 P1：形态筛选开关（Mega / 最终形态）——并入 spMatch 同源链，图鉴/队伍构建/分析选择器三处同结果 */
 var fOpt={mega:0,final:0};
 function isMegaForm(s){return /^(超级|原始|究极)/.test(s.zh||'')}   /* 与形态名清洗同源（行1678 前缀集） */
@@ -3289,7 +3293,7 @@ function mvLearnersOf(m){
   });
   return out;
 }
-var _mvLkStep=60;
+var _mvLkStep=LIST_STEP;
 function mvLookupRender(fromUI){
   var m=_mvCur,box=$('mvLearners');if(!m||!box)return;
   if(fromUI){   /* 仅由开关 onchange 读 UI（初始渲染走状态默认值，Node 打桩环境下也确定） */
@@ -3318,7 +3322,7 @@ function mvLookupRender(fromUI){
         el.onclick=function(){var sp=speciesById(el.getAttribute('data-sid'));if(sp){openSp(sp);closeMv()}};
         grid.appendChild(el);
       });
-      if(shown>=list.length)foot.innerHTML='<span class="mini" style="color:var(--sub)">共 '+list.length+' 只 · 已全部显示</span>';
+      if(shown>=list.length)foot.innerHTML='<span class="mini" style="color:var(--sub)">'+pagerDoneText(list.length,'只')+'</span>';
       else{
         foot.innerHTML='<button class="btn-mini" type="button">加载更多（还有 '+(list.length-shown)+' 只）</button>';
         /* v4.423：点按钮后把网格滚到「新增内容的起点」——否则追加发生在网格底部，用户停在顶部会觉得点了没反应 */
@@ -3553,7 +3557,7 @@ function renderDef(){
 
 /* ============ 队伍构建器 ============ */
 var team=[],teamInfo={}; /* team: species refs; teamInfo[id]: {fromSave, item, moves[4], pps[4]} */
-var tmShown=0,tmStep=60,tmTypeSel=[];
+var tmShown=0,tmStep=LIST_STEP,tmTypeSel=[];
 function tmFilterReset(){
   tmTypeSel=[];
   document.querySelectorAll('#tmTypeChips button').forEach(function(b){b.classList.remove('on')});
@@ -3673,7 +3677,7 @@ function renderTm(reset){
     };
     $('tmGrid').appendChild(c);
   });
-  $('tmMore').textContent=tmShown<arr.length?('已显示 '+tmShown+'/'+arr.length+'，滚动加载更多'):(arr.length?('共 '+arr.length+' 只'):'无匹配');
+  $('tmMore').textContent=tmShown<arr.length?('已显示 '+tmShown+'/'+arr.length+'，滚动加载更多'):(arr.length?pagerDoneText(arr.length,'只'):'无匹配');
 }
 (function(){function _scTeam(){var m=document.querySelector('main');if(!$('tab-team').classList.contains('active'))return;if(!m)return;if(m.scrollTop+m.clientHeight>m.scrollHeight-400)renderTm(false);}var _m=document.querySelector('main');if(_m)_m.addEventListener('scroll',_scTeam);window.addEventListener('scroll',_scTeam);})();
 /* v4.33 N6：队伍 localStorage 持久化（刷新/重开不丢；仅存 id 与轻量信息，精灵数据仍以 ERDATA 为准） */
@@ -5794,8 +5798,8 @@ function abiOwnerFill(btn){
   var abid=w.getAttribute('data-abid'),kind=w.getAttribute('data-kind');
   var own=abiOwners(),g0=own[abid]||{ab:[],inn:[]};
   var list=lkFilter(kind==='inn'?g0.inn:g0.ab,optAbiFinal,optAbiMega);
-  var shown=parseInt(w.getAttribute('data-shown')||'60',10);if(isNaN(shown))shown=60;
-  var take=list.slice(shown,shown+60);
+  var shown=parseInt(w.getAttribute('data-shown')||(''+LIST_STEP),10);if(isNaN(shown))shown=LIST_STEP;
+  var take=list.slice(shown,shown+LIST_STEP);
   var _h0=grid.scrollHeight;   /* v4.423：追加前的总高 = 新增内容起点 */
   var tmp=document.createElement('div');tmp.innerHTML=abiOwnerCards(take);
   /* children 是 live collection：边 appendChild 边迭代会漏追加（实测 13 只只进 7 只），必须快照 */
@@ -5805,7 +5809,7 @@ function abiOwnerFill(btn){
   shown+=take.length;w.setAttribute('data-shown',''+shown);
   var more=w.querySelector('.ownmore');
   if(more){
-    if(shown>=list.length)more.innerHTML='<span class="mini" style="color:var(--sub)">共 '+list.length+' 只 · 已全部显示</span>';
+    if(shown>=list.length)more.innerHTML='<span class="mini" style="color:var(--sub)">'+pagerDoneText(list.length,'只')+'</span>';
     else{
       more.innerHTML='<button class="btn-mini" type="button">加载更多（还有 '+(list.length-shown)+' 只）</button>';
       if(more.firstChild)more.firstChild.onclick=function(){abiOwnerFill(this)};
@@ -5814,13 +5818,13 @@ function abiOwnerFill(btn){
 }
 function abiOwnerCol(title,list,abid,kind){
   /* v4.x UI 定稿：持有者用「精灵图 + 中文名 + 属性徽标」紧凑卡片网格（图片优先、少文字），点卡片跳详情 */
-  var _sh=Math.min(60,list.length);
+  var _sh=Math.min(LIST_STEP,list.length);
   var h='<div class="abicolw" data-abid="'+escq(''+abid)+'" data-kind="'+(kind||'')+'" data-shown="'+_sh+'"><div style="font-weight:600;font-size:14.5px;margin-bottom:4px">'+esc(title)+' <b>'+list.length+'</b> 只</div>';
   if(!list.length)h+='<div class="mini" style="color:var(--sub)">（无）</div>';
   else{
-    h+='<div class="mxgrid owngrid" style="max-height:260px;overflow:auto">'+abiOwnerCards(list.slice(0,60))+'</div>';
-    if(list.length>60)h+='<div class="ownmore" style="text-align:center;padding:3px 0"><button class="btn-mini" type="button" onclick="abiOwnerFill(this)">加载更多（还有 '+(list.length-60)+' 只）</button></div>';
-    else h+='<div class="ownmore" style="text-align:center;padding:3px 0"><span class="mini" style="color:var(--sub)">共 '+list.length+' 只 · 已全部显示</span></div>';
+    h+='<div class="mxgrid owngrid" style="max-height:260px;overflow:auto">'+abiOwnerCards(list.slice(0,LIST_STEP))+'</div>';
+    if(list.length>LIST_STEP)h+='<div class="ownmore" style="text-align:center;padding:3px 0"><button class="btn-mini" type="button" onclick="abiOwnerFill(this)">加载更多（还有 '+(list.length-LIST_STEP)+' 只）</button></div>';
+    else h+='<div class="ownmore" style="text-align:center;padding:3px 0"><span class="mini" style="color:var(--sub)">'+pagerDoneText(list.length,'只')+'</span></div>';
   }
   return h+'</div>';
 }
@@ -5913,14 +5917,14 @@ function renderAbi(){
       var take=matched.slice(_absN,_absN+n);
       _absN+=take.length;
       take.forEach(function(a){box.appendChild(_abiCardOf(a))});
-      if(_absN>=matched.length)foot.innerHTML='<span style="font-size:13.5px">共 '+matched.length+' 个匹配 · 已全部显示</span>';
+      if(_absN>=matched.length)foot.innerHTML='<span style="font-size:13.5px">'+pagerDoneText(matched.length,'个匹配')+'</span>';
       else{
         foot.innerHTML='<span style="font-size:13.5px">已显示 '+_absN+'/'+matched.length+' 个匹配</span><br><button class="btn-mini" type="button" style="margin-top:6px">加载更多（还有 '+(matched.length-_absN)+' 个）</button>';
-        if(foot.querySelector('button'))foot.querySelector('button').onclick=function(){_abiFill(60)};
+        if(foot.querySelector('button'))foot.querySelector('button').onclick=function(){_abiFill(LIST_STEP)};
       }
       if(foot.parentNode===box)box.appendChild(foot);
     }
-    _abiFill(60);
+    _abiFill(LIST_STEP);
   }
   /* v4.41：开关条就地统计（匹配卡数 + 被开关隐藏的持有者条目数） */
   var _st=$('abiFiltStat');
@@ -21154,7 +21158,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.423';
+var ER_ENGINE_VER='v4.424';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -22396,7 +22400,7 @@ function _initCoreList(){
     if(abi){var names=s.abis.concat(s.inns);if(!names.some(function(n){return n.toLowerCase().indexOf(abi)>-1}))return false}
     return true;
   }
-  var coreShown=0, coreStep=60;
+  var coreShown=0, coreStep=LIST_STEP;
   function coreArr(){
     var arr=ERDATA.species.filter(function(s){return coreMatch(s)}); /* v4.48 fix: filter 回调会传 (el,idx,arr)，直接传 coreMatch 会把 index 塞进 skipForm，导致除第 1 只外全部绕过形态过滤 */
     /* v4.33 N11：纯数字查询时精确编号命中者置顶（输入 1 → #1 在最前，不再 #1/#10/#11 混排） */
