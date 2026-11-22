@@ -10587,6 +10587,15 @@ var FUNC_MV={
   wall:[113,115,657],             /* v4.397 收口：光墙/反射壁/极光幕 —— 此前被 6 处补丁块各自硬编码 */
   rainPerfect:[87,542]            /* v4.397 收口：雨天必中招 打雷/暴风 —— 此前被 4 处各自硬编码 */
 };
+/* v4.425 手动队伍级场地招（根因收口，统一 v4.379/v4.380/v4.395 分散门控）：
+   施放不造成伤害、效果作用于全队/全场且持续多回合。进攻定位（增伤/输出/强化）一律不手动携带——
+   ER 每类场地都有出场自动设置特性（鼓风320/空间扭曲者346/极北之风348/气闸76/各天气·场地制造者），
+   手动施放=输出手浪费一回合铺队伍级场地。钉子（FUNC_MV.hazard）不属此列，沿用 v4.374/v4.380 规则。 */
+var FIELD_SETUP_MV={weather:[240,241,201,258,580,581,604,641],tailwind:[366],space:[433],wall:[113,115,657]};
+var FIELD_SETUP_OF={};
+Object.keys(FIELD_SETUP_MV).forEach(function(c){FIELD_SETUP_MV[c].forEach(function(id){FIELD_SETUP_OF[id]=c})});
+function isFieldSetupId(id){return Object.prototype.hasOwnProperty.call(FIELD_SETUP_OF,''+id)}
+function isOffRoleTag(r){return r==='增伤'||r==='输出'||r==='强化'}
 /* v4.52 R9-A（路线甲 sub-only 扩展清单，不改 base FUNC_MV）：
    speed gate 漏全部攻击先制招（文案承诺先制但 gate 只认状态/体系控速）；rec gate 漏常见队医/回复招。
    仅在 NEED_KINDS gate（子区链 poolForNeed 消费）concat 使用；coreTags/coreIntensity 等 deriveBuilds 路径不消费 → 4680 结构 0。
@@ -10621,6 +10630,7 @@ function pickFuncs(s,role,side,used){
     cats[cat].forEach(function(id){
       if(learn.indexOf(id)<0)return;
       if(used&&used.indexOf(id)>-1)return;
+      if(isOffRoleTag(role)&&isFieldSetupId(id))return;   /* v4.425：进攻流派不手动铺队伍级场地（控速类仅留电磁波/岩石封锁） */
       var m=MV[id];if(!m)return;
       var w=funcWeight(s,role,cat),c=costOf(s,m,hasRec),mmMul=mechFuncMul(s,cat),sc=w*c.mul*mmMul;
       var why=['定位权重 +'+w];
@@ -12563,7 +12573,7 @@ function finalizeBuildInPlace(s,b){
     var wallLearn=learn.filter(function(id){return WALL_MV_SET[id]});
     var wallRole=(role==='肉盾'||role==='受队'||role==='辅助'||role==='联防'||role==='天气'||role==='场地'||side==='辅助');
     var hasWallMv=mv.some(function(x){return WALL_MV_SET[x.id]});
-    if(autoW||(wallRole&&wallLearn.length>0)){
+    if((autoW&&!isOffRoleTag(role))||(wallRole&&wallLearn.length>0)){   /* v4.425：进攻角色的自动开墙特性已在入场生效，不再插手动墙 */
       var needW=hasWallMv?0:(autoW?2:1);
       while(needW>0&&wallLearn.length){
         var wid=wallLearn.shift();
@@ -12710,7 +12720,9 @@ function finalizeBuildInPlace(s,b){
       var _hasStatusSlot=(b.mv.main||[]).some(function(x){var m=MV[x.id];return m&&m[4]==='变化'});
       /* ①-1 控场（P0-B）：名含控场但零变化招 → 补一个可学变化招；补不进 → 去「控场」命名 + 解除空转特性锁定 */
       if(/控场/.test(_nm)&&!_hasStatusSlot){
-        var _cf=_fLB([390,446,564,73,92,86,317,366,433,164,182,369,521,105,202,234,235,236,303,355,409],true);
+        var _cfList=[390,446,564,73,92,86,317,366,433,164,182,369,521,105,202,234,235,236,303,355,409];
+        if(isOffRoleTag(b.roleTag))_cfList=_cfList.filter(function(id){return !isFieldSetupId(id)});
+        var _cf=_fLB(_cfList,true);
         if(_cf&&_slotReplace(_cf,'控场')){b.ctrlFixedMv=_cf}
         else{
           b.name=_nm.replace(/控场/,'先制辅助');b.desc=String(b.desc||'').replace('控场','先制辅助');
@@ -12723,7 +12735,7 @@ function finalizeBuildInPlace(s,b){
       if(/空间/.test(String(b.name||''))&&b.mechRw!=='tr_rain_rotation'&&String(b.name||'').indexOf('双轴')<0&&
          !((b.mv.main||[]).some(function(x){return +x.id===433}))){
         var _hasTR=false;try{_hasTR=learnHasName(s,'戏法空间')}catch(eTR){}
-        if(_hasTR&&_slotReplace(433,'空间')){b.trFixedMv=433}
+        if(!isOffRoleTag(b.roleTag)&&_hasTR&&_slotReplace(433,'空间')){b.trFixedMv=433}
         else{b.spaceNoRoomMv=433}
         if(!((b.mv.main||[]).some(function(x){return +x.id===433}))){
           b.name=String(b.name||'').replace(/空间/,'');b.namedByMoves=1;b.nameMismatch='空间→（去前缀）';
@@ -12741,7 +12753,7 @@ function finalizeBuildInPlace(s,b){
               if(WEATHER_MV[_lid]===_wxAx&&weatherLineageOk(s,_wxAx))_wids.push(_lid)}
           }catch(eW2){_wids=[]}
           var _wm=_fLB(_wids);
-          if(!(_wm&&_slotReplace(_wm,_wxAx))){
+          if(!(!isOffRoleTag(b.roleTag)&&_wm&&_slotReplace(_wm,_wxAx))){
             b.name=String(b.name||'').replace(_wxAx,'');b.nameMismatch=_wxAx+'→（去前缀）';b.namedByMoves=1;
           }
         }
@@ -13749,6 +13761,7 @@ function fillMvSlots(s,b){
   var att=pickAttacks(s,side,4,b.roleTag||'输出');
   var rest=FUNC_MV.rec.concat(FUNC_MV.protect,FUNC_MV.speed,FUNC_MV.hazard,FUNC_MV.wear);
   if(isGlassCannon(s))rest=rest.filter(function(id){return FUNC_MV.hazard.indexOf(id)<0;});
+  if(isOffRoleTag(b.roleTag))rest=rest.filter(function(id){return !isFieldSetupId(id)});   /* v4.425：补位池同样禁手动场地招，防 366/433 回灌 */
   /* v4.32 P1-3：物理攻击种族 <70 时 rest 池过滤物理招（防净化后被双倍奉还等补回） */
   var physOK=((s.base&&s.base[1])||0)>=70;
   if(!physOK)rest=rest.filter(function(id){var m=MV[id];return !m||m[4]!=='物理'});
@@ -14956,9 +14969,8 @@ function mechPrefix(p){
      修正前：只要可学戏法空间（p.fn.tr）就冠「空间」名 → 高速核被冠空间名却按速攻给 EV
      （C2a：170 条「名含空间却 252 速」）。修正后：可学 TR 但速度>50 的核不冠「空间」名，
      自然回落到既有其他轴命名（顺风/钉子/强化/接棒/免疫/无前缀），命名轴与 EV 判据自洽。 */
-  if(p.fn.tr&&p.du.spd<=50)return '空间';
+  /* v4.425：冠名只认实际定位——可学 TR/顺风不再作为前缀依据（空间受益者由下一行低速口径覆盖） */
   if(p.slow&&p.ok&&p.du.spd<=50)return '空间';
-  if(p.fn.tw)return '顺风';
   if(p.fn.haz&&!_glass)return '钉子';
   if(p.hasBoost)return '强化';
   if(p.hasPass)return '接棒';
@@ -14973,7 +14985,7 @@ function selfSpeedSource(s,p){
   var mul=1,notes=[];
   if(spd>=NEED_CFG.SPEED_HIGH)return {ok:true,mul:1,eff:spd,notes:['种族速度 '+spd+' ≥'+NEED_CFG.SPEED_HIGH]};
   try{var _wm=pvWeatherSpeedMul(s)||1;if(_wm>1){mul*=_wm;notes.push('天气提速特性 ×'+_wm)}}catch(eSs1){eSs1.name}
-  if(p&&p.fn&&p.fn.tw){mul*=2;notes.push('自开顺风 ×2')}
+  /* v4.425：手动顺风已禁止入招，不再计为自身速度来源（速度轴只认种族/天气提速特性/轻装） */
   var _lb=((s.abis||[]).indexOf('轻装')>-1)||((s.inns||[]).indexOf('轻装')>-1);
   if(_lb){mul*=2;notes.push('轻装消耗后 ×2')}
   var eff=Math.round(spd*mul);
@@ -21158,7 +21170,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.424';
+var ER_ENGINE_VER='v4.425';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
