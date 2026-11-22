@@ -35,6 +35,12 @@ EXPORT = r"""
   RED_ABI_IDS:RED_ABI_IDS,_v383Abi0:_v383Abi0,_v383RedAbi:_v383RedAbi,_v383ImmAbi:_v383ImmAbi,_v383SurvAbi:_v383SurvAbi,_v383RecAbi:_v383RecAbi,
   ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND,
   buildEvs:buildEvs,buildNature:buildNature,pvIsSpaceLike:pvIsSpaceLike,NATURES:NATURES,
+  buildTeam:buildTeam,FUNC_MV:FUNC_MV,findTeammates:findTeammates,
+  comboBuildsOf:comboBuildsOf,sanitizeBuild:sanitizeBuild,ABI:ABI,
+  mateRoleOf:mateRoleOf,MATE_ROLE_PRIO:MATE_ROLE_PRIO,
+  coreSys:coreSys,isWxSys:isWxSys,
+  learnC:learnC,isFinalSp:isFinalSp,isValidSp:isValidSp,
+  abiIdByZhOrEn:abiIdByZhOrEn,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
 """
 

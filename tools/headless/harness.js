@@ -12201,7 +12201,9 @@ function sanitizeBuild(s,b){
       }
     }
     var wall=(tag==='肉盾'||tag==='受队'||tag==='辅助'||tag==='联防'||side==='辅助');
-    if(wall||!atkAny){
+    if(b._fastScreen){
+      /* v4.426：高速玻璃大炮开墙手保留速攻 EV/性格，不强制耐久分配 */
+    }else if(wall||!atkAny){
       b.ev=evDuraAlloc(s);
       if(!atkAny&&tag!=='辅助'&&tag!=='联防'&&side!=='辅助'&&tag!=='肉盾'&&tag!=='受队'){
         /* 输出位却无攻击招：名称/描述降级为「功能/受队向」（不称「爆发/清场」） */
@@ -15085,16 +15087,84 @@ function comboBuildsOf(s){
                  {id:stabId||phaze,kind:'attack',tag:'输出',why:['残局本系/补位']}]},
         basis:[{k:'combo',txt:'组合 钉子轮转：撒钉→强制换人滚钉→回复续航'}]});
     }
-    /* 双墙流：反射壁/光墙 + 长接/接力 + 本系输出 */
-    var wall=_mvNameAll(s,['反射壁','光墙'])[0];
-    var pass=_mvNameAll(s,['接棒','接力',' Baton'])[0];
-    if(wall&&stabId){
-      res.push({name:'双墙辅助流',roleTag:'受队',side:coreSide(s),score:3,breakingRoute:'组合',
-        mv:{main:[{id:wall,kind:'wall',tag:'墙',why:['反射壁/光墙减伤窗口']},
-                 {id:pass||wall,kind:'support',tag:'辅助',why:[pass?'接棒传递强化窗口':'双墙后转输出']},
-                 {id:stabId,kind:'attack',tag:'本系',why:['墙内本系安全输出']},
-                 {id:rec||wall,kind:'rec',tag:'续航',why:['站场保墙']}]},
-        basis:[{k:'combo',txt:'组合 双墙：开墙减伤→安全输出/接棒传递'}]});
+    /* v4.426 双墙流（真双墙准入）。两条合法路径，且雪源必须在卡内自洽：
+       ① 极光幕657：有雪系特性（id 集）→ 显式带该特性；否则必须同时带冰雹258 召唤雪天。
+       ② 普通双墙：同时会光墙113+反射壁115。
+       玻璃大炮=高速开墙（满速/胆小），耐久种=耐久开墙（防御性格/耐久EV）；统一光之黏土。
+       旧模板「学到任一面墙即生成、只带一面、剩饭、对坦克一律淘气」属名实不符，整段替换。 */
+    var _wlLearn=learnOf(s)||[];
+    var _wl113=_wlLearn.indexOf(113)>-1,_wl115=_wlLearn.indexOf(115)>-1;
+    var _wlSnowIds=[117,666,929,291,348,870,493];
+    var _wlSnowName=null;
+    (s.abis||[]).concat(s.inns||[]).forEach(function(n){
+      if(_wlSnowName)return;var _id=null;try{_id=abiIdByZhOrEn(n)}catch(eW){}
+      if(_id!==null&&_wlSnowIds.indexOf(+_id)>-1)_wlSnowName=n;});
+    /* v4.426：极光幕只在雪天生效；引擎 v4.395 会清掉非雪系手的手动冰雹258，
+       故仅当物种自带雪系特性时才走极光幕（无特性则冰雹被清、657 成死招）。 */
+    var _wlVeil=_wlLearn.indexOf(657)>-1&&_wlSnowName!==null;
+    var _wlDual=_wl113&&_wl115;
+    var _wlPass=_mvNameAll(s,['接棒','接力',' Baton'])[0];
+    if(_wlVeil||_wlDual){
+      var _wlGc=isGlassCannon(s),_wlSide=coreSide(s);
+      /* 墙/雪源槽：雪特性极光幕=[657]；无特性则 [657,258]；普通双墙=[113,115] */
+      var _wlWallIds=_wlVeil?[657]:[113,115];
+      var _wlUsed={};_wlWallIds.forEach(function(id){_wlUsed[id]=1});
+      function _wlPick(seq){
+        var o=[];
+        for(var _i=0;_i<seq.length;_i++){
+          var id=seq[_i];
+          if(id==null||_wlUsed[id]||_wlLearn.indexOf(id)<0)continue;
+          _wlUsed[id]=1;o.push(id);
+          if(o.length>=4-_wlWallIds.length)break;
+        }
+        return o;
+      }
+      var _wlSeq=_wlGc?[269,86,164,stabId,rec,_wlPass]
+                      :[rec,stabId,269,86,164,_wlPass];
+      var _wlRest=_wlPick(_wlSeq);
+      /* 兜底：功能槽不足时从学习集补任意未用招（优先攻击招，再变化招） */
+      if(_wlRest.length<4-_wlWallIds.length){
+        var _wlAtt=[],_wlSt=[];
+        _wlLearn.forEach(function(id){
+          if(_wlUsed[id]||isBannedBattleMv(id))return;
+          var m=MV[id];if(!m)return;
+          if(m[4]!=='变化')_wlAtt.push(id);else _wlSt.push(id);});
+        _wlRest=_wlRest.concat(_wlPick(_wlAtt)).concat(_wlPick(_wlSt));
+      }
+      var _wlMain=[];
+      _wlWallIds.forEach(function(id){
+        if(id===258){
+          _wlMain.push({id:258,kind:'weather',tag:'开雪',
+            why:['冰雹召唤雪天，极光幕657仅在雪天生效（与极光幕成套携带）']});
+        }else if(id===657){
+          _wlMain.push({id:657,kind:'wall',tag:'墙',
+            why:['极光幕：雪天同时减半物理/特殊伤害（光之黏土 5→8 回合）']});
+        }else{
+          _wlMain.push({id:id,kind:'wall',tag:'墙',
+            why:['双墙体系减伤窗口（光之黏土 5→8 回合）']});
+        }});
+      _wlRest.forEach(function(id){
+        var _k=mvKindOf(id);
+        _wlMain.push({id:id,kind:_k,tag:_k==='rec'?'续航':(_k==='attack'?'补位':'功能'),
+          why:[_wlGc?'高速开墙：先于对手布墙，随后交强化手推队':'耐久开墙：站场布墙，墙内安全强化']});});
+      var _wlNat=_wlGc?'胆小':(_wlSide==='特殊'?'大胆':'淘气');
+      var _wlEv=_wlGc?(_wlSide==='特殊'?[4,0,0,252,0,252]:[4,252,0,0,0,252])
+                      :[252,0,252,0,4,0];
+      var _wlTpl=_wlGc?'速攻':'耐久';
+      /* 雪特性路径显式带特性，保证 v4.395b 雪判据命中；其余路径 abi 留空由补全块填 */
+      var _wlAbi=null;
+      if(_wlVeil&&_wlSnowName!==null){
+        var _sid=+abiIdByZhOrEn(_wlSnowName);
+        _wlAbi=[{id:_sid,n:_wlSnowName,why:['自带雪源，极光幕无需冰雹即可生效']}];
+      }
+      res.push({name:'双墙辅助流',roleTag:'受队',side:_wlSide,score:3,breakingRoute:'组合',
+        _fastScreen:_wlGc,   /* v4.426：玻璃大炮高速开墙手哨兵，下游保留速攻 EV/性格，不强制耐久模板 */
+        abi:_wlAbi,
+        mv:{main:_wlMain},
+        nat:[[_wlNat,_wlGc?'高速开墙手：满速先手布墙':'耐久开墙手：防御向性格站场']],
+        ev:{alloc:_wlEv,template:_wlTpl,summary:_wlGc?('速度252/'+(_wlSide==='特殊'?'特攻252':'物攻252')):'HP252/物防252'},
+        it:[['光之黏土','光墙/反射壁/极光幕回合延长（5→8，与双墙成套）']],
+        basis:[{k:'combo',txt:'组合 双墙：先手布墙→墙内强化手安全强化→推队'}]});
     }
   }catch(e){}
   /* v4.62 A：组合流派卡副信息补全（特性/性格/EV/道具，按物种真实池，禁硬造） */
@@ -15102,7 +15172,9 @@ function comboBuildsOf(s){
     b.abi=b.abi||[];b.it=b.it||[];b.ev=b.ev||[];b.nat=b.nat||[];b.desc=b.desc||'';b.why=b.why||[];
     var isBoost=/替身强化/.test(b.name||''),isTank=/钉子轮转|双墙/.test(b.name||'');
     if(!b.abi.length){var _ab=(s.abis||[]).slice(0,1).map(function(n){return {n:n,why:['组合定位匹配特性（真实特性池）']}});var _in=(s.inns||[]).slice(0,1).map(function(n){return {n:n,why:['天性（固定拥有）']}});b.abi=_ab.concat(_in)}
-    if(!b.ev.length)b.ev=isTank?{alloc:[252,0,252,0,4,0],template:'耐久',summary:'HP252/物防252'}:{alloc:[0,252,0,0,4,252],template:'攻击集约',summary:'物攻252/速度252'};
+    /* v4.426：EV 是对象不是数组，旧判据 !b.ev.length 对带 alloc 的对象恒真，会把高速开墙手 EV 误覆盖。
+       正确空判 = 无 alloc 且无 length（[] 与缺省才补，显式 EV 对象保留）。 */
+    if(!b.ev.alloc&&!b.ev.length)b.ev=isTank?{alloc:[252,0,252,0,4,0],template:'耐久',summary:'HP252/物防252'}:{alloc:[0,252,0,0,4,252],template:'攻击集约',summary:'物攻252/速度252'};
     if(!b.nat.length)b.nat=isTank?[['淘气','受队耐久+物防']]:[['固执','攻击强化输出']];
     if(!b.it.length){var _v12fbBulk=0;try{_v12fbBulk=bulkOf(s)||0}catch(eV12f){_v12fbBulk=(+(s.base||[])[0]||0)+(+(s.base||[])[2]||0)+(+(s.base||[])[4]||0)};
       if(isTank)b.it=[['剩饭','站场续航保钉子/墙']];
@@ -15433,7 +15505,7 @@ function _deriveBuildsCore(s,team){
       else if(b.side==='特殊'&&_q===0&&_p>0)b.side='物理';
       else if(b.side==='双刀'&&_p===0&&_q>0)b.side='特殊';
       else if(b.side==='双刀'&&_q===0&&_p>0)b.side='物理';
-      else if(_p===0&&_q===0)b.side='辅助';
+      else if(_p===0&&_q===0&&!b._fastScreen)b.side='辅助';
     });
   }catch(eSd){eSd.name}
   /* v4.342 强化槽方向校准：强化招与实际伤害招反向（特殊攻手带剑舞）等于空槽，
@@ -16921,6 +16993,7 @@ function _deriveBuildsCore(s,team){
     function _v385DefSpd(b){return _v385SPD_NAT[_v385Nat0(b)]?true:false;}
     out.forEach(function(b){
       if(!b||!b.name)return;
+      if(b._fastScreen)return;   /* v4.426：高速开墙手 EV/性格已正确，跳过防守身份重算 */
       var nm=String(b.name),role=String(b.roleTag||''),side=String(b.side||'');
       var al=(b.ev&&b.ev.alloc)||[];
       var offEv=Math.max(al[1]||0,al[3]||0),bulk=(al[0]||0)+(al[2]||0)+(al[4]||0);
@@ -17174,8 +17247,8 @@ function _deriveBuildsCore(s,team){
           _hitR2=true;
         }
       }
-      /* ---- R3 零伤害招防守卡性格选侧（R2 命中者已定加速性格，跳过） ---- */
-      if(!_hitR2&&_dmg===0){
+      /* ---- R3 零伤害招防守卡性格选侧（R2 命中者已定加速性格，跳过；v4.426 高速开墙手跳过） ---- */
+      if(!_hitR2&&_dmg===0&&!b._fastScreen){
         var _role=String(b.roleTag||'');
         if(_v389DEF_ROLE[_role]||_v389DEF_NAME.test(_nm)){
           var _a2=(b.ev&&b.ev.alloc)||[];
@@ -17269,7 +17342,11 @@ function _deriveBuildsCore(s,team){
       var _v392t;
       if(_v392bo&&_v392d>=1)_v392t='强化清场';
       else if(_v392d>=2)_v392t=(_v392f>=NEED_CFG.POWER_OK?'主力输出压制':'输出压制');
-      else if(_v392wa)_v392t='双墙辅助流';
+      else if(_v392wa){
+        /* v4.426：单墙卡不冠名双墙，改稳健联防（真双墙=113+115 或 657） */
+        var _v392nw=_v392ids.filter(function(id){return id===113||id===115}).length;
+        _v392t=(_v392nw>=2||_v392ids.indexOf(657)>=0)?'双墙辅助流':'稳健联防';
+      }
       else _v392t='稳健联防';
       var _v392new=_v392nm.replace('骚扰消耗',_v392t);
       if(b._v392OldName===undefined)b._v392OldName=_v392nm;
@@ -17346,7 +17423,11 @@ function _deriveBuildsCore(s,team){
       if(_bo)return;                                  /* 真带强化招 → 名字成立，一字不动 */
       var _f=Math.max(+s.base[1],+s.base[3]),_t;
       if(_d>=2)_t=(_f>=_v394POK?'主力输出压制':'输出压制');
-      else if(_wa)_t='双墙辅助流';
+      else if(_wa){
+        /* v4.426：单墙卡不冠名双墙，改稳健联防（真双墙=113+115 或 657） */
+        var _v394nw=_ids.filter(function(id){return id===113||id===115}).length;
+        _t=(_v394nw>=2||_ids.indexOf(657)>=0)?'双墙辅助流':'稳健联防';
+      }
       else _t='稳健联防';
       var _new=_nm.replace(/速攻强化清场|强化清场/,_t);
       if(_new===_nm)return;
@@ -17542,7 +17623,7 @@ function _deriveBuildsCore(s,team){
         }
         /* ①「双墙」名实 */
         var _nm=String(b.name);
-        if(_nm.indexOf('双墙')>-1&&_ids.indexOf(113)<0&&_ids.indexOf(115)<0){
+        if(_nm.indexOf('双墙')>-1&&_ids.indexOf(113)<0&&_ids.indexOf(115)<0&&_ids.indexOf(657)<0){
           var _nn=_nm.split('双墙辅助流').join('稳健联防').split('双墙').join('');
           if(_nn&&_nn!==_nm){
             if(_v395bDup(b,_nn)){b._v395NameKeep=1;_v395bK++}
@@ -18244,28 +18325,51 @@ function _findTeammatesCore(s,side,roleTag){
        ——在第 5 个槽位（UI 展示的最后一格）强制落『输出』，不挤掉更早的高价值骨架。
        （v4.34g 输出位 800/9530=8.4%：输出在 MATE_ROLE_PRIO 里优先级最低，6 槽恒被 6 个非输出角色占满。） */
     var _forceOut=(mainPicks.length===4&&!_coreOff&&!byRole['输出']);
-    var _best=null,_bestVal=-1e9;
-    for(var _mi=0;_mi<fin2.length&&_mi<80;_mi++){
-      if(takenIdx[_mi])continue;
-      var _r=fin2[_mi];
-      var _roles=mateRoleOf(_r.s,wxSys);
-      var _free=_roles.filter(function(x){return !byRole[x]});
-      if(_forceOut){var _fo=_free.filter(function(x){return x==='输出'});if(_fo.length)_free=_fo}
-      if(!_free.length)continue; /* 角色全占用 → 留给同定位候选 */
-      var _cg=0;
-      try{
-        var _tm=[{s:s,core:1}].concat(mainPicks.map(function(p){return {s:p.s}}), [{s:_r.s}]);
-        _cg=scanCombos(_tm).length;
-      }catch(ecg){_cg=0}
-      /* v4.35 P1-1 增量联防校验：新增「共用弱点(≥2人弱) / 盲区」→ 降权；补掉 → 加分（正向打分，不剔除） */
-      var _tal1=_tmTally(_members.concat([_r.s]));
-      var _dSw=_teamSw(_tal1)-_sw0,_dBl=_teamBlind(_tal1)-_bl0;
-      var _syn=-(2.2*Math.max(0,_dSw))-(1.6*Math.max(0,_dBl))+(3.0*Math.max(0,-_dSw))+(2.0*Math.max(0,-_dBl));
-      /* v4.35 P1-2 同核心跨流派队友复用惩罚（AP5 换皮治理：同核不同流派不再机械共用同一支队） */
-      var _cross=((_usedByCore[_r.s.id]&&_usedByCore[_r.s.id]!==_thisKey)?_USED_PEN:0);
-      var _val=_r.score+comboScoreOf(_cg)+_syn-_cross;
-      if(_val>_bestVal){_bestVal=_val;_best={r:_r,mi:_mi,free:_free,cg:_cg}}
+    /* v4.426：核心为「真墙手」且尚无强化角色 → 第 4 槽强制「强化」（窗口兑现者）。
+       真墙手口径与 comboBuildsOf 完全一致：同时会113+115，或会657且自带雪系特性；
+       仅学657却无雪源（如盖欧卡）时极光幕是死招，不触发。 */
+    var _fsLearn=learnC(s);
+    var _fsDual=(_fsLearn.indexOf(113)>-1&&_fsLearn.indexOf(115)>-1);
+    var _fsSnowIds=[117,666,929,291,348,870,493],_fsSnow=false;
+    (s.abis||[]).concat(s.inns||[]).forEach(function(n){
+      if(_fsSnow)return;var _id=abiIdByZhOrEn(n);
+      if(_id!==null&&_fsSnowIds.indexOf(+_id)>-1)_fsSnow=true;});
+    var _fsVeil=(_fsLearn.indexOf(657)>-1&&_fsSnow);
+    var _forceSweep=((_fsDual||_fsVeil)&&mainPicks.length===3&&!byRole['强化']);
+    /* v4.426：强制角色（强化/输出）改为全池硬扫描——只接受带该「空闲角色」的候选，保证可见 5 格内
+       真有窗口兑现者（强化手常因综合分排在 top80 之外，旧软收窄会落空）；全池无候选才回退常规贪心。 */
+    var _wantRole=_forceSweep?'强化':(_forceOut?'输出':'');
+    function _scan4426(want,cap){
+      var bst=null,bstVal=-1e9;
+      for(var mi=0;mi<fin2.length&&mi<cap;mi++){
+        if(takenIdx[mi])continue;
+        var rr=fin2[mi];
+        var roles=mateRoleOf(rr.s,wxSys);
+        var free=roles.filter(function(x){return !byRole[x]});
+        if(want){
+          var fw=free.filter(function(x){return x===want});
+          if(!fw.length)continue; /* 强制槽：无该空闲角色直接跳过 → 硬落位 */
+          free=fw;
+        }
+        if(!free.length)continue; /* 角色全占用 → 留给同定位候选 */
+        var cg=0;
+        try{
+          var tm=[{s:s,core:1}].concat(mainPicks.map(function(p){return {s:p.s}}), [{s:rr.s}]);
+          cg=scanCombos(tm).length;
+        }catch(ecg){cg=0}
+        /* v4.35 P1-1 增量联防校验：新增「共用弱点(≥2人弱) / 盲区」→ 降权；补掉 → 加分（正向打分，不剔除） */
+        var tal1=_tmTally(_members.concat([rr.s]));
+        var dSw=_teamSw(tal1)-_sw0,dBl=_teamBlind(tal1)-_bl0;
+        var syn=-(2.2*Math.max(0,dSw))-(1.6*Math.max(0,dBl))+(3.0*Math.max(0,-dSw))+(2.0*Math.max(0,-dBl));
+        /* v4.35 P1-2 同核心跨流派队友复用惩罚（AP5 换皮治理：同核不同流派不再机械共用同一支队） */
+        var cross=((_usedByCore[rr.s.id]&&_usedByCore[rr.s.id]!==_thisKey)?_USED_PEN:0);
+        var val=rr.score+comboScoreOf(cg)+syn-cross;
+        if(val>bstVal){bstVal=val;bst={r:rr,mi:mi,free:free,cg:cg}}
+      }
+      return bst;
     }
+    var _best=_wantRole?_scan4426(_wantRole,fin2.length):null;
+    if(!_best)_best=_scan4426('',80);
     if(!_best)break;
     var _freeB=_best.free;
     _freeB.sort(function(a,b){return ((_prio[b]||1)-(_prio[a]||1))});
@@ -18309,11 +18413,11 @@ function _findTeammatesCore(s,side,roleTag){
         }
       }
       if(!_bsel)break;
-      /* v4.35b 角色可承继校验：替换者承继不了原角色时按真实能力复判（防『天气手』挂名，验收④） */
+      /* v4.426 角色可承继校验（泛化）：替换者承继不了原角色时，按其真实角色表取首位，杜绝任何挂名 */
       var _role2=_bsel.role;
       try{
         var _rr2=mateRoleOf(_bsel.c.s,wxSys)||[];
-        if(_role2==='天气手'&&_rr2.indexOf('天气手')<0)_role2=_rr2[0]||'输出';
+        if(_rr2.indexOf(_role2)<0)_role2=_rr2[0]||'输出';
       }catch(er3b){}
       try{_bsel.c.priRole=_role2}catch(er3){}
       try{_bsel.c.cands=mainPicks[_bsel.xi].cands}catch(er4){}
@@ -18831,7 +18935,18 @@ var NEED_KINDS={
  fill:{kind:'fill',label:function(){return '补位（非需求驱动）'},role:'在需求驱动方案之外继续补强：按广义正向维度综合分取最优（不看需求匹配）',
    why:function(){return '用户手动继续补位：候选池从不枯竭，按正向维度综合分排序追加'},
    gate:function(t,cx){return '可补位（广义正向维度综合分排序；不受需求匹配约束）'},
-   dims:[['D6',2],['D4',2],['D2',2],['D11',1],['D8',1],['D9',1],['D14',1],['D1',1]]}
+   dims:[['D6',2],['D4',2],['D2',2],['D11',1],['D8',1],['D9',1],['D14',1],['D1',1]]},
+ /* v4.426：双墙核心的窗口受益者——带强化招的进攻手，墙内安全强化后推队。
+    复用构建期 _ER_BOOST_ROLE（与 mateRoleOf 同源），不另立判据。 */
+ sweep:{kind:'profile',label:function(){return '强化推队手（墙窗口受益者）'},role:'带强化招的进攻手：墙内安全强化后推队',
+   why:function(){return '双墙开墙核心需要强化手兑现窗口价值'},
+   gate:function(t,cx){
+     if(!(_ER_BOOST_ROLE&&_ER_BOOST_ROLE[t.id]))return '';
+     var a=atkBest(t);
+     if(a>=NEED_CFG.POWER_OK)return '强化招+力度 '+a+'（墙内强化推队）';
+     if(a>=95)return '可强化输出（力度 '+a+'）';
+     return ''},
+   dims:[['D4',3],['D2',2],['D6',1]]}
 };
 function mvPick(L,ids){for(var i=0;i<ids.length;i++){if(L.indexOf(ids[i])>-1)return ids[i]}return ids[0]}
 /* ③ D1–D18 正向维度（pts 恒 ≥ 0；不达标 = 0 分，不减分、不剔除） */
@@ -19459,6 +19574,8 @@ function needList(core,cx){
   if(p.fn.tr)add('trset',3);
   else if(p.slow&&p.ok)add('trset',4);   /* 低速重炮核心：空间由队友提供 */
   if(p.fn.tr||(p.slow&&p.ok))add('truse',3);  /* 空间打手位：低速加分、中速不达标低分但**不剔除**（零硬门） */
+  /* v4.426：核心会开墙（光墙/反射壁/极光幕）→ 必须有强化推队手继承窗口 */
+  if(hasAny(learnC(core),FUNC_MV.wall))add('sweep',5);
   /* v4.25 机制驱动队友需求：核心**实际命中**机制流时自动生成对应队友需求（队伍构建 Tab 与核心配队机制流对齐）。
      命中判定 = MECH_BUILD[rw](core) 返回非空（与 mechBuildsOf 同口径，杜绝"全机制库遍历"误判）；
      仅对「需要队友配合才能发挥」的机制生成需求；纯自身机制（杂技/扑击/陀螺球/欺诈/魔法防守/全力攻击/
@@ -21170,7 +21287,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.425';
+var ER_ENGINE_VER='v4.426';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -23137,4 +23254,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   RED_ABI_IDS:RED_ABI_IDS,_v383Abi0:_v383Abi0,_v383RedAbi:_v383RedAbi,_v383ImmAbi:_v383ImmAbi,_v383SurvAbi:_v383SurvAbi,_v383RecAbi:_v383RecAbi,
   ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND,
   buildEvs:buildEvs,buildNature:buildNature,pvIsSpaceLike:pvIsSpaceLike,NATURES:NATURES,
+  buildTeam:buildTeam,FUNC_MV:FUNC_MV,findTeammates:findTeammates,
+  comboBuildsOf:comboBuildsOf,sanitizeBuild:sanitizeBuild,ABI:ABI,
+  mateRoleOf:mateRoleOf,MATE_ROLE_PRIO:MATE_ROLE_PRIO,
+  coreSys:coreSys,isWxSys:isWxSys,
+  learnC:learnC,isFinalSp:isFinalSp,isValidSp:isValidSp,
+  abiIdByZhOrEn:abiIdByZhOrEn,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};

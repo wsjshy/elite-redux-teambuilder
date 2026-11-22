@@ -75,10 +75,12 @@ def('INV02', '名含「骚扰消耗」→ 必带骚扰手段（钉/状态/削弱
   return h ? null : '无骚扰手段 ' + c.ids.join(',');
 });
 
-def('INV03', '名含「双墙」→ 至少一面光墙113 或 反射壁115（v4.395b 口径，含重名保留豁免）', c => {
+def('INV03', '名含「双墙」→ 真双墙（113+115）或雪天极光幕657（v4.426 口径）', c => {
   if (c.name.indexOf('双墙') < 0) return null;
   if (c.b._v395NameKeep) return null;               // 同物种已有该词，保留原名
-  return inter(c.ids, [113, 115]).length ? null : '无光墙/反射壁 ' + c.ids.join(',');
+  if (inter(c.ids, [113, 115]).length >= 2) return null;
+  if (c.ids.indexOf(657) >= 0) return null;
+  return '未达真双墙 ' + c.ids.join(',');
 });
 
 def('INV04', '名含「钉子」→ 必带钉（FUNC_MV.hazard）', c => {
