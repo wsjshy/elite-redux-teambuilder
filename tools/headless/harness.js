@@ -12201,9 +12201,7 @@ function sanitizeBuild(s,b){
       }
     }
     var wall=(tag==='肉盾'||tag==='受队'||tag==='辅助'||tag==='联防'||side==='辅助');
-    if(b._fastScreen){
-      /* v4.426：高速玻璃大炮开墙手保留速攻 EV/性格，不强制耐久分配 */
-    }else if(wall||!atkAny){
+    if(wall||!atkAny){
       b.ev=evDuraAlloc(s);
       if(!atkAny&&tag!=='辅助'&&tag!=='联防'&&side!=='辅助'&&tag!=='肉盾'&&tag!=='受队'){
         /* 输出位却无攻击招：名称/描述降级为「功能/受队向」（不称「爆发/清场」） */
@@ -15087,11 +15085,13 @@ function comboBuildsOf(s){
                  {id:stabId||phaze,kind:'attack',tag:'输出',why:['残局本系/补位']}]},
         basis:[{k:'combo',txt:'组合 钉子轮转：撒钉→强制换人滚钉→回复续航'}]});
     }
-    /* v4.426 双墙流（真双墙准入）。两条合法路径，且雪源必须在卡内自洽：
-       ① 极光幕657：有雪系特性（id 集）→ 显式带该特性；否则必须同时带冰雹258 召唤雪天。
+    /* v4.427 双墙流（真双墙准入 + 辅助定位准入）。两条合法路径，且雪源必须在卡内自洽：
+       ① 极光幕657：自带雪系特性（id 集）→ 显式带该特性；
        ② 普通双墙：同时会光墙113+反射壁115。
-       玻璃大炮=高速开墙（满速/胆小），耐久种=耐久开墙（防御性格/耐久EV）；统一光之黏土。
-       旧模板「学到任一面墙即生成、只带一面、剩饭、对坦克一律淘气」属名实不符，整段替换。 */
+       **玻璃大炮不开墙**（v4.427，用户裁定）：它的速度与火力本身就是推队资本，占两格开墙等于自废一半战力；
+       开墙该由耐久/辅助型承担（与钉子流既有 !isGlassCannon 同一纪律）。玻璃大炮的正确位置是强化推队手，
+       墙由队友给它开——v4.426 的「GC 高速开墙」配置属角色颠倒，整段删除。
+       统一光之黏土（5→8 回合）。 */
     var _wlLearn=learnOf(s)||[];
     var _wl113=_wlLearn.indexOf(113)>-1,_wl115=_wlLearn.indexOf(115)>-1;
     var _wlSnowIds=[117,666,929,291,348,870,493];
@@ -15099,14 +15099,14 @@ function comboBuildsOf(s){
     (s.abis||[]).concat(s.inns||[]).forEach(function(n){
       if(_wlSnowName)return;var _id=null;try{_id=abiIdByZhOrEn(n)}catch(eW){}
       if(_id!==null&&_wlSnowIds.indexOf(+_id)>-1)_wlSnowName=n;});
-    /* v4.426：极光幕只在雪天生效；引擎 v4.395 会清掉非雪系手的手动冰雹258，
+    /* 极光幕只在雪天生效；引擎 v4.395 会清掉非雪系手的手动冰雹258，
        故仅当物种自带雪系特性时才走极光幕（无特性则冰雹被清、657 成死招）。 */
     var _wlVeil=_wlLearn.indexOf(657)>-1&&_wlSnowName!==null;
     var _wlDual=_wl113&&_wl115;
     var _wlPass=_mvNameAll(s,['接棒','接力',' Baton'])[0];
-    if(_wlVeil||_wlDual){
-      var _wlGc=isGlassCannon(s),_wlSide=coreSide(s);
-      /* 墙/雪源槽：雪特性极光幕=[657]；无特性则 [657,258]；普通双墙=[113,115] */
+    if(!isGlassCannon(s)&&(_wlVeil||_wlDual)){
+      var _wlSide=coreSide(s);
+      /* 墙/雪源槽：雪特性极光幕=[657]；普通双墙=[113,115] */
       var _wlWallIds=_wlVeil?[657]:[113,115];
       var _wlUsed={};_wlWallIds.forEach(function(id){_wlUsed[id]=1});
       function _wlPick(seq){
@@ -15119,9 +15119,7 @@ function comboBuildsOf(s){
         }
         return o;
       }
-      var _wlSeq=_wlGc?[269,86,164,stabId,rec,_wlPass]
-                      :[rec,stabId,269,86,164,_wlPass];
-      var _wlRest=_wlPick(_wlSeq);
+      var _wlRest=_wlPick([rec,stabId,269,86,164,_wlPass]);
       /* 兜底：功能槽不足时从学习集补任意未用招（优先攻击招，再变化招） */
       if(_wlRest.length<4-_wlWallIds.length){
         var _wlAtt=[],_wlSt=[];
@@ -15133,10 +15131,7 @@ function comboBuildsOf(s){
       }
       var _wlMain=[];
       _wlWallIds.forEach(function(id){
-        if(id===258){
-          _wlMain.push({id:258,kind:'weather',tag:'开雪',
-            why:['冰雹召唤雪天，极光幕657仅在雪天生效（与极光幕成套携带）']});
-        }else if(id===657){
+        if(id===657){
           _wlMain.push({id:657,kind:'wall',tag:'墙',
             why:['极光幕：雪天同时减半物理/特殊伤害（光之黏土 5→8 回合）']});
         }else{
@@ -15146,11 +15141,9 @@ function comboBuildsOf(s){
       _wlRest.forEach(function(id){
         var _k=mvKindOf(id);
         _wlMain.push({id:id,kind:_k,tag:_k==='rec'?'续航':(_k==='attack'?'补位':'功能'),
-          why:[_wlGc?'高速开墙：先于对手布墙，随后交强化手推队':'耐久开墙：站场布墙，墙内安全强化']});});
-      var _wlNat=_wlGc?'胆小':(_wlSide==='特殊'?'大胆':'淘气');
-      var _wlEv=_wlGc?(_wlSide==='特殊'?[4,0,0,252,0,252]:[4,252,0,0,0,252])
-                      :[252,0,252,0,4,0];
-      var _wlTpl=_wlGc?'速攻':'耐久';
+          why:['耐久开墙：站场布墙，墙内安全强化']});});
+      var _wlNat=(_wlSide==='特殊'?'大胆':'淘气');
+      var _wlEv=[252,0,252,0,4,0];
       /* 雪特性路径显式带特性，保证 v4.395b 雪判据命中；其余路径 abi 留空由补全块填 */
       var _wlAbi=null;
       if(_wlVeil&&_wlSnowName!==null){
@@ -15158,13 +15151,12 @@ function comboBuildsOf(s){
         _wlAbi=[{id:_sid,n:_wlSnowName,why:['自带雪源，极光幕无需冰雹即可生效']}];
       }
       res.push({name:'双墙辅助流',roleTag:'受队',side:_wlSide,score:3,breakingRoute:'组合',
-        _fastScreen:_wlGc,   /* v4.426：玻璃大炮高速开墙手哨兵，下游保留速攻 EV/性格，不强制耐久模板 */
         abi:_wlAbi,
         mv:{main:_wlMain},
-        nat:[[_wlNat,_wlGc?'高速开墙手：满速先手布墙':'耐久开墙手：防御向性格站场']],
-        ev:{alloc:_wlEv,template:_wlTpl,summary:_wlGc?('速度252/'+(_wlSide==='特殊'?'特攻252':'物攻252')):'HP252/物防252'},
+        nat:[[_wlNat,'耐久开墙手：防御向性格站场布墙']],
+        ev:{alloc:_wlEv,template:'耐久',summary:'HP252/物防252'},
         it:[['光之黏土','光墙/反射壁/极光幕回合延长（5→8，与双墙成套）']],
-        basis:[{k:'combo',txt:'组合 双墙：先手布墙→墙内强化手安全强化→推队'}]});
+        basis:[{k:'combo',txt:'组合 双墙：耐久手站场布墙→墙内强化手安全强化→推队'}]});
     }
   }catch(e){}
   /* v4.62 A：组合流派卡副信息补全（特性/性格/EV/道具，按物种真实池，禁硬造） */
@@ -15505,7 +15497,7 @@ function _deriveBuildsCore(s,team){
       else if(b.side==='特殊'&&_q===0&&_p>0)b.side='物理';
       else if(b.side==='双刀'&&_p===0&&_q>0)b.side='特殊';
       else if(b.side==='双刀'&&_q===0&&_p>0)b.side='物理';
-      else if(_p===0&&_q===0&&!b._fastScreen)b.side='辅助';
+      else if(_p===0&&_q===0)b.side='辅助';
     });
   }catch(eSd){eSd.name}
   /* v4.342 强化槽方向校准：强化招与实际伤害招反向（特殊攻手带剑舞）等于空槽，
@@ -16993,7 +16985,6 @@ function _deriveBuildsCore(s,team){
     function _v385DefSpd(b){return _v385SPD_NAT[_v385Nat0(b)]?true:false;}
     out.forEach(function(b){
       if(!b||!b.name)return;
-      if(b._fastScreen)return;   /* v4.426：高速开墙手 EV/性格已正确，跳过防守身份重算 */
       var nm=String(b.name),role=String(b.roleTag||''),side=String(b.side||'');
       var al=(b.ev&&b.ev.alloc)||[];
       var offEv=Math.max(al[1]||0,al[3]||0),bulk=(al[0]||0)+(al[2]||0)+(al[4]||0);
@@ -17248,7 +17239,7 @@ function _deriveBuildsCore(s,team){
         }
       }
       /* ---- R3 零伤害招防守卡性格选侧（R2 命中者已定加速性格，跳过；v4.426 高速开墙手跳过） ---- */
-      if(!_hitR2&&_dmg===0&&!b._fastScreen){
+      if(!_hitR2&&_dmg===0){
         var _role=String(b.roleTag||'');
         if(_v389DEF_ROLE[_role]||_v389DEF_NAME.test(_nm)){
           var _a2=(b.ev&&b.ev.alloc)||[];
@@ -18116,8 +18107,17 @@ function evioVetoSummary(core){
 function evioOk(s,sys,space,side){return !!evioAdv(s,sys,space,side)}
 /* v4.3.1/4.3.2：候选池准入 = 最终形态 或 奇石权衡通过形态（替代原「非最终形态一律排除」） */
 function poolOK(s){return isValidSp(s)&&(isFinalForm(s)||evioOk(s))}
-/* v4.68p0 构建期预计算强化角色表占位（构建时注入全库表；见构建尾段 _ER_BOOST_ROLE 预计算） */
-var _ER_BOOST_ROLE={"7":true,"8":true,"12":true,"19":true,"21":true,"24":true,"26":true,"46":true,"47":true,"53":true,"55":true,"71":true,"83":true,"84":true,"85":true,"96":true,"97":true,"127":true,"130":true,"138":true,"140":true,"141":true,"147":true,"149":true,"152":true,"158":true,"159":true,"176":true,"193":true,"211":true,"214":true,"215":true,"230":true,"233":true,"246":true,"247":true,"251":true,"255":true,"256":true,"257":true,"267":true,"270":true,"271":true,"272":true,"284":true,"330":true,"332":true,"336":true,"341":true,"342":true,"347":true,"348":true,"359":true,"366":true,"368":true,"371":true,"392":true,"393":true,"394":true,"395":true,"399":true,"400":true,"402":true,"407":true,"412":true,"413":true,"421":true,"443":true,"444":true,"445":true,"451":true,"452":true,"454":true,"455":true,"460":true,"461":true,"468":true,"470":true,"471":true,"474":true,"479":true,"492":true,"497":true,"501":true,"503":true,"529":true,"530":true,"541":true,"545":true,"550":true,"571":true,"588":true,"610":true,"611":true,"613":true,"614":true,"624":true,"625":true,"633":true,"635":true,"639":true,"642":true,"659":true,"661":true,"662":true,"667":true,"668":true,"684":true,"688":true,"696":true,"702":true,"710":true,"711":true,"718":true,"722":true,"724":true,"731":true,"739":true,"740":true,"745":true,"759":true,"778":true,"779":true,"782":true,"786":true,"787":true,"788":true,"793":true,"795":true,"800":true,"802":true,"803":true,"804":true,"807":true,"811":true,"812":true,"833":true,"834":true,"875":true,"885":true,"886":true,"887":true,"888":true,"891":true,"898":true,"902":true,"912":true,"913":true,"919":true,"920":true,"937":true,"959":true,"961":true,"976":true,"978":true,"991":true,"994":true,"996":true,"997":true,"998":true,"1002":true,"1004":true,"1005":true,"1020":true,"1021":true,"1022":true,"1024":true,"1032":true,"1040":true,"1041":true,"1053":true,"1064":true,"1065":true,"1072":true,"1085":true,"1094":true,"1096":true,"1099":true,"1100":true,"1103":true,"1104":true,"1117":true,"1118":true,"1120":true,"1502":true,"1511":true,"1512":true,"1519":true,"1523":true,"1536":true,"1542":true,"1544":true,"1545":true,"1553":true,"1556":true,"1557":true,"1567":true,"1569":true,"1571":true,"1636":true,"1637":true,"1638":true,"1667":true,"1677":true,"1732":true,"1733":true,"1734":true,"1735":true,"1736":true,"1737":true,"1739":true,"1740":true,"1741":true,"1742":true,"1743":true,"1746":true,"1749":true,"1781":true,"1782":true,"1783":true,"1784":true,"1799":true,"1802":true,"1809":true,"1816":true,"1832":true,"1833":true,"1834":true,"1847":true,"1849":true,"1851":true,"1855":true,"1857":true,"1870":true,"1882":true,"1892":true,"1899":true,"1902":true,"1905":true,"2106":true,"2117":true,"2121":true,"2124":true,"2130":true,"2143":true,"2151":true,"2160":true,"2162":true,"2163":true,"2165":true,"2169":true,"2174":true,"2176":true,"2180":true,"2181":true,"2183":true,"2188":true,"2190":true,"2193":true,"2194":true,"2197":true,"2205":true,"2207":true,"2213":true,"2214":true,"2216":true,"2223":true,"2231":true,"2236":true,"2247":true,"2250":true,"2253":true,"2261":true,"2263":true,"2267":true,"2276":true,"2279":true,"2503":true,"2504":true,"2507":true,"2510":true,"2522":true,"2544":true,"2545":true,"2546":true,"2550":true,"2554":true,"2558":true,"2569":true,"2570":true,"2580":true,"2581":true,"2582":true,"2584":true,"2595":true,"2596":true,"2597":true,"2598":true,"2604":true,"2605":true,"2612":true,"2613":true,"2616":true,"2619":true,"2620":true,"2638":true,"2639":true,"2643":true,"2648":true,"2668":true,"2671":true,"2673":true};
+/* v4.427 强化推队手单一真源：会强化招 **且** 是进攻型（atkBest≥95 且 spd≥70，与「输出」角色同源）。
+   只有强化招却慢速中火力的（如引梦貘人 115/67、鼠霸王 113/54）不算推队手——
+   开墙的核心不该被配一个「强化完也压不过对手」的队友，那属于角色错配。 */
+function isBoostSweeper(t){
+  if(!(_ER_BOOST_ROLE&&_ER_BOOST_ROLE[t.id]))return false;
+  try{return atkBest(t)>=95&&spdOf(t)>=70}catch(eBs){return false}
+}
+/* v4.68p0 构建期预计算强化角色表占位（构建时注入全库表；见构建尾段 _ER_BOOST_ROLE 预计算）
+   v4.427：判据补「冥想347」——原表只认「主推流派 mv.main 含强化招」，主推流派是冥想型时被漏判
+   （超级胡地 base 175/150、会 347 冥想 + 417 阴谋，却不在表内 → 无法当强化推队手）。312→598 项。 */
+var _ER_BOOST_ROLE={"7":true,"8":true,"12":true,"19":true,"21":true,"24":true,"26":true,"31":true,"36":true,"40":true,"46":true,"47":true,"53":true,"55":true,"65":true,"71":true,"80":true,"83":true,"84":true,"85":true,"96":true,"97":true,"103":true,"121":true,"122":true,"127":true,"130":true,"134":true,"138":true,"140":true,"141":true,"144":true,"145":true,"146":true,"147":true,"149":true,"150":true,"151":true,"152":true,"154":true,"158":true,"159":true,"176":true,"178":true,"182":true,"193":true,"196":true,"197":true,"199":true,"201":true,"211":true,"214":true,"215":true,"230":true,"233":true,"235":true,"242":true,"243":true,"244":true,"245":true,"246":true,"247":true,"249":true,"250":true,"251":true,"255":true,"256":true,"257":true,"267":true,"270":true,"271":true,"272":true,"282":true,"284":true,"301":true,"330":true,"332":true,"336":true,"337":true,"338":true,"340":true,"341":true,"342":true,"344":true,"346":true,"347":true,"348":true,"358":true,"359":true,"366":true,"368":true,"370":true,"371":true,"378":true,"380":true,"381":true,"382":true,"386":true,"392":true,"393":true,"394":true,"395":true,"399":true,"400":true,"402":true,"407":true,"412":true,"413":true,"421":true,"426":true,"429":true,"430":true,"437":true,"443":true,"444":true,"445":true,"448":true,"451":true,"452":true,"454":true,"455":true,"460":true,"461":true,"468":true,"470":true,"471":true,"474":true,"475":true,"479":true,"480":true,"481":true,"483":true,"484":true,"487":true,"488":true,"489":true,"490":true,"492":true,"493":true,"497":true,"501":true,"503":true,"518":true,"528":true,"529":true,"530":true,"531":true,"541":true,"545":true,"550":true,"555":true,"561":true,"571":true,"576":true,"579":true,"581":true,"584":true,"588":true,"591":true,"594":true,"606":true,"609":true,"610":true,"611":true,"613":true,"614":true,"624":true,"625":true,"633":true,"635":true,"639":true,"641":true,"642":true,"643":true,"646":true,"648":true,"655":true,"659":true,"661":true,"662":true,"666":true,"667":true,"668":true,"671":true,"678":true,"684":true,"688":true,"696":true,"699":true,"700":true,"702":true,"710":true,"711":true,"716":true,"718":true,"722":true,"724":true,"730":true,"731":true,"739":true,"740":true,"743":true,"745":true,"746":true,"759":true,"764":true,"765":true,"774":true,"778":true,"779":true,"782":true,"784":true,"786":true,"787":true,"788":true,"792":true,"793":true,"795":true,"796":true,"800":true,"801":true,"802":true,"803":true,"804":true,"807":true,"811":true,"812":true,"826":true,"833":true,"834":true,"858":true,"864":true,"866":true,"873":true,"875":true,"885":true,"886":true,"887":true,"888":true,"891":true,"897":true,"898":true,"899":true,"902":true,"905":true,"912":true,"913":true,"919":true,"920":true,"936":true,"937":true,"954":true,"956":true,"959":true,"961":true,"976":true,"978":true,"981":true,"985":true,"987":true,"991":true,"994":true,"996":true,"997":true,"998":true,"1002":true,"1004":true,"1005":true,"1008":true,"1013":true,"1016":true,"1020":true,"1021":true,"1022":true,"1024":true,"1026":true,"1030":true,"1032":true,"1034":true,"1036":true,"1040":true,"1041":true,"1044":true,"1046":true,"1053":true,"1064":true,"1065":true,"1072":true,"1084":true,"1085":true,"1089":true,"1094":true,"1095":true,"1096":true,"1099":true,"1100":true,"1103":true,"1104":true,"1110":true,"1113":true,"1117":true,"1118":true,"1120":true,"1502":true,"1507":true,"1508":true,"1511":true,"1512":true,"1514":true,"1515":true,"1519":true,"1523":true,"1525":true,"1536":true,"1539":true,"1540":true,"1542":true,"1543":true,"1544":true,"1545":true,"1546":true,"1549":true,"1553":true,"1556":true,"1557":true,"1567":true,"1569":true,"1571":true,"1577":true,"1603":true,"1604":true,"1605":true,"1606":true,"1607":true,"1608":true,"1609":true,"1610":true,"1611":true,"1612":true,"1613":true,"1614":true,"1615":true,"1616":true,"1617":true,"1618":true,"1619":true,"1620":true,"1621":true,"1622":true,"1623":true,"1624":true,"1625":true,"1626":true,"1627":true,"1628":true,"1629":true,"1633":true,"1634":true,"1635":true,"1636":true,"1637":true,"1638":true,"1648":true,"1650":true,"1651":true,"1652":true,"1653":true,"1654":true,"1655":true,"1656":true,"1657":true,"1658":true,"1659":true,"1660":true,"1661":true,"1662":true,"1663":true,"1664":true,"1665":true,"1666":true,"1667":true,"1668":true,"1676":true,"1677":true,"1679":true,"1680":true,"1682":true,"1689":true,"1690":true,"1691":true,"1692":true,"1693":true,"1694":true,"1695":true,"1696":true,"1697":true,"1698":true,"1699":true,"1700":true,"1701":true,"1702":true,"1703":true,"1704":true,"1705":true,"1706":true,"1707":true,"1716":true,"1717":true,"1718":true,"1719":true,"1720":true,"1730":true,"1732":true,"1733":true,"1734":true,"1735":true,"1736":true,"1737":true,"1738":true,"1739":true,"1740":true,"1741":true,"1742":true,"1743":true,"1746":true,"1749":true,"1750":true,"1768":true,"1769":true,"1770":true,"1771":true,"1772":true,"1773":true,"1774":true,"1775":true,"1776":true,"1777":true,"1778":true,"1779":true,"1780":true,"1781":true,"1782":true,"1783":true,"1784":true,"1785":true,"1788":true,"1799":true,"1800":true,"1802":true,"1807":true,"1808":true,"1809":true,"1816":true,"1818":true,"1824":true,"1828":true,"1832":true,"1833":true,"1834":true,"1842":true,"1843":true,"1844":true,"1847":true,"1849":true,"1850":true,"1851":true,"1855":true,"1857":true,"1862":true,"1863":true,"1865":true,"1867":true,"1870":true,"1872":true,"1879":true,"1882":true,"1883":true,"1884":true,"1888":true,"1892":true,"1898":true,"1899":true,"1901":true,"1902":true,"1905":true,"1906":true,"2106":true,"2117":true,"2121":true,"2124":true,"2130":true,"2132":true,"2135":true,"2143":true,"2144":true,"2145":true,"2151":true,"2153":true,"2156":true,"2158":true,"2159":true,"2160":true,"2162":true,"2163":true,"2165":true,"2166":true,"2169":true,"2172":true,"2174":true,"2176":true,"2180":true,"2181":true,"2183":true,"2188":true,"2190":true,"2193":true,"2194":true,"2197":true,"2201":true,"2203":true,"2205":true,"2207":true,"2213":true,"2214":true,"2216":true,"2221":true,"2223":true,"2231":true,"2233":true,"2235":true,"2236":true,"2240":true,"2241":true,"2242":true,"2243":true,"2244":true,"2245":true,"2246":true,"2247":true,"2250":true,"2253":true,"2261":true,"2263":true,"2267":true,"2268":true,"2276":true,"2279":true,"2297":true,"2306":true,"2503":true,"2504":true,"2507":true,"2510":true,"2520":true,"2522":true,"2531":true,"2544":true,"2545":true,"2546":true,"2550":true,"2553":true,"2554":true,"2558":true,"2569":true,"2570":true,"2575":true,"2580":true,"2581":true,"2582":true,"2584":true,"2585":true,"2587":true,"2589":true,"2592":true,"2595":true,"2596":true,"2597":true,"2598":true,"2604":true,"2605":true,"2612":true,"2613":true,"2616":true,"2619":true,"2620":true,"2628":true,"2629":true,"2630":true,"2635":true,"2638":true,"2639":true,"2643":true,"2648":true,"2651":true,"2652":true,"2668":true,"2671":true,"2673":true};
 /* v4.21 队友角色标注（多样性主推用）：天气手/钉子/回复/轮转/盾/状态/输出 —— 保证主推 3 只不全是同一角色 */
 function mateRoleOf(t,wxSys){
   var tl=learnOf(t),out=[];
@@ -18129,12 +18129,15 @@ function mateRoleOf(t,wxSys){
   if(hasAny(tl,[92,269,87,30]))out.push('状态');
   /* v4.67 P1-1三轮：强化判定基于实际推荐配招 mv.main（非 learnOf 全 TM 池）
      v4.68p0 性能修复：v4.67 逐候选跑完整 deriveBuilds(t) → findTeammates 全库候选 → 线上点击宝可梦卡死 60s（真机实测）。
-     改构建期预计算全库强化角色表 _ER_BOOST_ROLE（同判据：主推流派 mv.main 含剑舞/龙舞/诡计/蝶舞/破壳，剔除 76=日光束 误判），运行时 O(1) 查表。 */
-  if(_ER_BOOST_ROLE&&_ER_BOOST_ROLE[t.id])out.push('强化');
+     改构建期预计算全库强化角色表 _ER_BOOST_ROLE（判据：主推流派 mv.main 含剑舞/龙舞/诡计/蝶舞/破壳，剔除 76=日光束 误判；
+     v4.427 补「冥想347」——冥想是最常见特攻强化招，漏了它会把胡地这类真强化手判成非强化），运行时 O(1) 查表。 */
   /* v4.35 P1-4：进攻力达标的队友可**兼任**『输出』位。原实现只有「无任何其他角色」才给输出位，
      而输出在 MATE_ROLE_PRIO 里优先级最低 → 6 个槽位被 6 个非输出角色占满，输出位仅 8.4%（A3）。
      输出仍排最后（优先级最低），只在其他角色被占用时落位 → 不改变既有骨架顺序，只让输出位可达。 */
   var _off=false;try{_off=(atkBest(t)>=95&&spdOf(t)>=70)}catch(eo){_off=false}
+  /* v4.427：强化角色只给「进攻型 + 会强化」——强化完能推队才有意义；
+     慢速中火力（引梦貘人 115/67）只保留 回复/状态/盾，不再占强化位（用户裁定：角色不能颠倒）。 */
+  if(_off&&_ER_BOOST_ROLE&&_ER_BOOST_ROLE[t.id])out.push('强化');
   if(_off)out.push('输出');
   if(!out.length)out.push('输出');
   return out;
@@ -18364,6 +18367,11 @@ function _findTeammatesCore(s,side,roleTag){
         /* v4.35 P1-2 同核心跨流派队友复用惩罚（AP5 换皮治理：同核不同流派不再机械共用同一支队） */
         var cross=((_usedByCore[rr.s.id]&&_usedByCore[rr.s.id]!==_thisKey)?_USED_PEN:0);
         var val=rr.score+comboScoreOf(cg)+syn-cross;
+        /* v4.427：强制「强化」槽内择优——强化推队手的价值就是强化后能把队伍推完，
+           同角色候选取火力/速度更高者（+12/+6 封顶），避免 95/85 这类刚过门槛的顶掉真正能推队的。 */
+        if(want==='强化'){
+          try{val+=Math.min(12,Math.max(0,(atkBest(rr.s)-95)/6))+Math.min(6,Math.max(0,(spdOf(rr.s)-70)/10))}catch(evb){}
+        }
         if(val>bstVal){bstVal=val;bst={r:rr,mi:mi,free:free,cg:cg}}
       }
       return bst;
@@ -18941,11 +18949,10 @@ var NEED_KINDS={
  sweep:{kind:'profile',label:function(){return '强化推队手（墙窗口受益者）'},role:'带强化招的进攻手：墙内安全强化后推队',
    why:function(){return '双墙开墙核心需要强化手兑现窗口价值'},
    gate:function(t,cx){
-     if(!(_ER_BOOST_ROLE&&_ER_BOOST_ROLE[t.id]))return '';
+     if(!isBoostSweeper(t))return '';
      var a=atkBest(t);
      if(a>=NEED_CFG.POWER_OK)return '强化招+力度 '+a+'（墙内强化推队）';
-     if(a>=95)return '可强化输出（力度 '+a+'）';
-     return ''},
+     return '可强化输出（力度 '+a+'）'},
    dims:[['D4',3],['D2',2],['D6',1]]}
 };
 function mvPick(L,ids){for(var i=0;i<ids.length;i++){if(L.indexOf(ids[i])>-1)return ids[i]}return ids[0]}
@@ -21287,7 +21294,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.426';
+var ER_ENGINE_VER='v4.427';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -23258,6 +23265,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   comboBuildsOf:comboBuildsOf,sanitizeBuild:sanitizeBuild,ABI:ABI,
   mateRoleOf:mateRoleOf,MATE_ROLE_PRIO:MATE_ROLE_PRIO,
   coreSys:coreSys,isWxSys:isWxSys,
-  learnC:learnC,isFinalSp:isFinalSp,isValidSp:isValidSp,
+  learnC:learnC,isFinalSp:isFinalSp,isValidSp:isValidSp,atkBest:atkBest,
+  _ER_BOOST_ROLE:_ER_BOOST_ROLE,
   abiIdByZhOrEn:abiIdByZhOrEn,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};

@@ -39,7 +39,8 @@ EXPORT = r"""
   comboBuildsOf:comboBuildsOf,sanitizeBuild:sanitizeBuild,ABI:ABI,
   mateRoleOf:mateRoleOf,MATE_ROLE_PRIO:MATE_ROLE_PRIO,
   coreSys:coreSys,isWxSys:isWxSys,
-  learnC:learnC,isFinalSp:isFinalSp,isValidSp:isValidSp,
+  learnC:learnC,isFinalSp:isFinalSp,isValidSp:isValidSp,atkBest:atkBest,
+  _ER_BOOST_ROLE:_ER_BOOST_ROLE,
   abiIdByZhOrEn:abiIdByZhOrEn,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
 """
