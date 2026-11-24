@@ -23,6 +23,19 @@ const RAIN_ABI = C.RAIN_ABI;      // [2,989,867,189]
 const SAND_ABI = C.SAND_ABI;      // [45,604,245]
 // chloroplast flag 只存在于游戏源码（abilities.cc），引擎没有顶层变量，故仍为字面量
 const CHL_ABI = ['268', '366', '374'];
+// v4.431 勘察：six 固定队含 #37 六尾（实际可选特性 id70=日照/干旱，见 SUN_ABI），
+// 组队层面可给日光束/日光刃提供晴天窗口（与 v4.395「体系天气窗口由队友提供」同理念）。
+// 惰性计算：只认队友「出场自动开晴」的天气特性（不把需手动出手的 241 算作稳定覆盖）。
+let _teamSun = null;
+const teamHasAutoSun = () => {
+  if (_teamSun !== null) return _teamSun;
+  _teamSun = TEAM.some(s => {
+    const ids = [];
+    try { deriveBuilds(s, []).forEach(b => (b.abi || []).forEach(a => { if (a && a.id != null) ids.push(String(a.id)); })); } catch (e) { }
+    return ids.some(x => SUN_ABI.indexOf(x) >= 0);
+  });
+  return _teamSun;
+};
 const POWER_OK = 95;
 const SASH_ABI = /玻璃大炮/;
 const PRANK = /恶作剧之心/;
@@ -93,9 +106,10 @@ def('INV05', '名含「主力输出压制」→ 底子火力 ≥ POWER_OK(95)', 
   return fireOf(c.s) >= POWER_OK ? null : '火力 ' + fireOf(c.s);
 });
 
-def('INV06', '带日光束76/日光刃632 → 必须有晴源或 chloroplast（源码口径）', c => {
+def('INV06', '带日光束76/日光刃632 → 必须有晴源或 chloroplast（源码口径；six 含队友日照）', c => {
   const dep = inter(c.ids, [76, 632]);
   if (!dep.length) return null;
+  if (c.tag === 'six' && teamHasAutoSun()) return null;   // 固定队 #37 六尾干旱：队友提供晴天窗口
   if (c.v396Keep) return null;                                  // v4.396 登记的三类合法保留
   const sun = c.abiIds.some(x => SUN_ABI.indexOf(x) >= 0) || c.ids.indexOf(241) >= 0;
   const chl = c.abiIds.some(x => CHL_ABI.indexOf(x) >= 0);
