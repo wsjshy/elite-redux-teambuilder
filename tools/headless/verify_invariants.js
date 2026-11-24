@@ -201,6 +201,21 @@ def('INV16', '补槽不得落纯减益变化招（瞪眼/摇尾巴/烟幕/撒娇
   return '带纯减益招 ' + nm + '，但池里有更优未带 ' + better.map(id => String((MV[id] || [])[1] || id)).join('/');
 }, c => true);
 
+// ---- v4.430：进攻角色最终 4 槽不得手动带队伍级设置招（v4.425 门控的全出口回归）----
+// FIELD_SETUP_MV = 天气/顺风366/空间433/墙113,115,657；isOffRoleTag=增伤/输出/强化。
+// 构建期 pickFuncs / 功能列表 / fillMvSlots 三处过滤；v4.430 补齐 finalizeBuildInPlace
+// 的 FUNC_FILL 兜底与 _deriveBuildsCore 末尾替身/守住收口池两条收尾旁路。
+// 本条只认最终实际 4 槽（b.mv.main），不把 mv.func 候选池算作已带。
+const mainIdsOf = c => ((c.b && c.b.mv && c.b.mv.main) || []).map(x => +x.id);
+def('INV17', '进攻角色最终4槽不得带队伍级设置招（天气/顺风/空间/墙，v4.425/v4.430；v4.393改名链71张见LEGACY）', c => {
+  if (!H.isOffRoleTag || !H.isFieldSetupId) return null;
+  if (c.b && c.b._v393RoleAlign) return null;   // v4.392改名→v4.393对齐role/EV但未重算招组的历史链，见gates第三十九节
+  if (!H.isOffRoleTag(c.role)) return null;
+  const bad = mainIdsOf(c).filter(id => H.isFieldSetupId(id));
+  if (!bad.length) return null;
+  return '进攻角色带队伍级设置招 ' + bad.map(id => String((MV[id] || [])[1] || id)).join('/');
+}, c => !!(H.isOffRoleTag && H.isOffRoleTag(c.role) && !(c.b && c.b._v393RoleAlign)));
+
 // ---- 执行 ----
 const probe = process.argv.indexOf('--probe') >= 0;
 // 中文按 2 宽补齐（Node 的 console.log 不支持 %-58s 这类 printf 填充）
@@ -211,6 +226,12 @@ const pad = (s, n) => {
   return out;
 };
 console.log('采集卡片 ' + cards.length + ' 张（six + empty）  不变量 ' + INV.length + ' 条');
+(function(){
+  if(!H.isOffRoleTag||!H.isFieldSetupId)return;
+  const lg=cards.filter(c=>c.b&&c.b._v393RoleAlign&&H.isOffRoleTag(c.role)&&mainIdsOf(c).some(id=>H.isFieldSetupId(id)));
+  const n6=lg.filter(c=>c.tag==='six').length,ne=lg.filter(c=>c.tag==='empty').length;
+  console.log('[LEGACY] v4.392/v4.393 改名链历史双轨（外层进攻标签+槽内队伍级设置招；非v4.425门控回灌，v4.431候选）：'+lg.length+' 张（six '+n6+'/empty '+ne+'），INV17 不计 FAIL；根因/复跑见 gates 第三十九节');
+})();
 console.log('');
 let totalBad = 0;
 const noScope = [];

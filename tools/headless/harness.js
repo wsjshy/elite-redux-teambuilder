@@ -12595,7 +12595,7 @@ function finalizeBuildInPlace(s,b){
         var _lrnC=learnOf(s)||[],_fnC=funcFillIds();
         for(var _yc=0;_yc<_fnC.length&&mv.length<4;_yc++){
           var _idc=_fnC[_yc];
-          if(_usedC[''+_idc]||_lrnC.indexOf(_idc)<0||isBannedBattleMv(_idc))continue;
+          if(_usedC[''+_idc]||_lrnC.indexOf(_idc)<0||isBannedBattleMv(_idc)||(isOffRoleTag(role)&&isFieldSetupId(_idc)))continue;/* v4.430：进攻角色收尾兜底同样不塞队伍级设置招（顺风366/空间433等），与 pickFuncs(L12075)/功能列表(L14173)/fillMvSlots(L15206) 同源，堵 FUNC_FILL 旁路 */
           _usedC[''+_idc]=1;
           mv.push({id:_idc,kind:mvKindOf(_idc),tag:'功能',why:['4 槽收尾补位（真实可学功能招）']});
         }
@@ -17879,7 +17879,7 @@ function _deriveBuildsCore(s,team){
     var used={};mvs.forEach(function(x){used[''+x.id]=1});
     var pick=null,att=pickAttacks(s,b.side,4,b.roleTag);
     for(var a=0;a<att.length;a++)if(!used[''+att[a].id]){pick=att[a].id;break}
-    if(!pick){var pool=[92,86,317,366,105,202,234,235,236,303,355,409,73,369,521];
+    if(!pick){var pool=[92,86,317,366,105,202,234,235,236,303,355,409,73,369,521].filter(function(id){return !(isOffRoleTag(b.roleTag)&&isFieldSetupId(id))});/* v4.430：进攻角色的替身/守住替换兜底池排除队伍级设置招，防顺风经末道收口回灌 */
       for(var p2=0;p2<pool.length;p2++)if(learnOf(s).indexOf(pool[p2])>-1&&!used[''+pool[p2]]){pick=pool[p2];break}}
     if(pick)mvs[si]={id:pick,kind:mvKindOf(pick),tag:'功能',
       why:['名实对齐：本卡实际未选机制特性、无强化招，替身依据不成立 → 替换']};
@@ -17901,7 +17901,7 @@ function _deriveBuildsCore(s,team){
     var used={};mvs.forEach(function(x){used[''+x.id]=1});
     var pick=null,att=pickAttacks(s,b.side,4,b.roleTag);
     for(var a=0;a<att.length;a++)if(!used[''+att[a].id]){pick=att[a].id;break}
-    if(!pick){var pool=[92,86,317,366,105,202,234,235,236,303,355,409,73,369,521];
+    if(!pick){var pool=[92,86,317,366,105,202,234,235,236,303,355,409,73,369,521].filter(function(id){return !(isOffRoleTag(b.roleTag)&&isFieldSetupId(id))});/* v4.430：进攻角色的替身/守住替换兜底池排除队伍级设置招，防顺风经末道收口回灌 */
       for(var p2=0;p2<pool.length;p2++)if(learnOf(s).indexOf(pool[p2])>-1&&!used[''+pool[p2]]){pick=pool[p2];break}}
     if(pick)mvs[pi]={id:pick,kind:mvKindOf(pick),tag:'功能',
       why:['名实对齐：本卡无两回合/反伤/剧毒寄生协同、非耐久定位，守住依据不成立 → 替换']};
@@ -21412,7 +21412,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.429';
+var ER_ENGINE_VER='v4.430';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -23388,5 +23388,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   needList:needList,NEED_KINDS:NEED_KINDS,
   abiIdByZhOrEn:abiIdByZhOrEn,
   substituteJustified:substituteJustified,protectJustified:protectJustified,
+  isOffRoleTag:isOffRoleTag,isFieldSetupId:isFieldSetupId,
   buildMoves:buildMoves,fillMvSlots:fillMvSlots,mkBuild:mkBuild,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
