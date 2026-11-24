@@ -43,7 +43,7 @@ EXPORT = r"""
   _ER_BOOST_ROLE:_ER_BOOST_ROLE,isRealWallSet:isRealWallSet,isGlassCannon:isGlassCannon,
   needList:needList,NEED_KINDS:NEED_KINDS,
   abiIdByZhOrEn:abiIdByZhOrEn,
-  substituteJustified:substituteJustified,
+  substituteJustified:substituteJustified,protectJustified:protectJustified,
   buildMoves:buildMoves,fillMvSlots:fillMvSlots,mkBuild:mkBuild,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
 """

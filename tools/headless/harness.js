@@ -10635,6 +10635,19 @@ function substituteJustified(s,roleTag,side){
     return !!(learnBoost||mech||roleOk);
   }catch(e){return true}
 }
+/* v4.429 守住资格单一真源（与 substituteJustified 同构）：普通输出/增伤不机械带守住，
+   只在有真实依据时放行——耐久/功能定位 / 恶作剧之心·毒疗 / 能学协同招(剧毒·寄生·反伤·变身·两回合) / 硬撑。
+   pickFuncs 的 protect 选择与 fillMvSlots 补位池共用此判据；卡内实际由末尾事实收口块复核。 */
+function protectJustified(s,roleTag,side){
+  try{
+    var learn=learnOf(s);
+    var roleOk=(roleTag==='肉盾'||roleTag==='受队'||roleTag==='辅助'||String(roleTag).indexOf('设置手')>-1);
+    var mech=(s.abis||[]).concat(s.inns||[]).some(function(n){return /恶作剧之心|毒疗/.test(String(n))});
+    var syn=learn.some(function(x){return x===92||x===73||x===68||x===243||x===368||x===144||_sfTwoTurn(x)});
+    var fade=learn.indexOf(263)>-1;
+    return !!(roleOk||mech||syn||fade);
+  }catch(e){return true}
+}
 function pickFuncs(s,role,side,used){
   var learn=learnOf(s),hasRec=hasAny(learn,FUNC_MV.rec),res={};
   var boostIds=(side==='特殊'?FUNC_MV.boostSpec:(side==='物理'?FUNC_MV.boostPhys:FUNC_MV.boost)).concat([504,526]);
@@ -10670,6 +10683,8 @@ function pickFuncs(s,role,side,used){
           else if(role==='肉盾'||role==='受队')why.push('替身：控血线 + 耗对手关键招（毒/钉每回合磨）');
           else why.push('替身：挡异常状态与先制，保血线再出手');
         }else if(id===182){
+          /* v4.429 守住资格门：单一真源 protectJustified，不满足则跳过（与替身门对称）。 */
+          if(!protectJustified(s,role,side))return;
           if(_isFade)why.push('守住：拖过对手爆发/先制收招，自异常不被蹭掉，保硬撑满威输出窗口')
           else if(role==='强化')why.push('守住：撑过对手爆发后再强化');
           else if(role==='肉盾'||role==='受队')why.push('守住：拖回合耗招/安全轮转');
@@ -13772,6 +13787,7 @@ function fillMvSlots(s,b){
   var att=pickAttacks(s,side,4,b.roleTag||'输出');
   var rest=FUNC_MV.rec.concat(FUNC_MV.protect,FUNC_MV.speed,FUNC_MV.hazard,FUNC_MV.wear);
   if(!substituteJustified(s,b.roleTag,b.side))rest=rest.filter(function(id){return id!==164});  /* v4.428 补位池同口径，防替身回灌 */
+  if(!protectJustified(s,b.roleTag,b.side))rest=rest.filter(function(id){return id!==182});  /* v4.429 守住补位池同口径，防回灌 */
   if(isGlassCannon(s))rest=rest.filter(function(id){return FUNC_MV.hazard.indexOf(id)<0;});
   if(isOffRoleTag(b.roleTag))rest=rest.filter(function(id){return !isFieldSetupId(id)});   /* v4.425：补位池同样禁手动场地招，防 366/433 回灌 */
   /* v4.32 P1-3：物理攻击种族 <70 时 rest 池过滤物理招（防净化后被双倍奉还等补回） */
@@ -17868,6 +17884,28 @@ function _deriveBuildsCore(s,team){
     if(pick)mvs[si]={id:pick,kind:mvKindOf(pick),tag:'功能',
       why:['名实对齐：本卡实际未选机制特性、无强化招，替身依据不成立 → 替换']};
   });
+  /* v4.429 守住最终事实收口：构建期 protectJustified 用"能学"的潜力放行，此处按"卡内实际"复核，
+     守住只在有真实协同时保留——两回合/反伤/变身/剧毒·寄生 / 实际特性毒疗·恶作剧之心 / 耐久功能定位。
+     不满足则把守住换成攻击/功能招（找不到合理替代时保留，避免空槽）。 */
+  out.forEach(function(b){
+    var mvs=(b.mv&&b.mv.main)||[];
+    var pi=-1;for(var k=0;k<mvs.length;k++)if(+mvs[k].id===182){pi=k;break}
+    if(pi<0)return;
+    var ids=mvs.map(function(x){return +x.id});
+    var hasSyn=ids.some(function(id){return id===92||id===73||id===68||id===243||id===368||id===144||_sfTwoTurn(id)});
+    var abi0=(b.abi&&b.abi[0]&&b.abi[0].n)||'';
+    var abiMech=/恶作剧之心|毒疗/.test(String(abi0));
+    var r=b.roleTag||'';
+    var durable=(r==='肉盾'||r==='受队'||r==='辅助'||r.indexOf('设置手')>-1);
+    if(hasSyn||abiMech||durable)return;
+    var used={};mvs.forEach(function(x){used[''+x.id]=1});
+    var pick=null,att=pickAttacks(s,b.side,4,b.roleTag);
+    for(var a=0;a<att.length;a++)if(!used[''+att[a].id]){pick=att[a].id;break}
+    if(!pick){var pool=[92,86,317,366,105,202,234,235,236,303,355,409,73,369,521];
+      for(var p2=0;p2<pool.length;p2++)if(learnOf(s).indexOf(pool[p2])>-1&&!used[''+pool[p2]]){pick=pool[p2];break}}
+    if(pick)mvs[pi]={id:pick,kind:mvKindOf(pick),tag:'功能',
+      why:['名实对齐：本卡无两回合/反伤/剧毒寄生协同、非耐久定位，守住依据不成立 → 替换']};
+  });
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -21374,7 +21412,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.428';
+var ER_ENGINE_VER='v4.429';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
@@ -23349,6 +23387,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   _ER_BOOST_ROLE:_ER_BOOST_ROLE,isRealWallSet:isRealWallSet,isGlassCannon:isGlassCannon,
   needList:needList,NEED_KINDS:NEED_KINDS,
   abiIdByZhOrEn:abiIdByZhOrEn,
-  substituteJustified:substituteJustified,
+  substituteJustified:substituteJustified,protectJustified:protectJustified,
   buildMoves:buildMoves,fillMvSlots:fillMvSlots,mkBuild:mkBuild,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
