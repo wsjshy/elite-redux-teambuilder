@@ -1873,8 +1873,17 @@ var INTERRUPTIBLE_NEG={264:1,658:1};
    也不判「on the first turn 后无 second/next」（310惊吓=仅首回合可用），避免误伤。 */
 var TWO_TURN_LOCK=/recharg|Can only be used every-?other turn|must rest|on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn|\b2-turn\b|in one turn,?\s*then attacks next turn|Charges? first turn/i;
 function isTwoTurnMv(id){var mm=MV[id];if(!mm)return false;var _d9=String(mm[9]||''),_d10=String(mm[10]||'');return TWO_TURN_LOCK.test(_d9)||TWO_TURN_LOCK.test(_d10)}
-/* v4.432 日光系(76/632)免蓄力自足：日照类特性/大晴天在槽/叶绿体(268/366/374)/力量香草道具 → 视为即时招 */
-function solarSelfSufficient(b){try{var _ids=(b&&b.abi||[]).map(function(a){return +a.id});if(_ids.some(function(x){return [70,584,190,871,268,366,374].indexOf(x)>-1}))return true;if((b&&b.mv&&b.mv.main||[]).some(function(x){return +x.id===241}))return true;var _it=(b&&b.it||[]).some(function(pp){return /力量香草/.test(String(pp&&pp[0]||''))});return _it}catch(eSS){return false}}
+/* v4.432 日光系(76/632)永久免蓄力自足：日照类特性/大晴天在四招/叶绿体(268/366/374)。
+   v4.433 移除「力量香草」——香草是一次性消耗，与叶绿体/晴天源是两种东西，另由 herbCovers 处理。 */
+function solarSelfSufficient(b){try{var _ids=(b&&b.abi||[]).map(function(a){return +a.id});if(_ids.some(function(x){return [70,584,190,871,268,366,374].indexOf(x)>-1}))return true;if((b&&b.mv&&b.mv.main||[]).some(function(x){return +x.id===241}))return true;return false}catch(eSS){return false}}
+/* v4.433 力量香草（道具 284，desc「Allows immediate use of a move that charges first.」）可解性判据。
+   可解 = 「先蓄一回合再打 / 消失一回合再命中」这 12 招；**不可解** = 打完僵直/隔回合那 9 招
+   （63破坏光线 307爆炸烈焰 308加农水炮 338疯狂植物 416终极冲击 439岩石炮 722流星突击 723无极光束 963幽灵夜曲），
+   香草只免 charges first，对 recharg 无效。香草每场只能用一次，故只当「选项」，不做全库必带。 */
+var HERB_OK_MV={19:1,76:1,143:1,467:1,566:1,632:1,553:1,554:1,728:1,901:1,972:1,988:1};
+function isHerbSolvable(id){return !!HERB_OK_MV[+id]}
+/* 卡内同时满足：带香草道具 + 四招里有可解蓄力招 → 该招当回合即可兑现（一次性） */
+function herbCovers(b){try{var _lead=String((b&&b.it&&b.it[0]&&b.it[0][0])||'');if(!/力量香草/.test(_lead))return false;return (b&&b.mv&&b.mv.main||[]).some(function(x){return isHerbSolvable(x.id)})}catch(eHC){return false}}
 /* v4.52 R9-E2 降能力副作用招表（降档程度 ×0.90-0.95；只成本叙事不硬剔） */
 var SELF_DROP_MV={276:2,557:3,659:1,941:1,654:1};
 function costOf(s,m,hasRec){
@@ -14750,7 +14759,7 @@ function e5Sanitize(s,b){
     (learnOf(s)||[]).forEach(function(id){have[''+id]=have[''+id]||0});
     b.mv.main.forEach(function(slot,idx){
       if(!e5NonInstant(slot.id))return;
-      if((+slot.id===76||+slot.id===632)&&solarSelfSufficient(b))return;   /* v4.432 有晴源/叶绿体/香草：日光系即时，不替换 */
+      if(((+slot.id===76||+slot.id===632)&&solarSelfSufficient(b))||herbCovers(b))return;   /* v4.433 只有日光系靠晴源/叶绿体永久免蓄力；其余可解蓄力招只有真带了力量香草才放行（herbCovers 已内含可解性） */
       var ty=(MV[slot.id]||[])[3];
       var best=null;
       (learnOf(s)||[]).forEach(function(id){
@@ -19335,6 +19344,19 @@ function _deriveBuildsCore(s,team){
     if(pick)mvs[pi]={id:pick,kind:mvKindOf(pick),tag:'功能',
       why:['名实对齐：本卡无两回合/反伤/剧毒寄生协同、非耐久定位，守住依据不成立 → 替换']};
   });
+  /* v4.433 力量香草只作「一个选择」：主攻是可解蓄力招且威力≥130（143神鸟猛击140 / 553冰冻伏特140 / 554极寒冷焰140）时，
+     把它追成道具并列备选（排第二位，不替换主道具）；一次性道具多数场合不如剩饭/生命宝珠，故绝不硬推。 */
+  out.forEach(function(b){try{
+    var _hm=(b.mv&&b.mv.main)||[],_lead=null;
+    _hm.forEach(function(x){var m=MV[x.id];if(!m||m[4]==='变化')return;var pw=+m[5]||0;if(!_lead||pw>_lead.pw)_lead={id:+x.id,pw:pw}});
+    var _hr=String(b.roleTag||'');
+    if(_hr==='受队'||_hr==='辅助'||_hr==='肉盾')return;   /* v4.433 香草对辅助/受队无意义，只作进攻向的并列备选 */
+    if(!_lead||!isHerbSolvable(_lead.id)||_lead.pw<130)return;
+    var _it=(b.it||[]);
+    if(_it.some(function(p){return String(p&&p[0]||'')==='力量香草'}))return;
+    _it.push(['力量香草','让「'+MV[_lead.id][1]+'」当回合兑现（一次性，只够一次；要续航/常驻增伤就换剩饭/生命宝珠）']);
+    b.it=_it.slice(0,3);
+  }catch(eH4433){eH4433.name}});
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -22841,7 +22863,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.432';
+var ER_ENGINE_VER='v4.433';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

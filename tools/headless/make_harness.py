@@ -46,6 +46,7 @@ EXPORT = r"""
   substituteJustified:substituteJustified,protectJustified:protectJustified,
   isOffRoleTag:isOffRoleTag,isFieldSetupId:isFieldSetupId,
   isTwoTurnMv:isTwoTurnMv,solarSelfSufficient:solarSelfSufficient,
+  isHerbSolvable:isHerbSolvable,herbCovers:herbCovers,
   buildMoves:buildMoves,fillMvSlots:fillMvSlots,mkBuild:mkBuild,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
 """
