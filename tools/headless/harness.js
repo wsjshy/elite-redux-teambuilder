@@ -17943,6 +17943,23 @@ function _deriveBuildsCore(s,team){
     _it.push(['力量香草','让「'+MV[_lead.id][1]+'」当回合兑现（一次性，只够一次；要续航/常驻增伤就换剩饭/生命宝珠）']);
     b.it=_it.slice(0,3);
   }catch(eH4433){eH4433.name}});
+  /* v4.434 日光蓄力招卡面提示与「当前实际配置」同源。costOf 的「晴源/条件威力」是物种潜力评分
+     （能学241/特性池含叶绿体/任意天气 wxConditionMet），成卡若未实际选中晴源特性、四招未带241、
+     主道具无香草，「免蓄力/已满足」就是把潜力写成事实。末尾按 b 级事实改写为条件式提示。
+     只改 why 文案，不动 id/tag/数值/道具/选招（评分潜力层 vs 成卡事实层，见 gates 第四十一/四十三节）。 */
+  out.forEach(function(b){try{
+    if(solarSelfSufficient(b)||herbCovers(b))return;
+    var _hm434=(b&&b.mv&&b.mv.main)||[];
+    for(var _i434=0;_i434<_hm434.length;_i434++){var _sl434=_hm434[_i434];
+      if((+_sl434.id!==76&&+_sl434.id!==632)||!Array.isArray(_sl434.why))continue;
+      for(var _j434=0;_j434<_sl434.why.length;_j434++){var _w434=String(_sl434.why[_j434]||'');
+        if(_w434.indexOf('晴源/叶绿体：日光系免蓄力')>-1)
+          _sl434.why[_j434]='当前配置未实际开出晴天/叶绿体：无晴时此招需蓄力一回合（可配大晴天241、晴天队友或力量香草，让它当回合发动）';
+        else if(_w434==='条件威力(已满足)')
+          _sl434.why[_j434]='天气条件：当前卡面未开出对应天气，评分按可搭配天气估算';
+      }
+    }
+  }catch(eSunWhy4434){eSunWhy4434.name}});
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -21449,7 +21466,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.433';
+var ER_ENGINE_VER='v4.434';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
