@@ -451,6 +451,16 @@ function wxConditionMet(s){return ownWxList(s,learnOf(s)).length>0}
 /* v4.52 R9-E：可打断型负先制招白名单（gameData 溯源 r9e_moves.json，不靠正则避免误判 flinch 招）。
    吹飞/吼叫/龙尾/反制/戏法空间等 deliberate slow-priority 不进此表。 */
 var INTERRUPTIBLE_NEG={264:1,658:1};
+/* v4.432 两回合蓄力/僵直判据单一真源（替代散落各处手写正则，防不同源）。
+   覆盖 21 招伤害招：僵直/隔回合(63破坏光线 416终极冲击 439岩石炮 307爆炸烈焰 308加农水炮 338疯狂植物 723无极光束 722流星突击 963幽灵夜曲)
+   + 消失次回合命中(19飞翔 143神鸟猛击 467暗影潜袭 566潜灵奇袭 972准备好了 988剧毒俯冲 901电光束)
+   + 两回合蓄力(76日光束 632日光刃 553冰冻伏特 554极寒冷焰 728流星光束)。
+   ⚠️ 不判「2 turns later / to retaliate」（248预知未来 353破灭之愿=延迟攻击，117忍耐=机制），
+   也不判「on the first turn 后无 second/next」（310惊吓=仅首回合可用），避免误伤。 */
+var TWO_TURN_LOCK=/recharg|Can only be used every-?other turn|must rest|on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn|\b2-turn\b|in one turn,?\s*then attacks next turn|Charges? first turn/i;
+function isTwoTurnMv(id){var mm=MV[id];if(!mm)return false;var _d9=String(mm[9]||''),_d10=String(mm[10]||'');return TWO_TURN_LOCK.test(_d9)||TWO_TURN_LOCK.test(_d10)}
+/* v4.432 日光系(76/632)免蓄力自足：日照类特性/大晴天在槽/叶绿体(268/366/374)/力量香草道具 → 视为即时招 */
+function solarSelfSufficient(b){try{var _ids=(b&&b.abi||[]).map(function(a){return +a.id});if(_ids.some(function(x){return [70,584,190,871,268,366,374].indexOf(x)>-1}))return true;if((b&&b.mv&&b.mv.main||[]).some(function(x){return +x.id===241}))return true;var _it=(b&&b.it||[]).some(function(pp){return /力量香草/.test(String(pp&&pp[0]||''))});return _it}catch(eSS){return false}}
 /* v4.52 R9-E2 降能力副作用招表（降档程度 ×0.90-0.95；只成本叙事不硬剔） */
 var SELF_DROP_MV={276:2,557:3,659:1,941:1,654:1};
 function costOf(s,m,hasRec){
@@ -476,7 +486,13 @@ function costOf(s,m,hasRec){
      高速打手(base5≥110)节奏错配额外×0.85；base5≤60/空间手不追加。无「忽略僵直」特性不硬造。 */
   var _spE5=s?(s.base[5]||0):0;
   if(/recharg|Can only be used every-?other turn|must rest/i.test(d)){mul*=0.85;tags.push('僵直×0.85');note='僵直：使用后需歇一回合（双打 AOE 更亏，慎配）';if(_spE5>=110){mul*=0.85;tags.push('高速打手带僵直节奏错配×0.85')}}
-  else if(/on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(d)){mul*=0.85;tags.push('蓄力(2回合)×0.85');note='蓄力：首回合蓄力、次回合才命中（雨天/晴天等可即时发动的情形以游戏内实测为准）';if(_spE5>=110){mul*=0.85;tags.push('高速打手带蓄力节奏错配×0.85')}}
+  else if(isTwoTurnMv(m[0])){
+    /* v4.432：日光束76/日光刃632 在自身晴源（日照类特性/大晴天在槽/叶绿体268/366/374）下免蓄力，不计蓄力代价 */
+    var _ttSunOk=false;
+    try{ if(+m[0]===76||+m[0]===632){var _ttA=(s&&(s.abis||[]).concat(s.inns||[])||[]);_ttSunOk=_ttA.indexOf('叶绿体')>-1||_ttA.indexOf('耀斑')>-1||_ttA.indexOf('巨大树叶')>-1||wxConditionMet(s);} }catch(eTT){_ttSunOk=false}
+    if(_ttSunOk){tags.push('晴源/叶绿体：日光系免蓄力')}
+    else{mul*=0.85;tags.push('蓄力(2回合)×0.85');note='蓄力：首回合蓄力、次回合才命中（雨天/晴天等可即时发动的情形以游戏内实测为准）';if(_spE5>=110){mul*=0.85;tags.push('高速打手带蓄力节奏错配×0.85')}}
+  }
   if(/recoil/i.test(d)){mul*=0.9;tags.push('反伤×0.9');if(!hasRec){mul*=0.9;tags.push('无回复再×0.9')}}
   if(/[Nn]ever misses/.test(d)){mul*=1.05;tags.push('必中×1.05')}
   if(/weather-?based|varies in power|depending on the weather/i.test(d)){
@@ -12964,10 +12980,10 @@ function finalizeBuildInPlace(s,b){
             function _v9pickOne(){var _r=null;
               for(var _i=0;_i<_v9pool.length;_i++){var _o=_v9pool[_i];
                 if(!_o||_v9used[''+_o.id]||_v9ty[_o.ty])continue;var _M=MV[_o.id];
-                if(_M&&(+_M[5]||0)>=70&&(+_M[6]||0)>=90&&!_v9charge.test(_M[1])){_r=_o;break}}
+                if(_M&&(+_M[5]||0)>=70&&(+_M[6]||0)>=90&&!_v9charge.test(_M[1])&&!isTwoTurnMv(+_o.id)){_r=_o;break}}
               if(!_r)for(var _j=0;_j<_v9pool.length;_j++){var _o2=_v9pool[_j];
                 if(!_o2||_v9used[''+_o2.id])continue;var _M2=MV[_o2.id];
-                if(_M2&&!_v9charge.test(_M2[1])){_r=_o2;break}}
+                if(_M2&&!_v9charge.test(_M2[1])&&!isTwoTurnMv(+_o2.id)){_r=_o2;break}}
               return _r}
             function _v9fill(_idx){var _r=_v9pickOne();
               if(_r){_v9main[_idx]={id:+_r.id,kind:mvKindOf(+_r.id),tag:'补盲',
@@ -13045,7 +13061,7 @@ function finalizeBuildInPlace(s,b){
           function _v10isCharge(id,_m){
             if(_v10TWO.indexOf(+id)>-1)return true;
             if(!_m)return false;
-            return _v10charge.test(_m[1])||_v10vanish.test(String(_m[10]||''));
+            return _v10charge.test(_m[1])||_v10vanish.test(String(_m[10]||''))||isTwoTurnMv(+id);   /* v4.432 补漏 */
           }
           function _v10pickOne(){
             var _r=null;
@@ -13148,7 +13164,7 @@ function finalizeBuildInPlace(s,b){
             if(!_m)return false;
             var _tg=_m[11]||[];
             if(Array.isArray(_tg)&&_tg.indexOf('自爆·退场')>=0)return true;
-            return _v11charge.test(_m[1])||_v11vanish.test(String(_m[10]||''));
+            return _v11charge.test(_m[1])||_v11vanish.test(String(_m[10]||''))||isTwoTurnMv(+id);   /* v4.432 补漏 */
           }
           function _v11pickOne(){
             var _r=null;
@@ -13306,9 +13322,7 @@ function finalizeBuildInPlace(s,b){
 function e5NonInstant(id){
   var mm=MV[id];if(!mm)return false;
   if(INTERRUPTIBLE_NEG[id])return true;
-  var dd=String(mm[10]||'');
-  return /recharg|Can only be used every-?other turn|must rest/i.test(dd)||
-         /on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(dd);
+  return isTwoTurnMv(id);   /* v4.432 单一真源（含日光刃/流星光束等 5 招补漏） */
 }
 function e5Sanitize(s,b){
   try{
@@ -13322,6 +13336,7 @@ function e5Sanitize(s,b){
     (learnOf(s)||[]).forEach(function(id){have[''+id]=have[''+id]||0});
     b.mv.main.forEach(function(slot,idx){
       if(!e5NonInstant(slot.id))return;
+      if((+slot.id===76||+slot.id===632)&&solarSelfSufficient(b))return;   /* v4.432 有晴源/叶绿体/香草：日光系即时，不替换 */
       var ty=(MV[slot.id]||[])[3];
       var best=null;
       (learnOf(s)||[]).forEach(function(id){
@@ -16036,7 +16051,7 @@ function _deriveBuildsCore(s,team){
         var cand=pool.filter(function(o){
           if(!o||!o.id||haveIds.indexOf(+o.id)>-1||haveTypes[o.ty]===1)return false;
           var M=MV[o.id],_pow=+(M[5]||0),_acc=+(M[6]||0);
-          return _pow>=70&&_acc>=90&&!_CHARGE_R.test(M[1]);
+          return _pow>=70&&_acc>=90&&!_CHARGE_R.test(M[1])&&!isTwoTurnMv(+o.id);
         })[0];
         if(!cand)return;
         plain.sort(function(a,c){
@@ -16110,7 +16125,7 @@ function _deriveBuildsCore(s,team){
         if(!o||!o.id||carried.indexOf(+o.id)>-1||!MV[o.id])return false;
         if(!_alTrig(ab,o.id))return false;
         var M=MV[o.id],_p=+(M[5]||0),_ac=+(M[6]||0);
-        return _p>=70&&_ac>=90&&!/飞翔|挖洞|潜水|日光束|弹跳|自由落体|破坏光线|终极冲击|蓄力|影子之力/.test(M[1]);
+        return _p>=70&&_ac>=90&&!/飞翔|挖洞|潜水|日光束|弹跳|自由落体|破坏光线|终极冲击|蓄力|影子之力/.test(M[1])&&!isTwoTurnMv(+o.id);
       })[0];
       if(cand){
         var atkObjs=allM.filter(function(x){return MV[x.id]&&MV[x.id][4]!=='变化'&&coreIds.indexOf(+x.id)<0&&!_UTIL_R.test(MV[x.id][1])});
@@ -22950,9 +22965,7 @@ function engineGuardSelfCheck(){
           var _e5hit=_e5main.some(function(x){
             var mm=MV[x.id];if(!mm)return false;
             if(INTERRUPTIBLE_NEG[x.id])return true;
-            var dd=String(mm[10]||'');
-            return /recharg|Can only be used every-?other turn|must rest/i.test(dd)||
-                   /on the first turn[^.]*(?:second|next)|Fires on second turn|and then attacks on the next turn/i.test(dd);
+            return isTwoTurnMv(+x.id);   /* v4.432 单一真源 */
           });
           if(_e5hit&&!_e5cover){nE5++;if(vE5.length<20)vE5.push({id:s.id,zh:s.zh,build:b.name,mvs:_e5main.map(function(x){return x.id}).join(',')})}
         }
@@ -23389,5 +23402,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   abiIdByZhOrEn:abiIdByZhOrEn,
   substituteJustified:substituteJustified,protectJustified:protectJustified,
   isOffRoleTag:isOffRoleTag,isFieldSetupId:isFieldSetupId,
+  isTwoTurnMv:isTwoTurnMv,solarSelfSufficient:solarSelfSufficient,
   buildMoves:buildMoves,fillMvSlots:fillMvSlots,mkBuild:mkBuild,
   scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
