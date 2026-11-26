@@ -230,6 +230,15 @@ def('INV17', '进攻角色最终4槽不得带队伍级设置招（天气/顺风/
   return '进攻角色带队伍级设置招 ' + bad.map(id => String((MV[id] || [])[1] || id)).join('/');
 }, c => !!(H.isOffRoleTag && H.isOffRoleTag(c.role) && !(c.b && c.b._v393RoleAlign)));
 
+// ---- v4.435：最终四招必须在物种可学池内（gate badMove 判据的常驻回归守护）----
+// gate.js L13/L18 已在离线门禁比对；本条固化为不变量，防止后续机制推送再硬灌 learnset 外招式。
+def('INV18', '最终招式必须在物种可学池内（learnOf 不含的招不得入槽）', c => {
+  let L = []; try { L = H.learnOf(c.s) || []; } catch (e) { return null; }
+  const bad = mainIdsOf(c).filter(id => L.indexOf(id) < 0);
+  if (!bad.length) return null;
+  return '带可学池外招式 ' + bad.map(id => String((MV[id] || [])[1] || id)).join('/') + ' learnset=' + L.length;
+}, c => true);
+
 // ---- 执行 ----
 const probe = process.argv.indexOf('--probe') >= 0;
 // 中文按 2 宽补齐（Node 的 console.log 不支持 %-58s 这类 printf 填充）
