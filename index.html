@@ -14985,7 +14985,7 @@ var MECH_BUILD={
     /* v4.31：side 改「物理」——毒疗消耗流主输出按物理侧取（天蝎王物攻 95 vs 特攻 45，原写死特殊会补特攻招如破坏光线=练废） */
     var b=mechBuildBase(s,'物理','毒疗站场流','toxic_heal_item',
       '毒疗把「中毒」从负面反转成每回合 1/8 回复——带剧毒宝珠自中毒，替身/毒招/钉子消耗，几乎不掉血');
-    b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：中毒消耗对手（毒疗只回复自身，不影响输出）']});
+    if(mechHasMv(s,92))b.mv.main.push({id:92,kind:'tech',tag:'压制',why:['剧毒：中毒消耗对手（毒疗只回复自身，不影响输出）']});
     if(mechHasMv(s,164))b.mv.main.push({id:164,kind:'tech',tag:'保命',why:['替身：毒疗回 1/8 ≈ 每回合白嫖一个替身']});
     var cov=bestCoverAtk(s,'物理');if(cov)b.mv.main.push(cov);   /* v4.31：与 side 对齐（原 '特殊' 会给物攻核心补特攻招如破坏光线） */
     if(mechHasMv(s,182))b.mv.main.push({id:182,kind:'tech',tag:'保命',why:['守住拖毒疗回合']});
@@ -22880,7 +22880,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.434';
+var ER_ENGINE_VER='v4.435';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();
