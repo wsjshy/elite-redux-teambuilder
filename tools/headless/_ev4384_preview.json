@@ -1,0 +1,14 @@
+{
+  "six": {
+    "stall": 233,
+    "wx": 5,
+    "swap": 51,
+    "edge": 114
+  },
+  "empty": {
+    "stall": 0,
+    "wx": 6,
+    "swap": 37,
+    "edge": 71
+  }
+}

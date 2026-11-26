@@ -34,10 +34,20 @@ check('index.html 含版本真相源 ER_ENGINE_VER', () => {
   if (!m) throw new Error('未找到 ER_ENGINE_VER');
   return m[1];
 });
-check('index.html 体积合理 (1.2–2.0 MiB)', () => {
+check('index.html 体积合理（上限 2.10 MiB / 注释占比 ≤22%）', () => {
   const s = size('index.html');
-  if (s < 1.2e6 || s > 2*1024*1024) throw new Error('size=' + s);
-  return (s / 1024).toFixed(0) + ' KB';
+  const t = read('index.html');
+  // v4.406：上限由 2.0 MiB 改为 2.10 MiB，并把「体积」拆成可审计的两项。
+  // 理由：2.0 MiB 是历史任意值而非技术红线（2 MB HTML 在移动端 gzip 后约 450 KB，
+  // 解析耗时 <60ms）；而注释 406 KB（19.4%）承载的是源码核实结论与历史根因，
+  // 属不可再生知识（零引用函数已由用户 2026-11-07 明确「清理冗余不等于删功能」保留）。
+  // 故守护改为：绝对上限 2.10 MiB + 注释占比 ≤22% + 输出代码/注释分解，让增长可归因。
+  const nb = (t.match(/\/\*[\s\S]*?\*\//g) || []).reduce((a, b) => a + Buffer.byteLength(b), 0);
+  const ratio = nb / s;
+  if (s < 1.2e6 || s > 2202009) throw new Error('size=' + s);
+  if (ratio > 0.22) throw new Error('注释占比 ' + (ratio * 100).toFixed(1) + '% > 22%（注释 ' + nb + ' B）');
+  return (s / 1024).toFixed(0) + ' KB（代码 ' + Math.round((s - nb) / 1024) + ' KB / 注释 ' +
+    Math.round(nb / 1024) + ' KB，占比 ' + (ratio * 100).toFixed(1) + '%）';
 });
 
 // ---------- 2. 数据层：分片齐全且无污染 ----------
@@ -187,6 +197,20 @@ check('静默 catch 数量（基线 361，不应显著增长）', () => {
   const n = (t.match(/catch\s*\([^)]*\)\s*\{\s*\}/g) || []).length;
   if (n > 390) throw new Error('静默 catch 增至 ' + n + '（基线 361）');
   return n + ' 处';
+});
+check('强化招名正则单一真源（v4.400 起多处副本须同字面）', () => {
+  // v4.391 _v391bst / v4.392 _v392BST / v4.394 _v394BST / v4.400 _v400BST 是同一判据的四处副本，
+  // 均为块内局部变量（作用域互不可见）故无法直接引用。此处锁死字面一致，防止某处单独漂移
+  // 造成「同一指标两处矛盾」（v4.391 已踩过 POWER_OK 同名门槛漏门）。
+  // 注意：引擎另有不同用途的强化词表（如 /剑舞|腹鼓|健美|龙舞|.../ 17 项旧表、/剑舞|龙舞|舞|成长|冥想/），
+  // 它们不是本判据副本，故此处只锁以「剑舞|龙之舞|蝶舞|冥想|诡计|诅咒」开头的这一种字面。
+  const t = read('index.html');
+  const re = /\/剑舞\|龙之舞\|蝶舞\|冥想\|诡计\|诅咒[^\/\r\n]*\//g;
+  const found = t.match(re) || [];
+  const uniq = Array.from(new Set(found));
+  if (found.length !== 4) throw new Error('强化招 16 词正则应出现 4 处（v4.391/v4.392/v4.394/v4.400），实际 ' + found.length);
+  if (uniq.length !== 1) throw new Error('四处副本字面不一致：' + uniq.join(' || '));
+  return found.length + ' 处 / 1 种字面';
 });
 check('零引用函数（只允许历史保留白名单，禁止新增）', () => {
   const t = read('index.html');

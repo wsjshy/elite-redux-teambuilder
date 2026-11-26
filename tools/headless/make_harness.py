@@ -29,7 +29,26 @@ function erRestoreAtkSel(){};function drawCoreList(){};
 EXPORT = r"""
 ;module.exports={ERDATA:ERDATA,deriveBuilds:deriveBuilds,classifyBuilds:classifyBuilds,
   learnOf:learnOf,MV:MV,ITM:ITM,sideDisp:sideDisp,MV_FLAG:MV_FLAG,pickAttacks:pickAttacks,
-  ownAutoSys:ownAutoSys};
+  ownAutoSys:ownAutoSys,profileOf:profileOf,spdOf:spdOf,bulkOf:bulkOf,
+  pvWeatherSpeedMul:pvWeatherSpeedMul,mechPrefix:mechPrefix,isGlassCannon:isGlassCannon,
+  abiTagOf:abiTagOf,abiImHf:abiImHf,NM2ID:NM2ID,_abEnt:_abEnt,
+  RED_ABI_IDS:RED_ABI_IDS,_v383Abi0:_v383Abi0,_v383RedAbi:_v383RedAbi,_v383ImmAbi:_v383ImmAbi,_v383SurvAbi:_v383SurvAbi,_v383RecAbi:_v383RecAbi,
+  ABI_DMG_MOD:ABI_DMG_MOD,ABI_DMG_COND:ABI_DMG_COND,ABI_DMG_ALL:ABI_DMG_ALL,ABI_TE_DEF_COND:ABI_TE_DEF_COND,
+  buildEvs:buildEvs,buildNature:buildNature,pvIsSpaceLike:pvIsSpaceLike,NATURES:NATURES,
+  buildTeam:buildTeam,FUNC_MV:FUNC_MV,findTeammates:findTeammates,
+  comboBuildsOf:comboBuildsOf,sanitizeBuild:sanitizeBuild,ABI:ABI,
+  mateRoleOf:mateRoleOf,MATE_ROLE_PRIO:MATE_ROLE_PRIO,
+  coreSys:coreSys,isWxSys:isWxSys,
+  learnC:learnC,isFinalSp:isFinalSp,isValidSp:isValidSp,atkBest:atkBest,
+  _ER_BOOST_ROLE:_ER_BOOST_ROLE,isRealWallSet:isRealWallSet,isGlassCannon:isGlassCannon,
+  needList:needList,NEED_KINDS:NEED_KINDS,
+  abiIdByZhOrEn:abiIdByZhOrEn,
+  substituteJustified:substituteJustified,protectJustified:protectJustified,
+  isOffRoleTag:isOffRoleTag,isFieldSetupId:isFieldSetupId,
+  isTwoTurnMv:isTwoTurnMv,solarSelfSufficient:solarSelfSufficient,
+  isHerbSolvable:isHerbSolvable,herbCovers:herbCovers,
+  buildMoves:buildMoves,fillMvSlots:fillMvSlots,mkBuild:mkBuild,
+  scrubLeak:scrubLeak,mdInline:mdInline,abiDescZhOf:abiDescZhOf,keptNatList:keptNatList};
 """
 
 out = STUB + '\n' + lite + '\n' + spd + '\n' + adv + '\n' + b4 + EXPORT

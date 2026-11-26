@@ -1,0 +1,10 @@
+const H = require('./harness.js');
+const { ERDATA } = H;
+const s = ERDATA.species.find(x => String(x.id) === '1507');
+const sys = H.coreSys(s);
+const wxSys = sys.filter(H.isWxSys);
+console.log('胡地 coreSys:', sys);
+console.log('wxSys:', wxSys);
+const mewtwo = ERDATA.species.find(x => String(x.id) === '150');
+console.log('超梦 mateRoleOf(wxSys):', H.mateRoleOf(mewtwo, wxSys));
+console.log('超梦 mateRoleOf([]):', H.mateRoleOf(mewtwo, []));

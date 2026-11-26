@@ -1,0 +1,1502 @@
+{
+ "rows": [
+  {
+   "id": "317",
+   "en": "Permafrost",
+   "zh": "永冻层",
+   "desc": "受到效果绝佳的攻击时，受到伤害减少25%",
+   "extra": [],
+   "class": "数字错",
+   "sig": {
+    "line": 4155,
+    "ate": null,
+    "def": [
+     "MUL(.65)"
+    ],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_PERMAFROST",
+   "proto_desc": "Takes 35% less damage from Super-effective moves.",
+   "noNumber": false
+  },
+  {
+   "id": "582",
+   "en": "Thick Skin",
+   "zh": "厚皮肤",
+   "desc": "受到效果绝佳的攻击时，受到伤害减少25%",
+   "extra": [],
+   "class": "数字错",
+   "sig": {
+    "line": 7525,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_PERMAFROST",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_PERMAFROST",
+      "en": "Permafrost",
+      "handler": "onDefensiveMultiplier",
+      "line": 4155,
+      "def": [
+       "MUL(.65)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_PERMAFROST_CLONE",
+   "proto_desc": "Takes 35% less damage from Super-effective moves.",
+   "noNumber": false
+  },
+  {
+   "id": "200",
+   "en": "Steelworker",
+   "zh": "钢能力者",
+   "desc": "钢属性的招式威力1.3倍",
+   "extra": [],
+   "class": "只写进攻半套、防守侧漏记",
+   "sig": {
+    "line": 2725,
+    "ate": "TYPE_STEEL",
+    "def": [],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_STEELWORKER",
+   "proto_desc": "Normal moves become Steel. Steel resists Ghost and Dark.",
+   "noNumber": false
+  },
+  {
+   "id": "442",
+   "en": "Fae Hunter",
+   "zh": "妖精猎者",
+   "desc": "对妖精属性精灵造成伤害+50%",
+   "extra": [],
+   "class": "只写进攻半套、防守侧漏记",
+   "sig": {
+    "line": 5833,
+    "ate": null,
+    "def": [
+     "RESISTANCE(.5)"
+    ],
+    "off": [
+     "RESISTANCE(1.5)"
+    ],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_FAE_HUNTER",
+   "proto_desc": "Deals 1.5x damage to Fairy. Takes 0.5x damage from Fairy.",
+   "noNumber": false
+  },
+  {
+   "id": "440",
+   "en": "Prismatic Fur",
+   "zh": "棱镜毛皮",
+   "desc": "变色+变换自如+毛皮大衣+冰鳞粉",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 5809,
+    "ate": null,
+    "def": [
+     "MUL(.5)"
+    ],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_RKS_SYSTEM",
+      "handler": "onBeforeAttack"
+     },
+     {
+      "const": "ABILITY_COLOR_CHANGE",
+      "handler": "onBeforeAttack"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_RKS_SYSTEM",
+      "en": "RKS System",
+      "handler": "onBeforeAttack",
+      "line": 3114,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_COLOR_CHANGE",
+      "en": "Color Change",
+      "handler": "onBeforeAttack",
+      "line": 652,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_PRISMATIC_FUR",
+   "proto_desc": "Color Change + Protean + Fur Coat + Ice Scales.",
+   "noNumber": true
+  },
+  {
+   "id": "499",
+   "en": "Refrigerator",
+   "zh": "冰箱",
+   "desc": "冰冻皮肤+发光",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 6549,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FILTER",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_ILLUMINATE",
+      "handler": "onAccuracy"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_FILTER",
+      "en": "Filter",
+      "handler": "onDefensiveMultiplier",
+      "line": 1705,
+      "def": [
+       "MUL(.65)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_ILLUMINATE",
+      "en": "Illuminate",
+      "handler": "onAccuracy",
+      "line": 884,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_REFRIGERATOR",
+   "proto_desc": "Filter + Illuminate.",
+   "noNumber": true
+  },
+  {
+   "id": "524",
+   "en": "Bass Boosted",
+   "zh": "强力低音",
+   "desc": "放大器+庞克摇滚",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 6763,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_AMPLIFIER",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_AMPLIFIER",
+      "handler": "onModifyTargetFlag"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_AMPLIFIER",
+      "en": "Amplifier",
+      "handler": "onOffensiveMultiplier",
+      "line": 4813,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "en": "Punk Rock",
+      "handler": "onOffensiveMultiplier",
+      "line": 3293,
+      "def": [
+       "MUL(.5)"
+      ],
+      "off": [
+       "MUL(1.3)"
+      ],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_BASS_BOOSTED",
+   "proto_desc": "Amplifier + Punk Rock.",
+   "noNumber": true
+  },
+  {
+   "id": "613",
+   "en": "Apple Enlightenment",
+   "zh": "苹果款待",
+   "desc": "毛皮大衣+魔法防守",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 7862,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FUR_COAT",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_FUR_COAT",
+      "en": "Fur Coat",
+      "handler": "onDefensiveMultiplier",
+      "line": 2324,
+      "def": [
+       "MUL(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_APPLE_ENLIGHTENMENT",
+   "proto_desc": "Fur coat + Magic Guard.",
+   "noNumber": true
+  },
+  {
+   "id": "664",
+   "en": "Flame Bubble",
+   "zh": "火焰泡泡",
+   "desc": "水泡+燃烧之魂",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 8388,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_WATER_BUBBLE",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_WATER_BUBBLE",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_FLAMING_SOUL",
+      "handler": "onPriority"
+     },
+     {
+      "const": "ABILITY_WATER_BUBBLE",
+      "handler": "onStatusImmune"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_WATER_BUBBLE",
+      "en": "Water Bubble",
+      "handler": "onOffensiveMultiplier",
+      "line": 2710,
+      "def": [],
+      "off": [
+       "MUL(2.0)"
+      ],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_FLAMING_SOUL",
+      "en": "Flaming Soul",
+      "handler": "onPriority",
+      "line": 4535,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_FLAME_BUBBLE",
+   "proto_desc": "Water Bubble + Flaming Soul.",
+   "noNumber": true
+  },
+  {
+   "id": "671",
+   "en": "Bad Omen",
+   "zh": "凶兆",
+   "desc": "对方造成伤害取最低随机数，受到击中要害伤害为1/4",
+   "extra": [],
+   "class": "部分无依据（暴击1/4有依据；最低随机数本块无依据）",
+   "sig": {
+    "line": 8463,
+    "ate": null,
+    "def": [
+     "MUL(.25)"
+    ],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_BAD_OMEN",
+   "proto_desc": "Foes min roll. Takes 1/4 damage from crits.",
+   "noNumber": false
+  },
+  {
+   "id": "678",
+   "en": "Fluffiest",
+   "zh": "极致蓬松",
+   "desc": "受到接触类招式伤害减少为1/4，受到火属性招式伤害4倍",
+   "extra": [],
+   "class": "数字错",
+   "sig": {
+    "line": 8573,
+    "ate": null,
+    "def": [
+     "MUL(0.5)",
+     "RESISTANCE(2.0)"
+    ],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_FLUFFIEST",
+   "proto_desc": "Quarters contact damage taken. 4x weak to Fire-type moves.",
+   "noNumber": false
+  },
+  {
+   "id": "682",
+   "en": "Iron Giant",
+   "zh": "钢铁巨人",
+   "desc": "耐热+重型坦克",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 8609,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_HEATPROOF",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "handler": "onChooseOffensiveStat"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_HEATPROOF",
+      "en": "Heatproof",
+      "handler": "onDefensiveMultiplier",
+      "line": 1458,
+      "def": [
+       "RESISTANCE(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "en": "Juggernaut",
+      "handler": "onChooseOffensiveStat",
+      "line": 4181,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_IRON_GIANT",
+   "proto_desc": "Heatproof + Juggernaut.",
+   "noNumber": true
+  },
+  {
+   "id": "726",
+   "en": "Sludgy Mix",
+   "zh": "泥浆混合物",
+   "desc": "剧毒皮肤+庞克摇滚",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 9095,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_INTOXICATE",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_INTOXICATE",
+      "handler": "onMoveType"
+     },
+     {
+      "const": "ABILITY_INTOXICATE",
+      "handler": "onStab"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_INTOXICATE",
+      "en": "Intoxicate",
+      "handler": "onAttacker",
+      "line": 4214,
+      "def": [],
+      "off": [],
+      "ate": "TYPE_POISON",
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_PUNK_ROCK",
+      "en": "Punk Rock",
+      "handler": "onOffensiveMultiplier",
+      "line": 3293,
+      "def": [
+       "MUL(.5)"
+      ],
+      "off": [
+       "MUL(1.3)"
+      ],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_SLUDGY_MIX",
+   "proto_desc": "Intoxicate + Punk Rock.",
+   "noNumber": true
+  },
+  {
+   "id": "741",
+   "en": "Breakwater",
+   "zh": "破水而出",
+   "desc": "悠游自如+慢出",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 9261,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_STALL",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_SWIFT_SWIM",
+      "handler": "onStat"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_STALL",
+      "en": "Stall",
+      "handler": "onDefensiveMultiplier",
+      "line": 1589,
+      "def": [
+       "MUL(.7)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_SWIFT_SWIM",
+      "en": "Swift Swim",
+      "handler": "onStat",
+      "line": 868,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_BREAKWATER",
+   "proto_desc": "Swift Swim + Stall.",
+   "noNumber": true
+  },
+  {
+   "id": "773",
+   "en": "Soothsayer",
+   "zh": "占卜大师",
+   "desc": "5回合内所有招式对该精灵都算作效果不好",
+   "extra": [],
+   "class": "数字错",
+   "sig": {
+    "line": 9546,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_SOOTHSAYER",
+   "proto_desc": "Resists all attacks for three turns on first entry.",
+   "noNumber": false
+  },
+  {
+   "id": "779",
+   "en": "Blight Scale",
+   "zh": "枯萎鳞片",
+   "desc": "多重鳞片+毒刺",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 9636,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_MULTISCALE",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_MULTISCALE",
+      "en": "Multiscale",
+      "handler": "onDefensiveMultiplier",
+      "line": 1945,
+      "def": [
+       "MUL(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_BLIGHT_SCALE",
+   "proto_desc": "Multiscale + Poison Point",
+   "noNumber": true
+  },
+  {
+   "id": "817",
+   "en": "Madness Enhancement",
+   "zh": "狂化增强",
+   "desc": "在雾中陷入愤怒,愤怒时受到伤害减半.\n进入迷雾时陷入愤怒.当使用者愤怒时,所有受到的伤害降低50%,且不会受到愤怒伤害.",
+   "extra": [],
+   "class": "数字错",
+   "sig": {
+    "line": 10058,
+    "ate": null,
+    "def": [
+     "MUL(.8)"
+    ],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_MADNESS_ENHANCEMENT",
+   "proto_desc": "Enrages in fog, reduces damage taken by 20% when enraged.",
+   "noNumber": false
+  },
+  {
+   "id": "829",
+   "en": "Stainless Steel",
+   "zh": "不锈钢",
+   "desc": "坚壁 + 钢能力士.\n使用者无视大多数增加伤害或额外攻击次数的特性.将使用者的一般属性招式变为钢属性.如果使用者是钢属性,它抵抗幽灵和钢属性；否则,它获得钢属性的本系加成.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 10146,
+    "ate": "TYPE_STEEL",
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_STEELWORKER",
+      "handler": "onAfterTypeEffectiveness"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_STEELWORKER",
+      "en": "Steelworker",
+      "handler": "onAfterTypeEffectiveness",
+      "line": 2725,
+      "def": [],
+      "off": [],
+      "ate": "TYPE_STEEL",
+      "afterEff": "+[](ON_AFTER_TYPE_EFFECTIVENESS) { if (!IS_BATTLER_OF_TYPE(target, TYPE_STEEL)) return; if (moveType == TYPE_DARK || moveType == TYPE_GHOST) *mod /= 2; },"
+     }
+    ]
+   },
+   "proto": "ABILITY_STAINLESS_STEEL",
+   "proto_desc": "Fort Knox + Steelworker.",
+   "noNumber": true
+  },
+  {
+   "id": "881",
+   "en": "Stonecutter",
+   "zh": "石匠",
+   "desc": "化石 + 岩石属性招式无视特性.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 10872,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FOSSILIZED",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_FOSSILIZED",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_FOSSILIZED",
+      "en": "Fossilized",
+      "handler": "onOffensiveMultiplier",
+      "line": 3978,
+      "def": [
+       "RESISTANCE(.5)"
+      ],
+      "off": [
+       "MUL(1.2)"
+      ],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_STONECUTTER",
+   "proto_desc": "Fossilized + Rock moves ignore abilities.",
+   "noNumber": true
+  },
+  {
+   "id": "900",
+   "en": "Sand Fiend",
+   "zh": "沙之魔",
+   "desc": "沙之力 + 沙之守卫.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 11082,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_SAND_GUARD",
+      "handler": "onImmune"
+     },
+     {
+      "const": "ABILITY_SAND_GUARD",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_SAND_FORCE",
+      "handler": "onStat"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_SAND_GUARD",
+      "en": "Sand Guard",
+      "handler": "onImmune",
+      "line": 6355,
+      "def": [
+       "MUL(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_SAND_FORCE",
+      "en": "Sand Force",
+      "handler": "onStat",
+      "line": 2224,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_SAND_FIEND",
+   "proto_desc": "Sand Force + Sand Guard.",
+   "noNumber": true
+  },
+  {
+   "id": "925",
+   "en": "Rainbow Scales",
+   "zh": "彩虹鳞",
+   "desc": "火鳞 + 品味彩虹.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 12065,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_TASTE_THE_RAINBOW",
+      "handler": "onEntry"
+     },
+     {
+      "const": "ABILITY_FIRE_SCALES",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_TASTE_THE_RAINBOW",
+      "en": "Taste the Rainbow",
+      "handler": "onEntry",
+      "line": 12054,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_FIRE_SCALES",
+      "en": "Fire Scales",
+      "handler": "onDefensiveMultiplier",
+      "line": 7404,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_RAINBOW_SCALES",
+   "proto_desc": "Fire Scales + Taste the Rainbow.",
+   "noNumber": true
+  },
+  {
+   "id": "932",
+   "en": "Drakelp Head",
+   "zh": "龙首藻",
+   "desc": "减弱受到的第一次攻击,并降低对手的攻击.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 12213,
+    "ate": null,
+    "def": [
+     "MUL(.65)"
+    ],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_DRAKELP_HEAD",
+   "proto_desc": "First hit taken deals 35% less damage, then lowers Atk by -1.",
+   "noNumber": true
+  },
+  {
+   "id": "936",
+   "en": "Sumo Guard",
+   "zh": "相扑守卫",
+   "desc": "主宰 + 厚脂肪.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 11654,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_THICK_FAT",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "handler": "onChooseOffensiveStat"
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "handler": "onStatusImmune"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_THICK_FAT",
+      "en": "Thick Fat",
+      "handler": "onDefensiveMultiplier",
+      "line": 1081,
+      "def": [
+       "RESISTANCE(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_JUGGERNAUT",
+      "en": "Juggernaut",
+      "handler": "onChooseOffensiveStat",
+      "line": 4181,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_SUMO_GUARD",
+   "proto_desc": "Juggernaut + Thick Fat.",
+   "noNumber": true
+  },
+  {
+   "id": "948",
+   "en": "Massive Pelt",
+   "zh": "厚重毛皮",
+   "desc": "卷发 + 毛茸茸.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 11501,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_TANGLING_HAIR",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_FLUFFY",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_TANGLING_HAIR",
+      "en": "Tangling Hair",
+      "handler": "onDefender",
+      "line": 3032,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_FLUFFY",
+      "en": "Fluffy",
+      "handler": "onDefensiveMultiplier",
+      "line": 3004,
+      "def": [
+       "MUL(0.5)",
+       "RESISTANCE(2.0)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_MASSIVE_PELT",
+   "proto_desc": "Tangling Hair + Fluffy.",
+   "noNumber": true
+  },
+  {
+   "id": "954",
+   "en": "Tummyache",
+   "zh": "胃痛",
+   "desc": "厚脂肪 + 腐蚀.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 11646,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_THICK_FAT",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_CORROSION",
+      "handler": "onTypeEffectiveness"
+     },
+     {
+      "const": "ABILITY_CORROSION",
+      "handler": "onCanStatusType"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_THICK_FAT",
+      "en": "Thick Fat",
+      "handler": "onDefensiveMultiplier",
+      "line": 1081,
+      "def": [
+       "RESISTANCE(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_CORROSION",
+      "en": "Corrosion",
+      "handler": "onTypeEffectiveness",
+      "line": 2931,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_TUMMYACHE",
+   "proto_desc": "Thick Fat + Corrosion.",
+   "noNumber": true
+  },
+  {
+   "id": "962",
+   "en": "Angelic Wings",
+   "zh": "天使之翼",
+   "desc": "棱镜鳞片 + 巨翼.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 11602,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_HUGE_WINGS",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_PRISM_SCALES",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_HUGE_WINGS",
+      "en": "Imposing Wings",
+      "handler": "onOffensiveMultiplier",
+      "line": 8671,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_PRISM_SCALES",
+      "en": "Prism Scales",
+      "handler": "onDefensiveMultiplier",
+      "line": 3670,
+      "def": [
+       "MUL(.7)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_ANGELIC_WINGS",
+   "proto_desc": "Prism Scales + Imposing Wings.",
+   "noNumber": true
+  },
+  {
+   "id": "968",
+   "en": "Toxic Shell",
+   "zh": "毒壳",
+   "desc": "硬壳盔甲 + 毒刺.",
+   "extra": [],
+   "class": "无依据、建议保留原文",
+   "sig": {
+    "line": 11678,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_POISON_POINT",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_POISON_POINT",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_SHELL_ARMOR",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_SHELL_ARMOR",
+      "handler": "onCrit"
+     },
+     {
+      "const": "ABILITY_SHELL_ARMOR",
+      "handler": "onCritFor"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_POISON_POINT",
+      "en": "Poison Point",
+      "handler": "onAttacker",
+      "line": 969,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_SHELL_ARMOR",
+      "en": "Shell Armor",
+      "handler": "onDefensiveMultiplier",
+      "line": 1352,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_TOXIC_SHELL",
+   "proto_desc": "Shell Armor + Poison Point.",
+   "noNumber": true
+  },
+  {
+   "id": "970",
+   "en": "Voltron",
+   "zh": "战神金刚",
+   "desc": "金属化 + 战斗盔甲.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 11779,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_METALLIC",
+      "handler": "onEntry"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCrit"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCritFor"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_METALLIC",
+      "en": "Metallic",
+      "handler": "onEntry",
+      "line": 4149,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "en": "Battle Armor",
+      "handler": "onDefensiveMultiplier",
+      "line": 524,
+      "def": [
+       "MUL(.8)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_VOLTRON",
+   "proto_desc": "Metallic + Battle Armor.",
+   "noNumber": true
+  },
+  {
+   "id": "997",
+   "en": "Shattered Armor",
+   "zh": "破碎铠甲",
+   "desc": "战斗盔甲 + 废料场.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 12442,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_SCRAPYARD",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCrit"
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "handler": "onCritFor"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_SCRAPYARD",
+      "en": "Scrapyard",
+      "handler": "onDefender",
+      "line": 5056,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_BATTLE_ARMOR",
+      "en": "Battle Armor",
+      "handler": "onDefensiveMultiplier",
+      "line": 524,
+      "def": [
+       "MUL(.8)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_SHATTERED_ARMOR",
+   "proto_desc": "Battle Armor + Scrapyard.",
+   "noNumber": true
+  },
+  {
+   "id": "1004",
+   "en": "Feathercoat",
+   "zh": "羽衣",
+   "desc": "受到的所有攻击伤害降低10%.被抵抗时降低20%.",
+   "extra": [],
+   "class": "数字错",
+   "sig": {
+    "line": 12498,
+    "ate": null,
+    "def": [
+     "MUL(.7)",
+     "MUL(.85)"
+    ],
+    "off": [],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_FEATHERCOAT",
+   "proto_desc": "Takes 15% less damage from attacks, 30% if resisted.",
+   "noNumber": false
+  },
+  {
+   "id": "1010",
+   "en": "Thermal Entropy",
+   "zh": "热熵",
+   "desc": "热交换 + 耐热.",
+   "extra": [],
+   "class": "缺幅度",
+   "sig": {
+    "line": 12562,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_THERMAL_EXCHANGE",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_HEATPROOF",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_THERMAL_EXCHANGE",
+      "handler": "onStatusImmune"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_THERMAL_EXCHANGE",
+      "en": "Thermal Exchange",
+      "handler": "onDefender",
+      "line": 7447,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_HEATPROOF",
+      "en": "Heatproof",
+      "handler": "onDefensiveMultiplier",
+      "line": 1458,
+      "def": [
+       "RESISTANCE(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_THERMAL_ENTROPY",
+   "proto_desc": "Thermal Exchange + Heatproof.",
+   "noNumber": true
+  },
+  {
+   "id": "1032",
+   "en": "Smoldering Wood",
+   "zh": "",
+   "desc": "Raw Wood + Flame Body.",
+   "extra": [],
+   "class": "缺幅度（兼缺中文名）",
+   "sig": {
+    "line": 4375,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_FLAME_BODY",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_FLAME_BODY",
+      "handler": "onDefender"
+     },
+     {
+      "const": "ABILITY_RAW_WOOD",
+      "handler": "onOffensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_RAW_WOOD",
+      "handler": "onDefensiveMultiplier"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_FLAME_BODY",
+      "en": "Flame Body",
+      "handler": "onAttacker",
+      "line": 1108,
+      "def": [],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_RAW_WOOD",
+      "en": "Raw Wood",
+      "handler": "onOffensiveMultiplier",
+      "line": 4362,
+      "def": [
+       "RESISTANCE(.5)"
+      ],
+      "off": [
+       "MUL(1.2)"
+      ],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_SMOLDERING_WOOD",
+   "proto_desc": "Raw Wood + Flame Body.",
+   "noNumber": true
+  },
+  {
+   "id": "1048",
+   "en": "<缺失>",
+   "zh": "<缺失>",
+   "desc": "",
+   "extra": null,
+   "class": "分片漏登记（cc/proto 存在）",
+   "sig": {
+    "line": 4111,
+    "ate": null,
+    "def": [
+     "MUL(.5)"
+    ],
+    "off": [
+     "RESISTANCE(1.5)"
+    ],
+    "deleg": [],
+    "bases": []
+   },
+   "proto": "ABILITY_INSECTEATER",
+   "proto_desc": "",
+   "noNumber": true
+  },
+  {
+   "id": "1053",
+   "en": "<缺失>",
+   "zh": "<缺失>",
+   "desc": "",
+   "extra": null,
+   "class": "分片漏登记（cc/proto 存在）",
+   "sig": {
+    "line": 12873,
+    "ate": null,
+    "def": [],
+    "off": [],
+    "deleg": [
+     {
+      "const": "ABILITY_IMMOLATE",
+      "handler": "onAttacker"
+     },
+     {
+      "const": "ABILITY_HEATPROOF",
+      "handler": "onDefensiveMultiplier"
+     },
+     {
+      "const": "ABILITY_IMMOLATE",
+      "handler": "onMoveType"
+     },
+     {
+      "const": "ABILITY_IMMOLATE",
+      "handler": "onStab"
+     }
+    ],
+    "bases": [
+     {
+      "const": "ABILITY_IMMOLATE",
+      "en": "Immolate",
+      "handler": "onAttacker",
+      "line": 3731,
+      "def": [],
+      "off": [],
+      "ate": "TYPE_FIRE",
+      "afterEff": ""
+     },
+     {
+      "const": "ABILITY_HEATPROOF",
+      "en": "Heatproof",
+      "handler": "onDefensiveMultiplier",
+      "line": 1458,
+      "def": [
+       "RESISTANCE(.5)"
+      ],
+      "off": [],
+      "ate": null,
+      "afterEff": ""
+     }
+    ]
+   },
+   "proto": "ABILITY_THERMALDWELLER",
+   "proto_desc": "",
+   "noNumber": true
+  }
+ ],
+ "byClass": {
+  "数字错": 6,
+  "只写进攻半套、防守侧漏记": 2,
+  "缺幅度": 21,
+  "部分无依据（暴击1/4有依据；最低随机数本块无依据）": 1,
+  "无依据、建议保留原文": 1,
+  "缺幅度（兼缺中文名）": 1,
+  "分片漏登记（cc/proto 存在）": 2
+ },
+ "noNumberIds": [
+  "440",
+  "499",
+  "524",
+  "613",
+  "664",
+  "682",
+  "726",
+  "741",
+  "779",
+  "829",
+  "881",
+  "900",
+  "925",
+  "932",
+  "936",
+  "948",
+  "954",
+  "962",
+  "968",
+  "970",
+  "997",
+  "1010",
+  "1032",
+  "1048",
+  "1053"
+ ],
+ "noNumberCount": 25
+}

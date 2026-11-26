@@ -1,0 +1,265 @@
+{
+ "stat": {
+  "abilities": 1034,
+  "items": 929,
+  "species": 1906,
+  "moves": 1032
+ },
+ "files": [
+  {
+   "file": "data_lite_v498.js",
+   "bytes": 379679,
+   "lines": 22
+  },
+  {
+   "file": "data_adv_v498.js",
+   "bytes": 575962,
+   "lines": 5
+  },
+  {
+   "file": "data_species_v498.js",
+   "bytes": 1362446,
+   "lines": 2
+  }
+ ],
+ "rows": [
+  {
+   "id": "317",
+   "en": "Permafrost",
+   "zh": "永冻层",
+   "desc": "受到效果绝佳的攻击时，受到伤害减少25%",
+   "extra": []
+  },
+  {
+   "id": "582",
+   "en": "Thick Skin",
+   "zh": "厚皮肤",
+   "desc": "受到效果绝佳的攻击时，受到伤害减少25%",
+   "extra": []
+  },
+  {
+   "id": "200",
+   "en": "Steelworker",
+   "zh": "钢能力者",
+   "desc": "钢属性的招式威力1.3倍",
+   "extra": []
+  },
+  {
+   "id": "442",
+   "en": "Fae Hunter",
+   "zh": "妖精猎者",
+   "desc": "对妖精属性精灵造成伤害+50%",
+   "extra": []
+  },
+  {
+   "id": "440",
+   "en": "Prismatic Fur",
+   "zh": "棱镜毛皮",
+   "desc": "变色+变换自如+毛皮大衣+冰鳞粉",
+   "extra": []
+  },
+  {
+   "id": "499",
+   "en": "Refrigerator",
+   "zh": "冰箱",
+   "desc": "冰冻皮肤+发光",
+   "extra": []
+  },
+  {
+   "id": "524",
+   "en": "Bass Boosted",
+   "zh": "强力低音",
+   "desc": "放大器+庞克摇滚",
+   "extra": []
+  },
+  {
+   "id": "613",
+   "en": "Apple Enlightenment",
+   "zh": "苹果款待",
+   "desc": "毛皮大衣+魔法防守",
+   "extra": []
+  },
+  {
+   "id": "664",
+   "en": "Flame Bubble",
+   "zh": "火焰泡泡",
+   "desc": "水泡+燃烧之魂",
+   "extra": []
+  },
+  {
+   "id": "671",
+   "en": "Bad Omen",
+   "zh": "凶兆",
+   "desc": "对方造成伤害取最低随机数，受到击中要害伤害为1/4",
+   "extra": []
+  },
+  {
+   "id": "678",
+   "en": "Fluffiest",
+   "zh": "极致蓬松",
+   "desc": "受到接触类招式伤害减少为1/4，受到火属性招式伤害4倍",
+   "extra": []
+  },
+  {
+   "id": "682",
+   "en": "Iron Giant",
+   "zh": "钢铁巨人",
+   "desc": "耐热+重型坦克",
+   "extra": []
+  },
+  {
+   "id": "726",
+   "en": "Sludgy Mix",
+   "zh": "泥浆混合物",
+   "desc": "剧毒皮肤+庞克摇滚",
+   "extra": []
+  },
+  {
+   "id": "741",
+   "en": "Breakwater",
+   "zh": "破水而出",
+   "desc": "悠游自如+慢出",
+   "extra": []
+  },
+  {
+   "id": "773",
+   "en": "Soothsayer",
+   "zh": "占卜大师",
+   "desc": "5回合内所有招式对该精灵都算作效果不好",
+   "extra": []
+  },
+  {
+   "id": "779",
+   "en": "Blight Scale",
+   "zh": "枯萎鳞片",
+   "desc": "多重鳞片+毒刺",
+   "extra": []
+  },
+  {
+   "id": "817",
+   "en": "Madness Enhancement",
+   "zh": "狂化增强",
+   "desc": "在雾中陷入愤怒,愤怒时受到伤害减半.\n进入迷雾时陷入愤怒.当使用者愤怒时,所有受到的伤害降低50%,且不会受到愤怒伤害.",
+   "extra": []
+  },
+  {
+   "id": "829",
+   "en": "Stainless Steel",
+   "zh": "不锈钢",
+   "desc": "坚壁 + 钢能力士.\n使用者无视大多数增加伤害或额外攻击次数的特性.将使用者的一般属性招式变为钢属性.如果使用者是钢属性,它抵抗幽灵和钢属性；否则,它获得钢属性的本系加成.",
+   "extra": []
+  },
+  {
+   "id": "881",
+   "en": "Stonecutter",
+   "zh": "石匠",
+   "desc": "化石 + 岩石属性招式无视特性.",
+   "extra": []
+  },
+  {
+   "id": "900",
+   "en": "Sand Fiend",
+   "zh": "沙之魔",
+   "desc": "沙之力 + 沙之守卫.",
+   "extra": []
+  },
+  {
+   "id": "925",
+   "en": "Rainbow Scales",
+   "zh": "彩虹鳞",
+   "desc": "火鳞 + 品味彩虹.",
+   "extra": []
+  },
+  {
+   "id": "932",
+   "en": "Drakelp Head",
+   "zh": "龙首藻",
+   "desc": "减弱受到的第一次攻击,并降低对手的攻击.",
+   "extra": []
+  },
+  {
+   "id": "936",
+   "en": "Sumo Guard",
+   "zh": "相扑守卫",
+   "desc": "主宰 + 厚脂肪.",
+   "extra": []
+  },
+  {
+   "id": "948",
+   "en": "Massive Pelt",
+   "zh": "厚重毛皮",
+   "desc": "卷发 + 毛茸茸.",
+   "extra": []
+  },
+  {
+   "id": "954",
+   "en": "Tummyache",
+   "zh": "胃痛",
+   "desc": "厚脂肪 + 腐蚀.",
+   "extra": []
+  },
+  {
+   "id": "962",
+   "en": "Angelic Wings",
+   "zh": "天使之翼",
+   "desc": "棱镜鳞片 + 巨翼.",
+   "extra": []
+  },
+  {
+   "id": "968",
+   "en": "Toxic Shell",
+   "zh": "毒壳",
+   "desc": "硬壳盔甲 + 毒刺.",
+   "extra": []
+  },
+  {
+   "id": "970",
+   "en": "Voltron",
+   "zh": "战神金刚",
+   "desc": "金属化 + 战斗盔甲.",
+   "extra": []
+  },
+  {
+   "id": "997",
+   "en": "Shattered Armor",
+   "zh": "破碎铠甲",
+   "desc": "战斗盔甲 + 废料场.",
+   "extra": []
+  },
+  {
+   "id": "1004",
+   "en": "Feathercoat",
+   "zh": "羽衣",
+   "desc": "受到的所有攻击伤害降低10%.被抵抗时降低20%.",
+   "extra": []
+  },
+  {
+   "id": "1010",
+   "en": "Thermal Entropy",
+   "zh": "热熵",
+   "desc": "热交换 + 耐热.",
+   "extra": []
+  },
+  {
+   "id": "1032",
+   "en": "Smoldering Wood",
+   "zh": "",
+   "desc": "Raw Wood + Flame Body.",
+   "extra": []
+  },
+  {
+   "id": "1048",
+   "en": "<缺失>",
+   "zh": "<缺失>",
+   "desc": "",
+   "extra": null
+  },
+  {
+   "id": "1053",
+   "en": "<缺失>",
+   "zh": "<缺失>",
+   "desc": "",
+   "extra": null
+  }
+ ]
+}
