@@ -17960,6 +17960,34 @@ function _deriveBuildsCore(s,team){
       }
     }
   }catch(eSunWhy4434){eSunWhy4434.name}});
+  /* v4.436 天气断言「池内无源」事实收口：costOf 的 wxConditionMet 与 weatherAdjOf 的 ownWxList 取物种潜力
+     （特性池/能学设置招 + 体系匹配），成卡若特性池与四招都开不出该天气，仍写「条件威力(已满足)/
+     「雨天必中/体系加成 ×N（雨）」就是把潜力写成事实。末尾按卡面可选项（特性池 id + 四招设置招）改写为条件式。
+     只改 why 文案，不动 id/tag/数值/道具/选招（gates 第四十四节）。 */
+  out.forEach(function(b){try{
+    var _ws436={};
+    var _SET436={2:"雨",989:"雨",189:"雨",70:"晴",584:"晴",190:"晴",746:"晴",45:"沙",604:"沙",117:"雪"};
+    var _SMV436={240:"雨",258:"雪",241:"晴",201:"沙"};
+    ((b&&b.abi)||[]).forEach(function(a){var _v=_SET436[+a.id];if(_v)_ws436[_v]=1});
+    try{((s&&s.inns)||[]).forEach(function(n){var _v3=_SET436[+abiIdByZhOrEn(n)];if(_v3)_ws436[_v3]=1})}catch(eWxInn436){eWxInn436.name}
+    ((b&&b.mv&&b.mv.main)||[]).forEach(function(x){var _v2=_SMV436[+x.id];if(_v2)_ws436[_v2]=1});
+    var _hm436=(b&&b.mv&&b.mv.main)||[];
+    for(var _i436=0;_i436<_hm436.length;_i436++){
+      var _sl436=_hm436[_i436];if(!Array.isArray(_sl436.why))continue;
+      var _cs436={87:"雨",59:"雪",76:"晴",632:"晴"}[+_sl436.id];
+      for(var _j436=0;_j436<_sl436.why.length;_j436++){
+        var _w436=String(_sl436.why[_j436]||"");
+        if(_cs436&&_w436==="条件威力(已满足)"&&!_ws436[_cs436]){
+          _sl436.why[_j436]="天气条件：当前卡面未开出对应天气，评分按可搭配天气估算";continue}
+        var _m436=/^体系加成 (.+) ×([\d.]+)（(雨|雪|晴|沙)）$/.exec(_w436);
+        if(_m436&&!_ws436[_m436[3]]){
+          _sl436.why[_j436]="体系加成 "+_m436[1]+" ×"+_m436[2]+"（"+_m436[3]+"·需开"+_m436[3]+"天）";continue}
+        var _n436=/^(.)天必中×1\.05$/.exec(_w436);
+        if(_n436&&!_ws436[_n436[1]])
+          _sl436.why[_j436]=_n436[1]+"天必中×1.05（需开"+_n436[1]+"天）";
+      }
+    }
+  }catch(eWxWhy4436){eWxWhy4436.name}});
   return out;}
 function sideDisp(bd){
   /* v4.368：方向标签要与实际招式口径对齐 —— 肉盾/受队/联防/辅助类流派只带 ≤1 个伤害招时，
@@ -21466,7 +21494,7 @@ function mateTags(r){
    （耐久/受语义）；『轮转』在单精灵层结构性不出现（cand ⑤ 需 pivCount≥2，空队伍恒 ≤1）
    ⇒ 该映射对单精灵层产物零影响（A5 已验：20 只保护名单不受角色映射污染）。
    ================================================================================== */
-var ER_ENGINE_VER='v4.435';
+var ER_ENGINE_VER='v4.436';
 /* v4.183 修复：页头版本号原先是手写死的文本（曾长期停在 v4.179，与实际引擎版本脱节，用户无法确认用没用上最新版）。
    现在唯一真源 = ER_ENGINE_VER，页头改为由它回填；以后升版只改上面一行即可。 */
 (function(){try{var e=document.getElementById('erVerNo');if(e)e.textContent=ER_ENGINE_VER}catch(_){}})();

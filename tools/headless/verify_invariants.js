@@ -239,6 +239,35 @@ def('INV18', '最终招式必须在物种可学池内（learnOf 不含的招不�
   return '带可学池外招式 ' + bad.map(id => String((MV[id] || [])[1] || id)).join('/') + ' learnset=' + L.length;
 }, c => true);
 
+// ---- v4.436：天气断言在「卡面无源」时必须带条件限定（潜力不得写成事实）----
+// 判据与 index.html v4.436 收口块同源：卡面可选项 = 特性候选池 b.abi + 物种天性 s.inns + 四招设置招。
+// 永续天气特性（189 始源之海/190 终结之地/746 终结烈日）数据层无「天气手」标签，须显式列举。
+const WX_SET436 = {2:'雨',989:'雨',189:'雨',70:'晴',584:'晴',190:'晴',746:'晴',45:'沙',604:'沙',117:'雪'};
+const WX_SMV436 = {240:'雨',258:'雪',241:'晴',201:'沙'};
+const WX_COND436 = {87:'雨',59:'雪',76:'晴',632:'晴'};
+function wxSrcOf436(c) {
+  const m = {};
+  ((c.b && c.b.abi) || []).forEach(a => { const v = WX_SET436[+a.id]; if (v) m[v] = 1; });
+  try { ((c.s && c.s.inns) || []).forEach(n => { const v = WX_SET436[+H.abiIdByZhOrEn(n)]; if (v) m[v] = 1; }); } catch (e) {}
+  ((c.b && c.b.mv && c.b.mv.main) || []).forEach(x => { const v = WX_SMV436[+x.id]; if (v) m[v] = 1; });
+  return m;
+}
+def('INV19', '天气断言（条件威力/体系加成/必中）在卡面无源时须带「需开X天」限定', c => {
+  if (!c.b || !(c.b.mv && c.b.mv.main)) return null;
+  const src = wxSrcOf436(c), bad = [];
+  for (const slot of c.b.mv.main) {
+    const cs = WX_COND436[+slot.id];
+    for (const w of (slot.why || [])) {
+      const s = String(w || '');
+      if (cs && s === '条件威力(已满足)' && !src[cs]) { bad.push('条件威力@' + slot.id); continue; }
+      const m = /^体系加成 (.+) ×([\d.]+)（(雨|雪|晴|沙)）$/.exec(s);
+      if (m && !src[m[3]]) { bad.push('体系加成' + m[3] + '@' + slot.id); continue; }
+      const n = /^(.)天必中×1\.05$/.exec(s);
+      if (n && !src[n[1]]) bad.push('必中' + n[1] + '@' + slot.id);
+    }
+  }
+  return bad.length ? ('无源却写完成时天气断言 ' + bad.slice(0, 3).join(' / ')) : null;
+}, c => true);
 // ---- 执行 ----
 const probe = process.argv.indexOf('--probe') >= 0;
 // 中文按 2 宽补齐（Node 的 console.log 不支持 %-58s 这类 printf 填充）
